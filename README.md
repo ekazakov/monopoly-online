@@ -9,6 +9,7 @@ A property-trading board game that you play in the browser.
 | `apps/web`        | Frontend. React, TanStack Query, three.js through React Three Fiber and drei. |
 | `apps/api`        | Backend. Hono on Node, SQLite (better-sqlite3), Kysely queries.               |
 | `packages/shared` | Zod schemas and the API error format. The API and the web use them.           |
+| `artifacts/`      | Standalone copies of the design system and game screen prototype.             |
 | `design/`         | Design prototypes. The toolchain does not lint or format them.                |
 | `plan/`           | Specifications and game rules.                                                |
 
@@ -64,6 +65,26 @@ pnpm --filter @monopoly/api start
 
 This command starts the built API from `apps/api/dist`.
 
+## Run the artifacts
+
+The `artifacts/` folder has two standalone copies of Claude artifacts. They run with Node only. They have no dependencies, but they need an internet connection: fonts load from Google Fonts and three.js loads from jsDelivr.
+
+```bash
+pnpm artifact:game-screen
+```
+
+This command starts the game screen prototype at http://localhost:8791. It is a 3D board with scripted turns. Use the Prototype panel to jump to any state.
+
+```bash
+pnpm artifact:design-system
+```
+
+This command starts the Harborfront Design System at http://localhost:8792. The sidebar lists all the boards.
+
+Both commands use `artifacts/serve.mjs`, a small static server without dependencies. To use another port, run `node artifacts/serve.mjs <folder> <port>`. Opening the HTML files from disk does not work, because ES modules need a server. The toolchain does not lint or format `artifacts/`.
+
+More details are in [artifacts/README.md](artifacts/README.md).
+
 ## Use the Vite+ CLI
 
 Use the package scripts, or use `pnpm exec vp <command>`. The project does not need a global `vp` install.
@@ -103,3 +124,19 @@ All API errors have this format:
 ```
 
 The codes are `bad_request`, `validation_error`, `not_found` and `internal_error`. `issues` is only in validation errors.
+
+# Artifacts
+
+Standalone copies of two Claude artifacts. They run with Node only.
+
+```bash
+pnpm artifact:design-system
+pnpm artifact:game-screen
+```
+
+Run `pnpm <name>` from this folder. This folder is not in the pnpm workspace.
+
+| Folder           | What it holds                                                                                    |
+| ---------------- | ------------------------------------------------------------------------------------------------ |
+| `game-screen/`   | Game screen prototype: a three.js board with scripted turns. See the Prototype panel.            |
+| `design-system/` | Design System. `index.html` is a small viewer that lists every board from `project/canvas.json`. |
