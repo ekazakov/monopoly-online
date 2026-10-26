@@ -1,0 +1,36 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Main.dc.html": {
+      "h": 1000,
+      "title": "Harborfront board",
+      "w": 1000,
+      "x": 47,
+      "y": -17
+    },
+    "Board3D.dc.html": {
+      "h": 1000,
+      "title": "Harborfront board 3D",
+      "w": 1400,
+      "x": 1127,
+      "y": -17
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-23T12:00:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "file": "Main.dc.html",
+    "view": "focused"
+  },
+  "notes": {},
+  "order": [
+    "Main.dc.html",
+    "Board3D.dc.html"
+  ],
+  "pages": [],
+  "title": "Property Trading Game Board"
+}

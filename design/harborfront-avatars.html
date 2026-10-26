@@ -1,0 +1,827 @@
+<title>Harborfront Avatars</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: full-bleed WebGL stage; title top-left, avatar picker and finish options bottom-centre.
+   One dark look on purpose, same tokens as the Harborfront board. */
+:root {
+  --ground: #0e1822;
+  --panel: rgba(18, 31, 42, 0.82);
+  --panel-line: #2c4254;
+  --ink: #e9f0ea;
+  --ink-soft: #a9bcc9;
+  --accent: #e2574c;
+  --accent-ink: #1a0b09;
+  --font-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --font-body: 'Barlow', system-ui, sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-body);
+  overflow: hidden;
+}
+.app { position: relative; height: 100%; }
+#stage { position: absolute; inset: 0; }
+#stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.title {
+  position: absolute; z-index: 2; top: 12px;
+  left: max(16px, env(safe-area-inset-left, 0px));
+  right: max(16px, env(safe-area-inset-right, 0px));
+  pointer-events: none;
+}
+.title .eyebrow {
+  font-family: var(--font-display); font-weight: 600; font-size: 14px;
+  letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent);
+}
+.title h1 {
+  margin: 2px 0 0; font-family: var(--font-display); font-weight: 700;
+  font-size: clamp(30px, 5vw, 48px); letter-spacing: 0.1em; text-transform: uppercase; line-height: 1;
+}
+.title p { margin: 6px 0 0; color: var(--ink-soft); font-size: 14px; max-width: 46ch; }
+.bar {
+  position: absolute; z-index: 2; bottom: 12px;
+  left: max(16px, env(safe-area-inset-left, 0px));
+  right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
+}
+.bar .group {
+  display: flex; flex-wrap: wrap; gap: 6px; padding: 6px;
+  background: var(--panel); border: 1px solid var(--panel-line); border-radius: 10px;
+  backdrop-filter: blur(8px);
+}
+button {
+  min-height: 44px; min-width: 44px; padding: 0 14px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font: 600 14px var(--font-body); letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--ink); background: transparent; border: 1px solid transparent; border-radius: 7px; cursor: pointer;
+}
+button:hover { background: rgba(255, 255, 255, 0.08); }
+button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.slider {
+  align-items: center; gap: 10px; padding: 0 14px; min-height: 44px; box-sizing: border-box;
+  font: 600 14px var(--font-body); letter-spacing: 0.04em; text-transform: uppercase;
+}
+.slider input { width: 120px; accent-color: var(--accent); cursor: pointer; }
+.slider input:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.slider output { min-width: 4ch; text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-soft); }
+.dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--ground); box-sizing: border-box; }
+.msg {
+  position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; padding: 24px; text-align: center;
+  font-size: 16px; color: var(--ink-soft);
+}
+.msg[hidden], .group[hidden] { display: none; }
+</style>
+
+<div class="app">
+  <div id="stage"></div>
+  <div class="title">
+    <div class="eyebrow">Player avatars</div>
+    <h1 id="name">Harborfront</h1>
+    <p id="hint">Click an avatar to focus it. Drag to orbit, scroll or pinch to zoom.</p>
+  </div>
+  <div class="bar" role="toolbar" aria-label="Avatar controls">
+    <div class="group" id="picker" role="group" aria-label="Avatar"></div>
+    <div class="group" id="finishes" role="group" aria-label="Finish"></div>
+    <label class="group slider">Brightness <input type="range" id="bright" min="0.2" max="1.2" step="0.05" value="0.65"> <output id="brightVal" for="bright">65%</output></label>
+    <div class="group"><button type="button" id="spin" aria-pressed="true">Spin</button></div>
+  </div>
+  <div class="msg" id="msg" hidden>This view needs WebGL, which your browser has turned off or does not support.</div>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const stage = document.getElementById('stage');
+const msg = document.getElementById('msg');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+let renderer;
+try { renderer = new THREE.WebGLRenderer({ antialias: true }); } catch (e) { msg.hidden = false; }
+
+if (renderer) {
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.15;
+  stage.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0e1822);
+  scene.fog = new THREE.Fog(0x0e1822, 22, 52);
+  const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
+
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+  scene.add(new THREE.HemisphereLight(0xdfeeff, 0x1d2b24, 0.35));
+  const sun = new THREE.DirectionalLight(0xfff1dc, 1.8);
+  sun.position.set(-5, 11, 8);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  Object.assign(sun.shadow.camera, { left: -9, right: 9, top: 6, bottom: -6, near: 1, far: 30 });
+  sun.shadow.bias = -0.0004;
+  scene.add(sun);
+
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), new THREE.MeshStandardMaterial({ color: 0x16222d, roughness: 0.9, metalness: 0 }));
+  floor.rotation.x = -Math.PI / 2;
+  floor.receiveShadow = true;
+  scene.add(floor);
+
+  // ---------- materials ----------
+  const FINISHES = [
+    { id: 'chrome', label: 'Chrome', color: 0xf4f8fa, hex: '#f4f8fa' },
+    { id: 'red', label: 'Red', color: 0xe0463c, hex: '#d9392f' },
+    { id: 'blue', label: 'Blue', color: 0x3f7fe0, hex: '#2f6fd0' },
+    { id: 'green', label: 'Green', color: 0x35b066, hex: '#2fa05c' },
+    { id: 'gold', label: 'Gold', color: 0xf6c244, hex: '#f0b429' }
+  ];
+  // The metal reflects its own photo-studio surround instead of the dim room: a bright dome with a dark
+  // horizon line, HDR softboxes and black flags, so polished surfaces read silver with crisp contrast.
+  function studioEnv() {
+    const s = new THREE.Scene();
+    const dome = new THREE.SphereGeometry(20, 96, 48), pos = dome.attributes.position, col = [];
+    for (let i = 0; i < pos.count; i++) {
+      const y = pos.getY(i) / 20;
+      const v = y > 0.06 ? 0.4 + 0.9 * y : y > -0.04 ? 0.04 : 0.22 + 0.15 * (-y);
+      col.push(v, v, v * 1.02);
+    }
+    dome.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    s.add(new THREE.Mesh(dome, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide })));
+    const panel = (w, h, k, x, y, z) => {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color().setScalar(k), side: THREE.DoubleSide }));
+      m.position.set(x, y, z); m.lookAt(0, 0, 0);
+      s.add(m);
+    };
+    panel(9, 6, 4, -8, 7, 9);     // key softbox, upper left front
+    panel(5, 10, 2.2, 11, 3, 4);  // fill strip, right
+    panel(14, 4, 3, 0, 15, -2);   // overhead
+    panel(4, 9, 3.5, -6, 3, -12); // rim, behind
+    panel(4, 12, 0.03, 13, 2, -6); // dark flags give the edges dark lines
+    panel(4, 12, 0.03, -14, 2, -2);
+    return s;
+  }
+  const studio = pmrem.fromScene(studioEnv(), 0.015).texture;
+  const M = new THREE.MeshStandardMaterial({ color: FINISHES[0].color, metalness: 1, roughness: 0.1, envMap: studio, envMapIntensity: 1 });
+  const PLINTH = new THREE.MeshStandardMaterial({ color: 0x1b2a35, metalness: 0.4, roughness: 0.45 });
+
+  const sides = [-1, 1];
+
+  // ---------- sculpting with signed distances ----------
+  // A part is { f(x, y, z) -> signed distance, b: [minX, minY, minZ, maxX, maxY, maxZ] }. Parts merge
+  // with a smooth union so joints flow like one casting, details are carved with a smooth subtraction,
+  // and the whole figure is meshed once with surface nets and shaded with true SDF normals.
+  const smin = (a, b, k) => { const h = Math.max(k - Math.abs(a - b), 0) / k; return Math.min(a, b) - h * h * k * 0.25; };
+  const sEll = (cx, cy, cz, rx, ry, rz) => ({
+    b: [cx - rx, cy - ry, cz - rz, cx + rx, cy + ry, cz + rz],
+    f: (x, y, z) => {
+      const px = (x - cx) / rx, py = (y - cy) / ry, pz = (z - cz) / rz;
+      const k0 = Math.sqrt(px * px + py * py + pz * pz), qx = px / rx, qy = py / ry, qz = pz / rz;
+      const k1 = Math.sqrt(qx * qx + qy * qy + qz * qz);
+      return k1 === 0 ? -Math.min(rx, ry, rz) : (k0 * (k0 - 1)) / k1;
+    }
+  });
+  // capsule from a to b whose radius goes r1 -> r2 (Inigo Quilez's round cone)
+  const sCone = ([ax, ay, az], [bx, by, bz], r1, r2) => {
+    const bax = bx - ax, bay = by - ay, baz = bz - az, m = Math.max(r1, r2);
+    const l2 = bax * bax + bay * bay + baz * baz, rr = r1 - r2, a2 = l2 - rr * rr, il2 = 1 / l2, srr = Math.sign(rr) * rr * rr;
+    return {
+      b: [Math.min(ax, bx) - m, Math.min(ay, by) - m, Math.min(az, bz) - m, Math.max(ax, bx) + m, Math.max(ay, by) + m, Math.max(az, bz) + m],
+      f: (x, y, z) => {
+        const px = x - ax, py = y - ay, pz = z - az;
+        const yy = px * bax + py * bay + pz * baz, zz = yy - l2;
+        const qx = px * l2 - bax * yy, qy = py * l2 - bay * yy, qz = pz * l2 - baz * yy;
+        const x2 = qx * qx + qy * qy + qz * qz, y2 = yy * yy * l2, z2 = zz * zz * l2, k = srr * x2;
+        if (Math.sign(zz) * a2 * z2 > k) return Math.sqrt(x2 + z2) * il2 - r2;
+        if (Math.sign(yy) * a2 * y2 < k) return Math.sqrt(x2 + y2) * il2 - r1;
+        return (Math.sqrt(x2 * a2 * il2) + yy * rr) * il2 - r1;
+      }
+    };
+  };
+  // items: { p: part, k: blend radius, sub: carve instead of add }; parts whose bounds can't reach are skipped
+  const sGroup = (items) => {
+    const parts = items.map(({ p, k = 0, sub = false }) => {
+      const [x0, y0, z0, x1, y1, z1] = p.b;
+      return { f: p.f, k, sub, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, cz: (z0 + z1) / 2, r: 0.5 * Math.sqrt((x1 - x0) ** 2 + (y1 - y0) ** 2 + (z1 - z0) ** 2) };
+    });
+    const adds = items.filter((it) => !it.sub).map((it) => it.p.b);
+    const b = [0, 1, 2].map((i) => Math.min(...adds.map((a) => a[i]))).concat([3, 4, 5].map((i) => Math.max(...adds.map((a) => a[i]))));
+    return {
+      b,
+      f: (x, y, z) => {
+        let d = Infinity;
+        for (const p of parts) {
+          const dx = x - p.cx, dy = y - p.cy, dz = z - p.cz, lb = Math.sqrt(dx * dx + dy * dy + dz * dz) - p.r;
+          if (p.sub) {
+            if (lb >= p.k - d) continue;
+            const e = p.f(x, y, z);
+            d = p.k ? -smin(-d, e, p.k) : Math.max(d, -e);
+          } else {
+            if (lb >= d + p.k) continue;
+            const e = p.f(x, y, z);
+            d = p.k ? smin(d, e, p.k) : Math.min(d, e);
+          }
+        }
+        return d;
+      }
+    };
+  };
+  const sTube = (pts, r0, r1, n = 28) => {
+    const curve = new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(...p)));
+    const ps = curve.getPoints(n).map((v) => v.toArray());
+    return sGroup(ps.slice(1).map((p, i) => ({ p: sCone(ps[i], p, r0 + (r1 - r0) * (i / n), r0 + (r1 - r0) * ((i + 1) / n)) })));
+  };
+  const sSquash = (p, sx, sy, sz) => {
+    const k = Math.min(sx, sy, sz);
+    return { b: [p.b[0] * sx, p.b[1] * sy, p.b[2] * sz, p.b[3] * sx, p.b[4] * sy, p.b[5] * sz], f: (x, y, z) => p.f(x / sx, y / sy, z / sz) * k };
+  };
+  const place = (p, x, y, z, rx = 0, ry = 0, rz = 0) => {
+    const m = new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz)), new THREE.Vector3(1, 1, 1));
+    const e = m.clone().invert().elements, bb = new THREE.Box3(), v = new THREE.Vector3();
+    const [x0, y0, z0, x1, y1, z1] = p.b;
+    for (let i = 0; i < 8; i++) bb.expandByPoint(v.set(i & 1 ? x1 : x0, i & 2 ? y1 : y0, i & 4 ? z1 : z0).applyMatrix4(m));
+    return {
+      b: [...bb.min.toArray(), ...bb.max.toArray()],
+      f: (x, y, z) => p.f(e[0] * x + e[4] * y + e[8] * z + e[12], e[1] * x + e[5] * y + e[9] * z + e[13], e[2] * x + e[6] * y + e[10] * z + e[14])
+    };
+  };
+  // rounded cylinder, torus and box, all with their axis along y
+  const sCyl = (cx, cy, cz, r, h, rd) => ({
+    b: [cx - r, cy - h / 2, cz - r, cx + r, cy + h / 2, cz + r],
+    f: (x, y, z) => {
+      const dx = Math.sqrt((x - cx) ** 2 + (z - cz) ** 2) - r + rd, dy = Math.abs(y - cy) - h / 2 + rd;
+      return Math.min(Math.max(dx, dy), 0) + Math.sqrt(Math.max(dx, 0) ** 2 + Math.max(dy, 0) ** 2) - rd;
+    }
+  });
+  const sTorus = (cx, cy, cz, R, r) => ({
+    b: [cx - R - r, cy - r, cz - R - r, cx + R + r, cy + r, cz + R + r],
+    f: (x, y, z) => { const q = Math.sqrt((x - cx) ** 2 + (z - cz) ** 2) - R, dy = y - cy; return Math.sqrt(q * q + dy * dy) - r; }
+  });
+  const sBox = (cx, cy, cz, hx, hy, hz, rd) => ({
+    b: [cx - hx, cy - hy, cz - hz, cx + hx, cy + hy, cz + hz],
+    f: (x, y, z) => {
+      const qx = Math.abs(x - cx) - hx + rd, qy = Math.abs(y - cy) - hy + rd, qz = Math.abs(z - cz) - hz + rd;
+      return Math.sqrt(Math.max(qx, 0) ** 2 + Math.max(qy, 0) ** 2 + Math.max(qz, 0) ** 2) + Math.min(Math.max(qx, qy, qz), 0) - rd;
+    }
+  });
+  // fine, slightly wavy vertical strands for coats, beards, manes and tails;
+  // full depth below y0, fading out by y1 so a back or crown stays smooth
+  const sRidge = (p, amp, freq, y0 = Infinity, y1 = Infinity) => ({
+    b: p.b.map((v, i) => v + (i < 3 ? -amp : amp)),
+    f: (x, y, z) => {
+      const w = y <= y0 ? 1 : y >= y1 ? 0 : (y1 - y) / (y1 - y0);
+      return p.f(x, y, z) + amp * w * Math.sin(freq * (x + 0.6 * z) + 2.5 * Math.sin(9 * y));
+    }
+  });
+  const add = (p, k = 0) => ({ p, k });
+  const carve = (p, k = 0) => ({ p, k, sub: true });
+  // engraved eye: a socket with a bead set back in it, leaving a ring; (x, y, z) on the surface, n points out
+  const eye = (x, y, z, r, nx, ny, nz) => [
+    carve(sEll(x, y, z, r, r, r), r * 0.3),
+    add(sEll(x - nx * r * 0.7, y - ny * r * 0.7, z - nz * r * 0.7, r * 0.72, r * 0.72, r * 0.72), r * 0.08)
+  ];
+
+  // surface nets over a grid of spacing h (by default about 300 cells across, capped near 8M samples)
+  function sculpt(part, h) {
+    const [ex, ey, ez] = [0, 1, 2].map((i) => part.b[i + 3] - part.b[i]);
+    h = h || Math.max(Math.max(ex, ey, ez) / 300, Math.cbrt((ex * ey * ez) / 8e6));
+    const f = part.f, pad = 3 * h;
+    const x0 = part.b[0] - pad, y0 = part.b[1] - pad, z0 = part.b[2] - pad;
+    const nx = Math.ceil((part.b[3] + pad - x0) / h) + 1, ny = Math.ceil((part.b[4] + pad - y0) / h) + 1, nz = Math.ceil((part.b[5] + pad - z0) / h) + 1;
+    const nxy = nx * ny, V = new Float32Array(nxy * nz);
+    // sample in blocks; a block well clear of the surface takes its centre value throughout
+    const B = 4, far = 1.5 * ((B - 1) / 2) * h * Math.sqrt(3) + 2 * h;
+    for (let k0 = 0; k0 < nz; k0 += B) for (let j0 = 0; j0 < ny; j0 += B) for (let i0 = 0; i0 < nx; i0 += B) {
+      const i1 = Math.min(i0 + B, nx), j1 = Math.min(j0 + B, ny), k1 = Math.min(k0 + B, nz);
+      const dc = f(x0 + ((i0 + i1 - 1) * h) / 2, y0 + ((j0 + j1 - 1) * h) / 2, z0 + ((k0 + k1 - 1) * h) / 2);
+      const skip = Math.abs(dc) > far;
+      for (let k = k0; k < k1; k++) for (let j = j0; j < j1; j++) for (let i = i0; i < i1; i++) {
+        V[i + nx * j + nxy * k] = skip ? dc : f(x0 + i * h, y0 + j * h, z0 + k * h);
+      }
+    }
+    // one vertex per surface cell, at the mean of its edge crossings
+    const cell = new Map(), pos = [], cv = new Float32Array(8);
+    const CO = [0, 1, nx, nx + 1, nxy, nxy + 1, nxy + nx, nxy + nx + 1];
+    const EDGES = [0, 1, 2, 3, 4, 5, 6, 7, 0, 2, 1, 3, 4, 6, 5, 7, 0, 4, 1, 5, 2, 6, 3, 7];
+    for (let k = 0; k < nz - 1; k++) for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++) {
+      const id = i + nx * j + nxy * k;
+      let mask = 0;
+      for (let c = 0; c < 8; c++) { cv[c] = V[id + CO[c]]; if (cv[c] < 0) mask |= 1 << c; }
+      if (mask === 0 || mask === 255) continue;
+      let sx = 0, sy = 0, sz = 0, n = 0;
+      for (let q = 0; q < 24; q += 2) {
+        const a = EDGES[q], b = EDGES[q + 1];
+        if ((cv[a] < 0) === (cv[b] < 0)) continue;
+        const t = cv[a] / (cv[a] - cv[b]);
+        sx += (a & 1) + t * ((b & 1) - (a & 1));
+        sy += ((a >> 1) & 1) + t * (((b >> 1) & 1) - ((a >> 1) & 1));
+        sz += (a >> 2) + t * ((b >> 2) - (a >> 2));
+        n++;
+      }
+      cell.set(id, pos.length / 3);
+      pos.push(x0 + (i + sx / n) * h, y0 + (j + sy / n) * h, z0 + (k + sz / n) * h);
+    }
+    // a quad across every grid edge the surface crosses, wound outward
+    const idx = [];
+    const quad = (ca, cb, cc, cd, out) => {
+      const a = cell.get(ca), b = cell.get(cb), c = cell.get(cc), d = cell.get(cd);
+      if (a === undefined || b === undefined || c === undefined || d === undefined) return;
+      if (out) idx.push(a, b, c, a, c, d); else idx.push(a, c, b, a, d, c);
+    };
+    for (let k = 0; k < nz; k++) for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+      const id = i + nx * j + nxy * k, inside = V[id] < 0;
+      if (i < nx - 1 && j > 0 && k > 0 && inside !== V[id + 1] < 0) quad(id - nx - nxy, id - nxy, id, id - nx, inside);
+      if (j < ny - 1 && i > 0 && k > 0 && inside !== V[id + nx] < 0) quad(id - 1 - nxy, id - 1, id, id - nxy, inside);
+      if (k < nz - 1 && i > 0 && j > 0 && inside !== V[id + nxy] < 0) quad(id - 1 - nx, id - nx, id, id - 1, inside);
+    }
+    const nrm = new Float32Array(pos.length), e = h * 0.5;
+    for (let v = 0; v < pos.length; v += 3) {
+      const x = pos[v], y = pos[v + 1], z = pos[v + 2];
+      const gx = f(x + e, y, z) - f(x - e, y, z), gy = f(x, y + e, z) - f(x, y - e, z), gz = f(x, y, z + e) - f(x, y, z - e);
+      const l = Math.sqrt(gx * gx + gy * gy + gz * gz) || 1;
+      nrm[v] = gx / l; nrm[v + 1] = gy / l; nrm[v + 2] = gz / l;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('normal', new THREE.BufferAttribute(nrm, 3));
+    geo.setIndex(idx);
+    return geo;
+  }
+
+  // ---------- avatars (all face +z, built in arbitrary units, then normalised) ----------
+  // Classic token cat: standing in profile along x (head at -x), head turned to the viewer,
+  // tail rising straight up from the rump and hooking forward at the tip.
+  function cat() {
+    // ear: a flattened cone with a shallow hollow on its front face
+    const ear = (s) => place(sGroup([
+      add(sSquash(sCone([0, 0, 0], [0, 0.19, 0], 0.075, 0.012), 1, 1, 0.55)),
+      carve(sSquash(sCone([0, 0.035, 0.045], [0, 0.165, 0.028], 0.045, 0.008), 1, 1, 0.55), 0.015)
+    ]), s * 0.115, 0.1, -0.01, 0, s * 0.25, -s * 0.35);
+
+    // head, built facing +z
+    const head = [add(sEll(0, 0.01, -0.01, 0.2, 0.175, 0.18))];
+    for (const s of sides) {
+      head.push(add(sEll(s * 0.1, -0.05, 0.04, 0.11, 0.09, 0.11), 0.05)); // cheek ruff
+      head.push(add(sEll(s * 0.032, -0.085, 0.175, 0.038, 0.03, 0.032), 0.02)); // whisker pad
+      head.push(add(ear(s), 0.03));
+    }
+    head.push(add(sEll(0, -0.07, 0.15, 0.065, 0.05, 0.06), 0.03)); // muzzle
+    head.push(add(sEll(0, -0.12, 0.1, 0.05, 0.035, 0.05), 0.03)); // chin
+    head.push(add(sEll(0, -0.045, 0.2, 0.028, 0.018, 0.018), 0.01)); // nose
+    for (const s of sides) {
+      head.push(carve(sEll(s * 0.078, 0.02, 0.17, 0.042, 0.032, 0.03), 0.012)); // eye socket
+      head.push(add(sEll(s * 0.078, 0.02, 0.145, 0.034, 0.025, 0.022), 0.004)); // eyeball, leaving a ring
+      head.push(carve(sCone([s * 0.078, 0, 0.168], [s * 0.078, 0.04, 0.168], 0.009, 0.009), 0.004)); // slit pupil
+      head.push(carve(sCone([0, -0.09, 0.207], [s * 0.04, -0.1, 0.186], 0.008, 0.006), 0.006)); // mouth
+    }
+    head.push(carve(sCone([0, -0.062, 0.214], [0, -0.09, 0.207], 0.008, 0.008), 0.006));
+
+    // torso: deep chest, tucked waist, rounded haunch, level back, shoulder blades
+    const body = [
+      add(sEll(-0.28, 0.8, 0, 0.3, 0.25, 0.19)),
+      add(sEll(0, 0.82, 0, 0.36, 0.2, 0.175), 0.12),
+      add(sEll(0.3, 0.82, 0, 0.26, 0.23, 0.185), 0.12),
+      add(sCone([-0.4, 0.93, 0], [0.36, 0.95, 0], 0.13, 0.13), 0.1),
+      add(sCone([-0.38, 0.86, 0], [-0.53, 1.12, 0.04], 0.16, 0.12), 0.08) // neck
+    ];
+    for (const s of sides) {
+      body.push(add(sEll(-0.3, 0.9, s * 0.09, 0.14, 0.16, 0.09), 0.08));
+      // front leg, the far one a half-step forward; toes marked by two grooves
+      const fx = s > 0 ? -0.4 : -0.31, fz = s * 0.09;
+      body.push(add(sCone([fx + 0.05, 0.76, fz], [fx + 0.02, 0.44, fz], 0.09, 0.065), 0.06));
+      body.push(add(sCone([fx + 0.02, 0.44, fz], [fx, 0.1, fz], 0.065, 0.052), 0.03));
+      body.push(add(sEll(fx - 0.035, 0.05, fz, 0.085, 0.05, 0.07), 0.03));
+      for (const t of sides) body.push(carve(sCone([fx - 0.12, 0.06, fz + t * 0.022], [fx - 0.05, 0.1, fz + t * 0.022], 0.008, 0.008), 0.006));
+      // hind leg: thigh, shin back to the hock, then forward-slanting foot
+      const hx = s > 0 ? 0.3 : 0.37, hz = s * 0.11;
+      body.push(add(sEll(hx, 0.66, hz, 0.2, 0.27, 0.095), 0.07));
+      body.push(add(sCone([hx + 0.02, 0.5, hz], [hx + 0.12, 0.25, hz], 0.08, 0.058), 0.04));
+      body.push(add(sCone([hx + 0.12, 0.25, hz], [hx + 0.05, 0.09, hz], 0.058, 0.05), 0.02));
+      body.push(add(sEll(hx + 0.02, 0.05, hz, 0.085, 0.05, 0.07), 0.03));
+      for (const t of sides) body.push(carve(sCone([hx - 0.065, 0.06, hz + t * 0.022], [hx + 0.005, 0.1, hz + t * 0.022], 0.008, 0.008), 0.006));
+    }
+    // tail: up from the rump, a long rise, then the tip curls toward the head
+    body.push(add(sTube([[0.5, 0.88, 0], [0.64, 1.0, 0], [0.7, 1.28, 0], [0.69, 1.56, 0], [0.6, 1.72, 0], [0.48, 1.66, 0]], 0.07, 0.045), 0.06));
+    // head turned three-quarters toward the viewer
+    body.push(add(place(sGroup(head), -0.56, 1.2, 0.05, 0.08, -0.5, 0), 0.06));
+
+    return cast(body);
+  }
+  const cast = (items) => { const g = new THREE.Group(); g.add(new THREE.Mesh(sculpt(sGroup(items)), M)); return g; };
+
+  // Scottish terrier: profile along x, head at -x; the long coat falls in a fringed skirt
+  function dog() {
+    const coat = [
+      add(sEll(0, 0.52, 0, 0.44, 0.19, 0.17)),
+      add(sEll(-0.3, 0.5, 0, 0.2, 0.23, 0.17), 0.1),
+      add(sEll(0.34, 0.54, 0, 0.17, 0.19, 0.16), 0.1),
+      add(sEll(0, 0.38, 0, 0.42, 0.13, 0.185), 0.08), // skirt
+      add(sCone([-0.36, 0.6, 0], [-0.5, 0.76, 0], 0.15, 0.12), 0.06), // neck
+      add(sCone([0.42, 0.6, 0], [0.5, 0.84, 0], 0.055, 0.025), 0.04) // carrot tail
+    ];
+    for (const s of sides) {
+      coat.push(add(sCone([-0.32, 0.4, s * 0.1], [-0.33, 0.08, s * 0.1], 0.075, 0.06), 0.04));
+      coat.push(add(sEll(0.34, 0.42, s * 0.1, 0.13, 0.17, 0.08), 0.05));
+      coat.push(add(sCone([0.36, 0.32, s * 0.1], [0.34, 0.08, s * 0.1], 0.065, 0.058), 0.04));
+    }
+    const body = [add(sRidge(sGroup(coat), 0.0045, 120, 0.46, 0.66))];
+    for (const s of sides) for (const px of [-0.36, 0.31]) {
+      body.push(add(sEll(px, 0.045, s * 0.1, 0.08, 0.045, 0.065), 0.03));
+      for (const t of sides) body.push(carve(sCone([px - 0.085, 0.05, s * 0.1 + t * 0.02], [px - 0.03, 0.085, s * 0.1 + t * 0.02], 0.008, 0.008), 0.006));
+    }
+    // long head with a square muzzle, bushy brows, beard and upright ears
+    const head = [
+      add(sEll(-0.5, 0.81, 0, 0.145, 0.13, 0.12)),
+      add(sCone([-0.56, 0.77, 0], [-0.72, 0.73, 0], 0.095, 0.08), 0.05),
+      add(sEll(-0.81, 0.75, 0, 0.035, 0.03, 0.04), 0.012) // nose
+    ];
+    for (const s of sides) {
+      head.push(add(sEll(-0.6, 0.855, s * 0.05, 0.06, 0.03, 0.04), 0.03));
+      head.push(add(place(sSquash(sCone([0, 0, 0], [0, 0.17, 0], 0.068, 0.01), 0.55, 1, 1), -0.46, 0.89, s * 0.075, s * 0.25, 0, -0.12), 0.03));
+      head.push(...eye(-0.62, 0.81, s * 0.075, 0.018, -0.3, 0, s * 0.95));
+    }
+    body.push(add(sGroup(head), 0.05));
+    body.push(add(sRidge(sEll(-0.66, 0.65, 0, 0.1, 0.09, 0.085), 0.006, 90), 0.04)); // beard
+    return cast(body);
+  }
+
+  // penguin facing +z
+  function penguin() {
+    const p = [
+      add(sEll(0, 0.56, -0.02, 0.29, 0.5, 0.26)),
+      add(sEll(0, 0.48, 0.05, 0.26, 0.38, 0.24), 0.1),
+      add(sEll(0, 0.5, 0.09, 0.22, 0.36, 0.215), 0.008), // belly plate, a crisp raised edge
+      add(sEll(0, 1.1, 0.02, 0.18, 0.18, 0.18), 0.12), // head
+      add(sCone([0, 0.18, -0.2], [0, 0.05, -0.36], 0.08, 0.03), 0.05), // tail
+      add(sCone([0, 1.08, 0.15], [0, 1.04, 0.34], 0.055, 0.012), 0.025), // beak
+      carve(sEll(0, 1.065, 0.27, 0.07, 0.006, 0.1), 0.003)
+    ];
+    for (const s of sides) {
+      p.push(...eye(s * 0.08, 1.15, 0.17, 0.028, s * 0.4, 0.1, 0.9));
+      p.push(add(place(sEll(0, 0, 0, 0.045, 0.27, 0.12), s * 0.29, 0.62, -0.02, 0, 0, s * 0.2), 0.03)); // flipper
+      p.push(add(sEll(s * 0.11, 0.04, 0.12, 0.09, 0.04, 0.13), 0.07)); // foot
+      for (const t of sides) p.push(carve(sCone([s * 0.11 + t * 0.03, 0.055, 0.25], [s * 0.11 + t * 0.03, 0.075, 0.15], 0.007, 0.007), 0.006));
+    }
+    return cast(p);
+  }
+
+  // octopus facing +z: domed mantle, bulging eyes, eight arms that curl at the tips
+  function octopus() {
+    const o = [
+      add(sEll(0, 0.84, -0.12, 0.36, 0.36, 0.38)),
+      add(sEll(0, 0.55, 0.02, 0.36, 0.24, 0.34), 0.14),
+      add(sCone([0.2, 0.47, 0.24], [0.27, 0.42, 0.33], 0.045, 0.035), 0.03), // siphon
+      carve(sEll(0.275, 0.42, 0.34, 0.02, 0.02, 0.02), 0.005)
+    ];
+    for (const s of sides) {
+      o.push(add(sEll(s * 0.17, 0.6, 0.27, 0.11, 0.11, 0.1), 0.05)); // eye bulge
+      o.push(add(sEll(s * 0.17, 0.7, 0.27, 0.1, 0.035, 0.07), 0.03)); // brow
+      o.push(...eye(s * 0.175, 0.6, 0.365, 0.06, s * 0.15, 0, 0.99));
+      o.push(carve(sEll(s * 0.175, 0.6, 0.37, 0.04, 0.012, 0.03), 0.003)); // slit pupil
+    }
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2 + Math.PI / 8, dx = Math.sin(a), dz = Math.cos(a), c = i % 2 ? 1 : -1;
+      const pt = ([r, y, w]) => [r * dx + w * c * dz, y, r * dz - w * c * dx];
+      o.push(add(sTube([[0.15, 0.45, 0], [0.34, 0.22, 0], [0.52, 0.1, 0.03], [0.68, 0.08, 0.08], [0.8, 0.15, 0.11], [0.8, 0.27, 0.09], [0.72, 0.29, 0.05]].map(pt), 0.12, 0.025, 40), 0.06));
+    }
+    return cast(o);
+  }
+
+  // dwarf jester facing +z: stocky tunic, long beard, three-horned fool's cap with bells
+  function dwarf() {
+    const d = [
+      add(sEll(0, 0.44, 0, 0.29, 0.3, 0.25)), // tunic
+      add(sCone([0, 0.5, 0], [0, 0.72, 0], 0.24, 0.16), 0.08),
+      add(sEll(0, 0.43, 0, 0.3, 0.045, 0.262)), // belt
+      add(sBox(0, 0.43, 0.262, 0.05, 0.04, 0.012, 0.008), 0.004), // buckle
+      carve(sBox(0, 0.43, 0.275, 0.026, 0.018, 0.02, 0.004), 0.003),
+      add(sTorus(0, 0.74, 0, 0.17, 0.04), 0.02), // collar
+      add(sEll(0, 0.9, 0.02, 0.17, 0.17, 0.17), 0.06), // head
+      add(sEll(0, 0.88, 0.19, 0.055, 0.05, 0.055), 0.02), // nose
+      add(sRidge(sSquash(sCone([0, 0.79, 0.2], [0, 0.52, 0.4], 0.12, 0.045), 1.5, 1, 0.8), 0.005, 100), 0.04) // spade beard
+    ];
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2 + Math.PI / 10, dx = Math.sin(a), dz = Math.cos(a);
+      d.push(add(sCone([0.17 * dx, 0.74, 0.17 * dz], [0.3 * dx, 0.64, 0.3 * dz], 0.05, 0.015), 0.02)); // collar points
+    }
+    for (const s of sides) {
+      d.push(...eye(s * 0.068, 0.95, 0.158, 0.026, s * 0.38, 0.2, 0.9));
+      d.push(add(sEll(s * 0.08, 0.86, 0.13, 0.06, 0.05, 0.05), 0.04)); // cheek
+      d.push(add(sTube([[0, 0.835, 0.21], [s * 0.07, 0.82, 0.2], [s * 0.14, 0.85, 0.16]], 0.03, 0.013), 0.015)); // moustache
+      d.push(add(sTube([[s * 0.2, 0.66, 0], [s * 0.3, 0.52, 0.04], [s * 0.28, 0.4, 0.14]], 0.07, 0.055), 0.04)); // arm
+      d.push(add(sEll(s * 0.27, 0.37, 0.17, 0.06, 0.06, 0.06), 0.02)); // hand
+      d.push(add(sCone([s * 0.1, 0.2, 0], [s * 0.11, 0.07, 0.01], 0.085, 0.07), 0.04)); // leg
+      d.push(add(sEll(s * 0.11, 0.045, 0.06, 0.085, 0.045, 0.14), 0.03)); // shoe
+      d.push(add(sTube([[s * 0.11, 0.05, 0.18], [s * 0.11, 0.07, 0.26], [s * 0.11, 0.13, 0.28], [s * 0.11, 0.15, 0.23]], 0.04, 0.015), 0.02)); // curled toe
+    }
+    const bell = (x, y, z) => [add(sEll(x, y, z, 0.05, 0.05, 0.05), 0.01), carve(sEll(x, y - 0.015, z + 0.04, 0.035, 0.007, 0.025), 0.003)];
+    d.push(add(sTorus(0, 1.03, -0.01, 0.16, 0.033), 0.02)); // cap band, above the brows
+    d.push(add(sEll(0, 1.09, -0.02, 0.165, 0.11, 0.165), 0.03));
+    // a single tip curling back to a bell
+    d.push(add(sTube([[0, 1.15, -0.05], [0, 1.31, -0.114], [0, 1.406, -0.242], [0, 1.31, -0.338]], 0.1, 0.03), 0.04));
+    d.push(...bell(0, 1.27, -0.346));
+    return cast(d);
+  }
+
+  // vintage racer: profile along x, nose at -x, open wheels and an empty cockpit
+  function car() {
+    const shell = sSquash(sGroup([
+      add(sCone([-0.6, 0.3, 0], [0.1, 0.33, 0], 0.13, 0.18)),
+      add(sCone([0.1, 0.33, 0], [0.6, 0.36, 0], 0.18, 0.05), 0.04)
+    ]), 1, 1, 0.85);
+    const c = [
+      add(shell),
+      carve(sEll(0.14, 0.5, 0, 0.17, 0.12, 0.115), 0.02), // cockpit
+      add(sEll(0.27, 0.43, 0, 0.05, 0.1, 0.1), 0.02), // seat back
+      add(sCone([0.3, 0.44, 0], [0.55, 0.38, 0], 0.07, 0.03), 0.04), // headrest fairing
+      add(sBox(-0.06, 0.5, 0, 0.006, 0.035, 0.09, 0.004), 0.01), // windscreen
+      add(place(sTorus(0, 0, 0, 0.055, 0.011), 0, 0.47, 0, 0, 0, 1.1)), // steering wheel
+      add(sCone([0, 0.47, 0], [-0.08, 0.4, 0], 0.012, 0.012), 0.005),
+      add(sTube([[-0.36, 0.34, 0.12], [-0.3, 0.24, 0.17], [0, 0.2, 0.18], [0.45, 0.22, 0.17]], 0.025, 0.022), 0.02) // exhaust
+    ];
+    for (let k = 0; k < 5; k++) { // bonnet louvres
+      const x = -0.5 + k * 0.06, r = (0.13 + (0.05 * (x + 0.6)) / 0.7) * 0.85;
+      for (const s of sides) c.push(carve(sBox(x, 0.33, s * r, 0.01, 0.05, 0.03, 0.006), 0.004));
+    }
+    for (const z of [-0.06, -0.03, 0, 0.03, 0.06]) c.push(carve(sBox(-0.73, 0.3, z, 0.03, 0.06, 0.006, 0.004), 0.003)); // grille
+    for (const s of sides) c.push(add(place(sCyl(0, 0, 0, 0.075, 0.02, 0.006), 0.05, 0.3, s * 0.145, s * Math.PI / 2, 0, 0), 0.006)); // number roundel
+    for (const wx of [-0.42, 0.38]) {
+      c.push(add(sCone([wx, 0.173, -0.25], [wx, 0.173, 0.25], 0.02, 0.02), 0.01)); // axle
+      for (const s of sides) {
+        const wheel = [
+          add(sTorus(0, 0, 0, 0.115, 0.058)), // tyre
+          carve(sTorus(0, 0.055, 0, 0.115, 0.008), 0.004), // sidewall line
+          add(sCyl(0, 0, 0, 0.1, 0.05, 0.01), 0.01), // wheel disc
+          add(sEll(0, 0.03, 0, 0.04, 0.03, 0.04), 0.01) // hub cap
+        ];
+        for (let k = 0; k < 6; k++) { const a = (k / 6) * Math.PI * 2; wheel.push(carve(sEll(0.068 * Math.cos(a), 0, 0.068 * Math.sin(a), 0.018, 0.04, 0.018), 0.004)); }
+        c.push(add(place(sGroup(wheel), wx, 0.173, s * 0.25, s * Math.PI / 2, 0, 0)));
+      }
+    }
+    return cast(c);
+  }
+
+  // horse standing in profile along x, head at -x
+  function horse() {
+    const h = [
+      add(sCone([-0.3, 0.92, 0], [0.3, 0.94, 0], 0.21, 0.2)),
+      add(sEll(-0.36, 0.88, 0, 0.2, 0.24, 0.18), 0.1), // chest
+      add(sEll(0.36, 0.94, 0, 0.22, 0.22, 0.19), 0.1), // rump
+      add(sEll(0, 0.82, 0, 0.32, 0.18, 0.18), 0.1), // belly
+      add(sCone([-0.42, 1.0, 0], [-0.6, 1.38, 0.02], 0.17, 0.1), 0.08), // neck
+      add(sCone([-0.62, 1.44, 0.03], [-0.84, 1.2, 0.05], 0.1, 0.065), 0.05), // head
+      add(sEll(-0.66, 1.33, 0.03, 0.08, 0.1, 0.075), 0.05), // jaw
+      add(sEll(-0.83, 1.19, 0.05, 0.07, 0.065, 0.07), 0.03), // muzzle
+      carve(sEll(-0.85, 1.145, 0.05, 0.07, 0.006, 0.08), 0.003), // mouth
+      add(sRidge(sSquash(sTube([[-0.52, 1.46, 0.02], [-0.43, 1.3, 0.01], [-0.33, 1.15, 0], [-0.26, 1.06, 0]], 0.055, 0.065), 1, 1, 0.7), 0.0035, 140), 0.04), // mane
+      add(sRidge(sEll(-0.66, 1.48, 0.03, 0.04, 0.035, 0.05), 0.005, 110), 0.02), // forelock
+      add(sRidge(sTube([[0.54, 1.0, 0], [0.66, 0.96, 0], [0.72, 0.72, 0], [0.7, 0.42, 0.02]], 0.05, 0.075), 0.008, 90), 0.04) // tail
+    ];
+    const lowerLeg = (x, y, z) => [
+      add(sCone([x, y, z], [x - 0.01, 0.14, z], 0.045, 0.04), 0.02), // cannon
+      add(sEll(x - 0.005, 0.12, z, 0.05, 0.045, 0.045), 0.02), // fetlock
+      add(sCone([x - 0.015, 0.1, z], [x - 0.025, 0.04, z], 0.045, 0.058), 0.01) // hoof
+    ];
+    for (const s of sides) {
+      h.push(carve(sEll(-0.875, 1.2, 0.05 + s * 0.04, 0.02, 0.012, 0.012), 0.006)); // nostril
+      h.push(...eye(-0.68, 1.38, 0.03 + s * 0.085, 0.022, -0.2, 0.2, s));
+      h.push(add(place(sSquash(sCone([0, 0, 0], [0, 0.12, 0], 0.035, 0.008), 0.55, 1, 1), -0.6, 1.5, 0.03 + s * 0.05, s * 0.15, 0, -0.2), 0.02)); // ear
+      const fx = s > 0 ? -0.42 : -0.36, z = s * 0.1;
+      h.push(add(sCone([fx, 0.8, z], [fx, 0.48, z], 0.08, 0.055), 0.05), add(sEll(fx, 0.46, z, 0.055, 0.06, 0.05), 0.03), ...lowerLeg(fx, 0.46, z));
+      const hx = s > 0 ? 0.34 : 0.4, hz = s * 0.11;
+      h.push(add(sEll(hx, 0.8, hz, 0.17, 0.22, 0.1), 0.07), add(sCone([hx + 0.03, 0.68, hz], [hx + 0.1, 0.42, hz], 0.08, 0.05), 0.04));
+      h.push(add(sEll(hx + 0.1, 0.42, hz, 0.05, 0.055, 0.045), 0.02), ...lowerLeg(hx + 0.1, 0.42, hz));
+    }
+    return cast(h);
+  }
+
+  // sitting duck: profile along x, head at -x turned toward the viewer, upturned tail, feathered wings
+  function duck() {
+    const k = [
+      add(sEll(0.05, 0.32, 0, 0.42, 0.28, 0.3)),
+      add(sEll(-0.22, 0.34, 0, 0.24, 0.25, 0.27), 0.1), // breast
+      add(sCone([0.35, 0.4, 0], [0.56, 0.62, 0], 0.16, 0.03), 0.1), // tail
+      add(sCone([-0.2, 0.5, 0], [-0.26, 0.72, 0.03], 0.15, 0.13), 0.08), // neck
+      carve(sBox(0, -0.2, 0, 1, 0.22, 1, 0)) // flat base
+    ];
+    for (const s of sides) {
+      k.push(add(sEll(0.12, 0.38, s * 0.25, 0.26, 0.15, 0.07), 0.03)); // wing
+      // feather grooves follow the wing's curved surface
+      const zAt = (x, y) => 0.25 + 0.07 * Math.sqrt(Math.max(0, 1 - ((x - 0.12) / 0.26) ** 2 - ((y - 0.38) / 0.15) ** 2));
+      for (let f = 0; f < 3; f++) {
+        const a = [0.16 + f * 0.07, 0.48], b = [0.26 + f * 0.05, 0.3];
+        k.push(carve(sTube([a, [(a[0] + b[0]) / 2 + 0.02, 0.39], b].map(([x, y]) => [x, y, s * zAt(x, y)]), 0.011, 0.008, 12), 0.005));
+      }
+    }
+    const head = [
+      add(sEll(0, 0, 0, 0.16, 0.155, 0.16)),
+      add(sEll(0, -0.04, 0.2, 0.095, 0.038, 0.14), 0.03), // bill
+      carve(sEll(0, -0.05, 0.22, 0.1, 0.006, 0.15), 0.003), // bill line
+      add(sTube([[0, 0.15, -0.02], [0, 0.2, -0.08], [0, 0.17, -0.13]], 0.03, 0.012), 0.02) // crest curl
+    ];
+    for (const s of sides) {
+      head.push(...eye(s * 0.1, 0.03, 0.12, 0.025, s * 0.6, 0.1, 0.8));
+      head.push(carve(sEll(s * 0.028, -0.01, 0.27, 0.011, 0.007, 0.014), 0.003)); // nostril
+    }
+    k.push(add(place(sGroup(head), -0.28, 0.85, 0.04, 0, -Math.PI / 2 + 0.6, 0), 0.06));
+    return cast(k);
+  }
+
+  const AVATARS = [
+    { name: 'Cat', make: cat, h: 1.6 },
+    { name: 'Octopus', make: octopus, h: 1.15 },
+    { name: 'Penguin', make: penguin, h: 1.43 },
+    { name: 'Dog', make: dog, h: 1.15 },
+    { name: 'Dwarf', make: dwarf, h: 1.5 },
+    { name: 'Car', make: car, h: 0.62 },
+    { name: 'Horse', make: horse, h: 1.7 },
+    { name: 'Duck', make: duck, h: 1.05 }
+  ];
+
+  function normalise(g, targetH, maxXZ = 1.45) {
+    const size = new THREE.Box3().setFromObject(g).getSize(new THREE.Vector3());
+    g.scale.setScalar(Math.min(targetH / size.y, maxXZ / Math.max(size.x, size.z)));
+    g.updateMatrixWorld(true);
+    const b = new THREE.Box3().setFromObject(g), c = b.getCenter(new THREE.Vector3());
+    g.position.set(-c.x, -b.min.y, -c.z);
+    const w = new THREE.Group();
+    w.add(g);
+    w.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    return w;
+  }
+
+  // ---------- lineup ----------
+  const SPACING = 1.95, PLINTH_H = 0.12;
+  const plinthGeo = new THREE.LatheGeometry([[0, 0], [0.85, 0], [0.88, 0.03], [0.88, 0.09], [0.8, PLINTH_H], [0, PLINTH_H]].map(([x, y]) => new THREE.Vector2(x, y)), 64);
+  const slots = AVATARS.map((a, i) => {
+    const slot = new THREE.Group();
+    slot.position.x = (i - (AVATARS.length - 1) / 2) * SPACING;
+    const base = new THREE.Mesh(plinthGeo, PLINTH);
+    base.castShadow = true; base.receiveShadow = true;
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x2c4254 });
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.012, 8, 72), ringMat);
+    ring.rotation.x = Math.PI / 2; ring.position.y = PLINTH_H + 0.002;
+    slot.add(base, ring);
+    scene.add(slot);
+    return { slot, body: null, ringMat };
+  });
+
+  // ---------- controls and views ----------
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.minDistance = 2.2;
+  controls.maxDistance = 34;
+  controls.maxPolarAngle = Math.PI / 2 - 0.04;
+  controls.autoRotate = false;
+
+  const nameEl = document.getElementById('name');
+  const hintEl = document.getElementById('hint');
+  const picker = document.getElementById('picker');
+  const finishBox = document.getElementById('finishes');
+  const spinBtn = document.getElementById('spin');
+  const pickBtns = [];
+  let current = 'all', spin = !reduced, tween = null;
+  spinBtn.setAttribute('aria-pressed', String(spin));
+
+  const mkBtn = (label, parent, onClick) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = label; b.setAttribute('aria-pressed', 'false');
+    b.addEventListener('click', onClick);
+    parent.appendChild(b);
+    return b;
+  };
+  pickBtns.push(mkBtn('All', picker, () => focus('all')));
+  AVATARS.forEach((a, i) => pickBtns.push(mkBtn(a.name, picker, () => focus(i))));
+
+  const allView = () => {
+    const aspect = camera.aspect, t = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+    const halfW = ((AVATARS.length - 1) / 2) * SPACING + 1.4;
+    const d = Math.min(30, Math.max(8, halfW / (aspect * t)));
+    return { pos: new THREE.Vector3(0, d * 0.36, d * 0.93), target: new THREE.Vector3(0, 0.6, 0) };
+  };
+  const oneView = (i) => {
+    const x = slots[i].slot.position.x, narrow = camera.aspect < 0.9;
+    return { pos: new THREE.Vector3(x + 1.2, narrow ? 2.4 : 1.7, narrow ? 5.2 : 3.9), target: new THREE.Vector3(x, 0.78, 0) };
+  };
+  const hintFor = (which) => which === 'all' ? 'Click an avatar to focus it. Drag to orbit, scroll or pinch to zoom.' : 'Drag to orbit, scroll or pinch to zoom. Pick All to see the full set.';
+  function focus(which) {
+    current = which;
+    const v = which === 'all' ? allView() : oneView(which);
+    pickBtns.forEach((b, k) => b.setAttribute('aria-pressed', String(which === 'all' ? k === 0 : k === which + 1)));
+    slots.forEach((s, k) => s.ringMat.color.set(which === k ? 0xe2574c : 0x2c4254));
+    nameEl.textContent = which === 'all' ? 'Harborfront' : AVATARS[which].name;
+    hintEl.textContent = hintFor(which);
+    if (reduced) { camera.position.copy(v.pos); controls.target.copy(v.target); return; }
+    tween = { fromP: camera.position.clone(), toP: v.pos, fromT: controls.target.clone(), toT: v.target, t0: performance.now(), dur: 700 };
+  }
+  controls.addEventListener('start', () => { tween = null; });
+
+  FINISHES.forEach((f, i) => {
+    const b = mkBtn(f.label, finishBox, () => {
+      M.color.setHex(f.color);
+      [...finishBox.children].forEach((c, k) => c.setAttribute('aria-pressed', String(k === i)));
+    });
+    const dot = document.createElement('span');
+    dot.className = 'dot'; dot.style.background = f.hex;
+    b.prepend(dot);
+    b.setAttribute('aria-pressed', String(i === 0));
+  });
+
+  // brightness scales how much of the studio the metal reflects
+  const brightEl = document.getElementById('bright');
+  const brightVal = document.getElementById('brightVal');
+  const setBright = () => {
+    M.envMapIntensity = Number(brightEl.value);
+    brightVal.textContent = `${Math.round(brightEl.value * 100)}%`;
+  };
+  brightEl.addEventListener('input', setBright);
+  setBright();
+
+  spinBtn.addEventListener('click', () => {
+    spin = !spin;
+    spinBtn.setAttribute('aria-pressed', String(spin));
+  });
+
+  // click to pick an avatar
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+  let down = null;
+  renderer.domElement.addEventListener('pointerdown', (e) => { down = [e.clientX, e.clientY]; });
+  renderer.domElement.addEventListener('pointerup', (e) => {
+    if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 5) return;
+    const r = renderer.domElement.getBoundingClientRect();
+    ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    const hit = ray.intersectObjects(slots.map((s) => s.body).filter(Boolean), true)[0];
+    if (hit && hit.object.userData.idx !== undefined) focus(hit.object.userData.idx);
+  });
+
+  function resize() {
+    const w = stage.clientWidth, h = stage.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.fov = w / h < 0.9 ? 55 : 40;
+    camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(stage);
+  resize();
+
+  // start: the full lineup on wide screens, the first avatar on a phone
+  const first = camera.aspect < 0.9 || AVATARS.length === 1 ? 0 : 'all';
+  picker.hidden = AVATARS.length === 1;
+  const v0 = first === 'all' ? allView() : oneView(0);
+  camera.position.copy(v0.pos);
+  controls.target.copy(v0.target);
+  controls.update();
+  const rm = reduced; // snap the first view without an animation
+  focus(first);
+  if (!rm) tween = null, camera.position.copy(v0.pos), controls.target.copy(v0.target);
+
+  // cast one figure per tick so the page stays responsive and each appears as it finishes
+  (async () => {
+    for (let i = 0; i < AVATARS.length; i++) {
+      if (AVATARS.length > 1) hintEl.textContent = `Casting figures… ${i + 1} of ${AVATARS.length}`;
+      await new Promise((r) => setTimeout(r, 30));
+      const body = normalise(AVATARS[i].make(), AVATARS[i].h);
+      body.position.y = PLINTH_H;
+      body.rotation.y = 0.35;
+      body.traverse((o) => { o.userData.idx = i; });
+      slots[i].slot.add(body);
+      slots[i].body = body;
+    }
+    hintEl.textContent = hintFor(current);
+  })();
+
+  let last = performance.now();
+  renderer.setAnimationLoop((now) => {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    if (tween) {
+      const k = Math.min(1, (now - tween.t0) / tween.dur);
+      const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+      camera.position.lerpVectors(tween.fromP, tween.toP, e);
+      controls.target.lerpVectors(tween.fromT, tween.toT, e);
+      if (k >= 1) tween = null;
+    }
+    if (spin) slots.forEach((s) => { if (s.body) s.body.rotation.y += dt * 0.5; });
+    controls.update();
+    renderer.render(scene, camera);
+  });
+}
+</script>

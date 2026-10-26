@@ -1,0 +1,459 @@
+<title>Harborfront 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: one full-bleed WebGL stage; title top-left, view controls bottom-centre. Single dark look, chosen on purpose. */
+:root {
+  --ground: #0e1822;
+  --panel: rgba(18, 31, 42, 0.82);
+  --panel-line: #2c4254;
+  --ink: #e9f0ea;
+  --ink-soft: #a9bcc9;
+  --accent: #e2574c;
+  --accent-ink: #1a0b09;
+  --font-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --font-body: 'Barlow', system-ui, sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-body);
+  overflow: hidden;
+}
+.app { position: relative; height: 100%; }
+#stage { position: absolute; inset: 0; }
+#stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.title {
+  position: absolute; z-index: 2;
+  top: 12px;
+  left: max(16px, env(safe-area-inset-left, 0px));
+  right: max(16px, env(safe-area-inset-right, 0px));
+  pointer-events: none;
+}
+.title h1 {
+  margin: 0; font-family: var(--font-display); font-weight: 700;
+  font-size: clamp(30px, 5vw, 48px); letter-spacing: 0.1em; text-transform: uppercase; line-height: 1;
+}
+.title p { margin: 6px 0 0; color: var(--ink-soft); font-size: 14px; max-width: 46ch; }
+.bar {
+  position: absolute; z-index: 2;
+  bottom: 12px;
+  left: max(16px, env(safe-area-inset-left, 0px));
+  right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
+}
+.bar .group {
+  display: flex; flex-wrap: wrap; gap: 6px; padding: 6px;
+  background: var(--panel); border: 1px solid var(--panel-line); border-radius: 10px;
+  backdrop-filter: blur(8px);
+}
+button {
+  min-height: 44px; min-width: 44px; padding: 0 16px;
+  font: 600 14px var(--font-body); letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--ink); background: transparent; border: 1px solid transparent; border-radius: 7px; cursor: pointer;
+}
+button:hover { background: rgba(255, 255, 255, 0.08); }
+button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.msg {
+  position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; padding: 24px; text-align: center;
+  font-size: 16px; color: var(--ink-soft);
+}
+.msg[hidden] { display: none; }
+</style>
+
+<div class="app">
+  <div id="stage"></div>
+  <div class="title">
+    <h1>Harborfront</h1>
+    <p>Drag to orbit, scroll or pinch to zoom, right-drag to pan.</p>
+  </div>
+  <div class="bar" role="toolbar" aria-label="Camera views">
+    <div class="group">
+      <button type="button" data-view="angle">Angle</button>
+      <button type="button" data-view="top">Top</button>
+      <button type="button" data-view="low">Low</button>
+    </div>
+    <div class="group">
+      <button type="button" id="spin" aria-pressed="false">Auto-rotate</button>
+    </div>
+  </div>
+  <div class="msg" id="msg" hidden>This view needs WebGL, which your browser has turned off or does not support.</div>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const stage = document.getElementById('stage');
+const msg = document.getElementById('msg');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+} catch (e) {
+  msg.hidden = false;
+}
+
+if (renderer) {
+  const DISPLAY = '"Barlow Condensed", "Arial Narrow", sans-serif';
+  const BODY = '"Barlow", system-ui, sans-serif';
+  const fontsReady = Promise.race([
+    Promise.all([document.fonts.load(`700 40px ${DISPLAY}`), document.fonts.load(`600 40px ${BODY}`)]),
+    new Promise((r) => setTimeout(r, 1500))
+  ]).catch(() => {});
+  fontsReady.then(build);
+
+  function build() {
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+    stage.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0e1822);
+    scene.fog = new THREE.Fog(0x0e1822, 22, 46);
+    const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
+    const maxAniso = renderer.capabilities.getMaxAnisotropy();
+
+    scene.add(new THREE.HemisphereLight(0xdfeeff, 0x2a3a2c, 0.85));
+    const sun = new THREE.DirectionalLight(0xfff1dc, 2.2);
+    sun.position.set(-6, 12, 7);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    Object.assign(sun.shadow.camera, { left: -8, right: 8, top: 8, bottom: -8, near: 1, far: 30 });
+    sun.shadow.bias = -0.0004;
+    scene.add(sun);
+
+    // ---------- helpers ----------
+    const tex = (canvas) => {
+      const t = new THREE.CanvasTexture(canvas);
+      t.colorSpace = THREE.SRGBColorSpace;
+      t.anisotropy = maxAniso;
+      return t;
+    };
+    const mk = (w, h, draw) => {
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      const g = c.getContext('2d');
+      draw(g, w, h);
+      return tex(c);
+    };
+    const std = (color, rough = 0.6) => new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: 0.02 });
+    const ink = '#17211b';
+
+    function wrap(g, text, maxW) {
+      const words = text.split(' '), lines = [];
+      let line = '';
+      for (const w of words) {
+        const t = line ? line + ' ' + w : w;
+        if (g.measureText(t).width > maxW && line) { lines.push(line); line = w; } else line = t;
+      }
+      lines.push(line);
+      return lines;
+    }
+    function icon(g, kind, cx, cy) {
+      g.save();
+      g.strokeStyle = ink; g.fillStyle = ink; g.lineWidth = 9; g.lineCap = 'round'; g.lineJoin = 'round';
+      if (kind === 'rail') {
+        g.beginPath(); g.roundRect(cx - 55, cy - 65, 110, 110, 24); g.stroke();
+        g.beginPath(); g.moveTo(cx - 55, cy - 15); g.lineTo(cx + 55, cy - 15); g.stroke();
+        g.beginPath(); g.arc(cx - 26, cy + 14, 6, 0, 7); g.fill();
+        g.beginPath(); g.arc(cx + 26, cy + 14, 6, 0, 7); g.fill();
+        g.beginPath(); g.moveTo(cx - 36, cy + 80); g.lineTo(cx - 20, cy + 45); g.moveTo(cx + 36, cy + 80); g.lineTo(cx + 20, cy + 45); g.stroke();
+      } else if (kind === 'util') {
+        g.beginPath(); g.arc(cx, cy - 20, 48, 0, 7); g.stroke();
+        g.beginPath(); g.moveTo(cx - 22, cy + 42); g.lineTo(cx + 22, cy + 42); g.moveTo(cx - 16, cy + 62); g.lineTo(cx + 16, cy + 62); g.stroke();
+      } else if (kind === 'chance') {
+        g.fillStyle = '#c0302a'; g.font = `700 230px ${DISPLAY}`; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+        g.fillText('?', cx, cy + 90);
+      } else if (kind === 'chest') {
+        g.strokeStyle = '#1f4f96'; g.lineWidth = 9;
+        g.beginPath(); g.roundRect(cx - 62, cy - 10, 124, 74, 8); g.stroke();
+        g.beginPath(); g.moveTo(cx - 62, cy + 18); g.lineTo(cx + 62, cy + 18); g.stroke();
+        g.beginPath(); g.moveTo(cx - 62, cy - 10); g.quadraticCurveTo(cx - 62, cy - 62, cx, cy - 62); g.quadraticCurveTo(cx + 62, cy - 62, cx + 62, cy - 10); g.stroke();
+      } else if (kind === 'tax') {
+        g.beginPath(); g.moveTo(cx, cy - 66); g.lineTo(cx + 62, cy); g.lineTo(cx, cy + 66); g.lineTo(cx - 62, cy); g.closePath(); g.stroke();
+        g.beginPath(); g.moveTo(cx - 62, cy); g.lineTo(cx + 62, cy); g.stroke();
+      }
+      g.restore();
+    }
+    function cellTexture(c) {
+      return mk(320, 560, (g, w, h) => {
+        g.fillStyle = '#eef4e9'; g.fillRect(0, 0, w, h);
+        if (c.kind === 'prop') { g.fillStyle = c.color; g.fillRect(0, 0, w, 120); }
+        g.fillStyle = ink; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+        g.font = `700 58px ${DISPLAY}`;
+        const lines = wrap(g, c.name.toUpperCase(), 280);
+        let y = (c.kind === 'prop' ? 120 : 0) + 64;
+        for (const l of lines) { g.fillText(l, w / 2, y); y += 56; }
+        if (c.kind !== 'prop') icon(g, c.kind, w / 2, 350);
+        g.font = `600 46px ${BODY}`;
+        if (c.price) g.fillText(c.price, w / 2, h - 28);
+      });
+    }
+
+    // ---------- data (same as the flat board) ----------
+    const BROWN = '#8a5a3c', SKY = '#9bd4ea', PINK = '#d9569b', ORANGE = '#ee8a2c';
+    const RED = '#d93a32', YELLOW = '#f2cd2e', GREEN = '#2f9e5b', NAVY = '#2459a6';
+    const prop = (name, price, color) => ({ kind: 'prop', name, price: '$' + price, color });
+    const rail = (name) => ({ kind: 'rail', name, price: '$200' });
+    const util = (name) => ({ kind: 'util', name, price: '$150' });
+    const chance = () => ({ kind: 'chance', name: 'Chance', price: '' });
+    const chest = () => ({ kind: 'chest', name: 'Community Chest', price: '' });
+    const tax = (name, p) => ({ kind: 'tax', name, price: 'Pay $' + p });
+    const bottom = [prop('Driftwood Lane', 60, BROWN), chest(), prop('Kelp Court', 60, BROWN), tax('Harbor Tax', 200), rail('North Station'), prop('Lantern Row', 100, SKY), chance(), prop('Cobble Street', 100, SKY), prop('Saltmarsh Road', 120, SKY)];
+    const left = [prop('Orchard Way', 140, PINK), util('Power Works'), prop('Mill Street', 140, PINK), prop('Foundry Road', 160, PINK), rail('East Station'), prop('Copper Lane', 180, ORANGE), chest(), prop('Tinsmith Row', 180, ORANGE), prop('Market Square', 200, ORANGE)];
+    const top = [prop('Beacon Hill', 220, RED), chance(), prop('Signal Street', 220, RED), prop('Lighthouse Road', 240, RED), rail('South Station'), prop('Canal Street', 260, YELLOW), prop('Bridge Road', 260, YELLOW), util('Waterworks'), prop('Fountain Plaza', 280, YELLOW)];
+    const right = [prop('Pinecrest Avenue', 300, GREEN), prop('Aspen Way', 300, GREEN), chest(), prop('Cedar Heights', 320, GREEN), rail('West Station'), chance(), prop('Parkview', 350, NAVY), tax('Luxury Tax', 100), prop('Grand Esplanade', 400, NAVY)];
+
+    // ---------- board ----------
+    const board = new THREE.Group();
+    scene.add(board);
+    const W = (v) => (v - 500) / 100; // flat-board px -> world units
+
+    const table = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), std(0x16222d, 0.9));
+    table.rotation.x = -Math.PI / 2; table.position.y = -0.62; table.receiveShadow = true;
+    scene.add(table);
+
+    const slab = new THREE.Mesh(new THREE.BoxGeometry(10.3, 0.5, 10.3), std(0xe9e2cf, 0.7));
+    slab.position.y = -0.3; slab.castShadow = true; slab.receiveShadow = true;
+    board.add(slab);
+    const base = new THREE.Mesh(new THREE.BoxGeometry(10, 0.1, 10), std(0x1d2b24, 0.8));
+    base.position.y = -0.05; base.receiveShadow = true;
+    board.add(base);
+
+    const cellH = 0.12;
+    const cellGeo = new THREE.BoxGeometry(0.77, cellH, 1.37);
+    const cellGroups = { bottom: [], left: [], top: [], right: [] };
+
+    function addStrip(name, list, theta, pos) {
+      list.forEach((c, k) => {
+        const g = new THREE.Group();
+        const [bx, by] = pos(k);
+        g.position.set(W(bx), 0, W(by));
+        g.rotation.y = theta;
+        const side = std(0xcdd6c6, 0.8);
+        const topMat = new THREE.MeshStandardMaterial({ map: cellTexture(c), roughness: 0.7 });
+        const m = new THREE.Mesh(cellGeo, [side, side, topMat, side, side, side]);
+        m.position.y = cellH / 2; m.receiveShadow = true; m.castShadow = true;
+        g.add(m);
+        if (c.kind === 'prop') {
+          const bar = new THREE.Mesh(new THREE.BoxGeometry(0.77, 0.05, 0.3), std(c.color, 0.5));
+          bar.position.set(0, cellH + 0.025 - 0.001, -0.535);
+          bar.castShadow = true; bar.receiveShadow = true;
+          g.add(bar);
+        }
+        board.add(g);
+        cellGroups[name].push({ g, c });
+      });
+    }
+    addStrip('bottom', bottom, 0, (k) => [820 - 80 * k, 930]);
+    addStrip('left', left, -Math.PI / 2, (k) => [70, 820 - 80 * k]);
+    addStrip('top', top, Math.PI, (k) => [180 + 80 * k, 70]);
+    addStrip('right', right, Math.PI / 2, (k) => [930, 180 + 80 * k]);
+
+    // corners
+    function corner(bx, by, draw) {
+      const t = mk(560, 560, (g, w, h) => { g.fillStyle = '#eef4e9'; g.fillRect(0, 0, w, h); g.textAlign = 'center'; draw(g, w, h); });
+      const side = std(0xcdd6c6, 0.8);
+      const m = new THREE.Mesh(new THREE.BoxGeometry(1.37, cellH, 1.37), [side, side, new THREE.MeshStandardMaterial({ map: t, roughness: 0.7 }), side, side, side]);
+      m.position.set(W(bx), cellH / 2, W(by)); m.receiveShadow = true; m.castShadow = true;
+      board.add(m);
+    }
+    corner(930, 930, (g) => {
+      g.fillStyle = ink; g.font = `600 36px ${BODY}`;
+      g.fillText('COLLECT $200', 280, 80); g.fillText('SALARY AS YOU PASS', 280, 122);
+      g.fillStyle = '#c8322b'; g.font = `700 270px ${DISPLAY}`; g.fillText('GO', 280, 380);
+      g.strokeStyle = '#c8322b'; g.lineWidth = 22; g.lineCap = 'round'; g.lineJoin = 'round';
+      g.beginPath(); g.moveTo(450, 470); g.lineTo(110, 470); g.moveTo(170, 425); g.lineTo(110, 470); g.lineTo(170, 515); g.stroke();
+    });
+    corner(70, 930, (g) => {
+      g.fillStyle = '#f0902f'; g.fillRect(0, 0, 400, 400);
+      g.strokeStyle = ink; g.lineWidth = 8; g.strokeRect(0, 0, 400, 400);
+      g.fillStyle = '#fbe3c4'; g.fillRect(90, 60, 220, 190); g.strokeRect(90, 60, 220, 190);
+      for (let x = 145; x < 310; x += 55) { g.beginPath(); g.moveTo(x, 60); g.lineTo(x, 250); g.stroke(); }
+      g.fillStyle = ink; g.font = `700 70px ${DISPLAY}`; g.fillText('IN JAIL', 200, 340);
+      g.font = `700 56px ${DISPLAY}`; g.fillText('JUST VISITING', 280, 510);
+    });
+    corner(70, 70, (g) => {
+      g.fillStyle = ink; g.font = `700 92px ${DISPLAY}`; g.fillText('FREE', 280, 130);
+      g.fillStyle = '#c8322b'; g.strokeStyle = ink; g.lineWidth = 9; g.lineJoin = 'round';
+      g.beginPath(); g.moveTo(110, 360); g.lineTo(110, 300); g.lineTo(170, 280); g.lineTo(215, 215); g.lineTo(350, 215); g.lineTo(410, 280); g.lineTo(455, 295); g.lineTo(455, 360); g.closePath(); g.fill(); g.stroke();
+      g.fillStyle = '#eef4e9';
+      g.beginPath(); g.arc(185, 365, 34, 0, 7); g.fill(); g.stroke();
+      g.beginPath(); g.arc(385, 365, 34, 0, 7); g.fill(); g.stroke();
+      g.fillStyle = ink; g.fillText('PARKING', 280, 510);
+    });
+    corner(930, 70, (g) => {
+      g.fillStyle = ink; g.font = `700 92px ${DISPLAY}`; g.fillText('GO TO', 280, 130);
+      g.fillStyle = '#2a6fb0'; g.strokeStyle = ink; g.lineWidth = 9; g.lineJoin = 'round';
+      g.beginPath(); g.moveTo(280, 170); g.lineTo(400, 215); g.lineTo(400, 320); g.quadraticCurveTo(400, 400, 280, 440); g.quadraticCurveTo(160, 400, 160, 320); g.lineTo(160, 215); g.closePath(); g.fill(); g.stroke();
+      g.strokeStyle = '#fff'; g.lineWidth = 24; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(222, 315); g.lineTo(268, 362); g.lineTo(345, 262); g.stroke();
+      g.fillStyle = ink; g.fillText('JAIL', 280, 530);
+    });
+
+    // centre panel
+    const centre = new THREE.Mesh(
+      new THREE.PlaneGeometry(7.2, 7.2),
+      new THREE.MeshStandardMaterial({
+        roughness: 0.8,
+        map: mk(1024, 1024, (g, w, h) => {
+          g.fillStyle = '#cfe3cc'; g.fillRect(0, 0, w, h);
+          const k = w / 720;
+          const zone = (cx, cy, label) => {
+            g.save(); g.translate(cx * k, cy * k); g.rotate(Math.PI / 4);
+            g.setLineDash([14, 10]); g.lineWidth = 5; g.strokeStyle = '#3d5a4a';
+            g.strokeRect(-90 * k, -60 * k, 180 * k, 120 * k);
+            g.setLineDash([]); g.fillStyle = '#2f4a3b'; g.font = `700 ${26 * k}px ${DISPLAY}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+            g.fillText(label, 0, 0);
+            g.restore();
+          };
+          zone(170, 140, 'COMMUNITY CHEST');
+          zone(550, 580, 'CHANCE');
+          g.save(); g.translate(w / 2, h / 2); g.rotate(-Math.PI / 4);
+          g.fillStyle = '#c8322b'; g.fillRect(-420, -85, 840, 170);
+          g.strokeStyle = '#fff'; g.lineWidth = 8; g.strokeRect(-410, -75, 820, 150);
+          g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle';
+          g.font = `700 100px ${DISPLAY}`; g.fillText('HARBORFRONT', 0, -12);
+          g.font = `600 24px ${BODY}`; g.fillText('A  P R O P E R T Y  T R A D I N G  G A M E', 0, 52);
+          g.restore();
+        })
+      })
+    );
+    centre.rotation.x = -Math.PI / 2; centre.position.y = 0.004; centre.receiveShadow = true;
+    board.add(centre);
+
+    // houses and hotels, parked on the colour bar of a few streets
+    const houseMat = std(0x38b36a, 0.5), roofMat = std(0x1f7a46, 0.5), hotelMat = std(0xd4372f, 0.5), hotelRoof = std(0x8e231d, 0.5);
+    function addHouses(group, n) {
+      for (let i = 0; i < n; i++) {
+        const x = (i - (n - 1) / 2) * 0.19;
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.13, 0.15), houseMat);
+        const roof = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.1, 4), roofMat);
+        roof.rotation.y = Math.PI / 4; roof.position.y = 0.115;
+        const h = new THREE.Group(); h.add(body, roof); h.position.set(x, cellH + 0.05 + 0.065, -0.535);
+        h.children.forEach((m) => { m.castShadow = true; });
+        group.add(h);
+      }
+    }
+    function addHotel(group) {
+      const body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 0.2), hotelMat);
+      const roof = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.06, 0.22), hotelRoof);
+      roof.position.y = 0.13;
+      const h = new THREE.Group(); h.add(body, roof); h.position.set(0, cellH + 0.05 + 0.1, -0.535);
+      h.children.forEach((m) => { m.castShadow = true; });
+      group.add(h);
+    }
+    addHouses(cellGroups.bottom[0].g, 2);
+    addHotel(cellGroups.bottom[2].g);
+    addHouses(cellGroups.left[0].g, 3);
+    addHouses(cellGroups.top[3].g, 4);
+    addHotel(cellGroups.right[6].g);
+    addHouses(cellGroups.right[8].g, 3);
+
+    // pawns
+    const profile = [[0, 0], [0.24, 0], [0.24, 0.05], [0.18, 0.09], [0.11, 0.2], [0.07, 0.34], [0.12, 0.38], [0.12, 0.41], [0, 0.41]].map(([x, y]) => new THREE.Vector2(x, y));
+    const pawnGeo = new THREE.LatheGeometry(profile, 32);
+    const headGeo = new THREE.SphereGeometry(0.115, 24, 16);
+    function pawn(bx, by, color) {
+      const m = std(color, 0.35);
+      const body = new THREE.Mesh(pawnGeo, m), head = new THREE.Mesh(headGeo, m);
+      head.position.y = 0.5;
+      const g = new THREE.Group(); g.add(body, head);
+      g.position.set(W(bx), cellH, W(by));
+      g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+      board.add(g);
+    }
+    pawn(900, 935, 0xd9392f); pawn(40, 915, 0x2f6fd0); pawn(100, 960, 0x2fa05c); pawn(50, 60, 0xf0b429);
+
+    // dice
+    function pipTexture(n) {
+      return mk(128, 128, (g) => {
+        g.fillStyle = '#f7f5ee'; g.fillRect(0, 0, 128, 128);
+        g.fillStyle = n === 1 ? '#c8322b' : '#1b1b1b';
+        const p = { 1: [[0, 0]], 2: [[-1, -1], [1, 1]], 3: [[-1, -1], [0, 0], [1, 1]], 4: [[-1, -1], [1, -1], [-1, 1], [1, 1]], 5: [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]], 6: [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1]] }[n];
+        for (const [x, y] of p) { g.beginPath(); g.arc(64 + x * 28, 64 + y * 28, n === 1 ? 18 : 10, 0, 7); g.fill(); }
+      });
+    }
+    const diceMats = [3, 4, 1, 6, 2, 5].map((n) => new THREE.MeshStandardMaterial({ map: pipTexture(n), roughness: 0.4 }));
+    [[-1.3, 1.1, 0.5], [-0.8, 1.55, -0.3]].forEach(([x, z, r]) => {
+      const d = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.36, 0.36), diceMats);
+      d.position.set(x, 0.004 + 0.18, z); d.rotation.y = r; d.castShadow = true; d.receiveShadow = true;
+      board.add(d);
+    });
+
+    // ---------- camera, controls, views ----------
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.minDistance = 5;
+    controls.maxDistance = 26;
+    controls.maxPolarAngle = Math.PI / 2 - 0.04;
+    controls.target.set(0, 0, 0);
+
+    const views = {
+      angle: new THREE.Vector3(7.5, 9, 11),
+      top: new THREE.Vector3(0, 17, 0.001),
+      low: new THREE.Vector3(0, 2.6, 13.5)
+    };
+    camera.position.copy(views.angle);
+    controls.update();
+
+    let tween = null;
+    function goTo(name) {
+      const to = views[name].clone();
+      if (reduced) { camera.position.copy(to); controls.target.set(0, 0, 0); return; }
+      tween = { from: camera.position.clone(), to, fromT: controls.target.clone(), t0: performance.now(), dur: 700 };
+    }
+    document.querySelectorAll('[data-view]').forEach((b) => b.addEventListener('click', () => goTo(b.dataset.view)));
+    controls.addEventListener('start', () => { tween = null; });
+
+    const spin = document.getElementById('spin');
+    spin.addEventListener('click', () => {
+      controls.autoRotate = !controls.autoRotate;
+      spin.setAttribute('aria-pressed', String(controls.autoRotate));
+    });
+    controls.autoRotateSpeed = 1.2;
+
+    function resize() {
+      const w = stage.clientWidth, h = stage.clientHeight;
+      if (!w || !h) return;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      // keep the whole board in frame on narrow screens
+      camera.fov = w / h < 0.9 ? 62 : 40;
+      camera.updateProjectionMatrix();
+    }
+    new ResizeObserver(resize).observe(stage);
+    resize();
+
+    renderer.setAnimationLoop((now) => {
+      if (tween) {
+        const k = Math.min(1, (now - tween.t0) / tween.dur);
+        const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+        camera.position.lerpVectors(tween.from, tween.to, e);
+        controls.target.lerpVectors(tween.fromT, new THREE.Vector3(0, 0, 0), e);
+        if (k >= 1) tween = null;
+      }
+      controls.update();
+      renderer.render(scene, camera);
+    });
+  }
+}
+</script>

@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Harborfront Board 3D</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="position: relative; width: 1400px; height: 1000px; overflow: hidden; background: radial-gradient(ellipse at 50% 40%, #35506b 0%, #1b2a3a 70%, #121c28 100%)">
+<div style="position: absolute; left: 187px; top: -98px; width: 1000px; height: 1000px; perspective: 2600px; perspective-origin: 50% 40%">
+<div style="{{sceneStyle}}">
+
+<div style="position: absolute; left: 20px; top: 20px; width: 960px; height: 960px; background: rgba(0,0,0,0.55); filter: blur(28px); transform: translateZ(-46px)"></div>
+
+<sc-for list="{{slabs}}" as="solid" hint-placeholder-count="1">
+<div style="{{solid.style}}">
+<sc-for list="{{solid.faces}}" as="face" hint-placeholder-count="4">
+<div style="{{face.style}}"></div>
+</sc-for>
+</div>
+</sc-for>
+
+<div style="position: absolute; left: 0; top: 0; width: 1000px; height: 1000px; transform: translateZ(0.5px)">
+<dc-import name="Main" hint-size="1000px,1000px"></dc-import>
+</div>
+
+<sc-for list="{{solids}}" as="solid" hint-placeholder-count="8">
+<div style="{{solid.style}}">
+<sc-for list="{{solid.faces}}" as="face" hint-placeholder-count="5">
+<div style="{{face.style}}"></div>
+</sc-for>
+</div>
+</sc-for>
+
+<sc-for list="{{pawns}}" as="pawn" hint-placeholder-count="2">
+<div style="{{pawn.style}}">
+<sc-for list="{{pawn.discs}}" as="disc" hint-placeholder-count="24">
+<div style="{{disc.style}}"></div>
+</sc-for>
+</div>
+</sc-for>
+
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;tilt&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:46,&quot;min&quot;:0,&quot;max&quot;:80,&quot;step&quot;:1,&quot;unit&quot;:&quot;deg&quot;},&quot;spin&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:-28,&quot;min&quot;:-180,&quot;max&quot;:180,&quot;step&quot;:1,&quot;unit&quot;:&quot;deg&quot;},&quot;$preview&quot;:{&quot;width&quot;:1400,&quot;height&quot;:1000}}">
+class Component extends DCLogic {
+  box(x, y, w, d, h, c, opts) {
+    const o = opts || {};
+    const abs = 'position:absolute;transform-origin:0 0;';
+    const faces = [];
+    if (!o.noTop) faces.push({ style: abs + `left:0;top:0;width:${w}px;height:${d}px;background:${c.top};transform:translateZ(${h}px)` });
+    faces.push({ style: abs + `left:0;top:${d}px;width:${w}px;height:${h}px;background:${c.front};transform:rotateX(90deg)` });
+    faces.push({ style: abs + `left:0;top:0;width:${w}px;height:${h}px;background:${c.back};transform:rotateX(90deg)` });
+    faces.push({ style: abs + `left:${w}px;top:0;width:${h}px;height:${d}px;background:${c.side};transform:rotateY(-90deg)` });
+    faces.push({ style: abs + `left:0;top:0;width:${h}px;height:${d}px;background:${c.side};transform:rotateY(-90deg)` });
+    const lift = o.below ? `transform:translateZ(${-h}px);` : '';
+    return { style: `position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${d}px;transform-style:preserve-3d;${lift}`, faces };
+  }
+
+  pawn(cx, cy, hue) {
+    const discs = [];
+    for (let z = 0; z <= 48; z += 2) {
+      let r;
+      if (z < 6) r = 22;
+      else if (z < 30) r = 6 + 16 * Math.pow(1 - (z - 6) / 24, 2);
+      else r = Math.sqrt(Math.max(100 - Math.pow(z - 38, 2), 0.5));
+      const light = 30 + z * 0.55;
+      discs.push({ style: `position:absolute;left:${-r}px;top:${-r}px;width:${2 * r}px;height:${2 * r}px;border-radius:50%;background:hsl(${hue},70%,${light}%);transform:translateZ(${z}px)` });
+    }
+    discs.unshift({ style: 'position:absolute;left:-26px;top:-26px;width:52px;height:52px;border-radius:50%;background:rgba(0,0,0,0.35);filter:blur(3px);transform:translateZ(0.3px)' });
+    return { style: `position:absolute;left:${cx}px;top:${cy}px;width:0;height:0;transform-style:preserve-3d`, discs };
+  }
+
+  renderVals() {
+    const tilt = this.props.tilt ?? 58;
+    const spin = this.props.spin ?? -38;
+    const green = { top: '#5fcf85', front: '#38a05d', back: '#38a05d', side: '#2a7d48' };
+    const red = { top: '#ee5a52', front: '#c0302a', back: '#c0302a', side: '#982621' };
+    const edge = { top: '#000', front: '#e9e2cf', back: '#e9e2cf', side: '#cfc7b0' };
+    const solids = [
+      this.box(792, 868, 22, 18, 16, green), this.box(822, 868, 22, 18, 16, green),
+      this.box(636, 864, 56, 26, 24, red),
+      this.box(112, 790, 22, 17, 16, green), this.box(112, 810, 22, 17, 16, green), this.box(112, 830, 22, 17, 16, green)
+    ];
+    return {
+      sceneStyle: `position:absolute;left:0;top:0;width:1000px;height:1000px;transform-style:preserve-3d;transform:scale(0.9) rotateX(${tilt}deg) rotateZ(${spin}deg)`,
+      slabs: [this.box(0, 0, 1000, 1000, 36, edge, { noTop: true, below: true })],
+      solids,
+      pawns: [this.pawn(905, 930, 6), this.pawn(60, 925, 212), this.pawn(120, 60, 142)]
+    };
+  }
+}
+</script>
+</body>
+</html>
