@@ -1,0 +1,32 @@
+{
+  "name": "@monopoly/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./app": {
+      "types": "./src/app.ts"
+    }
+  },
+  "scripts": {
+    "dev": "node --watch src/index.ts",
+    "build": "vp pack",
+    "start": "node dist/index.mjs",
+    "test": "vp test"
+  },
+  "dependencies": {
+    "@hono/node-server": "catalog:",
+    "@hono/zod-validator": "catalog:",
+    "@monopoly/shared": "workspace:*",
+    "better-sqlite3": "catalog:",
+    "hono": "catalog:",
+    "kysely": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "catalog:",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vite-plus": "catalog:"
+  }
+}
