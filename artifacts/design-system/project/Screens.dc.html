@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Harborfront Game Screen</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&amp;family=Barlow:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0e1822}
+button{font-family:'Barlow',system-ui,sans-serif;min-height:44px;min-width:44px;padding:0 18px;font-weight:600;font-size:14px;letter-spacing:0.04em;text-transform:uppercase;border-radius:7px;cursor:pointer;border:1px solid transparent;background:transparent;color:#e9f0ea}
+button:hover{background:rgba(255,255,255,0.08)}
+button:focus-visible{outline:2px solid #e9f0ea;outline-offset:2px}
+.hf-primary{background:#e2574c;color:#1a0b09}
+.hf-primary:hover{background:#ea6d63}
+.hf-outline{border-color:#2c4254}
+</style>
+</helmet>
+<div style="min-height: 960px; box-sizing: border-box; padding: 16px 16px 24px; background: #0e1822; color: #e9f0ea; font-family: 'Barlow', system-ui, sans-serif; display: flex; flex-direction: column; gap: 16px">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+<div>
+<h1 style="margin: 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: clamp(30px, 5vw, 48px); letter-spacing: 0.1em; text-transform: uppercase; line-height: 1">Harborfront</h1>
+<p style="margin: 6px 0 0; font-size: 14px; color: #a9bcc9">Round 7 · Marlow is on Beacon Hill</p>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; padding: 6px; background: rgba(18,31,42,0.82); border: 1px solid #2c4254; border-radius: 10px; backdrop-filter: blur(8px)" role="toolbar" aria-label="Camera views">
+<button type="button" aria-pressed="true" style="background: #e2574c; color: #1a0b09">Angle</button>
+<button type="button" aria-pressed="false">Top</button>
+<button type="button" aria-pressed="false">Low</button>
+</div>
+</header>
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+
+<div style="flex: 999 1 520px; min-width: 0; display: flex; justify-content: center">
+<div style="width: 100%; max-width: 720px; aspect-ratio: 1 / 1; box-sizing: border-box; padding: 10px; background: #e9e2cf; border-radius: 6px; box-shadow: 0 24px 64px rgba(0,0,0,0.55)">
+<div style="width: 100%; height: 100%; position: relative; display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); grid-template-rows: repeat(11, minmax(0, 1fr)); gap: 2px; background: #cdd6c6">
+<div style="grid-column: 2 / 11; grid-row: 2 / 11; background: #cfe3cc; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center">
+<div style="transform: rotate(-45deg); width: 120%; background: #c8322b; border: 3px solid #eef4e9; outline: 3px solid #c8322b; outline-offset: -9px; padding: 14px 0; text-align: center; color: #fff">
+<div style="font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: clamp(28px, 6vw, 64px); letter-spacing: 0.1em; line-height: 1"><br></div>
+
+</div>
+</div>
+<sc-for list="{{cells}}" as="c" hint-placeholder-count="40">
+<div style="grid-column: {{c.col}}; grid-row: {{c.row}}; background: #eef4e9; position: relative; overflow: hidden">
+<div style="position: absolute; top: {{c.bt}}; left: {{c.bl}}; width: {{c.bw}}; height: {{c.bh}}; background: {{c.color}}"></div>
+</div>
+</sc-for>
+<div style="grid-column: 6; grid-row: 11; display: flex; align-items: center; justify-content: center; pointer-events: none"><span style="width: 62%; aspect-ratio: 1 / 1; border-radius: 50%; background: #d9392f; box-shadow: 0 2px 0 rgba(0,0,0,0.3)"></span></div>
+<div style="grid-column: 1; grid-row: 4; display: flex; align-items: center; justify-content: center; pointer-events: none"><span style="width: 62%; aspect-ratio: 1 / 1; border-radius: 50%; background: #2f6fd0; box-shadow: 0 2px 0 rgba(0,0,0,0.3)"></span></div>
+<div style="grid-column: 5; grid-row: 1; display: flex; align-items: center; justify-content: center; pointer-events: none"><span style="width: 62%; aspect-ratio: 1 / 1; border-radius: 50%; background: #2fa05c; box-shadow: 0 2px 0 rgba(0,0,0,0.3)"></span></div>
+</div>
+</div>
+</div>
+
+<aside style="flex: 1 1 300px; max-width: 420px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+
+<section style="padding: 16px; background: rgba(18,31,42,0.82); border: 1px solid #2c4254; border-radius: 10px; backdrop-filter: blur(8px); display: flex; flex-direction: column; gap: 10px" aria-label="Players">
+<h2 style="margin: 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 600; font-size: 16px; letter-spacing: 0.1em; text-transform: uppercase; color: #a9bcc9">Players</h2>
+<sc-for list="{{players}}" as="p" hint-placeholder-count="4">
+<div style="display: flex; align-items: center; gap: 10px; min-height: 44px; box-sizing: border-box; padding: 0 14px 0 8px; border: {{p.border}}; border-radius: 999px; background: #121f2a">
+<span style="width: 28px; height: 28px; flex: 0 0 auto; border-radius: 14px; background: {{p.hex}}; border: 2px solid #0e1822; box-sizing: border-box"></span>
+<span style="flex: 1 1 auto; min-width: 0; font-weight: 600; font-size: 14px">{{p.name}}</span>
+<span style="font-weight: 600; font-size: 16px; font-variant-numeric: tabular-nums">{{p.cash}}</span>
+</div>
+</sc-for>
+</section>
+
+<section style="padding: 20px; background: rgba(18,31,42,0.82); border: 1px solid #2c4254; border-radius: 10px; backdrop-filter: blur(8px); display: flex; flex-direction: column; gap: 12px" aria-label="Your turn">
+<div style="font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: 30px; line-height: 1; letter-spacing: 0.1em; text-transform: uppercase">Your turn</div>
+<div style="display: flex; align-items: stretch; gap: 0; border: 1px solid #2c4254; border-radius: 7px; overflow: hidden">
+<div style="width: 6px; background: #d93a32"></div>
+<div style="flex: 1 1 auto; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; background: #16222d">
+<div>
+<div style="font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: 22px; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.1">Beacon Hill</div>
+<div style="font-size: 13px; color: #a9bcc9">Unowned · rent $18</div>
+</div>
+<div style="font-weight: 600; font-size: 20px; font-variant-numeric: tabular-nums">$220</div>
+</div>
+</div>
+<p style="margin: 0; font-size: 14px; line-height: 1.45; color: #a9bcc9">You rolled 7. Buy the street or put it up for auction.</p>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" class="hf-primary">Buy $220</button>
+<button type="button" class="hf-outline">Auction</button>
+<button type="button">End turn</button>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 8px" aria-label="Recent events">
+<div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: #16222d; border: 1px solid #2c4254; border-radius: 10px">
+<span style="width: 10px; height: 10px; flex: 0 0 auto; border-radius: 5px; background: #2f6fd0"></span>
+<div style="font-size: 14px; line-height: 1.4"><span style="font-weight: 600">Ines</span> collected $200 passing GO.</div>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: #16222d; border: 1px solid #2c4254; border-radius: 10px">
+<span style="width: 10px; height: 10px; flex: 0 0 auto; border-radius: 5px; background: #2fa05c"></span>
+<div style="font-size: 14px; line-height: 1.4"><span style="font-weight: 600">Tove</span> paid $60 for Driftwood Lane.</div>
+</div>
+</section>
+
+</aside>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const BR = '#8a5a3c', SK = '#9bd4ea', PK = '#d9569b', OR = '#ee8a2c', RD = '#d93a32', YL = '#f2cd2e', GR = '#2f9e5b', NV = '#2459a6', N = null;
+    const bottom = [BR, N, BR, N, N, SK, N, SK, SK];
+    const left = [PK, N, PK, PK, N, OR, N, OR, OR];
+    const top = [RD, N, RD, RD, N, YL, YL, N, YL];
+    const right = [GR, GR, N, GR, N, N, NV, N, NV];
+    const cells = [];
+    const add = (col, row, color, side) => {
+      // the colour bar sits on the inner edge of each square
+      const bar = { bottom: ['0', '0', '100%', '28%'], top: ['72%', '0', '100%', '28%'], left: ['0', '72%', '28%', '100%'], right: ['0', '0', '28%', '100%'] }[side];
+      cells.push({ col, row, color: color || 'transparent', bt: bar[0], bl: bar[1], bw: bar[2] === '100%' && side === 'top' ? '100%' : bar[2], bh: bar[3] });
+    };
+    bottom.forEach((c, k) => add(10 - k, 11, c, 'bottom'));
+    left.forEach((c, k) => add(1, 10 - k, c, 'left'));
+    top.forEach((c, k) => add(2 + k, 1, c, 'top'));
+    right.forEach((c, k) => add(11, 2 + k, c, 'right'));
+    [[1, 1], [11, 1], [1, 11], [11, 11]].forEach(([col, row]) => cells.push({ col, row, color: 'transparent', bt: '0', bl: '0', bw: '0', bh: '0' }));
+    const players = [
+      { name: 'Marlow (you)', hex: '#d9392f', cash: '$1,500', border: '2px solid #e2574c' },
+      { name: 'Ines', hex: '#2f6fd0', cash: '$1,340', border: '1px solid #2c4254' },
+      { name: 'Tove', hex: '#2fa05c', cash: '$820', border: '1px solid #2c4254' },
+      { name: 'Ravi', hex: '#f0b429', cash: '$2,010', border: '1px solid #2c4254' }
+    ];
+    return { cells, players };
+  }
+}
+</script>
+</body>
+</html>

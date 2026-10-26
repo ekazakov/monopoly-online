@@ -1,0 +1,143 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Components.dc.html": {
+      "h": 1560,
+      "is_interactive": true,
+      "title": "UI components",
+      "w": 1280,
+      "x": 2720,
+      "y": 0
+    },
+    "Foundations.dc.html": {
+      "h": 3000,
+      "title": "Type, space, motion",
+      "w": 1280,
+      "x": 1360,
+      "y": 0
+    },
+    "GameParts.dc.html": {
+      "h": 2750,
+      "title": "Game parts",
+      "w": 1280,
+      "x": 4080,
+      "y": 0
+    },
+    "Light.dc.html": {
+      "h": 1900,
+      "title": "Light theme",
+      "w": 1280,
+      "x": 6800,
+      "y": 0
+    },
+    "Main.dc.html": {
+      "h": 4343,
+      "title": "Colour tokens",
+      "w": 1305,
+      "x": 0,
+      "y": 0
+    },
+    "Screens.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "title": "Game screen",
+      "w": 1280,
+      "x": 5440,
+      "y": 0
+    },
+    "Wireframe2.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "title": "Game screen 2",
+      "w": 1440,
+      "x": 9680,
+      "y": 0
+    },
+    "Dialogs.dc.html": {
+      "h": 7800,
+      "title": "Game dialogs",
+      "w": 1280,
+      "x": 11200,
+      "y": 0
+    },
+    "TurnArea.dc.html": {
+      "h": 3400,
+      "title": "Board centre states",
+      "w": 1280,
+      "x": 12560,
+      "y": 0
+    },
+    "Lobby.dc.html": {
+      "h": 1024,
+      "title": "Lobby \u00b7 open games",
+      "w": 1440,
+      "x": 0,
+      "y": 8400
+    },
+    "LobbyHost.dc.html": {
+      "h": 1024,
+      "title": "New game \u00b7 host waiting",
+      "w": 1440,
+      "x": 1520,
+      "y": 8400
+    },
+    "LobbyHostReady.dc.html": {
+      "h": 1024,
+      "title": "New game \u00b7 host ready",
+      "w": 1440,
+      "x": 3040,
+      "y": 8400
+    },
+    "LobbyGuest.dc.html": {
+      "h": 1024,
+      "title": "New game \u00b7 joined player",
+      "w": 1440,
+      "x": 4560,
+      "y": 8400
+    },
+    "LobbyStates.dc.html": {
+      "h": 2600,
+      "title": "Lobby states",
+      "w": 1440,
+      "x": 6080,
+      "y": 8400
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-23T12:00:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "game-start": {
+      "x": 0,
+      "y": 8100,
+      "text": "Game start",
+      "kind": "title1",
+      "maxW": 7520
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Foundations.dc.html",
+    "Components.dc.html",
+    "GameParts.dc.html",
+    "Screens.dc.html",
+    "Light.dc.html",
+    "Wireframe2.dc.html",
+    "Dialogs.dc.html",
+    "TurnArea.dc.html",
+    "Lobby.dc.html",
+    "LobbyHost.dc.html",
+    "LobbyHostReady.dc.html",
+    "LobbyGuest.dc.html",
+    "LobbyStates.dc.html"
+  ],
+  "pages": [],
+  "title": "Harborfront Design System"
+}

@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Harborfront Foundations</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1280px; height: 3000px; box-sizing: border-box; padding: 64px; background: #0e1822; color: #e9f0ea; font-family: 'Barlow', system-ui, sans-serif; display: flex; flex-direction: column; gap: 56px">
+
+<header style="display: flex; flex-direction: column; gap: 12px">
+<div style="font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 600; font-size: 16px; letter-spacing: 0.16em; text-transform: uppercase; color: #e2574c">Foundations</div>
+<h1 style="margin: 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: 64px; line-height: 1; letter-spacing: 0.1em; text-transform: uppercase">Type, space, motion</h1>
+</header>
+
+<section style="display: flex; flex-direction: column; gap: 20px">
+<div style="padding-bottom: 12px; border-bottom: 1px solid #2c4254">
+<h2 style="margin: 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: 32px; letter-spacing: 0.1em; text-transform: uppercase">Typefaces</h2>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+<div style="background: #16222d; border: 1px solid #2c4254; border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 12px">
+<div style="font-size: 13px; color: #a9bcc9; font-family: ui-monospace, 'SF Mono', Menlo, monospace">--hf-font-display</div>
+<div style="font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: 88px; line-height: 1; letter-spacing: 0.1em; text-transform: uppercase">Aa</div>
+<div style="font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: 28px; letter-spacing: 0.1em; text-transform: uppercase">Barlow Condensed</div>
+<div style="font-size: 15px; line-height: 1.5; color: #a9bcc9">Weights 600 and 700. Always uppercase with 0.1em tracking. Titles, square names, big numbers and the GO mark. Fallback Arial Narrow.</div>
+<div style="font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 600; font-size: 22px; letter-spacing: 0.1em; text-transform: uppercase; color: #a9bcc9">ABCDEFGHIJKLM NOPQRSTUVWXYZ 0123456789 $</div>
+</div>
+<div style="background: #16222d; border: 1px solid #2c4254; border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 12px">
+<div style="font-size: 13px; color: #a9bcc9; font-family: ui-monospace, 'SF Mono', Menlo, monospace">--hf-font-body</div>
+<div style="font-family: 'Barlow', system-ui, sans-serif; font-weight: 600; font-size: 88px; line-height: 1">Aa</div>
+<div style="font-family: 'Barlow', system-ui, sans-serif; font-weight: 600; font-size: 28px">Barlow</div>
+<div style="font-size: 15px; line-height: 1.5; color: #a9bcc9">Weights 500 and 600. Buttons, helper text, prices and rent figures. Fallback system-ui. Use tabular numerals for money.</div>
+<div style="font-family: 'Barlow', system-ui, sans-serif; font-weight: 500; font-size: 22px; color: #a9bcc9; font-variant-numeric: tabular-nums">abcdefghijklm nopqrstuvwxyz 0123456789 $1,500</div>
+</div>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 20px">
+<div style="padding-bottom: 12px; border-bottom: 1px solid #2c4254">
+<h2 style="margin: 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: 32px; letter-spacing: 0.1em; text-transform: uppercase">Type scale</h2>
+</div>
+<div style="display: flex; flex-direction: column">
+<sc-for list="{{scale}}" as="t" hint-placeholder-count="8">
+<div style="display: flex; align-items: center; gap: 24px; padding: 14px 0; border-bottom: 1px solid #2c4254">
+<div style="width: 200px; flex: 0 0 auto; display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 15px; font-weight: 600">{{t.name}}</div>
+<div style="font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 13px; color: #a9bcc9">{{t.spec}}</div>
+</div>
+<div style="flex: 1 1 auto; min-width: 0; color: #e9f0ea; font-family: {{t.family}}; font-weight: {{t.weight}}; font-size: {{t.size}}px; line-height: {{t.lh}}; letter-spacing: {{t.track}}; text-transform: {{t.tt}}">{{t.sample}}</div>
+<div style="width: 220px; flex: 0 0 auto; font-size: 13px; line-height: 1.4; color: #a9bcc9">{{t.use}}</div>
+</div>
+</sc-for>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 20px">
+<div style="padding-bottom: 12px; border-bottom: 1px solid #2c4254">
+<h2 style="margin: 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: 32px; letter-spacing: 0.1em; text-transform: uppercase">Spacing</h2>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{space}}" as="sp" hint-placeholder-count="8">
+<div style="display: flex; align-items: center; gap: 20px">
+<div style="width: 120px; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 13px; color: #a9bcc9">{{sp.token}}</div>
+<div style="width: 48px; font-size: 14px; font-weight: 600">{{sp.px}}px</div>
+<div style="height: 16px; width: {{sp.px}}px; background: #e2574c; border-radius: 2px"></div>
+</div>
+</sc-for>
+</div>
+<p style="margin: 0; font-size: 14px; line-height: 1.5; color: #a9bcc9; max-width: 70ch">Page gutter is 16px with safe-area insets. Controls keep a 44px minimum target. Gap between toolbar groups is 8px, inside a group 6px.</p>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 20px">
+<div style="padding-bottom: 12px; border-bottom: 1px solid #2c4254">
+<h2 style="margin: 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: 32px; letter-spacing: 0.1em; text-transform: uppercase">Radius and elevation</h2>
+</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px">
+<sc-for list="{{radii}}" as="r" hint-placeholder-count="4">
+<div style="background: #16222d; border: 1px solid #2c4254; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="height: 72px; background: rgba(18,31,42,0.82); border: 1px solid #2c4254; border-radius: {{r.px}}px"></div>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 15px; font-weight: 600">{{r.name}} · {{r.px}}px</div>
+<div style="font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 13px; color: #a9bcc9">{{r.token}}</div>
+<div style="font-size: 13px; color: #a9bcc9">{{r.use}}</div>
+</div>
+</div>
+</sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px">
+<sc-for list="{{elevations}}" as="e" hint-placeholder-count="4">
+<div style="background: #16222d; border: 1px solid #2c4254; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="height: 72px; background: #1d2f3f; border: 1px solid #2c4254; border-radius: 10px; box-shadow: {{e.shadow}}"></div>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 15px; font-weight: 600">{{e.name}}</div>
+<div style="font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 13px; color: #a9bcc9">{{e.token}}</div>
+<div style="font-size: 13px; line-height: 1.4; color: #a9bcc9">{{e.use}}</div>
+</div>
+</div>
+</sc-for>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 20px">
+<div style="padding-bottom: 12px; border-bottom: 1px solid #2c4254">
+<h2 style="margin: 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: 32px; letter-spacing: 0.1em; text-transform: uppercase">Motion</h2>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{motion}}" as="m" hint-placeholder-count="4">
+<div style="display: flex; align-items: center; gap: 20px; background: #16222d; border: 1px solid #2c4254; border-radius: 10px; padding: 12px 16px">
+<div style="width: 150px; flex: 0 0 auto; font-size: 15px; font-weight: 600">{{m.name}}</div>
+<div style="width: 190px; flex: 0 0 auto; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 13px; color: #a9bcc9">{{m.spec}}</div>
+<div style="flex: 0 0 280px; height: 8px; background: #0e1822; border-radius: 4px"><div style="height: 8px; width: {{m.bar}}px; background: #e2574c; border-radius: 4px"></div></div>
+<div style="flex: 1 1 auto; min-width: 0; font-size: 13px; line-height: 1.4; color: #a9bcc9">{{m.use}}</div>
+</div>
+</sc-for>
+</div>
+<p style="margin: 0; font-size: 14px; line-height: 1.5; color: #a9bcc9; max-width: 70ch">With prefers-reduced-motion set, camera moves and token hops snap to their end state and every duration becomes 0.</p>
+</section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":3000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const D = "'Barlow Condensed', 'Arial Narrow', sans-serif";
+    const B = "'Barlow', system-ui, sans-serif";
+    const ty = (name, spec, family, weight, size, lh, track, tt, sample, use) => ({ name, spec, family, weight, size, lh, track, tt, sample, use });
+    const scale = [
+      ty('Display XL', '700 · 48 / 1 · 0.1em', D, 700, 48, 1, '0.1em', 'uppercase', 'Harborfront', 'Page title, game logo'),
+      ty('Display L', '700 · 30 / 1 · 0.1em', D, 700, 30, 1, '0.1em', 'uppercase', 'Your turn', 'Panel and dialog titles'),
+      ty('Display M', '700 · 22 / 1.1 · 0.08em', D, 700, 22, 1.1, '0.08em', 'uppercase', 'Lighthouse Road', 'Property card names'),
+      ty('Display S', '600 · 16 / 1.1 · 0.1em', D, 600, 16, 1.1, '0.1em', 'uppercase', 'Mortgaged', 'Section labels, badges'),
+      ty('Body', '500 · 16 / 1.5', B, 500, 16, 1.5, '0', 'none', 'Roll the dice to move around the board.', 'Paragraphs, dialog text'),
+      ty('Body small', '500 · 14 / 1.45', B, 500, 14, 1.45, '0', 'none', 'Drag to orbit, scroll or pinch to zoom.', 'Hints, helper text'),
+      ty('Label', '600 · 14 / 1 · 0.04em', B, 600, 14, 1, '0.04em', 'uppercase', 'Roll dice', 'Buttons, tabs, toolbar'),
+      ty('Price', '600 · 18 / 1 · tabular', B, 600, 18, 1, '0', 'none', '$1,500', 'Money, rent and costs'),
+      ty('Caption', '500 · 13 / 1.4', B, 500, 13, 1.4, '0', 'none', 'Rent with 2 houses · $90', 'Meta lines, table footers')
+    ];
+    const space = [2, 4, 6, 8, 12, 16, 24, 32, 48, 64].map((px, i) => ({ token: '--hf-space-' + px, px }));
+    const radii = [
+      { name: 'Control', px: 7, token: '--hf-radius-control', use: 'Buttons, inputs, chips' },
+      { name: 'Panel', px: 10, token: '--hf-radius-panel', use: 'Panels, cards, toolbars' },
+      { name: 'Dialog', px: 16, token: '--hf-radius-dialog', use: 'Modals and sheets · derived' },
+      { name: 'Pill', px: 999, token: '--hf-radius-pill', use: 'Money chips, tags · derived' }
+    ];
+    const elevations = [
+      { name: 'Flat', token: '--hf-elev-0', shadow: 'none', use: 'Cards on the table. Border only.' },
+      { name: 'Glass panel', token: '--hf-elev-1', shadow: 'none', use: 'Floating panels use 82% panel fill and 8px backdrop blur, no shadow.' },
+      { name: 'Popover', token: '--hf-elev-2', shadow: '0 8px 24px rgba(0,0,0,0.4)', use: 'Menus, tooltips · derived' },
+      { name: 'Dialog', token: '--hf-elev-3', shadow: '0 24px 64px rgba(0,0,0,0.55)', use: 'Trade and auction dialogs · derived' }
+    ];
+    const motion = [
+      { name: 'Fast', spec: '--hf-dur-fast · 120ms ease-out', bar: 20, use: 'Hover and press feedback · derived' },
+      { name: 'Base', spec: '--hf-dur-base · 240ms ease-out', bar: 40, use: 'Panels opening, toasts · derived' },
+      { name: 'Token hop', spec: '--hf-dur-hop · 400ms ease-in-out', bar: 67, use: 'Pawn moving one square · derived' },
+      { name: 'Camera', spec: '--hf-dur-camera · 700ms in-out cubic', bar: 117, use: 'View changes: angle, top, low. From the 3D model.' }
+    ];
+    return { scale, space, radii, elevations, motion };
+  }
+}
+</script>
+</body>
+</html>

@@ -2,10 +2,10 @@ import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   fmt: {
-    ignorePatterns: ["design/**", "plan/**", ".claude/**"],
+    ignorePatterns: ["design/**", "plan/**", ".claude/**", "artifacts/**"],
   },
   lint: {
-    ignorePatterns: ["design/**", "**/dist/**"],
+    ignorePatterns: ["design/**", "artifacts/**", "**/dist/**"],
     plugins: ["typescript"],
     jsPlugins: [{ name: "vite-plus", specifier: "vite-plus/oxlint-plugin" }],
     rules: { "vite-plus/prefer-vite-plus-imports": "error" },

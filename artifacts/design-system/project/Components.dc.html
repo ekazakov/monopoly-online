@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Harborfront Components</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button,input{font-family:'Barlow',system-ui,sans-serif}
+.hf-btn{min-height:44px;min-width:44px;padding:0 18px;font-weight:600;font-size:14px;letter-spacing:0.04em;text-transform:uppercase;border-radius:7px;cursor:pointer;border:1px solid transparent;background:transparent;color:#e9f0ea}
+.hf-btn:hover{background:rgba(255,255,255,0.08)}
+.hf-btn:focus-visible,.hf-input:focus-visible{outline:2px solid #e9f0ea;outline-offset:2px}
+.hf-primary{background:#e2574c;color:#1a0b09}
+.hf-primary:hover{background:#ea6d63}
+.hf-outline{border-color:#2c4254}
+.hf-btn:disabled{opacity:0.4;cursor:not-allowed}
+.hf-input{min-height:44px;box-sizing:border-box;padding:0 14px;font-weight:500;font-size:16px;color:#e9f0ea;background:#0e1822;border:1px solid #2c4254;border-radius:7px}
+.hf-input::placeholder{color:#a9bcc9}
+</style>
+</helmet>
+<div style="width: 1280px; height: 1560px; box-sizing: border-box; padding: 64px; background: #0e1822; color: #e9f0ea; font-family: 'Barlow', system-ui, sans-serif; display: flex; flex-direction: column; gap: 56px">
+
+<header style="display: flex; flex-direction: column; gap: 12px">
+<div style="font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 600; font-size: 16px; letter-spacing: 0.16em; text-transform: uppercase; color: #e2574c">Components</div>
+<h1 style="margin: 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: 64px; line-height: 1; letter-spacing: 0.1em; text-transform: uppercase">Interface</h1>
+</header>
+
+<section style="display: flex; flex-direction: column; gap: 20px">
+<div style="padding-bottom: 12px; border-bottom: 1px solid #2c4254">
+<h2 style="margin: 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: 32px; letter-spacing: 0.1em; text-transform: uppercase">Buttons</h2>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+<div style="background: #16222d; border: 1px solid #2c4254; border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+<div style="font-weight: 600; font-size: 15px">Primary</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" class="hf-btn hf-primary">Roll dice</button>
+<button type="button" class="hf-btn hf-primary" disabled>Roll dice</button>
+</div>
+<div style="font-size: 13px; line-height: 1.4; color: #a9bcc9">One per view. Accent fill, accent-ink text. Hover lifts the fill; selected toggles use this fill too.</div>
+</div>
+<div style="background: #16222d; border: 1px solid #2c4254; border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+<div style="font-weight: 600; font-size: 15px">Outline</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" class="hf-btn hf-outline">Buy</button>
+<button type="button" class="hf-btn hf-outline" disabled>Trade</button>
+</div>
+<div style="font-size: 13px; line-height: 1.4; color: #a9bcc9">Secondary actions in the action panel: buy, build, mortgage, trade.</div>
+</div>
+<div style="background: #16222d; border: 1px solid #2c4254; border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+<div style="font-weight: 600; font-size: 15px">Ghost</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" class="hf-btn">End turn</button>
+<button type="button" class="hf-btn" disabled>Undo</button>
+</div>
+<div style="font-size: 13px; line-height: 1.4; color: #a9bcc9">Inside toolbars and dialog footers. No border until hover.</div>
+</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center">
+<div style="font-size: 13px; color: #a9bcc9; width: 90px">States</div>
+<div style="display: flex; align-items: center; gap: 8px"><div style="min-height: 44px; padding: 0 18px; display: flex; align-items: center; background: #e2574c; color: #1a0b09; border-radius: 7px; font-weight: 600; font-size: 14px; letter-spacing: 0.04em; text-transform: uppercase">Default</div></div>
+<div style="display: flex; align-items: center; gap: 8px"><div style="min-height: 44px; padding: 0 18px; display: flex; align-items: center; background: #ea6d63; color: #1a0b09; border-radius: 7px; font-weight: 600; font-size: 14px; letter-spacing: 0.04em; text-transform: uppercase">Hover</div></div>
+<div style="display: flex; align-items: center; gap: 8px"><div style="min-height: 44px; padding: 0 18px; display: flex; align-items: center; background: #c9443a; color: #1a0b09; border-radius: 7px; font-weight: 600; font-size: 14px; letter-spacing: 0.04em; text-transform: uppercase">Pressed</div></div>
+<div style="display: flex; align-items: center; gap: 8px"><div style="min-height: 44px; padding: 0 18px; display: flex; align-items: center; background: #e2574c; color: #1a0b09; border-radius: 7px; font-weight: 600; font-size: 14px; letter-spacing: 0.04em; text-transform: uppercase; outline: 2px solid #e9f0ea; outline-offset: 2px">Focus</div></div>
+<div style="display: flex; align-items: center; gap: 8px"><div style="min-height: 44px; padding: 0 18px; display: flex; align-items: center; background: #e2574c; color: #1a0b09; border-radius: 7px; font-weight: 600; font-size: 14px; letter-spacing: 0.04em; text-transform: uppercase; opacity: 0.4">Disabled</div></div>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 20px">
+<div style="padding-bottom: 12px; border-bottom: 1px solid #2c4254">
+<h2 style="margin: 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: 32px; letter-spacing: 0.1em; text-transform: uppercase">Toolbar and toggle</h2>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+<div style="display: flex; flex-wrap: wrap; gap: 6px; padding: 6px; background: rgba(18,31,42,0.82); border: 1px solid #2c4254; border-radius: 10px">
+<sc-for list="{{views}}" as="v" hint-placeholder-count="3">
+<button type="button" class="hf-btn" aria-pressed="{{v.pressed}}" onClick="{{v.pick}}" style="background: {{v.bg}}; color: {{v.fg}}">{{v.label}}</button>
+</sc-for>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; padding: 6px; background: rgba(18,31,42,0.82); border: 1px solid #2c4254; border-radius: 10px">
+<button type="button" class="hf-btn" aria-pressed="{{spinOn}}" onClick="{{toggleSpin}}" style="background: {{spinBg}}; color: {{spinFg}}">Auto-rotate</button>
+</div>
+<div style="font-size: 13px; color: #a9bcc9; margin-left: 8px">Segmented camera views and a toggle, both live. The pressed state fills with the accent.</div>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 20px">
+<div style="padding-bottom: 12px; border-bottom: 1px solid #2c4254">
+<h2 style="margin: 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: 32px; letter-spacing: 0.1em; text-transform: uppercase">Inputs, steppers, chips</h2>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+<div style="background: #16222d; border: 1px solid #2c4254; border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px">
+<label for="hf-name" style="font-size: 14px; font-weight: 600">Player name</label>
+<input id="hf-name" class="hf-input" type="text" placeholder="Captain Marlow">
+<div style="font-size: 13px; color: #a9bcc9">Up to 16 characters.</div>
+</div>
+<div style="background: #16222d; border: 1px solid #2c4254; border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 14px; font-weight: 600">Bid amount</div>
+<div style="display: flex; align-items: center; gap: 8px">
+<button type="button" class="hf-btn hf-outline" aria-label="Decrease bid" onClick="{{bidDown}}" style="padding: 0">−</button>
+<div style="flex: 1 1 auto; min-height: 44px; display: flex; align-items: center; justify-content: center; background: #0e1822; border: 1px solid #2c4254; border-radius: 7px; font-weight: 600; font-size: 18px; font-variant-numeric: tabular-nums">{{bidText}}</div>
+<button type="button" class="hf-btn hf-outline" aria-label="Increase bid" onClick="{{bidUp}}" style="padding: 0">+</button>
+</div>
+<div style="font-size: 13px; color: #a9bcc9">Steps of $10 in auctions.</div>
+</div>
+<div style="background: #16222d; border: 1px solid #2c4254; border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+<div style="font-size: 14px; font-weight: 600">Chips</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<div style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border: 1px solid #2c4254; border-radius: 999px; font-size: 13px; font-weight: 600"><span style="width: 10px; height: 10px; border-radius: 5px; background: #d9392f"></span>Marlow</div>
+<div style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border: 1px solid #2c4254; border-radius: 999px; font-size: 13px; font-weight: 600"><span style="width: 10px; height: 10px; border-radius: 5px; background: #2f6fd0"></span>Ines</div>
+<div style="display: inline-flex; align-items: center; padding: 6px 12px; background: #e2574c; color: #1a0b09; border-radius: 999px; font-size: 13px; font-weight: 600">Your turn</div>
+<div style="display: inline-flex; align-items: center; padding: 6px 12px; background: #2c4254; border-radius: 999px; font-size: 13px; font-weight: 600">Mortgaged</div>
+</div>
+</div>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 20px">
+<div style="padding-bottom: 12px; border-bottom: 1px solid #2c4254">
+<h2 style="margin: 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: 32px; letter-spacing: 0.1em; text-transform: uppercase">Panel, toast, tooltip</h2>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start">
+<div style="padding: 20px; background: rgba(18,31,42,0.82); border: 1px solid #2c4254; border-radius: 10px; backdrop-filter: blur(8px); display: flex; flex-direction: column; gap: 12px">
+<div style="font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: 30px; line-height: 1; letter-spacing: 0.1em; text-transform: uppercase">Your turn</div>
+<div style="font-size: 14px; line-height: 1.45; color: #a9bcc9">You rolled 7 and landed on Beacon Hill. It is unowned.</div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap">
+<button type="button" class="hf-btn hf-primary">Buy $220</button>
+<button type="button" class="hf-btn hf-outline">Auction</button>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #16222d; border: 1px solid #2c4254; border-left: 1px solid #2c4254; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.4)">
+<span style="width: 28px; height: 28px; flex: 0 0 auto; border-radius: 14px; background: #2f9e5b; display: flex; align-items: center; justify-content: center">
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#17211b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg>
+</span>
+<div style="font-size: 14px; line-height: 1.4"><span style="font-weight: 600">Ines</span> collected $200 passing GO.</div>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #16222d; border: 1px solid #2c4254; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.4)">
+<span style="width: 28px; height: 28px; flex: 0 0 auto; border-radius: 14px; background: #e2574c; display: flex; align-items: center; justify-content: center">
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#1a0b09" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M8 3v6M8 12.2v.1"/></svg>
+</span>
+<div style="font-size: 14px; line-height: 1.4">You owe <span style="font-weight: 600">$120</span> rent to Marlow.</div>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start; padding-top: 8px">
+<button type="button" class="hf-btn hf-outline" aria-describedby="hf-tip">Mortgage</button>
+<div id="hf-tip" role="tooltip" style="max-width: 240px; padding: 8px 12px; background: #e9f0ea; color: #17211b; border-radius: 7px; font-size: 13px; line-height: 1.4; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.4)">Mortgage Beacon Hill for $110. You get no rent while it is mortgaged.</div>
+</div>
+</div>
+</section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1560}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { view: 'angle', spin: false, bid: 120 };
+  }
+  renderVals() {
+    const on = { bg: '#e2574c', fg: '#1a0b09' }, off = { bg: 'transparent', fg: '#e9f0ea' };
+    const views = ['Angle', 'Top', 'Low'].map((label) => {
+      const id = label.toLowerCase();
+      const sel = this.state.view === id;
+      const c = sel ? on : off;
+      return { label, pressed: sel ? 'true' : 'false', bg: c.bg, fg: c.fg, pick: () => this.setState({ view: id }) };
+    });
+    const s = this.state.spin ? on : off;
+    return {
+      views,
+      spinOn: this.state.spin ? 'true' : 'false',
+      spinBg: s.bg,
+      spinFg: s.fg,
+      toggleSpin: () => this.setState({ spin: !this.state.spin }),
+      bidText: '$' + this.state.bid,
+      bidUp: () => this.setState({ bid: this.state.bid + 10 }),
+      bidDown: () => this.setState({ bid: Math.max(10, this.state.bid - 10) })
+    };
+  }
+}
+</script>
+</body>
+</html>

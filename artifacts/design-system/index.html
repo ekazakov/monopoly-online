@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Harborfront Design System</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; display: flex; min-height: 100vh; background: #0a1118; color: #e9f0ea; font: 14px system-ui, sans-serif; }
+  nav { width: 240px; flex: none; position: sticky; top: 0; height: 100vh; overflow: auto; padding: 20px 12px; border-right: 1px solid #2c4254; }
+  nav h1 { margin: 0 8px 16px; font-size: 15px; letter-spacing: 0.08em; text-transform: uppercase; }
+  nav a { display: block; padding: 8px; border-radius: 6px; color: #a9bcc9; text-decoration: none; }
+  nav a:hover, nav a:focus-visible { background: #16222d; color: #e9f0ea; }
+  main { flex: 1; min-width: 0; padding: 32px; display: flex; flex-direction: column; gap: 48px; }
+  section h2 { margin: 0 0 12px; font-size: 13px; font-weight: 600; color: #a9bcc9; }
+  .frame { overflow: auto; border: 1px solid #2c4254; border-radius: 8px; background: #0e1822; }
+  iframe { display: block; border: 0; max-width: none; }
+</style>
+</head>
+<body>
+<nav><h1>Harborfront</h1><div id="links"></div></nav>
+<main id="boards"></main>
+<script type="module">
+  const index = await (await fetch('project/canvas.json')).json();
+  const links = document.getElementById('links');
+  const boards = document.getElementById('boards');
+  for (const file of index.order) {
+    const b = index.boards[file];
+    const id = file.replace('.dc.html', '');
+    const title = b.title ?? id;
+    links.insertAdjacentHTML('beforeend', `<a href="#${id}"></a>`);
+    links.lastChild.textContent = title;
+    const section = document.createElement('section');
+    section.id = id;
+    const h2 = document.createElement('h2');
+    h2.textContent = title;
+    const frame = document.createElement('div');
+    frame.className = 'frame';
+    const iframe = document.createElement('iframe');
+    iframe.title = title;
+    iframe.loading = 'lazy';
+    iframe.src = 'project/' + file;
+    iframe.width = b.w;
+    iframe.height = b.h;
+    if (b.expand === 'fill') iframe.style.cssText = 'width:100%;min-width:' + Math.min(b.w, 900) + 'px';
+    frame.append(iframe);
+    section.append(h2, frame);
+    boards.append(section);
+  }
+</script>
+</body>
+</html>

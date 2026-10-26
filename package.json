@@ -9,6 +9,8 @@
     "test": "vp run -r test",
     "check": "vp check",
     "fmt": "vp fmt",
+    "artifact:game-screen": "node artifacts/serve.mjs game-screen 8791",
+    "artifact:design-system": "node artifacts/serve.mjs design-system 8792",
     "ready": "vp check && vp run -r test && vp run -r build"
   },
   "devDependencies": {

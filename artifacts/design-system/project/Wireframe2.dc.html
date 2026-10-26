@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Harborfront Game Screen 2</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&amp;family=Barlow:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0e1822}
+button{font-family:'Barlow',system-ui,sans-serif;min-height:44px;min-width:44px;border-radius:7px;cursor:pointer;border:1px solid transparent;background:transparent;color:#e9f0ea;display:flex;align-items:center;justify-content:center;padding:0}
+button:hover{background:rgba(255,255,255,0.08)}
+button:focus-visible{outline:2px solid #e9f0ea;outline-offset:2px}
+.hf-primary{background:#e2574c;color:#1a0b09}
+.hf-primary:hover{background:#ea6d63}
+</style>
+</helmet>
+<div style="min-height: 900px; box-sizing: border-box; background: #0e1822; color: #e9f0ea; font-family: 'Barlow', system-ui, sans-serif; display: flex; flex-direction: column; position: relative; overflow: hidden">
+
+<div style="position: absolute; top: 12px; right: 12px; z-index: 2; display: flex; align-items: center; gap: 14px">
+<button type="button" style="padding: 0 18px; background: #121f2a; border-color: #2c4254; font-weight: 600; font-size: 14px; letter-spacing: 0.04em; text-transform: uppercase">Menu</button>
+</div>
+
+<div style="flex: 0 0 auto; display: flex; justify-content: center; padding: 0 280px">
+<div style="width: 100%; max-width: 640px; box-sizing: border-box; display: flex; align-items: flex-start; gap: 8px; padding: 8px 8px 8px 20px; background: #1a2d3d; border-radius: 0 0 10px 10px">
+<div role="log" aria-label="Game log" style="flex: 1 1 auto; min-width: 0; height: {{logH}}px; overflow-y: auto; display: flex; flex-direction: column-reverse">
+<sc-for list="{{log}}" as="l" hint-placeholder-count="6">
+<div style="display: flex; align-items: center; gap: 10px; min-height: 28px; flex: 0 0 auto; font-size: 14px; line-height: 20px">
+<span style="width: 10px; height: 10px; flex: 0 0 auto; border-radius: 50%; background: {{l.color}}"></span>
+<span style="color: #e9f0ea">{{l.text}}</span>
+</div>
+</sc-for>
+</div>
+<button type="button" aria-label="{{toggleLabel}}" aria-expanded="{{expanded}}" onClick="{{toggle}}" style="margin-top: -8px">
+<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#e9f0ea" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform: rotate({{chevronRot}}deg)"><path d="M4 7l6 6 6-6"></path></svg>
+</button>
+</div>
+</div>
+
+<div style="flex: 1 1 auto; min-height: 0; display: flex">
+
+<div style="flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 16px; padding: 16px 0 16px 8px">
+<div style="display: flex; align-items: center; gap: 10px">
+<div style="width: 56px; height: 56px; flex: 0 0 auto; box-sizing: border-box; border-radius: 50%; border: 2px solid #6b8294; background: #16222d; display: flex; align-items: center; justify-content: center">
+<svg width="38" height="38" viewBox="0 0 48 48" fill="none" stroke="#a9bcc9" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="{{p1.label}}"><path d="M13.6 13L13 3.5L20 8Q24 7 28 8L35 3.5L34.4 13Q36 15 35 18Q32 26 24 26Q16 26 13 18Q12 15 13.6 13Z"></path><path d="M17 25.5C13 30 12 36 14 42H34C36 36 35 30 31 25.5"></path><path d="M24 33V42"></path><path d="M34 41C41 41 44 36 43 31C42.5 28 40 27.5 39 29"></path><path d="M22.8 19.5H25.2L24 21Z"></path><path d="M9.5 18.5L14.5 19.5M9.5 22L14.5 21.5M38.5 18.5L33.5 19.5M38.5 22L33.5 21.5" stroke-width="1.6"></path><circle cx="19.5" cy="15.5" r="1.1" fill="#a9bcc9" stroke="none"></circle><circle cx="28.5" cy="15.5" r="1.1" fill="#a9bcc9" stroke="none"></circle></svg>
+</div>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-weight: 600; font-size: 15px; line-height: 18px; color: #e9f0ea">{{p1.name}}</span>
+<div style="display: flex; align-items: center; gap: 6px">
+<span style="width: 14px; height: 14px; border-radius: 50%; background: #f0b429; border: 2px solid #8a5a3c; box-sizing: border-box"></span>
+<span style="font-weight: 600; font-size: 16px; font-variant-numeric: tabular-nums">{{p1.gold}}</span>
+</div>
+</div>
+</div>
+<div style="display: flex; align-items: center; gap: 10px">
+<div style="width: 56px; height: 56px; flex: 0 0 auto; box-sizing: border-box; border-radius: 50%; border: 2px solid #6b8294; background: #16222d; display: flex; align-items: center; justify-content: center">
+<svg width="38" height="38" viewBox="0 0 48 48" fill="none" stroke="#a9bcc9" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="{{p2.label}}"><path d="M5 15.5L15 12L22 13.5L37 15C40 15.5 41 18 41 21V33H15V25.5L10.5 19.5L6 18.5C4.5 18.2 4 16.5 5 15.5Z"></path><path d="M15.5 12L17 4L21.5 13.2"></path><path d="M37.5 15.2L41.5 6L44 7.5L41 18"></path><path d="M17 33V40H22V33M34 33V40H39V33"></path><path d="M8.5 19.5L8 23M11.5 21L11 25" stroke-width="1.8"></path><circle cx="11.5" cy="15.8" r="1.1" fill="#a9bcc9" stroke="none"></circle><circle cx="5.8" cy="16" r="1.4" fill="#a9bcc9" stroke="none"></circle></svg>
+</div>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-weight: 600; font-size: 15px; line-height: 18px; color: #e9f0ea">{{p2.name}}</span>
+<div style="display: flex; align-items: center; gap: 6px">
+<span style="width: 14px; height: 14px; border-radius: 50%; background: #f0b429; border: 2px solid #8a5a3c; box-sizing: border-box"></span>
+<span style="font-weight: 600; font-size: 16px; font-variant-numeric: tabular-nums">{{p2.gold}}</span>
+</div>
+</div>
+</div>
+<div style="display: flex; align-items: center; gap: 10px">
+<div style="width: 56px; height: 56px; flex: 0 0 auto; box-sizing: border-box; border-radius: 50%; border: 2px solid #6b8294; background: #16222d; display: flex; align-items: center; justify-content: center">
+<svg width="38" height="38" viewBox="0 0 48 48" fill="none" stroke="#a9bcc9" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="{{p3.label}}"><path d="M24 4C15 4 12 12 12 22C12 33 15 41 24 41C33 41 36 33 36 22C36 12 33 4 24 4Z"></path><path d="M24 19C19.500 19 17.500 24 17.500 30C17.500 35.500 20 39.500 24 39.500C28 39.500 30.500 35.500 30.500 30C30.500 24 28.500 19 24 19Z"></path><path d="M12.500 20C8 23 6.500 29 7.500 34C10 32.500 12 29 12.800 26"></path><path d="M35.500 20C40 23 41.500 29 40.500 34C38 32.500 36 29 35.200 26"></path><path d="M21.500 13.500H26.500L24 17.500Z"></path><ellipse cx="18" cy="43.500" rx="4.500" ry="2"></ellipse><ellipse cx="30" cy="43.500" rx="4.500" ry="2"></ellipse><circle cx="20" cy="10" r="1.200" fill="#a9bcc9" stroke="none"></circle><circle cx="28" cy="10" r="1.200" fill="#a9bcc9" stroke="none"></circle></svg>
+</div>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-weight: 600; font-size: 15px; line-height: 18px; color: #e9f0ea">{{p3.name}}</span>
+<div style="display: flex; align-items: center; gap: 6px">
+<span style="width: 14px; height: 14px; border-radius: 50%; background: #f0b429; border: 2px solid #8a5a3c; box-sizing: border-box"></span>
+<span style="font-weight: 600; font-size: 16px; font-variant-numeric: tabular-nums">{{p3.gold}}</span>
+</div>
+</div>
+</div>
+<div style="display: flex; align-items: center; gap: 10px">
+<div style="width: 56px; height: 56px; flex: 0 0 auto; box-sizing: border-box; border-radius: 50%; border: 2px solid #6b8294; background: #16222d; display: flex; align-items: center; justify-content: center">
+<svg width="38" height="38" viewBox="0 0 48 48" fill="none" stroke="#a9bcc9" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="{{p4.label}}"><g transform="translate(0 -5)"><path d="M4 34V29.500Q4 27.500 6 27L18 25L22 20.500H30L33 25L41.500 27Q44 27.500 44 30V34H39.500A6.500 6.500 0 0 0 26.500 34H21.500A6.500 6.500 0 0 0 8.500 34Z"></path><path d="M21 24.500L23.500 21.800H28.500L30.500 24.500Z"></path><circle cx="15" cy="34" r="4.500"></circle><circle cx="33" cy="34" r="4.500"></circle><circle cx="15" cy="34" r="1.200" fill="#a9bcc9" stroke="none"></circle><circle cx="33" cy="34" r="1.200" fill="#a9bcc9" stroke="none"></circle></g></svg>
+</div>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-weight: 600; font-size: 15px; line-height: 18px; color: #e9f0ea">{{p4.name}}</span>
+<div style="display: flex; align-items: center; gap: 6px">
+<span style="width: 14px; height: 14px; border-radius: 50%; background: #f0b429; border: 2px solid #8a5a3c; box-sizing: border-box"></span>
+<span style="font-weight: 600; font-size: 16px; font-variant-numeric: tabular-nums">{{p4.gold}}</span>
+</div>
+</div>
+</div>
+</div>
+
+<div style="flex: 1 1 0; min-width: 0; container-type: size; display: flex; align-items: center; justify-content: center; padding: 8px">
+<div style="width: min(100cqw, 100cqh); aspect-ratio: 1 / 1; box-sizing: border-box; padding: 8px; background: #e9e2cf; border-radius: 6px">
+<div style="width: 100%; height: 100%; display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); grid-template-rows: repeat(11, minmax(0, 1fr)); gap: 2px; background: #cdd6c6">
+<div style="grid-column: 2 / 11; grid-row: 2 / 11; background: #cfe3cc; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px">
+<div style="display: flex; gap: 16px" role="img" aria-label="Dice: 4 and 3">
+<svg width="72" height="72" viewBox="0 0 72 72" aria-hidden="true"><rect x="2" y="2" width="68" height="68" rx="12" fill="#f7f5ee" stroke="#3d5a4a" stroke-width="2"></rect><g fill="#1b1b1b"><circle cx="20" cy="20" r="6"></circle><circle cx="52" cy="20" r="6"></circle><circle cx="20" cy="52" r="6"></circle><circle cx="52" cy="52" r="6"></circle></g></svg>
+<svg width="72" height="72" viewBox="0 0 72 72" aria-hidden="true"><rect x="2" y="2" width="68" height="68" rx="12" fill="#f7f5ee" stroke="#3d5a4a" stroke-width="2"></rect><g fill="#1b1b1b"><circle cx="20" cy="20" r="6"></circle><circle cx="36" cy="36" r="6"></circle><circle cx="52" cy="52" r="6"></circle></g></svg>
+</div>
+<button type="button" class="hf-primary" style="padding: 0 28px; font-weight: 600; font-size: 15px; letter-spacing: 0.04em; text-transform: uppercase">Next turn</button>
+</div>
+<sc-for list="{{cells}}" as="c" hint-placeholder-count="40">
+<div style="grid-column: {{c.col}}; grid-row: {{c.row}}; background: #eef4e9; position: relative; overflow: hidden">
+<div style="position: absolute; top: {{c.bt}}; left: {{c.bl}}; width: {{c.bw}}; height: {{c.bh}}; background: {{c.color}}"></div>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+
+<div style="flex: 0 0 168px"></div>
+
+</div>
+
+<div style="flex: 0 0 auto; display: flex; justify-content: center; align-items: flex-end; gap: 28px; padding: 0 16px; margin-bottom: -48px">
+<sc-for list="{{stacks}}" as="s" hint-placeholder-count="5">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<div style="font-size: 12px; color: #a9bcc9">{{s.label}}</div>
+<div style="position: relative; width: 156px; height: {{s.height}}px">
+<sc-for list="{{s.cards}}" as="k" hint-placeholder-count="2">
+<div style="position: absolute; left: 0; top: {{k.top}}px; width: 156px; height: 72px; box-sizing: border-box; display: flex; flex-direction: column; background: #eef4e9; border: 1px solid #17211b; border-radius: 4px 4px 0 0; overflow: hidden; color: #17211b">
+<div style="height: 8px; flex: 0 0 auto; background: {{s.color}}; border-bottom: 1px solid #17211b"></div>
+<div style="height: 16px; flex: 0 0 auto; padding: 0 8px; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: 13px; line-height: 16px; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{k.name}}</div>
+<div style="flex: 1 1 auto; display: flex; align-items: flex-end; justify-content: flex-end; padding: 6px 8px; font-weight: 600; font-size: 14px; font-variant-numeric: tabular-nums">{{k.price}}</div>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { open: false };
+  }
+  renderVals() {
+    const BR = '#8a5a3c', SK = '#9bd4ea', PK = '#d9569b', OR = '#ee8a2c', RD = '#d93a32', YL = '#f2cd2e', GR = '#2f9e5b', NV = '#2459a6', N = null;
+    const bottom = [BR, N, BR, N, N, SK, N, SK, SK];
+    const left = [PK, N, PK, PK, N, OR, N, OR, OR];
+    const top = [RD, N, RD, RD, N, YL, YL, N, YL];
+    const right = [GR, GR, N, GR, N, N, NV, N, NV];
+    const cells = [];
+    const add = (col, row, color, side) => {
+      const bar = { bottom: ['0', '0', '100%', '28%'], top: ['72%', '0', '100%', '28%'], left: ['0', '72%', '28%', '100%'], right: ['0', '0', '28%', '100%'] }[side];
+      cells.push({ col, row, color: color || 'transparent', bt: bar[0], bl: bar[1], bw: bar[2], bh: bar[3] });
+    };
+    bottom.forEach((c, k) => add(10 - k, 11, c, 'bottom'));
+    left.forEach((c, k) => add(1, 10 - k, c, 'left'));
+    top.forEach((c, k) => add(2 + k, 1, c, 'top'));
+    right.forEach((c, k) => add(11, 2 + k, c, 'right'));
+    [[1, 1], [11, 1], [1, 11], [11, 11]].forEach(([col, row]) => cells.push({ col, row, color: 'transparent', bt: '0', bl: '0', bw: '0', bh: '0' }));
+
+    const players = [
+      { name: 'Ines', label: 'Ines, cat', gold: '1,340' },
+      { name: 'Marlow', label: 'Marlow, terrier, active', gold: '1,500' },
+      { name: 'Tove', label: 'Tove, penguin', gold: '820' },
+      { name: 'Ravi', label: 'Ravi, racing car', gold: '2,010' }
+    ];
+
+    const mk = (label, color, cards) => {
+      const step = 25;
+      return {
+        label: label + (cards.length > 1 ? ' · ' + cards.length : ''),
+        color,
+        height: 72 + step * (cards.length - 1),
+        cards: cards.map(([name, price], i) => ({ name, price, top: i * step }))
+      };
+    };
+    const stacks = [
+      mk('Brown', BR, [['Driftwood Lane', '$60'], ['Kelp Court', '$60']]),
+      mk('Sky', SK, [['Lantern Row', '$100'], ['Cobble Street', '$100'], ['Saltmarsh Road', '$120']]),
+      mk('Red', RD, [['Beacon Hill', '$220']]),
+      mk('Stations', '#17211b', [['North Station', '$200'], ['East Station', '$200']]),
+      mk('Utilities', '#a9bcc9', [['Power Works', '$150']])
+    ];
+
+    // newest entry first: the list renders bottom-up, so the latest line sits at the bottom
+    const R = '#d9392f', B = '#2f6fd0', G = '#2fa05c', Y = '#f0b429';
+    const log = [
+      { color: R, text: 'Marlow bought Beacon Hill for $220.' },
+      { color: R, text: 'Marlow rolled 4 and 3 and landed on Beacon Hill.' },
+      { color: G, text: 'Tove paid $120 rent to Ines.' },
+      { color: B, text: 'Ines collected $200 passing GO.' },
+      { color: Y, text: 'Ravi built a house on Canal Street.' },
+      { color: Y, text: 'Ravi rolled 6 and 2 and landed on Canal Street.' },
+      { color: G, text: 'Tove bought Pinecrest Avenue for $300.' },
+      { color: G, text: 'Tove rolled 5 and 4 and landed on Pinecrest Avenue.' },
+      { color: B, text: 'Ines drew a Chance card: advance to GO.' },
+      { color: B, text: 'Ines rolled 2 and 1 and landed on Chance.' },
+      { color: R, text: 'Marlow paid $200 Harbor Tax.' }
+    ];
+
+    const open = this.state.open;
+    return {
+      cells, p1: players[0], p2: players[1], p3: players[2], p4: players[3], stacks, log,
+      logH: open ? 240 : 28,
+      expanded: open ? 'true' : 'false',
+      toggleLabel: open ? 'Collapse game log' : 'Expand game log',
+      chevronRot: open ? 180 : 0,
+      toggle: () => this.setState({ open: !this.state.open })
+    };
+  }
+}
+</script>
+</body>
+</html>

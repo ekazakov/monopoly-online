@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Harborfront Light Theme</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font-family:'Barlow',system-ui,sans-serif}
+.hf-btn{min-height:44px;min-width:44px;padding:0 18px;font-weight:600;font-size:14px;letter-spacing:0.04em;text-transform:uppercase;border-radius:7px;cursor:pointer;border:1px solid transparent;background:transparent;color:#0e1822}
+.hf-btn:hover{background:rgba(14,24,34,0.07)}
+.hf-btn:focus-visible{outline:2px solid #0e1822;outline-offset:2px}
+.hf-primary{background:#c8322b;color:#ffffff}
+.hf-primary:hover{background:#b02a24}
+.hf-outline{border-color:#c3d1d9}
+.hf-btn:disabled{opacity:0.4;cursor:not-allowed}
+</style>
+</helmet>
+<div style="width: 1280px; height: 1900px; box-sizing: border-box; padding: 64px; background: #eaf0ee; color: #0e1822; font-family: 'Barlow', system-ui, sans-serif; display: flex; flex-direction: column; gap: 56px">
+
+<header style="display: flex; flex-direction: column; gap: 12px">
+<div style="font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 600; font-size: 16px; letter-spacing: 0.16em; text-transform: uppercase; color: #c8322b">Theme · Light</div>
+<h1 style="margin: 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: 64px; line-height: 1; letter-spacing: 0.1em; text-transform: uppercase">Harborfront by day</h1>
+<p style="margin: 0; max-width: 62ch; font-size: 17px; line-height: 1.5; color: #3d5466">Only the shell changes between themes. The board, street colours and pieces keep the same values, so a game looks the same on either page background. Components read semantic tokens, never raw hex.</p>
+</header>
+
+<section style="display: flex; flex-direction: column; gap: 20px">
+<div style="padding-bottom: 12px; border-bottom: 1px solid #c3d1d9">
+<h2 style="margin: 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: 32px; letter-spacing: 0.1em; text-transform: uppercase">Semantic tokens, dark and light</h2>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: center; gap: 20px; padding: 0 16px; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #3d5466">
+<div style="width: 190px">Token</div><div style="width: 220px">Dark</div><div style="width: 220px">Light</div><div style="flex: 1 1 auto">Role</div>
+</div>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="9">
+<div style="display: flex; align-items: center; gap: 20px; background: #f7faf8; border: 1px solid #c3d1d9; border-radius: 10px; padding: 10px 16px">
+<div style="width: 190px; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 13px">{{r.token}}</div>
+<div style="width: 220px; display: flex; align-items: center; gap: 10px"><span style="width: 32px; height: 32px; border-radius: 7px; border: 1px solid #c3d1d9; background: {{r.dark}}"></span><span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 13px">{{r.darkLabel}}</span></div>
+<div style="width: 220px; display: flex; align-items: center; gap: 10px"><span style="width: 32px; height: 32px; border-radius: 7px; border: 1px solid #c3d1d9; background: {{r.light}}"></span><span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 13px">{{r.lightLabel}}</span></div>
+<div style="flex: 1 1 auto; min-width: 0; font-size: 14px; color: #3d5466">{{r.role}}</div>
+</div>
+</sc-for>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 20px">
+<div style="padding-bottom: 12px; border-bottom: 1px solid #c3d1d9">
+<h2 style="margin: 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: 32px; letter-spacing: 0.1em; text-transform: uppercase">Components in light</h2>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start">
+
+<div style="background: #f7faf8; border: 1px solid #c3d1d9; border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+<div style="font-weight: 600; font-size: 15px">Buttons</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" class="hf-btn hf-primary">Roll dice</button>
+<button type="button" class="hf-btn hf-outline">Buy</button>
+<button type="button" class="hf-btn">End turn</button>
+<button type="button" class="hf-btn hf-primary" disabled>Disabled</button>
+</div>
+<div style="display: flex; gap: 6px; padding: 6px; background: rgba(247,250,248,0.86); border: 1px solid #c3d1d9; border-radius: 10px; align-self: flex-start">
+<button type="button" class="hf-btn hf-primary" aria-pressed="true">Angle</button>
+<button type="button" class="hf-btn" aria-pressed="false">Top</button>
+<button type="button" class="hf-btn" aria-pressed="false">Low</button>
+</div>
+</div>
+
+<div style="background: #f7faf8; border: 1px solid #c3d1d9; border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+<div style="font-weight: 600; font-size: 15px">Chips and money</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<div style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border: 1px solid #c3d1d9; border-radius: 999px; font-size: 13px; font-weight: 600"><span style="width: 10px; height: 10px; border-radius: 5px; background: #d9392f"></span>Marlow</div>
+<div style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border: 1px solid #c3d1d9; border-radius: 999px; font-size: 13px; font-weight: 600"><span style="width: 10px; height: 10px; border-radius: 5px; background: #2f6fd0"></span>Ines</div>
+<div style="display: inline-flex; align-items: center; padding: 6px 12px; background: #c8322b; color: #fff; border-radius: 999px; font-size: 13px; font-weight: 600">Your turn</div>
+<div style="display: inline-flex; align-items: center; padding: 6px 12px; background: #c3d1d9; border-radius: 999px; font-size: 13px; font-weight: 600">Mortgaged</div>
+</div>
+<div style="display: inline-flex; align-self: flex-start; align-items: center; gap: 10px; min-height: 44px; box-sizing: border-box; padding: 0 16px 0 8px; background: rgba(247,250,248,0.86); border: 2px solid #c8322b; border-radius: 999px">
+<span style="width: 28px; height: 28px; border-radius: 14px; background: #d9392f; border: 2px solid #eaf0ee; box-sizing: border-box"></span>
+<span style="font-weight: 600; font-size: 14px">Marlow</span>
+<span style="font-weight: 600; font-size: 16px; font-variant-numeric: tabular-nums">$1,500</span>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #f7faf8; border: 1px solid #c3d1d9; border-radius: 10px; box-shadow: 0 8px 24px rgba(14,24,34,0.16)">
+<span style="width: 28px; height: 28px; flex: 0 0 auto; border-radius: 14px; background: #2f9e5b; display: flex; align-items: center; justify-content: center">
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#17211b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg>
+</span>
+<div style="font-size: 14px; line-height: 1.4"><span style="font-weight: 600">Ines</span> collected $200 passing GO.</div>
+</div>
+</div>
+
+<div style="padding: 20px; background: rgba(247,250,248,0.86); border: 1px solid #c3d1d9; border-radius: 10px; backdrop-filter: blur(8px); display: flex; flex-direction: column; gap: 12px">
+<div style="font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: 30px; line-height: 1; letter-spacing: 0.1em; text-transform: uppercase">Your turn</div>
+<div style="display: flex; align-items: stretch; border: 1px solid #c3d1d9; border-radius: 7px; overflow: hidden">
+<div style="width: 6px; background: #d93a32"></div>
+<div style="flex: 1 1 auto; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; background: #eef4e9">
+<div>
+<div style="font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: 22px; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.1; color: #17211b">Beacon Hill</div>
+<div style="font-size: 13px; color: #3d5466">Unowned · rent $18</div>
+</div>
+<div style="font-weight: 600; font-size: 20px; font-variant-numeric: tabular-nums; color: #17211b">$220</div>
+</div>
+</div>
+<p style="margin: 0; font-size: 14px; line-height: 1.45; color: #3d5466">You rolled 7. Buy the street or put it up for auction.</p>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" class="hf-btn hf-primary">Buy $220</button>
+<button type="button" class="hf-btn hf-outline">Auction</button>
+</div>
+</div>
+
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 20px">
+<div style="padding-bottom: 12px; border-bottom: 1px solid #c3d1d9">
+<h2 style="margin: 0; font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: 32px; letter-spacing: 0.1em; text-transform: uppercase">Board on a light page</h2>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+<div style="display: flex; gap: 12px; padding: 20px; background: #f7faf8; border: 1px solid #c3d1d9; border-radius: 10px">
+<sc-for list="{{cards}}" as="c" hint-placeholder-count="4">
+<div style="width: 140px; height: 190px; display: flex; flex-direction: column; background: #eef4e9; border: 1px solid #cdd6c6; border-radius: 4px; overflow: hidden; color: #17211b; box-shadow: 0 2px 6px rgba(14,24,34,0.18)">
+<div style="height: 40px; flex: 0 0 auto; background: {{c.color}}"></div>
+<div style="flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 12px 8px; text-align: center">
+<div style="font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: 22px; line-height: 1.05; letter-spacing: 0.04em; text-transform: uppercase">{{c.name}}</div>
+<div style="font-weight: 600; font-size: 18px; font-variant-numeric: tabular-nums">{{c.price}}</div>
+</div>
+</div>
+</sc-for>
+</div>
+<p style="margin: 0; flex: 1 1 280px; max-width: 46ch; font-size: 14px; line-height: 1.5; color: #3d5466">Squares keep their paper face and print colours on both themes. On light pages they get a soft shadow instead of relying on the dark table for contrast.</p>
+</div>
+</section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const row = (token, dark, light, role, dl, ll) => ({ token, dark, light, role, darkLabel: dl || dark.toUpperCase(), lightLabel: ll || light.toUpperCase() });
+    const rows = [
+      row('--hf-ground', '#0e1822', '#eaf0ee', 'Page background'),
+      row('--hf-table', '#16222d', '#f7faf8', 'Cards and surfaces'),
+      row('--hf-panel', '#121f2a', '#f7faf8', 'Floating panels, blurred', 'rgba(18,31,42,.82)', 'rgba(247,250,248,.86)'),
+      row('--hf-panel-line', '#2c4254', '#c3d1d9', 'Borders and dividers'),
+      row('--hf-ink', '#e9f0ea', '#0e1822', 'Primary text'),
+      row('--hf-ink-soft', '#a9bcc9', '#3d5466', 'Secondary text'),
+      row('--hf-accent', '#e2574c', '#c8322b', 'Primary action and selected state'),
+      row('--hf-accent-ink', '#1a0b09', '#ffffff', 'Text on the accent'),
+      row('--hf-accent-hover', '#ea6d63', '#b02a24', 'Hover fill for the accent · derived'),
+      row('--hf-focus', '#e9f0ea', '#0e1822', 'Focus ring, 2px with 2px offset')
+    ];
+    const cards = [
+      { name: 'Driftwood Lane', price: '$60', color: '#8a5a3c' },
+      { name: 'Lantern Row', price: '$100', color: '#9bd4ea' },
+      { name: 'Canal Street', price: '$260', color: '#f2cd2e' },
+      { name: 'Parkview', price: '$350', color: '#2459a6' }
+    ];
+    return { rows, cards };
+  }
+}
+</script>
+</body>
+</html>

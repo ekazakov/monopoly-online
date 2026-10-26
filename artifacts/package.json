@@ -1,0 +1,12 @@
+{
+  "name": "artifacts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "game-screen": "node serve.mjs game-screen 8791",
+    "design-system": "node serve.mjs design-system 8792"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}
