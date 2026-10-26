@@ -12,3 +12,8 @@ Write your response using ASD-STE100 Simplified Technical English."
 - Body (optional, after a blank line) explains why, not what. Keep one logical change per commit; don't mix unrelated changes.
 - Run `pnpm check` and `pnpm test` before committing. If a controller or DTO changed, include the regenerated `apps/api/openapi.json` in the same commit.
 - Never commit `.env` files, SQLite databases or their sidecar files (`*.db-shm`, `*.db-wal`).
+
+## Artifacts
+
+Whenever the changes introduces to GameScreen prototype or DesignSystem, sync updated versions with local artifacts.
+If new artifacts introduced to the project, then pleas ask before saving.
