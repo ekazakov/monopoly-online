@@ -1,9 +1,9 @@
 import type { ActionOf } from "./actions.ts";
 import { BOARD_SIZE } from "./board.ts";
-import { advanceTurn, getPlayer, sendToJail, updatePlayer } from "./helpers.ts";
+import { advanceTurn, getPlayer, movePlayer, sendToJail } from "./helpers.ts";
 import { resolveLanding } from "./landing.ts";
 import { rollDice } from "./rng.ts";
-import { fail, GO_SALARY } from "./state.ts";
+import { fail } from "./state.ts";
 import type { GameEvent, GameState, Result } from "./state.ts";
 
 const MAX_DOUBLES = 3;
@@ -31,17 +31,7 @@ export function handleRollDice(state: GameState, action: ActionOf<"RollDice">): 
 
   const total = first + second;
   const to = (player.position + total) % BOARD_SIZE;
-  events.push({
-    type: "PlayerMoved",
-    playerId: player.id,
-    from: player.position,
-    to,
-  });
-  next = updatePlayer(next, player.id, { position: to });
-  if (player.position + total >= BOARD_SIZE) {
-    events.push({ type: "PassedGo", playerId: player.id, amount: GO_SALARY });
-    next = updatePlayer(next, player.id, { cash: player.cash + GO_SALARY });
-  }
+  next = movePlayer(next, player.id, to, events, player.position + total >= BOARD_SIZE);
 
   const landed = resolveLanding(next, events);
   if (!landed.ok) return landed;

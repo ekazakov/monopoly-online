@@ -62,6 +62,7 @@ export type GameEvent =
   | { type: "RentPaid"; payerId: string; ownerId: string; square: number; amount: number }
   | { type: "TaxPaid"; playerId: string; square: number; amount: number }
   | { type: "CardDrawn"; playerId: string; deck: DeckName; cardIndex: number }
+  | { type: "CashChanged"; playerId: string; amount: number; reason: "card" }
   | { type: "SentToJail"; playerId: string }
   | { type: "LeftJail"; playerId: string }
   | { type: "TurnEnded"; playerId: string; nextPlayerId: string }

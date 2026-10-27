@@ -15,7 +15,7 @@ import type { Setup } from "./test-helpers.ts";
 
 describe("RollDice", () => {
   test("a normal roll moves the token and lets the player end the turn", () => {
-    const state = gameWhere((d) => !isDouble(d) && d[0] + d[1] === 7);
+    const state = gameWhere((d) => !isDouble(d) && d[0] + d[1] === 10);
     const id = current(state);
     const { state: after, events } = roll(state);
     const total = (after.turn.dice?.[0] ?? 0) + (after.turn.dice?.[1] ?? 0);

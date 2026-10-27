@@ -69,3 +69,14 @@ export const landing = (start: number, total: number, ...setups: Setup[]) =>
     setCurrent({ position: start }),
     ...setups,
   );
+
+/** Put a card on top of a deck. */
+export const topCard =
+  (deck: "chance" | "chest", cardIndex: number): Setup =>
+  (state) => ({
+    ...state,
+    decks: {
+      ...state.decks,
+      [deck]: [cardIndex, ...state.decks[deck].filter((i) => i !== cardIndex)],
+    },
+  });

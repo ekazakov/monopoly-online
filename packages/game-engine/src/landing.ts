@@ -1,7 +1,9 @@
 import type { ActionOf } from "./actions.ts";
 import { groupSquares, SQUARES, STATION_RENT, UTILITY_MULTIPLIER } from "./board.ts";
 import type { PropertySquare } from "./board.ts";
-import { finishRoll, getPlayer, sendToJail, updatePlayer } from "./helpers.ts";
+import { playCard } from "./cardplay.ts";
+import { charge, finishRoll, getPlayer, sendToJail, updatePlayer } from "./helpers.ts";
+import { rollDice } from "./rng.ts";
 import { fail } from "./state.ts";
 import type { Failure, GameEvent, GameState, Result } from "./state.ts";
 
@@ -29,19 +31,24 @@ export function rentFor(
   return fullGroup ? square.rent[0] * 2 : square.rent[0];
 }
 
-/** Take money from a player. Returns null when the player cannot pay. */
-function charge(state: GameState, playerId: string, amount: number): GameState | null {
-  const player = getPlayer(state, playerId);
-  if (player.cash < amount) return null;
-  return updatePlayer(state, playerId, { cash: player.cash - amount });
-}
-
 const cannotPay = (amount: number): Failure =>
   // TODO(debt): replace this rejection with debt and bankruptcy.
   fail("insufficient_funds", `The player cannot pay $${amount}`);
 
+/** Rules a card can change for the landing that follows it. */
+export interface LandingOptions {
+  /** Multiplier for station rent. */
+  stationRentMultiplier?: number;
+  /** Roll the dice for utility rent, and pay 10 times the total. */
+  rollForUtility?: boolean;
+}
+
 /** Resolve the square the current player landed on. Ends in `finishRoll` or a buy decision. */
-export function resolveLanding(state: GameState, events: GameEvent[]): Landing {
+export function resolveLanding(
+  state: GameState,
+  events: GameEvent[],
+  options: LandingOptions = {},
+): Landing {
   const player = getPlayer(state, state.turn.currentPlayerId);
   const square = SQUARES[player.position];
   if (!square) throw new Error(`No square at ${player.position}`);
@@ -54,8 +61,7 @@ export function resolveLanding(state: GameState, events: GameEvent[]): Landing {
 
     case "chance":
     case "chest":
-      // TODO(task 8): draw and apply a card.
-      return { ok: true, state: finishRoll(state, events) };
+      return playCard(state, square.kind, events, resolveLanding);
 
     case "go_to_jail":
       return { ok: true, state: finishRoll(sendToJail(state, player.id, events), events) };
@@ -86,9 +92,19 @@ export function resolveLanding(state: GameState, events: GameEvent[]): Landing {
       }
       if (ownerId === player.id) return { ok: true, state: finishRoll(state, events) };
 
-      const diceTotal = (state.turn.dice?.[0] ?? 0) + (state.turn.dice?.[1] ?? 0);
-      const amount = rentFor(state, square, ownerId, diceTotal);
-      const paid = charge(state, player.id, amount);
+      let working = state;
+      let amount: number;
+      if (square.kind === "utility" && options.rollForUtility) {
+        const roll = rollDice(state.rng);
+        events.push({ type: "DiceRolled", playerId: player.id, dice: roll.value });
+        working = { ...state, rng: roll.rng };
+        amount = 10 * (roll.value[0] + roll.value[1]);
+      } else {
+        const diceTotal = (state.turn.dice?.[0] ?? 0) + (state.turn.dice?.[1] ?? 0);
+        const multiplier = square.kind === "station" ? (options.stationRentMultiplier ?? 1) : 1;
+        amount = rentFor(state, square, ownerId, diceTotal) * multiplier;
+      }
+      const paid = charge(working, player.id, amount);
       if (!paid) return cannotPay(amount);
       const owner = getPlayer(paid, ownerId);
       events.push({
