@@ -54,9 +54,27 @@ export interface GameState {
   readonly rng: RngState;
 }
 
-export type GameEvent = { type: "DiceRolled"; playerId: string; dice: Dice };
+export type GameEvent =
+  | { type: "DiceRolled"; playerId: string; dice: Dice }
+  | { type: "PlayerMoved"; playerId: string; from: number; to: number }
+  | { type: "PassedGo"; playerId: string; amount: number }
+  | { type: "PropertyBought"; playerId: string; square: number; price: number }
+  | { type: "RentPaid"; payerId: string; ownerId: string; square: number; amount: number }
+  | { type: "TaxPaid"; playerId: string; square: number; amount: number }
+  | { type: "CardDrawn"; playerId: string; deck: DeckName; cardIndex: number }
+  | { type: "SentToJail"; playerId: string }
+  | { type: "LeftJail"; playerId: string }
+  | { type: "TurnEnded"; playerId: string; nextPlayerId: string }
+  | { type: "GameEnded"; winnerId: string };
 
-export type GameErrorCode = "invalid_players";
+export type GameErrorCode =
+  | "invalid_players"
+  | "unknown_player"
+  | "player_inactive"
+  | "not_your_turn"
+  | "wrong_phase"
+  /** Temporary. The action is valid but its rules are not built yet. */
+  | "not_implemented";
 
 export interface GameError {
   readonly code: GameErrorCode;
@@ -67,6 +85,7 @@ export type Result =
   | { readonly ok: true; readonly state: GameState; readonly events: readonly GameEvent[] }
   | { readonly ok: false; readonly error: GameError };
 
+/** Build a rejected `Result`. */
 export function fail(code: GameErrorCode, message: string): Result {
   return { ok: false, error: { code, message } };
 }

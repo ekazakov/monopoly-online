@@ -1,0 +1,52 @@
+import { ALLOWED_PHASES } from "./actions.ts";
+import type { Action, ActionType } from "./actions.ts";
+import { fail } from "./state.ts";
+import type { GameState, Result } from "./state.ts";
+
+type ActionOf<T extends ActionType> = Extract<Action, { type: T }>;
+
+/** A handler gets a validated action. It must not change `version`: the reducer does that. */
+export type Handlers = {
+  [T in ActionType]: (state: GameState, action: ActionOf<T>) => Result;
+};
+
+// TODO: replace each stub as its rules are built (tasks 6 to 9).
+const notImplemented = (): Result => fail("not_implemented", "This action is not built yet");
+
+export const defaultHandlers: Handlers = {
+  RollDice: notImplemented,
+  BuyProperty: notImplemented,
+  DeclineProperty: notImplemented,
+  PayJailFine: notImplemented,
+  UseJailCard: notImplemented,
+  EndTurn: notImplemented,
+};
+
+/** Check who may act, and in which phase. Return an error `Result`, or null when valid. */
+function validate(state: GameState, action: Action): Result | null {
+  const player = state.players.find((p) => p.id === action.playerId);
+  if (!player) return fail("unknown_player", `Unknown player: ${action.playerId}`);
+  if (!player.active) return fail("player_inactive", "Eliminated players cannot act");
+  if (state.turn.currentPlayerId !== action.playerId) {
+    return fail("not_your_turn", "It is not this player's turn");
+  }
+  if (!ALLOWED_PHASES[action.type].includes(state.turn.phase)) {
+    return fail("wrong_phase", `${action.type} is not allowed in phase ${state.turn.phase}`);
+  }
+  return null;
+}
+
+export function createReducer(handlers: Handlers) {
+  return function applyAction(state: GameState, action: Action): Result {
+    const invalid = validate(state, action);
+    if (invalid) return invalid;
+
+    const handle = handlers[action.type] as (s: GameState, a: Action) => Result;
+    const result = handle(state, action);
+    if (!result.ok) return result;
+    return { ...result, state: { ...result.state, version: state.version + 1 } };
+  };
+}
+
+/** Apply one action. Pure: returns the new state and events, or an error. */
+export const applyAction = createReducer(defaultHandlers);
