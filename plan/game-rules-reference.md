@@ -3,9 +3,9 @@
 | | |
 |---|---|
 | Companion docs | [game-screen-2-gameplay.md](game-screen-2-gameplay.md) (turn flow, states, open questions) and [game-screen-2-spec.md](game-screen-2-spec.md) (UI) |
-| Status | Draft. Last updated 2026-10-25 |
+| Status | Draft. Last updated 2026-10-27 |
 
-This is the rule set the game implements. It is written in our own words for a property-trading game on a 40-square loop. Rules that are still undecided are marked **[Q7]**, **[Q8]** and so on, which point to the open questions in section 6 of the gameplay doc.
+This is the rule set the game implements. It is written in our own words for a property-trading game on a 40-square loop. Rules that are still undecided are marked **[Q8]**, **[Q9]** and so on, which point to the open questions in section 6 of the gameplay doc.
 
 **Terms.** Community Chest is **Chest**, a railroad is a **Station**, a title deed is a **Deed**. Chance, GO, Jail and Free Parking keep their names for now (open question Q18).
 
@@ -27,8 +27,8 @@ This is the rule set the game implements. It is written in our own words for a p
 ## 1. Setup and turn order
 
 1. Every player starts with their token on GO and $1,500.
-2. Everyone rolls two dice. The highest total plays first. Players who tie re-roll among themselves **[Q7]**.
-3. Play then follows seat order (clockwise on the rail, top to bottom). Tokens stay where they are between turns. Any number of tokens may share a square.
+2. Before the game starts, the server puts the players in a random turn order. The first player in that order plays first.
+3. Play then follows that order (clockwise on the rail, top to bottom). Tokens stay where they are between turns. Any number of tokens may share a square.
 
 ---
 
