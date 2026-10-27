@@ -45,7 +45,7 @@ Temporary behavior for out-of-scope parts (must be clear in code and tests):
 - [x] 1. Scaffold `packages/game-engine`: `package.json`, `tsconfig`, `src/index.ts`, one smoke test. Wire it into the workspace and the catalog. `pnpm check` and `pnpm test` pass.
 - [x] 2. Static data: board (40 squares), groups, property/station/utility rent data, Chance and Chest decks. Tests check counts and totals (22 streets, 4 stations, 2 utilities, 16 + 16 cards).
 - [x] 3. Seeded RNG in state: `nextInt`, dice roll, shuffle. Tests for determinism and serializable state.
-- [ ] 4. State types, `createGame`, and setup/turn order (roll-off with tie re-roll).
+- [x] 4. State types, `createGame`, and setup/turn order (roll-off with tie re-roll).
 - [ ] 5. Reducer skeleton: action validation by phase and player, error type, event type, `version` counter. Tests for rejected actions.
 - [ ] 6. Roll, movement, GO salary, doubles, three doubles to Jail, end turn.
 - [ ] 7. Square effects: buy or decline, rent (street incl. group double, station, utility), taxes, Free Parking, Go to Jail, `insufficient_funds` stub.
