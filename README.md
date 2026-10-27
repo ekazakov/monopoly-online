@@ -11,7 +11,6 @@ A property-trading board game that you play in the browser.
 | `packages/shared`      | Zod schemas and the API error format. The API and the web use them.                |
 | `packages/game-engine` | The game rules as a pure module. See its [README](packages/game-engine/README.md). |
 | `artifacts/`           | Standalone copies of the design system and game screen prototype.                  |
-| `design/`              | Design prototypes. The toolchain does not lint or format them.                     |
 | `plan/`                | Specifications and game rules.                                                     |
 
 The toolchain is [Vite+](https://viteplus.dev) (`vite-plus`). It supplies Vite, Vitest, Oxlint, Oxfmt and tsdown.
