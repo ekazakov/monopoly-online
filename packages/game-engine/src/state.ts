@@ -3,6 +3,8 @@ import type { Dice, RngState } from "./rng.ts";
 export const STARTING_CASH = 1500;
 export const GO_SALARY = 200;
 export const JAIL_FINE = 50;
+/** Failed rolls for doubles before the fine is mandatory. */
+export const MAX_JAIL_ATTEMPTS = 3;
 /** Open question Q1: the real limit is not decided. The engine accepts the wide range. */
 export const MIN_PLAYERS = 2;
 export const MAX_PLAYERS = 8;
@@ -63,6 +65,7 @@ export type GameEvent =
   | { type: "TaxPaid"; playerId: string; square: number; amount: number }
   | { type: "CardDrawn"; playerId: string; deck: DeckName; cardIndex: number }
   | { type: "CashChanged"; playerId: string; amount: number; reason: "card" }
+  | { type: "FinePaid"; playerId: string; amount: number }
   | { type: "SentToJail"; playerId: string }
   | { type: "LeftJail"; playerId: string }
   | { type: "TurnEnded"; playerId: string; nextPlayerId: string }
@@ -76,8 +79,7 @@ export type GameErrorCode =
   | "wrong_phase"
   /** Temporary. Debt and bankruptcy are not built yet, so a payment the player cannot make is rejected. */
   | "insufficient_funds"
-  /** Temporary. The action is valid but its rules are not built yet. */
-  | "not_implemented";
+  | "no_jail_card";
 
 export interface GameError {
   readonly code: GameErrorCode;

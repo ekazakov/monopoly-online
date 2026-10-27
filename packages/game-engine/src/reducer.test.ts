@@ -61,15 +61,6 @@ describe("applyAction validation", () => {
     expect(result).toMatchObject({ ok: false, error: { code: "wrong_phase" } });
   });
 
-  test("a valid action reaches its handler (stub says not implemented)", () => {
-    const state = withTurn(game(), "awaiting_jail_choice");
-    const result = applyAction(state, {
-      type: "PayJailFine",
-      playerId: state.turn.currentPlayerId,
-    });
-    expect(result).toMatchObject({ ok: false, error: { code: "not_implemented" } });
-  });
-
   test("does not change the input state", () => {
     const state = game();
     const snapshot = JSON.parse(JSON.stringify(state)) as GameState;

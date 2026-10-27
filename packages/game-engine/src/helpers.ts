@@ -60,18 +60,16 @@ export function advanceTurn(state: GameState, events: GameEvent[]): GameState {
 
 /**
  * Call when a roll is fully resolved (the landing is done). A player sent to Jail loses
- * the turn at once. Doubles give another roll. Otherwise the player may end the turn.
+ * the turn at once. A double rolled in this turn gives another roll (leaving Jail by doubles does not count). Otherwise the player may end the turn.
  */
 export function finishRoll(state: GameState, events: GameEvent[]): GameState {
   const player = getPlayer(state, state.turn.currentPlayerId);
   if (player.inJail) return advanceTurn(state, events);
-  const dice = state.turn.dice;
-  const isDouble = dice !== null && dice[0] === dice[1];
   return {
     ...state,
     turn: {
       ...state.turn,
-      phase: isDouble ? "awaiting_roll" : "awaiting_end_turn",
+      phase: state.turn.doubles > 0 ? "awaiting_roll" : "awaiting_end_turn",
     },
   };
 }

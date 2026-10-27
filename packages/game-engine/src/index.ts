@@ -3,6 +3,7 @@ export * from "./cardplay.ts";
 export * from "./cards.ts";
 export * from "./game.ts";
 export * from "./helpers.ts";
+export * from "./jail.ts";
 export * from "./landing.ts";
 export * from "./rng.ts";
 export * from "./state.ts";

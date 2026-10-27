@@ -84,21 +84,6 @@ describe("RollDice", () => {
     const state = base(3);
     expect(roll(state)).toEqual(roll(state));
   });
-
-  test("rolling in Jail is not built yet", () => {
-    const state = gameWhere(
-      () => true,
-      setCurrent({ inJail: true, position: 10 }),
-      (s) => ({
-        ...s,
-        turn: { ...s.turn, phase: "awaiting_jail_choice" },
-      }),
-    );
-    expect(applyAction(state, { type: "RollDice", playerId: current(state) })).toMatchObject({
-      ok: false,
-      error: { code: "not_implemented" },
-    });
-  });
 });
 
 describe("EndTurn", () => {

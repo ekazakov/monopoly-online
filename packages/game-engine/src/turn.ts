@@ -1,17 +1,16 @@
 import type { ActionOf } from "./actions.ts";
 import { BOARD_SIZE } from "./board.ts";
 import { advanceTurn, getPlayer, movePlayer, sendToJail } from "./helpers.ts";
+import { handleJailRoll } from "./jail.ts";
 import { resolveLanding } from "./landing.ts";
 import { rollDice } from "./rng.ts";
-import { fail } from "./state.ts";
 import type { GameEvent, GameState, Result } from "./state.ts";
 
 const MAX_DOUBLES = 3;
 
 export function handleRollDice(state: GameState, action: ActionOf<"RollDice">): Result {
   const player = getPlayer(state, action.playerId);
-  // TODO(jail): rolling for doubles in Jail is built in task 9.
-  if (player.inJail) return fail("not_implemented", "Rolling in Jail is not built yet");
+  if (player.inJail) return handleJailRoll(state, player);
 
   const roll = rollDice(state.rng);
   const [first, second] = roll.value;
