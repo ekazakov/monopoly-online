@@ -9,7 +9,7 @@ export interface NewPlayer {
 }
 
 export interface CreateGameInput {
-  /** Players in seat order. */
+  /** Players in any order. `createGame` shuffles them into turn order. */
   readonly players: readonly NewPlayer[];
   readonly seed: number;
 }
@@ -21,7 +21,9 @@ export function createGame(input: CreateGameInput): GameState {
   const error = validatePlayers(input.players);
   if (error) throw new Error(`${error.code}: ${error.message}`);
 
-  const players: Player[] = input.players.map((p) => ({
+  const order = shuffle(createRng(input.seed), input.players);
+
+  const players: Player[] = order.value.map((p) => ({
     id: p.id,
     name: p.name,
     cash: STARTING_CASH,
@@ -32,15 +34,19 @@ export function createGame(input: CreateGameInput): GameState {
     active: true,
   }));
 
-  const chance = shuffle(createRng(input.seed), indexes(CHANCE_CARDS.length));
+  const chance = shuffle(order.rng, indexes(CHANCE_CARDS.length));
   const chest = shuffle(chance.rng, indexes(CHEST_CARDS.length));
 
   return {
     version: 0,
     players,
     ownership: {},
-    turn: { currentPlayerId: null, phase: "setup_roll", doubles: 0, dice: null },
-    setup: { contenders: players.map((p) => p.id), rolls: {} },
+    turn: {
+      currentPlayerId: players[0]?.id ?? null,
+      phase: "awaiting_roll",
+      doubles: 0,
+      dice: null,
+    },
     decks: { chance: chance.value, chest: chest.value },
     rng: chest.rng,
   };

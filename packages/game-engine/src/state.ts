@@ -10,7 +10,6 @@ export const MAX_PLAYERS = 8;
 export type DeckName = "chance" | "chest";
 
 export type Phase =
-  | "setup_roll"
   | "awaiting_roll"
   | "awaiting_buy_decision"
   | "awaiting_jail_choice"
@@ -34,13 +33,6 @@ export interface Ownership {
   readonly ownerId: string;
 }
 
-/** Opening roll for turn order. Only the players in `contenders` roll. */
-export interface SetupState {
-  readonly contenders: readonly string[];
-  /** Dice total by player id, for the current round. */
-  readonly rolls: Readonly<Record<string, number>>;
-}
-
 export interface TurnState {
   readonly currentPlayerId: string | null;
   readonly phase: Phase;
@@ -52,28 +44,19 @@ export interface TurnState {
 export interface GameState {
   /** Increases by one for each accepted action. */
   readonly version: number;
-  /** Players in seat order. Play follows this order. */
+  /** Players in turn order. Play follows this order. */
   readonly players: readonly Player[];
   /** Square index (as a string) to owner. Missing means unowned. */
   readonly ownership: Readonly<Record<string, Ownership>>;
   readonly turn: TurnState;
-  readonly setup: SetupState | null;
   /** Card indexes into the static decks, top card first. Held jail cards are not in the list. */
   readonly decks: Readonly<Record<DeckName, readonly number[]>>;
   readonly rng: RngState;
 }
 
-export type GameEvent =
-  | { type: "DiceRolled"; playerId: string; dice: Dice }
-  | { type: "OrderTied"; playerIds: readonly string[] }
-  | { type: "TurnOrderDecided"; firstPlayerId: string };
+export type GameEvent = { type: "DiceRolled"; playerId: string; dice: Dice };
 
-export type GameErrorCode =
-  | "invalid_players"
-  | "wrong_phase"
-  | "not_a_contender"
-  | "already_rolled"
-  | "unknown_player";
+export type GameErrorCode = "invalid_players";
 
 export interface GameError {
   readonly code: GameErrorCode;
