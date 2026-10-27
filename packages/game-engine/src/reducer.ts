@@ -3,6 +3,7 @@ import type { Action, ActionOf, ActionType } from "./actions.ts";
 import { handlePayJailFine, handleUseJailCard } from "./jail.ts";
 import { handleBuyProperty, handleDeclineProperty } from "./landing.ts";
 import { handleEndTurn, handleRollDice } from "./turn.ts";
+import { checkGameEnd } from "./gameend.ts";
 import { fail } from "./state.ts";
 import type { GameState, Result } from "./state.ts";
 
@@ -42,7 +43,8 @@ export function createReducer(handlers: Handlers) {
     const handle = handlers[action.type] as (s: GameState, a: Action) => Result;
     const result = handle(state, action);
     if (!result.ok) return result;
-    return { ...result, state: { ...result.state, version: state.version + 1 } };
+    const versioned = { ...result.state, version: state.version + 1 };
+    return checkGameEnd(versioned, result.events);
   };
 }
 
