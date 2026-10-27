@@ -1,54 +1,21 @@
 import { describe, expect, test } from "vite-plus/test";
-import { applyAction, createGame, GO_SALARY, rollDice } from "./index.ts";
-import type { Dice, GameEvent, GameState } from "./index.ts";
-
-type Setup = (state: GameState) => GameState;
-
-const base = (seed: number): GameState =>
-  createGame({
-    seed,
-    players: [
-      { id: "a", name: "Ann" },
-      { id: "b", name: "Bo" },
-      { id: "c", name: "Cy" },
-    ],
-  });
-
-const current = (state: GameState) => state.turn.currentPlayerId;
-const player = (state: GameState, id: string) => {
-  const found = state.players.find((p) => p.id === id);
-  if (!found) throw new Error(`no player ${id}`);
-  return found;
-};
-
-const setCurrent =
-  (patch: Partial<GameState["players"][number]>): Setup =>
-  (state) => ({
-    ...state,
-    players: state.players.map((p) => (p.id === current(state) ? { ...p, ...patch } : p)),
-  });
-
-/** Find a game where the next roll satisfies `wanted`. The RNG is seeded, so this is repeatable. */
-function gameWhere(wanted: (dice: Dice) => boolean, ...setups: Setup[]): GameState {
-  for (let seed = 0; seed < 20000; seed++) {
-    const state = setups.reduce((s, setup) => setup(s), base(seed));
-    if (wanted(rollDice(state.rng).value)) return state;
-  }
-  throw new Error("no seed found");
-}
-
-function roll(state: GameState) {
-  const result = applyAction(state, { type: "RollDice", playerId: current(state) });
-  if (!result.ok) throw new Error(result.error.message);
-  return result;
-}
-
-const isDouble = (d: Dice) => d[0] === d[1];
-const types = (events: readonly GameEvent[]) => events.map((e) => e.type);
+import { applyAction, GO_SALARY } from "./index.ts";
+import type { GameState } from "./index.ts";
+import {
+  base,
+  current,
+  gameWhere,
+  isDouble,
+  player,
+  roll,
+  setCurrent,
+  types,
+} from "./test-helpers.ts";
+import type { Setup } from "./test-helpers.ts";
 
 describe("RollDice", () => {
   test("a normal roll moves the token and lets the player end the turn", () => {
-    const state = gameWhere((d) => !isDouble(d));
+    const state = gameWhere((d) => !isDouble(d) && d[0] + d[1] === 7);
     const id = current(state);
     const { state: after, events } = roll(state);
     const total = (after.turn.dice?.[0] ?? 0) + (after.turn.dice?.[1] ?? 0);
@@ -73,7 +40,7 @@ describe("RollDice", () => {
   });
 
   test("passing GO pays the salary and wraps the position", () => {
-    const state = gameWhere((d) => !isDouble(d), setCurrent({ position: 38 }));
+    const state = gameWhere((d) => !isDouble(d) && d[0] + d[1] !== 6, setCurrent({ position: 38 }));
     const id = current(state);
     const { state: after, events } = roll(state);
     const total = (after.turn.dice?.[0] ?? 0) + (after.turn.dice?.[1] ?? 0);

@@ -1,0 +1,71 @@
+import { applyAction, createGame, rollDice } from "./index.ts";
+import type { Dice, GameEvent, GameState } from "./index.ts";
+
+export type Setup = (state: GameState) => GameState;
+
+export const base = (seed: number): GameState =>
+  createGame({
+    seed,
+    players: [
+      { id: "a", name: "Ann" },
+      { id: "b", name: "Bo" },
+      { id: "c", name: "Cy" },
+    ],
+  });
+
+export const current = (state: GameState) => state.turn.currentPlayerId;
+export const player = (state: GameState, id: string) => {
+  const found = state.players.find((p) => p.id === id);
+  if (!found) throw new Error(`no player ${id}`);
+  return found;
+};
+
+export const setCurrent =
+  (patch: Partial<GameState["players"][number]>): Setup =>
+  (state) => ({
+    ...state,
+    players: state.players.map((p) => (p.id === current(state) ? { ...p, ...patch } : p)),
+  });
+
+/** Find a game where the next roll satisfies `wanted`. The RNG is seeded, so this is repeatable. */
+export function gameWhere(wanted: (dice: Dice) => boolean, ...setups: Setup[]): GameState {
+  for (let seed = 0; seed < 20000; seed++) {
+    const state = setups.reduce((s, setup) => setup(s), base(seed));
+    if (wanted(rollDice(state.rng).value)) return state;
+  }
+  throw new Error("no seed found");
+}
+
+export function roll(state: GameState) {
+  const result = applyAction(state, { type: "RollDice", playerId: current(state) });
+  if (!result.ok) throw new Error(result.error.message);
+  return result;
+}
+
+export const isDouble = (d: Dice) => d[0] === d[1];
+export const types = (events: readonly GameEvent[]) => events.map((e) => e.type);
+
+/** Make the first player who is not the current player own these squares. */
+export const owns =
+  (...squares: number[]): Setup =>
+  (state) => {
+    const owner = state.players.find((p) => p.id !== current(state))?.id ?? "";
+    return {
+      ...state,
+      ownership: {
+        ...state.ownership,
+        ...Object.fromEntries(squares.map((s) => [String(s), { ownerId: owner }])),
+      },
+    };
+  };
+
+export const ownerId = (state: GameState) =>
+  state.players.find((p) => p.id !== current(state))?.id ?? "";
+
+/** A game where the current player starts on `start` and the next roll is a non-double `total`. */
+export const landing = (start: number, total: number, ...setups: Setup[]) =>
+  gameWhere(
+    (d) => !isDouble(d) && d[0] + d[1] === total,
+    setCurrent({ position: start }),
+    ...setups,
+  );

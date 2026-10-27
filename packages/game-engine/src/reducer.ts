@@ -1,5 +1,6 @@
 import { ALLOWED_PHASES } from "./actions.ts";
 import type { Action, ActionOf, ActionType } from "./actions.ts";
+import { handleBuyProperty, handleDeclineProperty } from "./landing.ts";
 import { handleEndTurn, handleRollDice } from "./turn.ts";
 import { fail } from "./state.ts";
 import type { GameState, Result } from "./state.ts";
@@ -9,13 +10,13 @@ export type Handlers = {
   [T in ActionType]: (state: GameState, action: ActionOf<T>) => Result;
 };
 
-// TODO: replace each stub as its rules are built (tasks 7 to 9).
+// TODO: replace each stub as its rules are built (tasks 8 and 9).
 const notImplemented = (): Result => fail("not_implemented", "This action is not built yet");
 
 export const defaultHandlers: Handlers = {
   RollDice: handleRollDice,
-  BuyProperty: notImplemented,
-  DeclineProperty: notImplemented,
+  BuyProperty: handleBuyProperty,
+  DeclineProperty: handleDeclineProperty,
   PayJailFine: notImplemented,
   UseJailCard: notImplemented,
   EndTurn: handleEndTurn,

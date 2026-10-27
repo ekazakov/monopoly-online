@@ -73,6 +73,8 @@ export type GameErrorCode =
   | "player_inactive"
   | "not_your_turn"
   | "wrong_phase"
+  /** Temporary. Debt and bankruptcy are not built yet, so a payment the player cannot make is rejected. */
+  | "insufficient_funds"
   /** Temporary. The action is valid but its rules are not built yet. */
   | "not_implemented";
 
@@ -81,11 +83,20 @@ export interface GameError {
   readonly message: string;
 }
 
-export type Result =
-  | { readonly ok: true; readonly state: GameState; readonly events: readonly GameEvent[] }
-  | { readonly ok: false; readonly error: GameError };
+export interface Success {
+  readonly ok: true;
+  readonly state: GameState;
+  readonly events: readonly GameEvent[];
+}
+
+export interface Failure {
+  readonly ok: false;
+  readonly error: GameError;
+}
+
+export type Result = Success | Failure;
 
 /** Build a rejected `Result`. */
-export function fail(code: GameErrorCode, message: string): Result {
+export function fail(code: GameErrorCode, message: string): Failure {
   return { ok: false, error: { code, message } };
 }

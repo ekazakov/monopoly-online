@@ -62,9 +62,9 @@ describe("applyAction validation", () => {
   });
 
   test("a valid action reaches its handler (stub says not implemented)", () => {
-    const state = withTurn(game(), "awaiting_buy_decision");
+    const state = withTurn(game(), "awaiting_jail_choice");
     const result = applyAction(state, {
-      type: "BuyProperty",
+      type: "PayJailFine",
       playerId: state.turn.currentPlayerId,
     });
     expect(result).toMatchObject({ ok: false, error: { code: "not_implemented" } });
