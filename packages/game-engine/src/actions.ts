@@ -9,6 +9,7 @@ export type Action =
   | { type: "EndTurn"; playerId: string };
 
 export type ActionType = Action["type"];
+export type ActionOf<T extends ActionType> = Extract<Action, { type: T }>;
 
 /** Phases in which each action is allowed. In Jail, the player may also roll for doubles. */
 export const ALLOWED_PHASES: Readonly<Record<ActionType, readonly Phase[]>> = {

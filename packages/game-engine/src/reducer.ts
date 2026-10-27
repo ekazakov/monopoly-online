@@ -1,25 +1,24 @@
 import { ALLOWED_PHASES } from "./actions.ts";
-import type { Action, ActionType } from "./actions.ts";
+import type { Action, ActionOf, ActionType } from "./actions.ts";
+import { handleEndTurn, handleRollDice } from "./turn.ts";
 import { fail } from "./state.ts";
 import type { GameState, Result } from "./state.ts";
-
-type ActionOf<T extends ActionType> = Extract<Action, { type: T }>;
 
 /** A handler gets a validated action. It must not change `version`: the reducer does that. */
 export type Handlers = {
   [T in ActionType]: (state: GameState, action: ActionOf<T>) => Result;
 };
 
-// TODO: replace each stub as its rules are built (tasks 6 to 9).
+// TODO: replace each stub as its rules are built (tasks 7 to 9).
 const notImplemented = (): Result => fail("not_implemented", "This action is not built yet");
 
 export const defaultHandlers: Handlers = {
-  RollDice: notImplemented,
+  RollDice: handleRollDice,
   BuyProperty: notImplemented,
   DeclineProperty: notImplemented,
   PayJailFine: notImplemented,
   UseJailCard: notImplemented,
-  EndTurn: notImplemented,
+  EndTurn: handleEndTurn,
 };
 
 /** Check who may act, and in which phase. Return an error `Result`, or null when valid. */

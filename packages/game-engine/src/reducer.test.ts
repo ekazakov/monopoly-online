@@ -31,7 +31,7 @@ describe("applyAction validation", () => {
 
   test("rejects an eliminated player", () => {
     const state = game();
-    const current = state.turn.currentPlayerId ?? "";
+    const current = state.turn.currentPlayerId;
     const eliminated = {
       ...state,
       players: state.players.map((p) => (p.id === current ? { ...p, active: false } : p)),
@@ -42,7 +42,7 @@ describe("applyAction validation", () => {
 
   test("rejects every action in the wrong phase", () => {
     const state = game();
-    const id = state.turn.currentPlayerId ?? "";
+    const id = state.turn.currentPlayerId;
     const actions: Action[] = [
       { type: "BuyProperty", playerId: id },
       { type: "DeclineProperty", playerId: id },
@@ -56,16 +56,16 @@ describe("applyAction validation", () => {
 
   test("rejects all actions when the game is over", () => {
     const state = withTurn(game(), "game_over");
-    const id = state.turn.currentPlayerId ?? "";
+    const id = state.turn.currentPlayerId;
     const result = applyAction(state, { type: "RollDice", playerId: id });
     expect(result).toMatchObject({ ok: false, error: { code: "wrong_phase" } });
   });
 
   test("a valid action reaches its handler (stub says not implemented)", () => {
-    const state = game();
+    const state = withTurn(game(), "awaiting_buy_decision");
     const result = applyAction(state, {
-      type: "RollDice",
-      playerId: state.turn.currentPlayerId ?? "",
+      type: "BuyProperty",
+      playerId: state.turn.currentPlayerId,
     });
     expect(result).toMatchObject({ ok: false, error: { code: "not_implemented" } });
   });
@@ -91,7 +91,7 @@ describe("createReducer", () => {
 
   test("raises the version by one and passes events through", () => {
     const state = game();
-    const id = state.turn.currentPlayerId ?? "";
+    const id = state.turn.currentPlayerId;
     const result = reduce(state, { type: "RollDice", playerId: id });
     expect(result).toMatchObject({
       ok: true,

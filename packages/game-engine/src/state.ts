@@ -34,7 +34,7 @@ export interface Ownership {
 }
 
 export interface TurnState {
-  readonly currentPlayerId: string | null;
+  readonly currentPlayerId: string;
   readonly phase: Phase;
   /** Doubles rolled in a row this turn. */
   readonly doubles: number;

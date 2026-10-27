@@ -34,6 +34,9 @@ export function createGame(input: CreateGameInput): GameState {
     active: true,
   }));
 
+  const first = players[0];
+  if (!first) throw new Error("invalid_players: no players");
+
   const chance = shuffle(order.rng, indexes(CHANCE_CARDS.length));
   const chest = shuffle(chance.rng, indexes(CHEST_CARDS.length));
 
@@ -42,7 +45,7 @@ export function createGame(input: CreateGameInput): GameState {
     players,
     ownership: {},
     turn: {
-      currentPlayerId: players[0]?.id ?? null,
+      currentPlayerId: first.id,
       phase: "awaiting_roll",
       doubles: 0,
       dice: null,

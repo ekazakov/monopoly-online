@@ -49,7 +49,7 @@ Temporary behavior for out-of-scope parts (must be clear in code and tests):
 - [x] 4. State types, `createGame`, and setup/turn order (roll-off with tie re-roll). Done and committed, but the roll-off is now removed by task 4a.
 - [x] 4a. Remove the roll-off: delete `setup.ts`, `SetupState`, the `setup_roll` phase, the roll-off events and error codes, and the roll-off tests. `createGame` shuffles the player order with the seeded RNG and starts in `awaiting_roll` with the first player. Add tests for a random but repeatable order.
 - [x] 5. Reducer skeleton: action validation by phase and player, error type, event type, `version` counter. Tests for rejected actions.
-- [ ] 6. Roll, movement, GO salary, doubles, three doubles to Jail, end turn.
+- [x] 6. Roll, movement, GO salary, doubles, three doubles to Jail, end turn.
 - [ ] 7. Square effects: buy or decline, rent (street incl. group double, station, utility), taxes, Free Parking, Go to Jail, `insufficient_funds` stub.
 - [ ] 8. Chance and Chest: draw, move cards (incl. nearest Station/Utility), money cards, pay-each-player cards, repair cards, jail cards, Get Out of Jail Free.
 - [ ] 9. Jail: stay, pay fine, use card, doubles to leave, forced fine on third failed roll.
