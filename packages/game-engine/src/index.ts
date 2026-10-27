@@ -1,1 +1,2 @@
-export const BOARD_SIZE = 40;
+export * from "./board.ts";
+export * from "./cards.ts";
