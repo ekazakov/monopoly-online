@@ -4,14 +4,15 @@ A property-trading board game that you play in the browser.
 
 ## Structure
 
-| Path              | Content                                                                       |
-| ----------------- | ----------------------------------------------------------------------------- |
-| `apps/web`        | Frontend. React, TanStack Query, three.js through React Three Fiber and drei. |
-| `apps/api`        | Backend. Hono on Node, SQLite (better-sqlite3), Kysely queries.               |
-| `packages/shared` | Zod schemas and the API error format. The API and the web use them.           |
-| `artifacts/`      | Standalone copies of the design system and game screen prototype.             |
-| `design/`         | Design prototypes. The toolchain does not lint or format them.                |
-| `plan/`           | Specifications and game rules.                                                |
+| Path                   | Content                                                                            |
+| ---------------------- | ---------------------------------------------------------------------------------- |
+| `apps/web`             | Frontend. React, TanStack Query, three.js through React Three Fiber and drei.      |
+| `apps/api`             | Backend. Hono on Node, SQLite (better-sqlite3), Kysely queries.                    |
+| `packages/shared`      | Zod schemas and the API error format. The API and the web use them.                |
+| `packages/game-engine` | The game rules as a pure module. See its [README](packages/game-engine/README.md). |
+| `artifacts/`           | Standalone copies of the design system and game screen prototype.                  |
+| `design/`              | Design prototypes. The toolchain does not lint or format them.                     |
+| `plan/`                | Specifications and game rules.                                                     |
 
 The toolchain is [Vite+](https://viteplus.dev) (`vite-plus`). It supplies Vite, Vitest, Oxlint, Oxfmt and tsdown.
 
@@ -82,6 +83,10 @@ pnpm artifact:design-system
 This command starts the Design System at http://localhost:8792. The sidebar lists all the boards.
 
 Both commands use `artifacts/serve.mjs`, a small static server without dependencies. To use another port, run `node artifacts/serve.mjs <folder> <port>`. Opening the HTML files from disk does not work, because ES modules need a server. The toolchain does not lint or format `artifacts/`.
+
+## Game engine
+
+The game rules are in `packages/game-engine`. The module has no I/O, and it is not connected to the API or the web app yet. For the design, the state and the parts that are not built yet, see the [package README](packages/game-engine/README.md). The task list is in [plan/game-engine-plan.md](plan/game-engine-plan.md).
 
 ## Use the Vite+ CLI
 

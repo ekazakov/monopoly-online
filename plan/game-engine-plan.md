@@ -54,7 +54,7 @@ Temporary behavior for out-of-scope parts (must be clear in code and tests):
 - [x] 8. Chance and Chest: draw, move cards (incl. nearest Station/Utility), money cards, pay-each-player cards, repair cards, jail cards, Get Out of Jail Free.
 - [x] 9. Jail: stay, pay fine, use card, doubles to leave, forced fine on third failed roll.
 - [x] 10. Game end (one active player left) and a full-game test: seeded random bot plays many games, checks invariants (cash is never negative, one owner per property, deck has 16 cards, same seed gives same result).
-- [ ] 11. Docs: package README, and a short section in the root README. Final `pnpm ready`.
+- [x] 11. Docs: package README, and a short section in the root README. Final `pnpm ready`.
 
 ## Verification
 
