@@ -1,7 +1,13 @@
-import { actorFor, ALLOWED_PHASES } from "./actions.ts";
+import { ALLOWED_PHASES, mayAct } from "./actions.ts";
 import type { Action, ActionOf, ActionType } from "./actions.ts";
 import { handleBuild, handleSellBuilding } from "./buildings.ts";
 import { handleBid, handlePassBid } from "./auction.ts";
+import {
+  handleAcceptTrade,
+  handleCancelTrade,
+  handleProposeTrade,
+  handleRejectTrade,
+} from "./trade.ts";
 import { handlePayDebt } from "./paydebt.ts";
 import { handleMortgage, handleUnmortgage } from "./mortgage.ts";
 import { handlePayJailFine, handleUseJailCard } from "./jail.ts";
@@ -30,6 +36,10 @@ export const defaultHandlers: Handlers = {
   PayDebt: handlePayDebt,
   Bid: handleBid,
   PassBid: handlePassBid,
+  ProposeTrade: handleProposeTrade,
+  AcceptTrade: handleAcceptTrade,
+  RejectTrade: handleRejectTrade,
+  CancelTrade: handleCancelTrade,
 };
 
 /** Check who may act, and in which phase. Return an error `Result`, or null when valid. */
@@ -37,7 +47,7 @@ function validate(state: GameState, action: Action): Result | null {
   const player = state.players.find((p) => p.id === action.playerId);
   if (!player) return fail("unknown_player", `Unknown player: ${action.playerId}`);
   if (!player.active) return fail("player_inactive", "Eliminated players cannot act");
-  if (actorFor(state) !== action.playerId) {
+  if (!mayAct(state, action.type, action.playerId)) {
     return fail("not_your_turn", "It is not this player's turn to act");
   }
   if (!ALLOWED_PHASES[action.type].includes(state.turn.phase)) {

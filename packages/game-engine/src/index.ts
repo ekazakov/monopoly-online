@@ -18,5 +18,6 @@ export * from "./rng.ts";
 export * from "./state.ts";
 export * from "./actions.ts";
 export * from "./reducer.ts";
+export * from "./trade.ts";
 export * from "./turn.ts";
 export * from "./turnflow.ts";

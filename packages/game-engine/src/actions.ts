@@ -1,4 +1,4 @@
-import type { GameState, Phase } from "./state.ts";
+import type { GameState, Phase, TradeOffer } from "./state.ts";
 
 export type Action =
   | { type: "RollDice"; playerId: string }
@@ -13,6 +13,16 @@ export type Action =
   | { type: "PayDebt"; playerId: string }
   | { type: "Bid"; playerId: string; amount: number }
   | { type: "PassBid"; playerId: string }
+  | {
+      type: "ProposeTrade";
+      playerId: string;
+      toPlayerId: string;
+      give: TradeOffer;
+      get: TradeOffer;
+    }
+  | { type: "AcceptTrade"; playerId: string }
+  | { type: "RejectTrade"; playerId: string }
+  | { type: "CancelTrade"; playerId: string }
   | { type: "EndTurn"; playerId: string };
 
 export type ActionType = Action["type"];
@@ -43,10 +53,21 @@ export const ALLOWED_PHASES: Readonly<Record<ActionType, readonly Phase[]>> = {
   PayDebt: ["awaiting_debt"],
   Bid: ["awaiting_bid"],
   PassBid: ["awaiting_bid"],
+  ProposeTrade: DEBT_PHASES,
+  AcceptTrade: ["awaiting_trade_response"],
+  RejectTrade: ["awaiting_trade_response"],
+  CancelTrade: ["awaiting_trade_response"],
 };
 
-/** The player who may act now: the bidder in an auction, otherwise the player on turn. */
+/** The player who must act now: the bidder, the trade partner, or the player on turn. */
 export function actorFor(state: GameState): string {
   if (state.turn.phase === "awaiting_bid" && state.auction) return state.auction.actorId;
+  if (state.turn.phase === "awaiting_trade_response" && state.trade) return state.trade.toId;
   return state.turn.currentPlayerId;
+}
+
+/** Whether a player may do this action now. Only the proposer can cancel an open trade. */
+export function mayAct(state: GameState, type: ActionType, playerId: string): boolean {
+  if (type === "CancelTrade" && state.trade) return playerId === state.trade.fromId;
+  return actorFor(state) === playerId;
 }

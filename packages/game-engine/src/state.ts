@@ -18,6 +18,7 @@ export type Phase =
   | "awaiting_end_turn"
   | "awaiting_debt"
   | "awaiting_bid"
+  | "awaiting_trade_response"
   | "game_over";
 
 export interface Player {
@@ -76,6 +77,24 @@ export interface Auction {
   readonly queue: readonly number[];
 }
 
+/** What one side of a trade hands over. */
+export interface TradeOffer {
+  readonly cash: number;
+  readonly squares: readonly number[];
+  readonly jailCards: readonly DeckName[];
+}
+
+export interface Trade {
+  readonly fromId: string;
+  readonly toId: string;
+  /** What the proposer gives. */
+  readonly give: TradeOffer;
+  /** What the proposer receives. */
+  readonly get: TradeOffer;
+  /** The phase to return to when the trade is answered. */
+  readonly returnPhase: Phase;
+}
+
 export interface TurnState {
   readonly currentPlayerId: string;
   readonly phase: Phase;
@@ -96,6 +115,8 @@ export interface GameState {
   readonly debts: readonly Debt[];
   /** The running auction, if any. */
   readonly auction: Auction | null;
+  /** The open trade proposal, if any. */
+  readonly trade: Trade | null;
   /** Card indexes into the static decks, top card first. Held jail cards are not in the list. */
   readonly decks: Readonly<Record<DeckName, readonly number[]>>;
   readonly rng: RngState;
@@ -137,6 +158,10 @@ export type GameEvent =
   | { type: "BidPlaced"; playerId: string; amount: number }
   | { type: "BidPassed"; playerId: string; auto: boolean }
   | { type: "AuctionEnded"; square: number; winnerId: string | null; price: number }
+  | { type: "TradeProposed"; fromId: string; toId: string; give: TradeOffer; get: TradeOffer }
+  | { type: "TradeAccepted"; fromId: string; toId: string }
+  | { type: "TradeRejected"; fromId: string; toId: string }
+  | { type: "TradeCancelled"; fromId: string; toId: string }
   | { type: "FinePaid"; playerId: string; amount: number }
   | { type: "SentToJail"; playerId: string }
   | { type: "LeftJail"; playerId: string }
@@ -164,7 +189,8 @@ export type GameErrorCode =
   | "not_mortgaged"
   | "has_buildings"
   | "no_debt"
-  | "invalid_bid";
+  | "invalid_bid"
+  | "invalid_trade";
 
 export interface GameError {
   readonly code: GameErrorCode;

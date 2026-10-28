@@ -39,14 +39,9 @@ export function oweMany(
       ...state.debts.filter((d) => d.debtorId === debtorId),
       ...charges,
     ];
-    if (obligations.some((o) => o.creditor.type === "bank")) {
-      return { ok: true, state: bankruptToBank(state, debtorId, events), settled: false };
-    }
-    const eliminated = declareBankruptcy(state, debtorId, obligations, events);
-    // The debtor's turn is over. Off turn, the turn does not move.
     return {
       ok: true,
-      state: onTurn ? advanceTurn(eliminated, events) : eliminated,
+      state: declareInsolvent(state, debtorId, obligations, events),
       settled: false,
     };
   }
@@ -76,6 +71,24 @@ export function owe(
   then: DebtThen,
 ): OweResult {
   return oweMany(state, debtorId, [charge], events, then);
+}
+
+/**
+ * The debtor cannot raise enough cash for these obligations. A debt to the bank wins over debts
+ * to players. On the debtor's own turn the turn moves on (or the deeds are auctioned first).
+ * Off turn, the turn does not move.
+ */
+export function declareInsolvent(
+  state: GameState,
+  debtorId: string,
+  obligations: readonly Obligation[],
+  events: GameEvent[],
+): GameState {
+  if (obligations.some((o) => o.creditor.type === "bank")) {
+    return bankruptToBank(state, debtorId, events);
+  }
+  const eliminated = declareBankruptcy(state, debtorId, obligations, events);
+  return state.turn.currentPlayerId === debtorId ? advanceTurn(eliminated, events) : eliminated;
 }
 
 /**
