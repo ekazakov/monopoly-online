@@ -173,12 +173,10 @@ describe("rent", () => {
     expect(types(events)).toEqual(["DiceRolled", "PlayerMoved"]);
   });
 
-  test("a player who cannot pay rent is rejected (temporary)", () => {
+  test("a player who cannot pay rent and has no assets to cover it goes bankrupt", () => {
     const state = landing(0, 3, owns(3), setCurrent({ cash: 2 }));
-    expect(applyAction(state, { type: "RollDice", playerId: current(state) })).toMatchObject({
-      ok: false,
-      error: { code: "insufficient_funds" },
-    });
+    const { state: after } = roll(state);
+    expect(player(after, current(state)).active).toBe(false);
   });
 });
 

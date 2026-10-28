@@ -100,6 +100,16 @@ export type GameEvent =
       reason: DebtReason;
     }
   | { type: "DebtPaid"; debtorId: string; creditor: DebtCreditor; amount: number }
+  | { type: "BankruptcyDeclared"; playerId: string; creditorIds: readonly string[] }
+  | {
+      type: "AssetsTransferred";
+      fromId: string;
+      toId: string;
+      squares: readonly number[];
+      jailCards: readonly DeckName[];
+      cash: readonly { playerId: string; amount: number }[];
+    }
+  | { type: "PlayerEliminated"; playerId: string }
   | { type: "FinePaid"; playerId: string; amount: number }
   | { type: "SentToJail"; playerId: string }
   | { type: "LeftJail"; playerId: string }

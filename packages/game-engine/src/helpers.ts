@@ -64,7 +64,7 @@ export function advanceTurn(state: GameState, events: GameEvent[]): GameState {
  */
 export function finishRoll(state: GameState, events: GameEvent[]): GameState {
   const player = getPlayer(state, state.turn.currentPlayerId);
-  if (player.inJail) return advanceTurn(state, events);
+  if (player.inJail || !player.active) return advanceTurn(state, events);
   return {
     ...state,
     turn: {

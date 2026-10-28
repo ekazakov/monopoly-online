@@ -1,5 +1,7 @@
 import type { ActionOf } from "./actions.ts";
 import { isProperty, SQUARES } from "./board.ts";
+import { declareBankruptcy } from "./bankruptcy.ts";
+import type { Obligation } from "./bankruptcy.ts";
 import { finishRoll, getPlayer, updatePlayer } from "./helpers.ts";
 import { fail } from "./state.ts";
 import type {
@@ -72,8 +74,20 @@ export function oweMany(
     return { ok: true, state: transfer(state, debtorId, charges), settled: true };
   }
   if (liquidationValue(state, debtorId) < outstanding(state, debtorId) + total) {
-    // TODO(bankruptcy): declare bankruptcy here (task 17 for players, task 20 for the bank).
-    return fail("insufficient_funds", `The player cannot pay $${total}`);
+    const obligations: Obligation[] = [
+      ...state.debts.filter((d) => d.debtorId === debtorId),
+      ...charges,
+    ];
+    if (obligations.some((o) => o.creditor.type === "bank")) {
+      // TODO(bankruptcy to the bank): task 20.
+      return fail("insufficient_funds", `The player cannot pay $${total}`);
+    }
+    // The debtor's turn (if it is their turn) has moved on, so the caller stops here.
+    return {
+      ok: true,
+      state: declareBankruptcy(state, debtorId, obligations, events),
+      settled: false,
+    };
   }
   const debts: Debt[] = charges.map((c) => ({ debtorId, ...c, then }));
   for (const c of charges) {

@@ -109,3 +109,23 @@ export const holding =
       },
     };
   };
+
+/** Add a fourth (or later) player at the end of the turn order. */
+export const addPlayer =
+  (id: string): Setup =>
+  (state) => ({
+    ...state,
+    players: [
+      ...state.players,
+      {
+        id,
+        name: id,
+        cash: 1500,
+        position: 0,
+        inJail: false,
+        jailTurns: 0,
+        heldJailCards: [],
+        active: true,
+      },
+    ],
+  });

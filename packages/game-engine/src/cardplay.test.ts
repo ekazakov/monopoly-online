@@ -71,12 +71,10 @@ describe("money cards", () => {
     expect(cash(after, ownerId(state))).toBe(cash(state, ownerId(state)) + 50);
   });
 
-  test("pay each other player without enough cash is rejected (temporary)", () => {
+  test("pay each other player without enough assets is bankruptcy", () => {
     const state = onChance(13, setCurrent({ cash: 60 }));
-    expect(applyAction(state, { type: "RollDice", playerId: current(state) })).toMatchObject({
-      ok: false,
-      error: { code: "insufficient_funds" },
-    });
+    const { state: after } = roll(state);
+    expect(player(after, current(state)).active).toBe(false);
   });
 
   test("collect from each other player", () => {
