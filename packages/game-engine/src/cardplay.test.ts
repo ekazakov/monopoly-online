@@ -3,6 +3,7 @@ import { applyAction } from "./index.ts";
 import type { GameEvent, GameState } from "./index.ts";
 import {
   current,
+  holding,
   landing,
   owns,
   ownerId,
@@ -85,8 +86,23 @@ describe("money cards", () => {
     expect(cash(after, ownerId(state))).toBe(cash(state, ownerId(state)) - 10);
   });
 
-  test("repair cards cost nothing while there are no buildings", () => {
-    const state = onChance(12);
+  test("Chance repairs charge per house and hotel", () => {
+    const state = onChance(12, holding("current", { 1: { houses: 2 }, 3: { houses: 5 } }));
+    expect(me(roll(state).state)).toBe(me(state) - (2 * 25 + 100));
+  });
+
+  test("Chest repairs charge their own amounts", () => {
+    const state = landing(
+      10,
+      7,
+      topCard("chest", 11),
+      holding("current", { 1: { houses: 2 }, 3: { houses: 5 } }),
+    );
+    expect(me(roll(state).state)).toBe(me(state) - (2 * 40 + 115));
+  });
+
+  test("repairs ignore other players' buildings and cost nothing without buildings", () => {
+    const state = onChance(12, holding("other", { 1: { houses: 3 } }));
     expect(me(roll(state).state)).toBe(me(state));
   });
 });

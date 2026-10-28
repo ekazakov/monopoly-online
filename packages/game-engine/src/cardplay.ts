@@ -2,6 +2,7 @@ import { BOARD_SIZE, SQUARES } from "./board.ts";
 import { CHANCE_CARDS, CHEST_CARDS } from "./cards.ts";
 import { charge, finishRoll, getPlayer, movePlayer, sendToJail, updatePlayer } from "./helpers.ts";
 import type { Landing, LandingOptions } from "./landing.ts";
+import { buildingCounts } from "./ownership.ts";
 import { fail } from "./state.ts";
 import type { DeckName, Failure, GameEvent, GameState } from "./state.ts";
 
@@ -80,9 +81,13 @@ export function playCard(
       return ok(finishRoll(next, events));
     }
 
-    case "repairs":
-      // TODO(buildings): charge per house and hotel. Without buildings the player pays nothing.
-      return ok(finishRoll(drawn, events));
+    case "repairs": {
+      const { houses, hotels } = buildingCounts(drawn, player.id);
+      const amount = houses * effect.perHouse + hotels * effect.perHotel;
+      if (amount === 0) return ok(finishRoll(drawn, events));
+      if (!charge(drawn, player.id, amount)) return cannotPay(amount);
+      return ok(finishRoll(cashChange(drawn, player.id, -amount, events), events));
+    }
 
     case "go_to_jail":
       return ok(finishRoll(sendToJail(drawn, player.id, events), events));

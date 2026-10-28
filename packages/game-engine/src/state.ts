@@ -33,6 +33,9 @@ export interface Player {
 
 export interface Ownership {
   readonly ownerId: string;
+  /** 0 to 4 houses, or 5 for a hotel. Only streets have buildings. */
+  readonly houses: number;
+  readonly mortgaged: boolean;
 }
 
 export interface TurnState {
@@ -48,7 +51,7 @@ export interface GameState {
   readonly version: number;
   /** Players in turn order. Play follows this order. */
   readonly players: readonly Player[];
-  /** Square index (as a string) to owner. Missing means unowned. */
+  /** Square index (as a string) to its deed. Missing means unowned. */
   readonly ownership: Readonly<Record<string, Ownership>>;
   readonly turn: TurnState;
   /** Card indexes into the static decks, top card first. Held jail cards are not in the list. */

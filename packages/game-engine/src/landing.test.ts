@@ -4,6 +4,7 @@ import type { GameState } from "./index.ts";
 import {
   current,
   gameWhere,
+  holding,
   isDouble,
   landing,
   owns,
@@ -73,7 +74,11 @@ describe("buying", () => {
     const state = roll(landing(0, 3)).state;
     const id = current(state);
     const result = act(state, "BuyProperty");
-    expect(result.ok && result.state.ownership["3"]).toEqual({ ownerId: id });
+    expect(result.ok && result.state.ownership["3"]).toEqual({
+      ownerId: id,
+      houses: 0,
+      mortgaged: false,
+    });
     expect(result.ok && cash(result.state, id)).toBe(cash(state, id) - 60);
     expect(result.ok && result.state.turn.phase).toBe("awaiting_end_turn");
     expect(result.ok && types(result.events)).toEqual(["PropertyBought"]);
@@ -158,7 +163,7 @@ describe("rent", () => {
       (state) => {
         const owned = owns(...squares)(state);
         const ownership = Object.fromEntries(
-          squares.map((s) => [String(s), { ownerId: current(state) }]),
+          squares.map((s) => [String(s), { ownerId: current(state), houses: 0, mortgaged: false }]),
         );
         return { ...owned, ownership };
       };
@@ -183,5 +188,41 @@ describe("rules sanity", () => {
     const { state: after } = roll(state);
     expect(cash(after, current(state))).toBe(cash(state, current(state)) - 200);
     expect(after.turn).toMatchObject({ phase: "awaiting_roll", doubles: 1 });
+  });
+});
+
+describe("rent with buildings and mortgages", () => {
+  const owed = (state: GameState) =>
+    cash(state, current(state)) - cash(roll(state).state, current(state));
+
+  test("houses raise a street's rent", () => {
+    expect(owed(landing(0, 3, holding("other", { 1: {}, 3: { houses: 2 } })))).toBe(60);
+  });
+
+  test("a hotel pays the hotel rent", () => {
+    expect(owed(landing(0, 3, holding("other", { 1: { houses: 4 }, 3: { houses: 5 } })))).toBe(450);
+  });
+
+  test("a street with no buildings still pays double beside a built sibling", () => {
+    expect(owed(landing(0, 3, holding("other", { 1: { houses: 1 }, 3: {} })))).toBe(8);
+  });
+
+  test("a mortgaged street pays no rent and sends no event", () => {
+    const state = landing(0, 3, holding("other", { 3: { mortgaged: true } }));
+    const { events } = roll(state);
+    expect(owed(state)).toBe(0);
+    expect(types(events)).toEqual(["DiceRolled", "PlayerMoved"]);
+  });
+
+  test("a mortgaged sibling does not remove the full-group double", () => {
+    expect(owed(landing(0, 3, holding("other", { 1: { mortgaged: true }, 3: {} })))).toBe(8);
+  });
+
+  test("a mortgaged station pays no rent", () => {
+    expect(owed(landing(0, 5, holding("other", { 5: { mortgaged: true } })))).toBe(0);
+  });
+
+  test("a mortgaged station still counts for the other stations' rent", () => {
+    expect(owed(landing(0, 5, holding("other", { 5: {}, 15: { mortgaged: true } })))).toBe(50);
   });
 });

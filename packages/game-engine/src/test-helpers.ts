@@ -54,7 +54,9 @@ export const owns =
       ...state,
       ownership: {
         ...state.ownership,
-        ...Object.fromEntries(squares.map((s) => [String(s), { ownerId: owner }])),
+        ...Object.fromEntries(
+          squares.map((s) => [String(s), { ownerId: owner, houses: 0, mortgaged: false }]),
+        ),
       },
     };
   };
@@ -80,3 +82,30 @@ export const topCard =
       [deck]: [cardIndex, ...state.decks[deck].filter((i) => i !== cardIndex)],
     },
   });
+
+export interface DeedSetup {
+  houses?: number;
+  mortgaged?: boolean;
+}
+
+/**
+ * Give deeds to `"other"` (the first player who is not the current player) or `"current"`.
+ * Each entry is a square with optional houses and a mortgage flag.
+ */
+export const holding =
+  (who: "other" | "current", deeds: Record<number, DeedSetup>): Setup =>
+  (state) => {
+    const owner = who === "current" ? current(state) : ownerId(state);
+    return {
+      ...state,
+      ownership: {
+        ...state.ownership,
+        ...Object.fromEntries(
+          Object.entries(deeds).map(([square, deed]) => [
+            square,
+            { ownerId: owner, houses: deed.houses ?? 0, mortgaged: deed.mortgaged ?? false },
+          ]),
+        ),
+      },
+    };
+  };

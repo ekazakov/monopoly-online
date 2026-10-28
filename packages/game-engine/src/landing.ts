@@ -1,34 +1,28 @@
 import type { ActionOf } from "./actions.ts";
-import { groupSquares, SQUARES, STATION_RENT, UTILITY_MULTIPLIER } from "./board.ts";
-import type { PropertySquare } from "./board.ts";
+import { isProperty, SQUARES, STATION_RENT, UTILITY_MULTIPLIER } from "./board.ts";
 import { playCard } from "./cardplay.ts";
 import { charge, finishRoll, getPlayer, sendToJail, updatePlayer } from "./helpers.ts";
+import { entryOf, ownedInGroup, ownerOf, ownsFullGroup, setEntry } from "./ownership.ts";
 import { rollDice } from "./rng.ts";
 import { fail } from "./state.ts";
 import type { Failure, GameEvent, GameState, Result } from "./state.ts";
 
 export type Landing = { readonly ok: true; readonly state: GameState } | Failure;
 
-const key = (square: number) => String(square);
-const ownerOf = (state: GameState, square: number) => state.ownership[key(square)]?.ownerId;
-
-function ownedCount(state: GameState, group: PropertySquare["group"], ownerId: string): number {
-  return groupSquares(group).filter((square) => ownerOf(state, square) === ownerId).length;
-}
-
-/** Rent for a property square. The owner must own it. `diceTotal` is used for utilities. */
-export function rentFor(
-  state: GameState,
-  square: PropertySquare,
-  ownerId: string,
-  diceTotal: number,
-): number {
-  const owned = ownedCount(state, square.group, ownerId);
+/**
+ * Rent for an owned property square: 0 when it is unowned or mortgaged.
+ * `diceTotal` is used for utilities.
+ */
+export function rentFor(state: GameState, position: number, diceTotal: number): number {
+  const square = SQUARES[position];
+  const entry = entryOf(state, position);
+  if (!square || !isProperty(square) || !entry || entry.mortgaged) return 0;
+  const owned = ownedInGroup(state, square.group, entry.ownerId);
   if (square.kind === "station") return STATION_RENT[owned - 1] ?? 0;
   if (square.kind === "utility") return (UTILITY_MULTIPLIER[owned - 1] ?? 0) * diceTotal;
-  // Buildings are not built yet, so a street always pays its base rent (doubled for a full group).
-  const fullGroup = owned === groupSquares(square.group).length;
-  return fullGroup ? square.rent[0] * 2 : square.rent[0];
+  if (entry.houses > 0) return square.rent[entry.houses] ?? 0;
+  // A street with no buildings of its own pays double when the owner holds the full group.
+  return ownsFullGroup(state, square.group, entry.ownerId) ? square.rent[0] * 2 : square.rent[0];
 }
 
 const cannotPay = (amount: number): Failure =>
@@ -90,7 +84,9 @@ export function resolveLanding(
           state: { ...state, turn: { ...state.turn, phase: "awaiting_buy_decision" } },
         };
       }
-      if (ownerId === player.id) return { ok: true, state: finishRoll(state, events) };
+      if (ownerId === player.id || entryOf(state, player.position)?.mortgaged) {
+        return { ok: true, state: finishRoll(state, events) };
+      }
 
       let working = state;
       let amount: number;
@@ -102,7 +98,7 @@ export function resolveLanding(
       } else {
         const diceTotal = (state.turn.dice?.[0] ?? 0) + (state.turn.dice?.[1] ?? 0);
         const multiplier = square.kind === "station" ? (options.stationRentMultiplier ?? 1) : 1;
-        amount = rentFor(state, square, ownerId, diceTotal) * multiplier;
+        amount = rentFor(state, player.position, diceTotal) * multiplier;
       }
       const paid = charge(working, player.id, amount);
       if (!paid) return cannotPay(amount);
@@ -138,10 +134,11 @@ export function handleBuyProperty(state: GameState, action: ActionOf<"BuyPropert
   const events: GameEvent[] = [
     { type: "PropertyBought", playerId: player.id, square: player.position, price: square.price },
   ];
-  const owned: GameState = {
-    ...paid,
-    ownership: { ...paid.ownership, [key(player.position)]: { ownerId: player.id } },
-  };
+  const owned = setEntry(paid, player.position, {
+    ownerId: player.id,
+    houses: 0,
+    mortgaged: false,
+  });
   return { ok: true, state: finishRoll(owned, events), events };
 }
 
