@@ -7,7 +7,9 @@ import { fail } from "./state.ts";
 import type { Failure, GameEvent, GameState, Ownership, Result } from "./state.ts";
 
 /** Lifting a mortgage costs the mortgage value plus 10%, rounded up to whole dollars. */
-export const unmortgageCost = (mortgageValue: number) => Math.ceil(mortgageValue * 1.1);
+// Whole-dollar math: `Math.ceil(50 * 1.1)` is 56 because 50 * 1.1 is 55.00000000000001.
+export const unmortgageCost = (mortgageValue: number) =>
+  mortgageValue + Math.ceil(mortgageValue / 10);
 
 interface Deed {
   readonly info: PropertySquare;

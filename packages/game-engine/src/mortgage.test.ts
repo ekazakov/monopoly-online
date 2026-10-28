@@ -47,14 +47,31 @@ describe("Mortgage", () => {
 });
 
 describe("Unmortgage", () => {
-  test("costs the mortgage value plus 10%, rounded up", () => {
-    expect(unmortgageCost(30)).toBe(33);
-    expect(unmortgageCost(175)).toBe(193);
+  test("costs the mortgage value plus 10%, rounded up to whole dollars", () => {
+    const table: [number, number][] = [
+      [30, 33],
+      [50, 55],
+      [60, 66],
+      [75, 83],
+      [90, 99],
+      [100, 110],
+      [110, 121],
+      [175, 193],
+      [200, 220],
+    ];
+    expect(table.map(([value]) => unmortgageCost(value))).toEqual(table.map(([, cost]) => cost));
     const state = game(holding("current", { 1: { mortgaged: true } }));
     const result = lift(state, 1);
     expect(mortgaged(result, 1)).toBe(false);
     expect(result.ok && cash(result.state)).toBe(cash(state) - 33);
     expect(result.ok && types(result.events)).toEqual(["PropertyUnmortgaged"]);
+  });
+
+  test("lifting a station's mortgage costs $110", () => {
+    const state = game(holding("current", { 5: { mortgaged: true } }));
+    const result = lift(state, 5);
+    expect(mortgaged(result, 5)).toBe(false);
+    expect(result.ok && cash(result.state)).toBe(cash(state) - 110);
   });
 
   test("is rejected for a deed that is not mortgaged, without cash, or for a stranger", () => {
