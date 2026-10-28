@@ -84,18 +84,20 @@ describe("buying", () => {
     expect(result.ok && types(result.events)).toEqual(["PropertyBought"]);
   });
 
-  test("declining leaves the property unowned (temporary, no auction yet)", () => {
+  test("declining sends the property to auction", () => {
     const state = roll(landing(0, 3)).state;
     const result = act(state, "DeclineProperty");
     expect(result.ok && result.state.ownership).toEqual({});
-    expect(result.ok && result.state.turn.phase).toBe("awaiting_end_turn");
+    expect(result.ok && result.state.turn.phase).toBe("awaiting_bid");
+    expect(result.ok && result.state.auction?.square).toBe(3);
   });
 
-  test("a player who cannot afford the price skips the decision", () => {
+  test("a player who cannot afford the price goes straight to the auction", () => {
     const state = landing(0, 3, setCurrent({ cash: 50 }));
     const { state: after } = roll(state);
-    expect(after.turn.phase).toBe("awaiting_end_turn");
+    expect(after.turn.phase).toBe("awaiting_bid");
     expect(after.ownership).toEqual({});
+    expect(after.auction?.actorId).toBe(current(state));
   });
 
   test("buying without enough cash is rejected", () => {

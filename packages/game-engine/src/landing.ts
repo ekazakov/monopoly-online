@@ -1,6 +1,7 @@
 import type { ActionOf } from "./actions.ts";
 import { isProperty, SQUARES, STATION_RENT, UTILITY_MULTIPLIER } from "./board.ts";
 import { playCard } from "./cardplay.ts";
+import { startAuction } from "./auction.ts";
 import { owe } from "./debt.ts";
 import { charge, getPlayer, sendToJail } from "./helpers.ts";
 import { finishRoll } from "./turnflow.ts";
@@ -84,8 +85,12 @@ export function resolveLanding(
     case "utility": {
       const ownerId = ownerOf(state, player.position);
       if (ownerId === undefined) {
-        // TODO(auction): a player who cannot afford the price should start an auction.
-        if (player.cash < square.price) return { ok: true, state: finishRoll(state, events) };
+        if (player.cash < square.price) {
+          return {
+            ok: true,
+            state: startAuction(state, player.position, "finish_roll", events),
+          };
+        }
         return {
           ok: true,
           state: { ...state, turn: { ...state.turn, phase: "awaiting_buy_decision" } },
@@ -154,8 +159,9 @@ export function handleBuyProperty(state: GameState, action: ActionOf<"BuyPropert
   return { ok: true, state: finishRoll(owned, events), events };
 }
 
+/** A declined property goes to auction. */
 export function handleDeclineProperty(state: GameState): Result {
-  // TODO(auction): the property should go to auction. For now it stays unowned.
   const events: GameEvent[] = [];
-  return { ok: true, state: finishRoll(state, events), events };
+  const position = getPlayer(state, state.turn.currentPlayerId).position;
+  return { ok: true, state: startAuction(state, position, "finish_roll", events), events };
 }

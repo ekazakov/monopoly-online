@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 import {
+  actorFor,
   applyAction,
   CHANCE_CARDS,
   CHEST_CARDS,
@@ -8,6 +9,7 @@ import {
   groupLevels,
   isProperty,
   JAIL_FINE,
+  MIN_BID,
   nextInt,
   SQUARES,
 } from "./index.ts";
@@ -82,12 +84,20 @@ function debtAction(state: GameState, playerId: string): Action {
 
 /** Pick a legal action. The bot has its own RNG, so it does not touch the game's RNG. */
 function choose(state: GameState, rng: RngState): { action: Action; rng: RngState } {
-  const playerId = state.turn.currentPlayerId;
+  const playerId = actorFor(state);
   if (state.turn.phase === "awaiting_debt") return { action: debtAction(state, playerId), rng };
   const player = state.players.find((p) => p.id === playerId);
   if (!player) throw new Error("no current player");
   const dice = nextInt(rng, 100);
   const pick = dice.value;
+  if (state.turn.phase === "awaiting_bid") {
+    // Bid the smallest legal amount about half of the time.
+    const auction = state.auction;
+    const amount = auction ? (auction.highBid === 0 ? MIN_BID : auction.highBid + 10) : 0;
+    const bid = pick < 50 && player.cash >= amount;
+    const action: Action = bid ? { type: "Bid", playerId, amount } : { type: "PassBid", playerId };
+    return { action, rng: dice.rng };
+  }
   const type = (): PlainAction["type"] => {
     switch (state.turn.phase) {
       case "awaiting_roll":

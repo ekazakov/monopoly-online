@@ -17,6 +17,7 @@ export type Phase =
   | "awaiting_jail_choice"
   | "awaiting_end_turn"
   | "awaiting_debt"
+  | "awaiting_bid"
   | "game_over";
 
 export interface Player {
@@ -56,6 +57,23 @@ export interface Debt {
   readonly then: DebtThen;
 }
 
+/** What continues when an auction ends. */
+export type AuctionThen = "finish_roll";
+
+export interface Auction {
+  readonly square: number;
+  /** Bidders in seat order, starting with the player who landed on the square. */
+  readonly bidderOrder: readonly string[];
+  /** Bidders who passed. A pass is final. */
+  readonly passed: readonly string[];
+  /** The best bid so far, or 0 when nobody has bid. */
+  readonly highBid: number;
+  readonly highBidderId: string | null;
+  /** The bidder who must act now. */
+  readonly actorId: string;
+  readonly then: AuctionThen;
+}
+
 export interface TurnState {
   readonly currentPlayerId: string;
   readonly phase: Phase;
@@ -74,6 +92,8 @@ export interface GameState {
   readonly turn: TurnState;
   /** Debts that wait for payment, oldest first. */
   readonly debts: readonly Debt[];
+  /** The running auction, if any. */
+  readonly auction: Auction | null;
   /** Card indexes into the static decks, top card first. Held jail cards are not in the list. */
   readonly decks: Readonly<Record<DeckName, readonly number[]>>;
   readonly rng: RngState;
@@ -110,6 +130,10 @@ export type GameEvent =
       cash: readonly { playerId: string; amount: number }[];
     }
   | { type: "PlayerEliminated"; playerId: string }
+  | { type: "AuctionStarted"; square: number; bidderIds: readonly string[] }
+  | { type: "BidPlaced"; playerId: string; amount: number }
+  | { type: "BidPassed"; playerId: string; auto: boolean }
+  | { type: "AuctionEnded"; square: number; winnerId: string | null; price: number }
   | { type: "FinePaid"; playerId: string; amount: number }
   | { type: "SentToJail"; playerId: string }
   | { type: "LeftJail"; playerId: string }
@@ -136,7 +160,8 @@ export type GameErrorCode =
   | "already_mortgaged"
   | "not_mortgaged"
   | "has_buildings"
-  | "no_debt";
+  | "no_debt"
+  | "invalid_bid";
 
 export interface GameError {
   readonly code: GameErrorCode;

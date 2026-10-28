@@ -45,6 +45,7 @@ export function createGame(input: CreateGameInput): GameState {
     players,
     ownership: {},
     debts: [],
+    auction: null,
     turn: {
       currentPlayerId: first.id,
       phase: "awaiting_roll",

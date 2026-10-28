@@ -1,6 +1,7 @@
-import { ALLOWED_PHASES } from "./actions.ts";
+import { actorFor, ALLOWED_PHASES } from "./actions.ts";
 import type { Action, ActionOf, ActionType } from "./actions.ts";
 import { handleBuild, handleSellBuilding } from "./buildings.ts";
+import { handleBid, handlePassBid } from "./auction.ts";
 import { handlePayDebt } from "./debt.ts";
 import { handleMortgage, handleUnmortgage } from "./mortgage.ts";
 import { handlePayJailFine, handleUseJailCard } from "./jail.ts";
@@ -27,6 +28,8 @@ export const defaultHandlers: Handlers = {
   Mortgage: handleMortgage,
   Unmortgage: handleUnmortgage,
   PayDebt: handlePayDebt,
+  Bid: handleBid,
+  PassBid: handlePassBid,
 };
 
 /** Check who may act, and in which phase. Return an error `Result`, or null when valid. */
@@ -34,8 +37,8 @@ function validate(state: GameState, action: Action): Result | null {
   const player = state.players.find((p) => p.id === action.playerId);
   if (!player) return fail("unknown_player", `Unknown player: ${action.playerId}`);
   if (!player.active) return fail("player_inactive", "Eliminated players cannot act");
-  if (state.turn.currentPlayerId !== action.playerId) {
-    return fail("not_your_turn", "It is not this player's turn");
+  if (actorFor(state) !== action.playerId) {
+    return fail("not_your_turn", "It is not this player's turn to act");
   }
   if (!ALLOWED_PHASES[action.type].includes(state.turn.phase)) {
     return fail("wrong_phase", `${action.type} is not allowed in phase ${state.turn.phase}`);

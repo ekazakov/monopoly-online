@@ -1,4 +1,4 @@
-import type { Phase } from "./state.ts";
+import type { GameState, Phase } from "./state.ts";
 
 export type Action =
   | { type: "RollDice"; playerId: string }
@@ -11,6 +11,8 @@ export type Action =
   | { type: "Mortgage"; playerId: string; square: number }
   | { type: "Unmortgage"; playerId: string; square: number }
   | { type: "PayDebt"; playerId: string }
+  | { type: "Bid"; playerId: string; amount: number }
+  | { type: "PassBid"; playerId: string }
   | { type: "EndTurn"; playerId: string };
 
 export type ActionType = Action["type"];
@@ -39,4 +41,12 @@ export const ALLOWED_PHASES: Readonly<Record<ActionType, readonly Phase[]>> = {
   Mortgage: DEBT_PHASES,
   Unmortgage: MANAGE_PHASES,
   PayDebt: ["awaiting_debt"],
+  Bid: ["awaiting_bid"],
+  PassBid: ["awaiting_bid"],
 };
+
+/** The player who may act now: the bidder in an auction, otherwise the player on turn. */
+export function actorFor(state: GameState): string {
+  if (state.turn.phase === "awaiting_bid" && state.auction) return state.auction.actorId;
+  return state.turn.currentPlayerId;
+}

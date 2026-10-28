@@ -1,3 +1,4 @@
+export * from "./auction.ts";
 export * from "./bankruptcy.ts";
 export * from "./board.ts";
 export * from "./buildings.ts";
