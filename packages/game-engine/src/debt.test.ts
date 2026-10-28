@@ -162,12 +162,11 @@ describe("a debt that assets can cover", () => {
     expect(paid.state.turn.phase).toBe("awaiting_end_turn");
   });
 
-  test("a debt the assets cannot cover is still rejected (until bankruptcy is built)", () => {
+  test("a debt the assets cannot cover is bankruptcy", () => {
     const state = landing(0, 4, setCurrent({ cash: 100 }), holding("current", { 1: {} }));
-    expect(act(state, { type: "RollDice", playerId: as(state) })).toMatchObject({
-      ok: false,
-      error: { code: "insufficient_funds" },
-    });
+    const { state: after } = roll(state);
+    expect(player(after, as(state)).active).toBe(false);
+    expect(after.debts).toEqual([]);
   });
 });
 

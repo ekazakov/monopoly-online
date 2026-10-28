@@ -33,12 +33,11 @@ describe("tax, Free Parking and Go to Jail", () => {
     expect(cash(roll(state).state, current(state))).toBe(cash(state, current(state)) - 100);
   });
 
-  test("a player who cannot pay a tax is rejected (temporary)", () => {
+  test("a player who cannot pay a tax goes bankrupt to the bank", () => {
     const state = landing(0, 4, setCurrent({ cash: 100 }));
-    expect(applyAction(state, { type: "RollDice", playerId: current(state) })).toMatchObject({
-      ok: false,
-      error: { code: "insufficient_funds" },
-    });
+    const { state: after } = roll(state);
+    expect(player(after, current(state))).toMatchObject({ active: false, cash: 0 });
+    expect(after.turn.currentPlayerId).not.toBe(current(state));
   });
 
   test("Free Parking does nothing", () => {

@@ -1,6 +1,7 @@
 import { isProperty, SQUARES } from "./board.ts";
 import { getPlayer, updatePlayer } from "./helpers.ts";
-import { entryOf, ownedSquares, setEntry } from "./ownership.ts";
+import { CHANCE_CARDS, CHEST_CARDS } from "./cards.ts";
+import { entryOf, ownedSquares, removeEntry, setEntry } from "./ownership.ts";
 import type { DebtCreditor, GameEvent, GameState } from "./state.ts";
 
 export interface Obligation {
@@ -106,4 +107,50 @@ export function declareBankruptcy(
   events.push({ type: "PlayerEliminated", playerId: debtorId });
 
   return next;
+}
+
+const DECKS = { chance: CHANCE_CARDS, chest: CHEST_CARDS } as const;
+
+/**
+ * The debtor cannot pay a debt to the bank. Everything goes to the bank: the buildings are
+ * removed, the deeds become unowned (mortgages are cleared), the cash goes to the bank, and the
+ * jail cards return to the bottom of their decks. The debtor is eliminated. The caller sells the
+ * deeds at auction, in board order (the returned `queue`), and moves the turn on.
+ */
+export function declareBankruptcyToBank(
+  state: GameState,
+  debtorId: string,
+  events: GameEvent[],
+): { state: GameState; queue: number[] } {
+  events.push({ type: "BankruptcyDeclared", playerId: debtorId, creditorIds: [] });
+  let next = state;
+
+  const queue = ownedSquares(state, debtorId);
+  for (const square of queue) next = removeEntry(next, square);
+
+  const jailCards = getPlayer(state, debtorId).heldJailCards;
+  const decks = { chance: [...next.decks.chance], chest: [...next.decks.chest] };
+  for (const deck of jailCards) {
+    decks[deck].push(DECKS[deck].findIndex((card) => card.effect.type === "jail_free"));
+  }
+  next = { ...next, decks };
+  events.push({
+    type: "AssetsTransferred",
+    fromId: debtorId,
+    toId: null,
+    squares: queue,
+    jailCards,
+    cash: [],
+  });
+
+  next = updatePlayer(next, debtorId, { cash: 0, heldJailCards: [], active: false });
+  next = {
+    ...next,
+    debts: next.debts.filter(
+      (d) =>
+        d.debtorId !== debtorId && !(d.creditor.type === "player" && d.creditor.id === debtorId),
+    ),
+  };
+  events.push({ type: "PlayerEliminated", playerId: debtorId });
+  return { state: next, queue };
 }

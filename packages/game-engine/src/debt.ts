@@ -1,5 +1,6 @@
 import type { ActionOf } from "./actions.ts";
-import { declareBankruptcy } from "./bankruptcy.ts";
+import { startAuction } from "./auction.ts";
+import { declareBankruptcy, declareBankruptcyToBank } from "./bankruptcy.ts";
 import type { Obligation } from "./bankruptcy.ts";
 import { getPlayer } from "./helpers.ts";
 import { liquidationValue, outstanding, transfer } from "./liquidation.ts";
@@ -20,8 +21,8 @@ export type OweResult =
  * The debtor owes these charges. If cash covers them, they are paid at once. Otherwise, if the
  * liquidation value covers all outstanding debts, the charges become debts. On the debtor's own
  * turn the turn waits in `awaiting_debt`. Off turn, the debts fall due when their turn starts. If
- * even the liquidation value is too low, the debtor is bankrupt (to players) or the action is
- * rejected (to the bank, until task 20).
+ * even the liquidation value is too low, the debtor is bankrupt. A debt to the bank wins over
+ * debts to players.
  */
 export function oweMany(
   state: GameState,
@@ -41,8 +42,7 @@ export function oweMany(
       ...charges,
     ];
     if (obligations.some((o) => o.creditor.type === "bank")) {
-      // TODO(bankruptcy to the bank): task 20.
-      return fail("insufficient_funds", `The player cannot pay $${total}`);
+      return { ok: true, state: bankruptToBank(state, debtorId, events), settled: false };
     }
     const eliminated = declareBankruptcy(state, debtorId, obligations, events);
     // The debtor's turn is over. Off turn, the turn does not move.
@@ -78,6 +78,18 @@ export function owe(
   then: DebtThen,
 ): OweResult {
   return oweMany(state, debtorId, [charge], events, then);
+}
+
+/**
+ * Bankruptcy to the bank happens on the debtor's own turn. The bank then sells the deeds at
+ * auction, one at a time, unless fewer than two players are left. Then the turn moves on.
+ */
+function bankruptToBank(state: GameState, debtorId: string, events: GameEvent[]): GameState {
+  const { state: eliminated, queue } = declareBankruptcyToBank(state, debtorId, events);
+  const [first, ...rest] = queue;
+  const left = eliminated.players.filter((p) => p.active).length;
+  if (first === undefined || left < 2) return advanceTurn(eliminated, events);
+  return startAuction(eliminated, first, "next_in_queue", events, rest);
 }
 
 /** Continue the turn that a debt interrupted. */

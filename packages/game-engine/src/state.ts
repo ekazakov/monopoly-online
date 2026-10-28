@@ -58,7 +58,7 @@ export interface Debt {
 }
 
 /** What continues when an auction ends. */
-export type AuctionThen = "finish_roll";
+export type AuctionThen = "finish_roll" | "next_in_queue";
 
 export interface Auction {
   readonly square: number;
@@ -72,6 +72,8 @@ export interface Auction {
   /** The bidder who must act now. */
   readonly actorId: string;
   readonly then: AuctionThen;
+  /** Squares the bank still has to sell after this one (bankruptcy to the bank), in board order. */
+  readonly queue: readonly number[];
 }
 
 export interface TurnState {
@@ -124,7 +126,8 @@ export type GameEvent =
   | {
       type: "AssetsTransferred";
       fromId: string;
-      toId: string;
+      /** The player who gets the assets, or null when they go to the bank. */
+      toId: string | null;
       squares: readonly number[];
       jailCards: readonly DeckName[];
       cash: readonly { playerId: string; amount: number }[];

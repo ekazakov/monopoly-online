@@ -1,5 +1,4 @@
 import { describe, expect, test } from "vite-plus/test";
-import { applyAction } from "./index.ts";
 import type { GameEvent, GameState } from "./index.ts";
 import {
   current,
@@ -56,12 +55,9 @@ describe("money cards", () => {
     expect(me(roll(state).state)).toBe(me(state) - 15);
   });
 
-  test("a card payment the player cannot make is rejected (temporary)", () => {
+  test("a card payment the player cannot make at all is bankruptcy", () => {
     const state = onChance(11, setCurrent({ cash: 10 }));
-    expect(applyAction(state, { type: "RollDice", playerId: current(state) })).toMatchObject({
-      ok: false,
-      error: { code: "insufficient_funds" },
-    });
+    expect(player(roll(state).state, current(state)).active).toBe(false);
   });
 
   test("pay each other player", () => {

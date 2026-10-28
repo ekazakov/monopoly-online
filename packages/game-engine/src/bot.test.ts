@@ -44,8 +44,10 @@ function assertInvariants(state: GameState) {
     expect(list.includes(jailIndex)).toBe(held === 0);
   }
 
+  // While the bank sells a bankrupt player's deeds, the turn still belongs to that player.
+  const selling = state.auction?.then === "next_in_queue";
   const current = state.players.find((p) => p.id === state.turn.currentPlayerId);
-  expect(current?.active).toBe(true);
+  expect(current?.active || selling).toBe(true);
 }
 
 /** Actions with no extra fields. The bot uses only these until it learns the rest. */

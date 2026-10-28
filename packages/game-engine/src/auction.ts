@@ -3,7 +3,7 @@ import { charge, getPlayer } from "./helpers.ts";
 import { setEntry } from "./ownership.ts";
 import { fail } from "./state.ts";
 import type { Auction, AuctionThen, GameEvent, GameState, Result } from "./state.ts";
-import { finishRoll } from "./turnflow.ts";
+import { advanceTurn, finishRoll } from "./turnflow.ts";
 
 export const MIN_BID = 10;
 /** A raise adds one of these amounts to the best bid. */
@@ -13,7 +13,7 @@ const nextMinimum = (auction: Auction) => (auction.highBid === 0 ? MIN_BID : auc
 
 /**
  * Start an auction for a property. Every active player bids, in seat order, starting with the
- * player on turn. A player who cannot afford the opening bid passes at once. If nobody can bid,
+ * player on turn (when that player is eliminated, the first active player after them). A player who cannot afford the opening bid passes at once. If nobody can bid,
  * the auction ends at once and the property stays unowned.
  */
 export function startAuction(
@@ -21,6 +21,7 @@ export function startAuction(
   square: number,
   then: AuctionThen,
   events: GameEvent[],
+  queue: readonly number[] = [],
 ): GameState {
   const count = state.players.length;
   const first = state.players.findIndex((p) => p.id === state.turn.currentPlayerId);
@@ -42,6 +43,7 @@ export function startAuction(
     highBidderId: null,
     actorId: actorId ?? "",
     then,
+    queue,
   };
   if (actorId === undefined) return endAuction(state, auction, events);
   return { ...state, auction, turn: { ...state.turn, phase: "awaiting_bid" } };
@@ -65,6 +67,12 @@ function endAuction(state: GameState, auction: Auction, events: GameEvent[]): Ga
   switch (auction.then) {
     case "finish_roll":
       return finishRoll(next, events);
+    case "next_in_queue": {
+      // The bank sells the assets of a bankrupt player one at a time. Then the turn moves on.
+      const [following, ...rest] = auction.queue;
+      if (following === undefined) return advanceTurn(next, events);
+      return startAuction(next, following, "next_in_queue", events, rest);
+    }
   }
 }
 
