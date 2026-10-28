@@ -46,7 +46,7 @@ export type DebtCreditor =
 export type DebtReason = "tax" | "rent" | "card";
 
 /** What continues after the last debt of a player is paid. */
-export type DebtThen = "finish_roll";
+export type DebtThen = "finish_roll" | "due_at_turn_start";
 
 export interface Debt {
   readonly debtorId: string;

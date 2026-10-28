@@ -1,21 +1,17 @@
 import { BOARD_SIZE, SQUARES } from "./board.ts";
 import { CHANCE_CARDS, CHEST_CARDS } from "./cards.ts";
-import { finishRoll, getPlayer, movePlayer, sendToJail, updatePlayer } from "./helpers.ts";
+import { getPlayer, movePlayer, sendToJail, updatePlayer } from "./helpers.ts";
+import { finishRoll } from "./turnflow.ts";
 import type { Landing, LandingOptions } from "./landing.ts";
 import { owe, oweMany } from "./debt.ts";
 import type { Charge } from "./debt.ts";
 import { buildingCounts } from "./ownership.ts";
-import { fail } from "./state.ts";
-import type { DeckName, Failure, GameEvent, GameState } from "./state.ts";
+import type { DeckName, GameEvent, GameState } from "./state.ts";
 
 /** Resolve a landing. Passed in by the caller, so this file does not import `landing.ts` code. */
 type Land = (state: GameState, events: GameEvent[], options?: LandingOptions) => Landing;
 
 const DECKS = { chance: CHANCE_CARDS, chest: CHEST_CARDS } as const;
-
-const cannotPay = (amount: number): Failure =>
-  // TODO(pending debts): the collect-from-every-player card is built in task 18.
-  fail("insufficient_funds", `A player cannot pay $${amount}`);
 
 /** The player owes the bank. Pay at once, or become a debtor. */
 function payBank(state: GameState, playerId: string, amount: number, events: GameEvent[]): Landing {
@@ -108,10 +104,32 @@ export function playCard(
     }
 
     case "collect_from_each_player": {
-      const poor = others.find((p) => p.cash < effect.amount);
-      if (poor) return cannotPay(effect.amount);
-      let next = cashChange(drawn, player.id, effect.amount * others.length, events);
-      for (const other of others) next = cashChange(next, other.id, -effect.amount, events);
+      // A player who cannot pay now may owe the debt until their own turn starts.
+      let next = drawn;
+      for (const other of others) {
+        const owed = oweMany(
+          next,
+          other.id,
+          [{ creditor: { type: "player", id: player.id }, amount: effect.amount, reason: "card" }],
+          events,
+          "due_at_turn_start",
+        );
+        if (!owed.ok) return owed;
+        next = owed.state;
+        if (!owed.settled) continue;
+        events.push({
+          type: "CashChanged",
+          playerId: other.id,
+          amount: -effect.amount,
+          reason: "card",
+        });
+        events.push({
+          type: "CashChanged",
+          playerId: player.id,
+          amount: effect.amount,
+          reason: "card",
+        });
+      }
       return ok(finishRoll(next, events));
     }
 

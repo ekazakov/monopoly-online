@@ -1,66 +1,27 @@
 import type { ActionOf } from "./actions.ts";
-import { isProperty, SQUARES } from "./board.ts";
 import { declareBankruptcy } from "./bankruptcy.ts";
 import type { Obligation } from "./bankruptcy.ts";
-import { finishRoll, getPlayer, updatePlayer } from "./helpers.ts";
+import { getPlayer } from "./helpers.ts";
+import { liquidationValue, outstanding, transfer } from "./liquidation.ts";
+import type { Charge } from "./liquidation.ts";
 import { fail } from "./state.ts";
-import type {
-  Debt,
-  DebtCreditor,
-  DebtReason,
-  DebtThen,
-  Failure,
-  GameEvent,
-  GameState,
-  Result,
-} from "./state.ts";
+import type { Debt, DebtThen, Failure, GameEvent, GameState, Result } from "./state.ts";
+import { advanceTurn, finishRoll } from "./turnflow.ts";
 
-export interface Charge {
-  readonly creditor: DebtCreditor;
-  readonly amount: number;
-  readonly reason: DebtReason;
-}
+export { liquidationValue, outstanding } from "./liquidation.ts";
+export type { Charge } from "./liquidation.ts";
 
-/** `settled` is true when the money was paid at once. Otherwise the debts are recorded. */
+/** `settled` is true when the money was paid at once. Otherwise the caller must stop. */
 export type OweResult =
   | { readonly ok: true; readonly state: GameState; readonly settled: boolean }
   | Failure;
 
 /**
- * Cash plus everything the player can turn into cash: the mortgage value of every
- * unmortgaged property, and half the build price of every house and hotel.
- */
-export function liquidationValue(state: GameState, playerId: string): number {
-  let total = getPlayer(state, playerId).cash;
-  for (const [square, entry] of Object.entries(state.ownership)) {
-    const info = SQUARES[Number(square)];
-    if (entry.ownerId !== playerId || !info || !isProperty(info)) continue;
-    if (!entry.mortgaged) total += info.mortgage;
-    if (info.kind === "street") total += (entry.houses * info.buildPrice) / 2;
-  }
-  return total;
-}
-
-export const outstanding = (state: GameState, playerId: string) =>
-  state.debts.filter((d) => d.debtorId === playerId).reduce((sum, d) => sum + d.amount, 0);
-
-/** Take the money from the debtor and give it to the player creditors. */
-function transfer(state: GameState, debtorId: string, charges: readonly Charge[]): GameState {
-  let next = state;
-  for (const { creditor, amount } of charges) {
-    next = updatePlayer(next, debtorId, { cash: getPlayer(next, debtorId).cash - amount });
-    if (creditor.type === "player") {
-      const to = getPlayer(next, creditor.id);
-      next = updatePlayer(next, creditor.id, { cash: to.cash + amount });
-    }
-  }
-  return next;
-}
-
-/**
  * The debtor owes these charges. If cash covers them, they are paid at once. Otherwise, if the
- * liquidation value covers all outstanding debts, the charges become debts and the turn waits
- * in `awaiting_debt`. If even the liquidation value is too low, the action is rejected.
+ * liquidation value covers all outstanding debts, the charges become debts. On the debtor's own
+ * turn the turn waits in `awaiting_debt`. Off turn, the debts fall due when their turn starts. If
+ * even the liquidation value is too low, the debtor is bankrupt (to players) or the action is
+ * rejected (to the bank, until task 20).
  */
 export function oweMany(
   state: GameState,
@@ -73,6 +34,7 @@ export function oweMany(
   if (getPlayer(state, debtorId).cash >= total) {
     return { ok: true, state: transfer(state, debtorId, charges), settled: true };
   }
+  const onTurn = state.turn.currentPlayerId === debtorId;
   if (liquidationValue(state, debtorId) < outstanding(state, debtorId) + total) {
     const obligations: Obligation[] = [
       ...state.debts.filter((d) => d.debtorId === debtorId),
@@ -82,10 +44,11 @@ export function oweMany(
       // TODO(bankruptcy to the bank): task 20.
       return fail("insufficient_funds", `The player cannot pay $${total}`);
     }
-    // The debtor's turn (if it is their turn) has moved on, so the caller stops here.
+    const eliminated = declareBankruptcy(state, debtorId, obligations, events);
+    // The debtor's turn is over. Off turn, the turn does not move.
     return {
       ok: true,
-      state: declareBankruptcy(state, debtorId, obligations, events),
+      state: onTurn ? advanceTurn(eliminated, events) : eliminated,
       settled: false,
     };
   }
@@ -99,13 +62,10 @@ export function oweMany(
       reason: c.reason,
     });
   }
+  const recorded = { ...state, debts: [...state.debts, ...debts] };
   return {
     ok: true,
-    state: {
-      ...state,
-      debts: [...state.debts, ...debts],
-      turn: { ...state.turn, phase: "awaiting_debt" },
-    },
+    state: onTurn ? { ...recorded, turn: { ...recorded.turn, phase: "awaiting_debt" } } : recorded,
     settled: false,
   };
 }
@@ -118,6 +78,19 @@ export function owe(
   then: DebtThen,
 ): OweResult {
   return oweMany(state, debtorId, [charge], events, then);
+}
+
+/** Continue the turn that a debt interrupted. */
+function resume(state: GameState, then: DebtThen, events: GameEvent[]): GameState {
+  switch (then) {
+    case "finish_roll":
+      return finishRoll(state, events);
+    case "due_at_turn_start": {
+      const player = getPlayer(state, state.turn.currentPlayerId);
+      const phase = player.inJail ? "awaiting_jail_choice" : "awaiting_roll";
+      return { ...state, turn: { ...state.turn, phase } };
+    }
+  }
 }
 
 /** Pay the oldest debt. When the last debt is paid, the interrupted turn continues. */
@@ -136,5 +109,5 @@ export function handlePayDebt(state: GameState, action: ActionOf<"PayDebt">): Re
   if (next.debts.some((d) => d.debtorId === action.playerId)) {
     return { ok: true, state: next, events };
   }
-  return { ok: true, state: finishRoll(next, events), events };
+  return { ok: true, state: resume(next, debt.then, events), events };
 }

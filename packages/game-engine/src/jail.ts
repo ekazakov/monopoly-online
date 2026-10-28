@@ -1,7 +1,8 @@
 import type { ActionOf } from "./actions.ts";
 import { BOARD_SIZE, JAIL_SQUARE } from "./board.ts";
 import { CHANCE_CARDS, CHEST_CARDS } from "./cards.ts";
-import { advanceTurn, charge, movePlayer, updatePlayer } from "./helpers.ts";
+import { charge, movePlayer, updatePlayer } from "./helpers.ts";
+import { advanceTurn } from "./turnflow.ts";
 import { resolveLanding } from "./landing.ts";
 import { rollDice } from "./rng.ts";
 import { fail, JAIL_FINE, MAX_JAIL_ATTEMPTS } from "./state.ts";

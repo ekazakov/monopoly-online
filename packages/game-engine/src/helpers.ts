@@ -31,49 +31,6 @@ export function sendToJail(state: GameState, playerId: string, events: GameEvent
   });
 }
 
-/** Give the turn to the next active player. A player in Jail starts in the jail phase. */
-export function advanceTurn(state: GameState, events: GameEvent[]): GameState {
-  const currentId = state.turn.currentPlayerId;
-  const count = state.players.length;
-  const index = state.players.findIndex((p) => p.id === currentId);
-  for (let step = 1; step <= count; step++) {
-    const next = state.players[(index + step) % count];
-    if (next?.active) {
-      events.push({
-        type: "TurnEnded",
-        playerId: currentId,
-        nextPlayerId: next.id,
-      });
-      return {
-        ...state,
-        turn: {
-          currentPlayerId: next.id,
-          phase: next.inJail ? "awaiting_jail_choice" : "awaiting_roll",
-          doubles: 0,
-          dice: null,
-        },
-      };
-    }
-  }
-  throw new Error("No active player");
-}
-
-/**
- * Call when a roll is fully resolved (the landing is done). A player sent to Jail loses
- * the turn at once. A double rolled in this turn gives another roll (leaving Jail by doubles does not count). Otherwise the player may end the turn.
- */
-export function finishRoll(state: GameState, events: GameEvent[]): GameState {
-  const player = getPlayer(state, state.turn.currentPlayerId);
-  if (player.inJail || !player.active) return advanceTurn(state, events);
-  return {
-    ...state,
-    turn: {
-      ...state.turn,
-      phase: state.turn.doubles > 0 ? "awaiting_roll" : "awaiting_end_turn",
-    },
-  };
-}
-
 /** Take money from a player. Returns null when the player cannot pay. */
 export function charge(state: GameState, playerId: string, amount: number): GameState | null {
   const player = getPlayer(state, playerId);

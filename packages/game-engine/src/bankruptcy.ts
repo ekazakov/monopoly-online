@@ -1,5 +1,5 @@
 import { isProperty, SQUARES } from "./board.ts";
-import { advanceTurn, getPlayer, updatePlayer } from "./helpers.ts";
+import { getPlayer, updatePlayer } from "./helpers.ts";
 import { entryOf, ownedSquares, setEntry } from "./ownership.ts";
 import type { DebtCreditor, GameEvent, GameState } from "./state.ts";
 
@@ -25,7 +25,7 @@ function turnOrderAfter(state: GameState, playerId: string): string[] {
  * price. Their cash is split among the creditors in proportion to the amounts owed (each share
  * rounded down, the remainder to the biggest creditor). The deeds, still mortgaged if they
  * were, and the jail cards go to the biggest creditor (a tie goes to whoever plays first after
- * the debtor). The debtor is eliminated. If it was their turn, the turn moves on.
+ * the debtor). The debtor is eliminated. The caller moves the turn on if it was their turn.
  */
 export function declareBankruptcy(
   state: GameState,
@@ -105,5 +105,5 @@ export function declareBankruptcy(
   };
   events.push({ type: "PlayerEliminated", playerId: debtorId });
 
-  return state.turn.currentPlayerId === debtorId ? advanceTurn(next, events) : next;
+  return next;
 }

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
-import type { GameState } from "./index.ts";
+import { declareBankruptcy } from "./index.ts";
+import type { GameEvent, GameState } from "./index.ts";
 import {
   addPlayer,
   current,
@@ -138,5 +139,32 @@ describe("bankruptcy to a player", () => {
     expect(after.turn.phase).toBe("game_over");
     expect(after.turn.currentPlayerId).toBe(owner);
     expect(events.at(-1)).toEqual({ type: "GameEnded", winnerId: owner });
+  });
+});
+
+describe("debts of an eliminated player", () => {
+  test("pending debts owed to the eliminated player are cancelled", () => {
+    const state = broke();
+    const [debtor, creditor] = state.players.filter((p) => p.id !== current(state));
+    const withDebt: GameState = {
+      ...state,
+      debts: [
+        {
+          debtorId: debtor?.id ?? "",
+          creditor: { type: "player", id: current(state) },
+          amount: 10,
+          reason: "card",
+          then: "due_at_turn_start",
+        },
+      ],
+    };
+    const events: GameEvent[] = [];
+    const after = declareBankruptcy(
+      withDebt,
+      current(state),
+      [{ creditor: { type: "player", id: creditor?.id ?? "" }, amount: 450 }],
+      events,
+    );
+    expect(after.debts).toEqual([]);
   });
 });
