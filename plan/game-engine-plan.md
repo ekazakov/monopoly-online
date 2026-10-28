@@ -130,7 +130,7 @@ All additions keep the phase 1 style: pure functions, plain-JSON state, seeded R
 - [x] 21. Forced jail fine as a debt (`leave_jail_and_move` continuation). Remove the last debt-related `insufficient_funds` rejection (the error code stays for voluntary payments).
 - [x] 22. Trades: `ProposeTrade`, `AcceptTrade`, `RejectTrade`, `CancelTrade`, phase `awaiting_trade_response`. Rules: cash, deeds (not when the group has buildings; mortgaged allowed), jail cards; both players active; re-check at accept; bankruptcy re-check for a debtor.
 - [x] 23. Upgrade the bot in `bot.test.ts` to use every action (manage, pay debt, bid, trade). New invariants (houses, even build, mortgage state, debts, auction, trade). Many games must reach `game_over` with one winner. Same seed, same game.
-- [ ] 24. Docs: update `packages/game-engine/README.md` ("Not built yet" shrinks), the root README line, and the gameplay doc if needed. Final `pnpm ready`.
+- [x] 24. Docs: update `packages/game-engine/README.md` ("Not built yet" shrinks), the root README line, and the gameplay doc if needed. Final `pnpm ready`.
 
 ## Risks
 

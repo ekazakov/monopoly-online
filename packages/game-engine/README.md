@@ -38,38 +38,58 @@ if (result.ok) {
 
 ## Turn flow
 
-| Phase                   | Allowed actions                          |
-| ----------------------- | ---------------------------------------- |
-| `awaiting_roll`         | `RollDice`                               |
-| `awaiting_buy_decision` | `BuyProperty`, `DeclineProperty`         |
-| `awaiting_jail_choice`  | `RollDice`, `PayJailFine`, `UseJailCard` |
-| `awaiting_end_turn`     | `EndTurn`                                |
-| `game_over`             | none                                     |
+| Phase                     | Who acts           | Allowed actions                                                        |
+| ------------------------- | ------------------ | ---------------------------------------------------------------------- |
+| `awaiting_roll`           | The player on turn | `RollDice`, and the management actions below                           |
+| `awaiting_buy_decision`   | The player on turn | `BuyProperty`, `DeclineProperty` (a declined property goes to auction) |
+| `awaiting_jail_choice`    | The player on turn | `RollDice`, `PayJailFine`, `UseJailCard`, and the management actions   |
+| `awaiting_end_turn`       | The player on turn | `EndTurn`, and the management actions                                  |
+| `awaiting_debt`           | The player on turn | `PayDebt`, `SellBuilding`, `Mortgage`, `ProposeTrade`                  |
+| `awaiting_bid`            | The bidder         | `Bid`, `PassBid`                                                       |
+| `awaiting_trade_response` | The trade partner  | `AcceptTrade`, `RejectTrade`. The proposer can `CancelTrade`.          |
+| `game_over`               | Nobody             | none                                                                   |
 
-Only the current player can act. Every action has a `playerId`.
+The management actions are `Build`, `SellBuilding`, `Mortgage`, `Unmortgage` and `ProposeTrade`. A player can use them only before the roll and after the landing (rules section 10), and while settling a debt.
+
+Every action has a `playerId`. Use `actorFor(state)` to get the player who must act now, and `mayAct(state, type, playerId)` to check one action.
+
+## Rules that are built
+
+- Dice, movement, GO salary, doubles, three doubles to Jail, Jail (pay, card, roll for doubles, forced fine).
+- Tax, rent (houses and hotels, the full-group double, stations, utilities, mortgaged deeds), Chance and Chest.
+- Buildings (even, on a full group) and mortgages (lifting costs the mortgage value plus 10%, rounded up).
+- Auctions (+$10, +$50 or +$100 raises, bids capped by cash, a pass is final) when a property is declined or cannot be afforded.
+- Debt: a payment that cash cannot cover becomes a debt if the player's assets can cover it. Debts of other players (the Festival card) fall due when their turn starts.
+- Bankruptcy: to players (cash split pro rata, deeds and jail cards to the biggest creditor) and to the bank (deeds auctioned one at a time). The game ends when one active player is left.
+- Trades: one open proposal at a time; cash, deeds and jail cards; no deed from a colour group with buildings.
 
 ## Files
 
-| File                     | Content                                                           |
-| ------------------------ | ----------------------------------------------------------------- |
-| `board.ts`, `cards.ts`   | Static data: 40 squares, rents, the Chance and Chest decks.       |
-| `rng.ts`                 | Seeded random numbers: `nextInt`, `rollDice`, `shuffle`.          |
-| `state.ts`, `actions.ts` | Types: state, events, errors, actions. Game constants.            |
-| `game.ts`                | `createGame`.                                                     |
-| `reducer.ts`             | `applyAction`: checks who can act and when, then calls a handler. |
-| `turn.ts`, `landing.ts`  | Roll, move, GO salary, doubles, squares, rent, buying.            |
-| `cardplay.ts`, `jail.ts` | Chance and Chest cards, Jail.                                     |
-| `gameend.ts`             | The game ends when one active player is left.                     |
-| `helpers.ts`             | Small state helpers that the handlers share.                      |
+| File                                      | Content                                                                      |
+| ----------------------------------------- | ---------------------------------------------------------------------------- |
+| `board.ts`, `cards.ts`                    | Static data: 40 squares, rents, the Chance and Chest decks.                  |
+| `rng.ts`                                  | Seeded random numbers: `nextInt`, `rollDice`, `shuffle`.                     |
+| `state.ts`, `actions.ts`                  | Types: state, events, errors, actions. Game constants. `actorFor`, `mayAct`. |
+| `game.ts`                                 | `createGame`.                                                                |
+| `reducer.ts`                              | `applyAction`: checks who can act and when, then calls a handler.            |
+| `turn.ts`, `turnflow.ts`                  | Roll and move. `advanceTurn` and `finishRoll`, with debts that fall due.     |
+| `landing.ts`, `cardplay.ts`, `jail.ts`    | The squares, the cards, Jail.                                                |
+| `ownership.ts`                            | Queries and updates for deeds.                                               |
+| `buildings.ts`, `mortgage.ts`             | `Build`, `SellBuilding`, `Mortgage`, `Unmortgage`.                           |
+| `liquidation.ts`, `debt.ts`, `paydebt.ts` | Liquidation value, `owe`, pending debts, `PayDebt`.                          |
+| `bankruptcy.ts`                           | Bankruptcy to players and to the bank.                                       |
+| `auction.ts`, `trade.ts`                  | Auctions and trades.                                                         |
+| `gameend.ts`                              | The game ends when one active player is left.                                |
+| `helpers.ts`                              | Small state helpers that the handlers share.                                 |
 
-## Not built yet
+## Not built, and open questions
 
-These parts are temporary. Each one has a `TODO` comment in the code.
+- **Saving to the database.** The plan is an event log with a snapshot, written in one transaction. The engine only gives plain JSON state and events.
+- **Resign and a round limit** (open questions Q15 and Q16 in `plan/game-screen-2-gameplay.md`).
+- **Disconnected players and bots** (Q2 and Q6). A game waits for the player who must act.
+- **Player limit** (Q1). The engine accepts 2 to 8 players (`MIN_PLAYERS`, `MAX_PLAYERS`).
 
-- **Auctions.** If a player declines to buy a property, or cannot afford it, the property stays unowned.
-- **Debt and bankruptcy.** A payment that a player cannot make (tax, rent, a card, the jail fine) rejects the action with `insufficient_funds`. The state does not change, so the same roll comes again. The game cannot continue until debt is built. Nobody is eliminated, so the game end is only tested on built states.
-- **Buildings, mortgages and trades.** Streets pay base rent (double for a full colour group). Repair cards cost nothing.
-- **Saving to the database.** The plan is an event log with a snapshot, written in one transaction.
+Some rules use a default that is not decided yet. They are marked as defaults in [plan/game-rules-reference.md](../../plan/game-rules-reference.md): Q10 (doubles after paying out of Jail), Q11, Q12, Q14 and Q17.
 
 ## Test
 
@@ -77,4 +97,4 @@ These parts are temporary. Each one has a `TODO` comment in the code.
 pnpm --filter @monopoly/game-engine test
 ```
 
-The tests include a random bot that plays 60 seeded games and checks the invariants after each action. In tests, the helpers in `src/test-helpers.ts` search for a seed that gives the dice a case needs. This stays repeatable because the random numbers are seeded.
+The tests include a random bot that plays 16 seeded games with four players, using every action. It checks the invariants after each action, and most games must end with one winner. In tests, the helpers in `src/test-helpers.ts` search for a seed that gives the dice a case needs. This stays repeatable because the random numbers are seeded.

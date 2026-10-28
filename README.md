@@ -85,7 +85,7 @@ Both commands use `artifacts/serve.mjs`, a small static server without dependenc
 
 ## Game engine
 
-The game rules are in `packages/game-engine`. The module has no I/O, and it is not connected to the API or the web app yet. For the design, the state and the parts that are not built yet, see the [package README](packages/game-engine/README.md). The task list is in [plan/game-engine-plan.md](plan/game-engine-plan.md).
+The game rules are in `packages/game-engine`. The module plays a full game to a winner. It has no I/O, and it is not connected to the API or the web app yet. For the design, the state and the parts that are not built, see the [package README](packages/game-engine/README.md). The task list is in [plan/game-engine-plan.md](plan/game-engine-plan.md).
 
 ## Use the Vite+ CLI
 
