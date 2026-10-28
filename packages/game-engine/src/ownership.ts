@@ -46,3 +46,8 @@ export function buildingCounts(state: GameState, playerId: string) {
   }
   return { houses, hotels };
 }
+
+/** Building levels (0 to 5) of every street in a group, in board order. */
+export function groupLevels(state: GameState, group: SquareGroup): number[] {
+  return groupSquares(group).map((square) => entryOf(state, square)?.houses ?? 0);
+}

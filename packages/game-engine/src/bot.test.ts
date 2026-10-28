@@ -45,14 +45,23 @@ function assertInvariants(state: GameState) {
   expect(current?.active).toBe(true);
 }
 
+/** Actions with no extra fields. The bot uses only these until it learns the rest. */
+type PlainAction = Action extends infer A
+  ? A extends Action
+    ? Exclude<keyof A, "type" | "playerId"> extends never
+      ? A
+      : never
+    : never
+  : never;
+
 /** Pick a legal action. The bot has its own RNG, so it does not touch the game's RNG. */
-function choose(state: GameState, rng: RngState): { action: Action; rng: RngState } {
+function choose(state: GameState, rng: RngState): { action: PlainAction; rng: RngState } {
   const playerId = state.turn.currentPlayerId;
   const player = state.players.find((p) => p.id === playerId);
   if (!player) throw new Error("no current player");
   const dice = nextInt(rng, 100);
   const pick = dice.value;
-  const type = (): Action["type"] => {
+  const type = (): PlainAction["type"] => {
     switch (state.turn.phase) {
       case "awaiting_roll":
         return "RollDice";

@@ -1,4 +1,5 @@
 export * from "./board.ts";
+export * from "./buildings.ts";
 export * from "./cardplay.ts";
 export * from "./cards.ts";
 export * from "./game.ts";

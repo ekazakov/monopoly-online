@@ -68,6 +68,8 @@ export type GameEvent =
   | { type: "TaxPaid"; playerId: string; square: number; amount: number }
   | { type: "CardDrawn"; playerId: string; deck: DeckName; cardIndex: number }
   | { type: "CashChanged"; playerId: string; amount: number; reason: "card" }
+  | { type: "BuildingBuilt"; playerId: string; square: number; houses: number; cost: number }
+  | { type: "BuildingSold"; playerId: string; square: number; houses: number; refund: number }
   | { type: "FinePaid"; playerId: string; amount: number }
   | { type: "SentToJail"; playerId: string }
   | { type: "LeftJail"; playerId: string }
@@ -82,7 +84,14 @@ export type GameErrorCode =
   | "wrong_phase"
   /** Temporary. Debt and bankruptcy are not built yet, so a payment the player cannot make is rejected. */
   | "insufficient_funds"
-  | "no_jail_card";
+  | "no_jail_card"
+  | "not_owner"
+  | "not_a_street"
+  | "incomplete_group"
+  | "group_mortgaged"
+  | "uneven_build"
+  | "max_buildings"
+  | "no_buildings";
 
 export interface GameError {
   readonly code: GameErrorCode;
