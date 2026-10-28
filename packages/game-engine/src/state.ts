@@ -44,10 +44,10 @@ export type DebtCreditor =
   | { readonly type: "bank" }
   | { readonly type: "player"; readonly id: string };
 
-export type DebtReason = "tax" | "rent" | "card";
+export type DebtReason = "tax" | "rent" | "card" | "fine";
 
 /** What continues after the last debt of a player is paid. */
-export type DebtThen = "finish_roll" | "due_at_turn_start";
+export type DebtThen = "finish_roll" | "due_at_turn_start" | "leave_jail_and_move";
 
 export interface Debt {
   readonly debtorId: string;
@@ -149,7 +149,7 @@ export type GameErrorCode =
   | "player_inactive"
   | "not_your_turn"
   | "wrong_phase"
-  /** Temporary. Debt and bankruptcy are not built yet, so a payment the player cannot make is rejected. */
+  /** A voluntary payment (buying, building, lifting a mortgage, paying early) the player cannot afford. */
   | "insufficient_funds"
   | "no_jail_card"
   | "not_owner"

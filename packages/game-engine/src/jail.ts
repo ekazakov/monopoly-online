@@ -1,18 +1,16 @@
 import type { ActionOf } from "./actions.ts";
 import { BOARD_SIZE, JAIL_SQUARE } from "./board.ts";
 import { CHANCE_CARDS, CHEST_CARDS } from "./cards.ts";
-import { charge, movePlayer, updatePlayer } from "./helpers.ts";
+import { owe } from "./debt.ts";
+import { charge, getPlayer, movePlayer, updatePlayer } from "./helpers.ts";
 import { advanceTurn } from "./turnflow.ts";
 import { resolveLanding } from "./landing.ts";
+import type { Landing } from "./landing.ts";
 import { rollDice } from "./rng.ts";
 import { fail, JAIL_FINE, MAX_JAIL_ATTEMPTS } from "./state.ts";
 import type { GameEvent, GameState, Player, Result } from "./state.ts";
 
 const DECKS = { chance: CHANCE_CARDS, chest: CHEST_CARDS } as const;
-
-const cannotPayFine = () =>
-  // TODO(debt): replace this rejection with debt and bankruptcy.
-  fail("insufficient_funds", `The player cannot pay the $${JAIL_FINE} fine`);
 
 function leaveJail(state: GameState, playerId: string, events: GameEvent[]): GameState {
   events.push({ type: "LeftJail", playerId });
@@ -22,7 +20,8 @@ function leaveJail(state: GameState, playerId: string, events: GameEvent[]): Gam
 /** Pay $50 before rolling. The player then rolls as in a normal turn. */
 export function handlePayJailFine(state: GameState, action: ActionOf<"PayJailFine">): Result {
   const paid = charge(state, action.playerId, JAIL_FINE);
-  if (!paid) return cannotPayFine();
+  // Paying early is a choice, so a player without the cash simply cannot choose it.
+  if (!paid) return fail("insufficient_funds", `The player cannot pay the $${JAIL_FINE} fine`);
   const events: GameEvent[] = [{ type: "FinePaid", playerId: action.playerId, amount: JAIL_FINE }];
   const free = leaveJail(paid, action.playerId, events);
   return {
@@ -78,16 +77,31 @@ export function handleJailRoll(state: GameState, player: Player): Result {
       next = updatePlayer(rolled, player.id, { jailTurns: failed });
       return { ok: true, state: advanceTurn(next, events), events };
     }
-    const paid = charge(rolled, player.id, JAIL_FINE);
-    if (!paid) return cannotPayFine();
+    // The third miss makes the fine mandatory. It is a debt to the bank if cash is short.
+    const owed = owe(
+      rolled,
+      player.id,
+      { creditor: { type: "bank" }, amount: JAIL_FINE, reason: "fine" },
+      events,
+      "leave_jail_and_move",
+    );
+    if (!owed.ok) return owed;
+    if (!owed.settled) return { ok: true, state: owed.state, events };
     events.push({ type: "FinePaid", playerId: player.id, amount: JAIL_FINE });
-    next = paid;
+    next = owed.state;
   }
 
-  next = leaveJail(next, player.id, events);
-  const to = (JAIL_SQUARE + first + second) % BOARD_SIZE;
-  next = movePlayer(next, player.id, to, events, JAIL_SQUARE + first + second >= BOARD_SIZE);
-  const landed = resolveLanding(next, events);
+  const landed = leaveJailAndMove(next, events);
   if (!landed.ok) return landed;
   return { ok: true, state: landed.state, events };
+}
+
+/** The player leaves Jail and moves the number just rolled, then the new square is resolved. */
+export function leaveJailAndMove(state: GameState, events: GameEvent[]): Landing {
+  const player = getPlayer(state, state.turn.currentPlayerId);
+  const total = (state.turn.dice?.[0] ?? 0) + (state.turn.dice?.[1] ?? 0);
+  let next = leaveJail(state, player.id, events);
+  const to = (JAIL_SQUARE + total) % BOARD_SIZE;
+  next = movePlayer(next, player.id, to, events, JAIL_SQUARE + total >= BOARD_SIZE);
+  return resolveLanding(next, events);
 }

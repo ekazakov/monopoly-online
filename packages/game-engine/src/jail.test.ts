@@ -5,6 +5,7 @@ import {
   base,
   current,
   gameWhere,
+  holding,
   isDouble,
   player,
   roll,
@@ -20,6 +21,11 @@ const inJail =
     turn: { ...state.turn, phase: "awaiting_jail_choice" },
   });
 
+const ok = (state: GameState, action: Parameters<typeof applyAction>[1]) => {
+  const result = applyAction(state, action);
+  if (!result.ok) throw new Error(result.error.message);
+  return result;
+};
 const cash = (state: GameState) => player(state, current(state)).cash;
 const me = (state: GameState) => player(state, current(state));
 const act = (state: GameState, type: "PayJailFine" | "UseJailCard") =>
@@ -124,11 +130,29 @@ describe("rolling for doubles", () => {
     expect(types(events)).toEqual(["DiceRolled", "FinePaid", "LeftJail", "PlayerMoved"]);
   });
 
-  test("the forced fine is rejected without enough cash (temporary)", () => {
-    const state = rolling(nonDouble10, 2, setCurrent({ cash: 40 }));
-    expect(applyAction(state, { type: "RollDice", playerId: current(state) })).toMatchObject({
-      ok: false,
-      error: { code: "insufficient_funds" },
+  test("the forced fine becomes a debt when assets can cover it, and the move waits", () => {
+    const state = rolling(nonDouble10, 2, setCurrent({ cash: 40 }), holding("current", { 5: {} }));
+    const id = current(state);
+    const { state: debt } = roll(state);
+    expect(debt.turn.phase).toBe("awaiting_debt");
+    expect(debt.debts[0]).toMatchObject({
+      creditor: { type: "bank" },
+      amount: JAIL_FINE,
+      reason: "fine",
+      then: "leave_jail_and_move",
     });
+    expect(player(debt, id)).toMatchObject({ inJail: true, position: 10 });
+
+    const raised = ok(debt, { type: "Mortgage", playerId: id, square: 5 }).state;
+    const paid = ok(raised, { type: "PayDebt", playerId: id });
+    expect(player(paid.state, id)).toMatchObject({ inJail: false, position: 20, cash: 90 });
+    expect(paid.state.turn.phase).toBe("awaiting_end_turn");
+    expect(types(paid.events)).toEqual(["DebtPaid", "LeftJail", "PlayerMoved"]);
+  });
+
+  test("a forced fine the player cannot raise is bankruptcy", () => {
+    const state = rolling(nonDouble10, 2, setCurrent({ cash: 40 }));
+    const { state: after } = roll(state);
+    expect(player(after, current(state)).active).toBe(false);
   });
 });

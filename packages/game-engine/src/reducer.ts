@@ -2,7 +2,7 @@ import { actorFor, ALLOWED_PHASES } from "./actions.ts";
 import type { Action, ActionOf, ActionType } from "./actions.ts";
 import { handleBuild, handleSellBuilding } from "./buildings.ts";
 import { handleBid, handlePassBid } from "./auction.ts";
-import { handlePayDebt } from "./debt.ts";
+import { handlePayDebt } from "./paydebt.ts";
 import { handleMortgage, handleUnmortgage } from "./mortgage.ts";
 import { handlePayJailFine, handleUseJailCard } from "./jail.ts";
 import { handleBuyProperty, handleDeclineProperty } from "./landing.ts";

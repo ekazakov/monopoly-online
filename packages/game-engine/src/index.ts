@@ -10,6 +10,7 @@ export * from "./gameend.ts";
 export * from "./helpers.ts";
 export * from "./jail.ts";
 export * from "./landing.ts";
+export * from "./paydebt.ts";
 export * from "./liquidation.ts";
 export * from "./ownership.ts";
 export * from "./mortgage.ts";
