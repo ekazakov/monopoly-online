@@ -59,3 +59,86 @@ Temporary behavior for out-of-scope parts (must be clear in code and tests):
 ## Verification
 
 For each task: `pnpm check` and `pnpm test` must pass before a commit (CLAUDE.md). Commits use Conventional Commits with scope `engine`, one logical change per commit, and no commit without the user's request. No artifact changes are needed, because the engine does not touch GameScreen or DesignSystem.
+
+---
+
+# Game engine, phase 2: the rest of the rules
+
+## Context
+
+Phase 1 (tasks 0 to 11, all committed) built the core turn loop in `packages/game-engine`: dice, movement, buying, rent, tax, cards, Jail and the game-end check. Several rules are temporary stubs: a declined purchase stays unowned (`TODO(auction)`), and any payment a player cannot make rejects the action with `insufficient_funds` (`TODO(debt)`), which leaves a game stuck. Repair cards cost nothing (`TODO(buildings)`). Nobody can be eliminated, so a real game never ends.
+
+Phase 2 builds the rest of `plan/game-rules-reference.md`: buildings, mortgages, debt, bankruptcy, auctions, trades and the out-of-turn windows. Result: a full game, played by a bot, reaches `game_over` with a winner.
+
+Same working method as phase 1: the repo copy `plan/game-engine-plan.md` is the live to-do list. One task, then stop and ask. Commit only when the user says so (Conventional Commits, scope `engine`, `pnpm check` and `pnpm test` first). The commands need `unset NODE_USE_SYSTEM_CA` in this shell.
+
+## Decisions
+
+Agreed with the user:
+
+| Topic | Decision |
+|---|---|
+| Scope | Rules engine only. No persistence, no API, no resign action, no round limit (Q15, Q16 stay open). |
+| Mortgage transfer (Q8) | A mortgaged property keeps its mortgage when it changes hands. No interest on transfer. The new owner pays mortgage value + 10% when they lift it. |
+| Several creditors (Q13) | Cash is split pro rata by the amounts owed. Deeds and jail cards go to the creditor owed the most (tie: turn order after the debtor). |
+| Trades | One open trade at a time. Propose, then the other player accepts or rejects, or the proposer cancels. No counter-offers. |
+
+Defaults I chose (the user can change them):
+
+| Topic | Default |
+|---|---|
+| Auction with no bids (Q12) | The property stays unowned. The next player who lands on it can buy it or start an auction again. |
+| Forced jail fine the player cannot pay (Q11) | Settle the debt first, then leave Jail and move the rolled number. |
+| Pending debt whose creditor is eliminated (Q17) | The debt is cancelled. |
+| Jail card of an eliminated player (Q14) | To the creditor on a debt to a player. Back to its deck on a debt to the bank. |
+| Lifting a mortgage | Cost = mortgage value + 10%, rounded up to whole dollars. |
+| Bankruptcy re-check | The rules check once when the debt arises and once when it falls due. I also re-check after a trade is accepted while the debtor is in debt, because a trade can remove assets and cause a deadlock. |
+| Auction cash cap | A bidder who cannot afford the next minimum bid is passed automatically. |
+| During debt | Allowed: sell buildings, mortgage, propose a trade, pay. Blocked: buy, build, lift a mortgage, roll, end turn. |
+
+## Design
+
+All additions keep the phase 1 style: pure functions, plain-JSON state, seeded RNG, handlers return `Result`, the reducer bumps `version`.
+
+- **Ownership:** `{ ownerId, houses, mortgaged }`. `houses` is 0 to 5, where 5 means a hotel. Today it is `{ ownerId }` in `state.ts`; the `owns` test helper and the buy handler must change.
+- **Phases to add:** `awaiting_debt`, `awaiting_bid`, `awaiting_trade_response`.
+- **Debt:** `state.debts: Debt[]` in the order they arose. `Debt = { debtorId, creditor: bank | player id, amount, reason, then }`. `then` says what continues after payment: `finish_roll`, `leave_jail_and_move`, or `due_at_turn_start`. One helper `owe(state, debtorId, creditor(s), amount, events, then)` replaces the `insufficient_funds` rejections: pay at once if cash covers it; else compute the liquidation value (cash + mortgage value of unmortgaged properties + half the build price of all buildings); if it is below the **sum of all the debtor's outstanding debts plus the new one** (rules section 12), declare bankruptcy; else add the debt and switch to `awaiting_debt`.
+- **One total for a multi-creditor card:** the Harbour master's party card (`pay_each_player`) is evaluated as one total before anyone is paid: first the total against cash, then the total against the liquidation value. If cash covers it, everyone is paid in full. If the debtor is bankrupt, the Q13 rule applies: floor each creditor's pro rata share of the cash, and the rounding remainder goes to the biggest creditor, so cash is conserved (the bot test asserts this).
+- **Who is in `awaiting_debt`:** only the turn player. Debts of other players are pending debts (task 18) and become `awaiting_debt` at the start of their own turn. This keeps the "only the current player acts" validation valid until the actor model arrives in task 19. The collect-from-every-player card (Festival) keeps its `insufficient_funds` rejection until task 18. An off-turn bankruptcy (the debtor is not the turn player) does not advance the turn.
+- **Eliminated turn player:** bankruptcy of the turn player always ends with `advanceTurn`, and `finishRoll` also checks `active` as a guard. At `game_over`, `checkGameEnd` sets `turn.currentPlayerId` to the winner, so "the current player is active" stays true for the bot invariant.
+- **Resume after a debt:** `due_at_turn_start` resumes to `awaiting_jail_choice` for a jailed debtor and to `awaiting_roll` otherwise.
+- **Actor model:** the reducer today allows only `turn.currentPlayerId`. Add `actorFor(state)` in `actions.ts`: the auction bidder in `awaiting_bid`, the trade partner for accept/reject, otherwise the turn player. `validate` in `reducer.ts` uses it. The phase table `ALLOWED_PHASES` stays the source for the windows.
+- **Windows (rules section 10):** Build, SellBuilding, Mortgage, Unmortgage, ProposeTrade are allowed in `awaiting_roll`, `awaiting_jail_choice` and `awaiting_end_turn`. In `awaiting_debt` only SellBuilding, Mortgage, ProposeTrade, PayDebt.
+- **Auction:** `state.auction = { square, bidderOrder, passed, highBid, highBidderId, actorId, then, queue }`. Opening bid at least $10; raises of +10, +50 or +100; bids capped by cash; a pass is final; sold when all but the highest bidder have passed; if nobody bids, the property stays unowned. `then` is `finish_roll` or `next_in_queue`. `queue` holds the bank's assets for bankruptcy to the bank, in board order.
+- **Bankruptcy:** sell all buildings at half price, transfer cash, deeds (still mortgaged) and jail cards to the creditor(s); to the bank: remove buildings, jail cards back to decks, auction the deeds one at a time (board order, bidders = active players, starting after the debtor). The player becomes inactive (spectator). If fewer than two active players remain, skip the auctions; `checkGameEnd` already ends the game.
+- **Events to add:** `BuildingBuilt`, `BuildingSold`, `PropertyMortgaged`, `PropertyUnmortgaged`, `DebtIncurred`, `DebtPaid`, `BankruptcyDeclared`, `AssetsTransferred`, `PlayerEliminated`, `AuctionStarted`, `BidPlaced`, `BidPassed`, `AuctionEnded`, `TradeProposed`, `TradeAccepted`, `TradeRejected`, `TradeCancelled`.
+- **New errors:** for example `not_owner`, `incomplete_group`, `uneven_build`, `has_buildings`, `already_mortgaged`, `not_mortgaged`, `invalid_bid`, `debt_unpaid`, `invalid_trade`.
+- **New files (pattern: one concern per file, a test file beside it):** `buildings.ts`, `mortgage.ts`, `debt.ts`, `bankruptcy.ts`, `auction.ts`, `trade.ts`. Existing files to change: `state.ts`, `actions.ts`, `reducer.ts`, `landing.ts` (rent, auction trigger, `owe`), `cardplay.ts` (repairs, pending debts), `jail.ts` (forced fine), `helpers.ts` (`advanceTurn` starts a pending-debt phase), `gameend.ts`, `test-helpers.ts` (`owns`).
+- **Reuse:** `charge`, `getPlayer`, `updatePlayer`, `finishRoll`, `advanceTurn`, `movePlayer` in `helpers.ts`; `groupSquares`, `isProperty`, `rentFor` in `board.ts` and `landing.ts`; the `gameWhere`/`landing`/`topCard` test helpers; the bot in `bot.test.ts`.
+
+## Task list (continues the numbering in `plan/game-engine-plan.md`)
+
+- [x] 12. Save this phase to `plan/game-engine-plan.md` as a new section (the live to-do list). Update `plan/game-rules-reference.md`: Q8 and Q13 are the user's decisions; Q11, Q12, Q14 and Q17 are written as defaults, not as answers. Do not touch the checkboxes in `plan/game-screen-2-gameplay.md`: the user keeps that list.
+- [ ] 13. Ownership shape `{ ownerId, houses, mortgaged }`. Rent with buildings: the rent table by houses; a street with no buildings of its own pays double when the owner holds the full group, even if a sibling has houses (the even-build rule allows it) or is mortgaged, and mortgaged siblings still count for ownership; no rent when the street is mortgaged. Repair cards charge per house and hotel. Remove `TODO(buildings)`. Update tests and the `owns` helper.
+- [ ] 14. `Build` and `SellBuilding` actions and the windows. Rules: full group, no mortgaged street, even build and even sell, up to a hotel, half refund, unlimited supply. Tests for each rejection.
+- [ ] 15. `Mortgage` and `Unmortgage` actions. Rules: no buildings in the group, half the price, lift for +10% rounded up.
+- [ ] 16. Debt model for the turn player: `Debt`, liquidation value against the sum of debts, `owe()`, phase `awaiting_debt`, `PayDebt`, the debt-phase action limits. Use it for tax, rent, the pay cards (one total for the multi-creditor card) and the voluntary fine. A debt the assets cannot cover, the Festival card, and the forced jail fine keep `insufficient_funds` until later tasks.
+- [ ] 17. Bankruptcy to players: liquidation, transfer to one creditor, several creditors by the Q13 rule (floor shares, remainder to the biggest creditor, conservation test), elimination, `advanceTurn` for a bankrupt turn player, a `finishRoll` guard for inactive players, `currentPlayerId` = winner at `game_over`. The game can now end for real. Remove `insufficient_funds` for player creditors.
+- [ ] 18. Pending off-turn debts: Festival creates them for debtors who cannot pay at once; the check runs at arising (an off-turn bankruptcy does not advance the turn) and again when due; they fall due at the start of the debtor's turn in `advanceTurn` (`awaiting_debt` before the roll; a jailed debtor resumes to `awaiting_jail_choice`, with a test); cancelled when the creditor is eliminated before they fall due.
+- [ ] 19. `actorFor` and auctions: `Bid`, `PassBid`, phase `awaiting_bid`, auto-pass, results, and the triggers (declined and unaffordable purchase). Remove `TODO(auction)`.
+- [ ] 20. Bankruptcy to the bank: remove buildings, jail cards back to decks, the board-order auction queue, skip when fewer than two active players. Remove the `insufficient_funds` for bank creditors.
+- [ ] 21. Forced jail fine as a debt (`leave_jail_and_move` continuation). Remove the last `insufficient_funds` and the error code.
+- [ ] 22. Trades: `ProposeTrade`, `AcceptTrade`, `RejectTrade`, `CancelTrade`, phase `awaiting_trade_response`. Rules: cash, deeds (not when the group has buildings; mortgaged allowed), jail cards; both players active; re-check at accept; bankruptcy re-check for a debtor.
+- [ ] 23. Upgrade the bot in `bot.test.ts` to use every action (manage, pay debt, bid, trade). New invariants (houses, even build, mortgage state, debts, auction, trade). Many games must reach `game_over` with one winner. Same seed, same game.
+- [ ] 24. Docs: update `packages/game-engine/README.md` ("Not built yet" shrinks), the root README line, and the gameplay doc if needed. Final `pnpm ready`.
+
+## Risks
+
+- The ownership shape change touches many tests (task 13). Do it first, alone.
+- The actor change (task 19) touches the reducer validation. Keep `turn.currentPlayerId` as the turn owner; only the permission check changes.
+- Debt continuations must resume exactly where the roll stopped (`finishRoll`, or the jail move). Cover each `then` value with a test.
+- The bot can stall on rejected actions. The bot must always have a legal move in every phase (including `awaiting_debt`: sell and mortgage until it can pay).
+
+## Verification
+
+After each task: `unset NODE_USE_SYSTEM_CA; pnpm check` and `pnpm test` must pass. The engine tests include the seeded bot invariant test; from task 23 it also asserts that most games end with exactly one active player. Final: `pnpm ready` (check, test, build).

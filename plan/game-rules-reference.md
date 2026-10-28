@@ -92,7 +92,7 @@ Draw the top card, follow it, then put it at the bottom of its deck. A **Get Out
 
 Either way they then roll and move normally. Whether doubles on that roll give an extra turn is open **[Q10]**.
 
-Otherwise the player rolls for doubles. If it is a double they leave Jail, move the rolled number, and do **not** get another roll. If not, they stay in Jail and the turn ends. After the third failed attempt the $50 fine is mandatory, the player leaves Jail and moves the number just rolled. If they can't afford the fine, section 12 applies **[Q11]**.
+Otherwise the player rolls for doubles. If it is a double they leave Jail, move the rolled number, and do **not** get another roll. If not, they stay in Jail and the turn ends. After the third failed attempt the $50 fine is mandatory, the player leaves Jail and moves the number just rolled. If they can't afford the fine, section 12 applies: the debt is settled first, then the player leaves Jail and moves the number just rolled (default, **[Q11]**).
 
 ---
 
@@ -111,8 +111,8 @@ Otherwise the player rolls for doubles. If it is a double they leave Jail, move 
 
 - A street can be mortgaged only with no buildings on any street of its group. Sell the buildings first.
 - The owner receives the mortgage value (half the price) and keeps the property. A mortgaged property collects no rent.
-- To lift the mortgage, pay the mortgage value plus 10%. A group can be built on again only when none of its streets is mortgaged.
-- A mortgaged property may be traded. Interest and timing when it changes hands are open **[Q8]**.
+- To lift the mortgage, pay the mortgage value plus 10%, rounded up to whole dollars. A group can be built on again only when none of its streets is mortgaged.
+- A mortgaged property may be traded. It stays mortgaged, and the new owner pays no interest on the transfer. They pay the mortgage value plus 10% when they lift it (decided, **[Q8]**).
 
 ---
 
@@ -145,7 +145,7 @@ An auction starts when a player declines to buy an unowned property or cannot af
 - **Limit.** No bid above the bidder's cash.
 - **Passing.** A pass is final: the player cannot return to the auction.
 - **End.** The auction ends when every bidder but the highest has passed. The winner pays the bank and gets the Deed.
-- **No bids.** The property stays unowned **[Q12]**.
+- **No bids.** The property stays unowned. The next player who lands on it can buy it or start an auction (default, **[Q12]**).
 - **Several properties.** A bankrupt player's properties are auctioned one at a time in board order.
 
 ---
@@ -168,8 +168,9 @@ Properties that are already mortgaged add nothing. Trades are not counted.
 - Several debts are paid in the order they arose. If the assets can't cover all of them, the player is bankrupt.
 
 **What bankruptcy does.**
-- Debt to a **player**: the player's buildings are sold to the bank at half price, and the player gives the creditor all their cash (including that money), their properties and any Get Out of Jail Free cards. Mortgaged properties stay mortgaged **[Q8]**. A debt to several players is open **[Q13]**.
-- Debt to the **bank**: everything goes to the bank. Buildings are removed, and the properties are auctioned one at a time (section 11). Get Out of Jail Free cards return to their decks **[Q14]**.
+- Debt to a **player**: the player's buildings are sold to the bank at half price, and the player gives the creditor all their cash (including that money), their properties and any Get Out of Jail Free cards. Mortgaged properties stay mortgaged (decided, **[Q8]**). A debt to several players: the cash is split in proportion to the amounts owed, each share rounded down, and the remainder goes to the creditor owed the most. The deeds and the Get Out of Jail Free cards go to that same creditor. On a tie, the creditor who plays first after the debtor wins (decided, **[Q13]**).
+- Debt to the **bank**: everything goes to the bank. Buildings are removed, and the properties are auctioned one at a time (section 11). Get Out of Jail Free cards return to their decks (default, **[Q14]**).
+- A pending debt whose creditor is eliminated before it falls due is cancelled (default, **[Q17]**).
 - The bankrupt player is **eliminated**. They stay in the game as a **spectator** who can watch the board and log but not act.
 
 ---
