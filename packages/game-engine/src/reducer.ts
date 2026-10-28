@@ -1,6 +1,7 @@
 import { ALLOWED_PHASES } from "./actions.ts";
 import type { Action, ActionOf, ActionType } from "./actions.ts";
 import { handleBuild, handleSellBuilding } from "./buildings.ts";
+import { handleMortgage, handleUnmortgage } from "./mortgage.ts";
 import { handlePayJailFine, handleUseJailCard } from "./jail.ts";
 import { handleBuyProperty, handleDeclineProperty } from "./landing.ts";
 import { handleEndTurn, handleRollDice } from "./turn.ts";
@@ -22,6 +23,8 @@ export const defaultHandlers: Handlers = {
   EndTurn: handleEndTurn,
   Build: handleBuild,
   SellBuilding: handleSellBuilding,
+  Mortgage: handleMortgage,
+  Unmortgage: handleUnmortgage,
 };
 
 /** Check who may act, and in which phase. Return an error `Result`, or null when valid. */

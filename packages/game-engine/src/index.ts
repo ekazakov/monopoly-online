@@ -7,6 +7,7 @@ export * from "./gameend.ts";
 export * from "./helpers.ts";
 export * from "./jail.ts";
 export * from "./landing.ts";
+export * from "./mortgage.ts";
 export * from "./rng.ts";
 export * from "./state.ts";
 export * from "./actions.ts";

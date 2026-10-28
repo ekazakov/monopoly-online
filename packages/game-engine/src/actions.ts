@@ -8,6 +8,8 @@ export type Action =
   | { type: "UseJailCard"; playerId: string }
   | { type: "Build"; playerId: string; square: number }
   | { type: "SellBuilding"; playerId: string; square: number }
+  | { type: "Mortgage"; playerId: string; square: number }
+  | { type: "Unmortgage"; playerId: string; square: number }
   | { type: "EndTurn"; playerId: string };
 
 export type ActionType = Action["type"];
@@ -30,4 +32,6 @@ export const ALLOWED_PHASES: Readonly<Record<ActionType, readonly Phase[]>> = {
   EndTurn: ["awaiting_end_turn"],
   Build: MANAGE_PHASES,
   SellBuilding: MANAGE_PHASES,
+  Mortgage: MANAGE_PHASES,
+  Unmortgage: MANAGE_PHASES,
 };

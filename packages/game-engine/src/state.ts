@@ -70,6 +70,8 @@ export type GameEvent =
   | { type: "CashChanged"; playerId: string; amount: number; reason: "card" }
   | { type: "BuildingBuilt"; playerId: string; square: number; houses: number; cost: number }
   | { type: "BuildingSold"; playerId: string; square: number; houses: number; refund: number }
+  | { type: "PropertyMortgaged"; playerId: string; square: number; amount: number }
+  | { type: "PropertyUnmortgaged"; playerId: string; square: number; cost: number }
   | { type: "FinePaid"; playerId: string; amount: number }
   | { type: "SentToJail"; playerId: string }
   | { type: "LeftJail"; playerId: string }
@@ -91,7 +93,11 @@ export type GameErrorCode =
   | "group_mortgaged"
   | "uneven_build"
   | "max_buildings"
-  | "no_buildings";
+  | "no_buildings"
+  | "not_a_property"
+  | "already_mortgaged"
+  | "not_mortgaged"
+  | "has_buildings";
 
 export interface GameError {
   readonly code: GameErrorCode;
