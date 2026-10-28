@@ -16,6 +16,7 @@ export type Phase =
   | "awaiting_buy_decision"
   | "awaiting_jail_choice"
   | "awaiting_end_turn"
+  | "awaiting_debt"
   | "game_over";
 
 export interface Player {
@@ -38,6 +39,23 @@ export interface Ownership {
   readonly mortgaged: boolean;
 }
 
+export type DebtCreditor =
+  | { readonly type: "bank" }
+  | { readonly type: "player"; readonly id: string };
+
+export type DebtReason = "tax" | "rent" | "card";
+
+/** What continues after the last debt of a player is paid. */
+export type DebtThen = "finish_roll";
+
+export interface Debt {
+  readonly debtorId: string;
+  readonly creditor: DebtCreditor;
+  readonly amount: number;
+  readonly reason: DebtReason;
+  readonly then: DebtThen;
+}
+
 export interface TurnState {
   readonly currentPlayerId: string;
   readonly phase: Phase;
@@ -54,6 +72,8 @@ export interface GameState {
   /** Square index (as a string) to its deed. Missing means unowned. */
   readonly ownership: Readonly<Record<string, Ownership>>;
   readonly turn: TurnState;
+  /** Debts that wait for payment, oldest first. */
+  readonly debts: readonly Debt[];
   /** Card indexes into the static decks, top card first. Held jail cards are not in the list. */
   readonly decks: Readonly<Record<DeckName, readonly number[]>>;
   readonly rng: RngState;
@@ -72,6 +92,14 @@ export type GameEvent =
   | { type: "BuildingSold"; playerId: string; square: number; houses: number; refund: number }
   | { type: "PropertyMortgaged"; playerId: string; square: number; amount: number }
   | { type: "PropertyUnmortgaged"; playerId: string; square: number; cost: number }
+  | {
+      type: "DebtIncurred";
+      debtorId: string;
+      creditor: DebtCreditor;
+      amount: number;
+      reason: DebtReason;
+    }
+  | { type: "DebtPaid"; debtorId: string; creditor: DebtCreditor; amount: number }
   | { type: "FinePaid"; playerId: string; amount: number }
   | { type: "SentToJail"; playerId: string }
   | { type: "LeftJail"; playerId: string }
@@ -97,7 +125,8 @@ export type GameErrorCode =
   | "not_a_property"
   | "already_mortgaged"
   | "not_mortgaged"
-  | "has_buildings";
+  | "has_buildings"
+  | "no_debt";
 
 export interface GameError {
   readonly code: GameErrorCode;

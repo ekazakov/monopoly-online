@@ -1,7 +1,9 @@
 import { BOARD_SIZE, SQUARES } from "./board.ts";
 import { CHANCE_CARDS, CHEST_CARDS } from "./cards.ts";
-import { charge, finishRoll, getPlayer, movePlayer, sendToJail, updatePlayer } from "./helpers.ts";
+import { finishRoll, getPlayer, movePlayer, sendToJail, updatePlayer } from "./helpers.ts";
 import type { Landing, LandingOptions } from "./landing.ts";
+import { owe, oweMany } from "./debt.ts";
+import type { Charge } from "./debt.ts";
 import { buildingCounts } from "./ownership.ts";
 import { fail } from "./state.ts";
 import type { DeckName, Failure, GameEvent, GameState } from "./state.ts";
@@ -12,8 +14,23 @@ type Land = (state: GameState, events: GameEvent[], options?: LandingOptions) =>
 const DECKS = { chance: CHANCE_CARDS, chest: CHEST_CARDS } as const;
 
 const cannotPay = (amount: number): Failure =>
-  // TODO(debt): replace this rejection with debt and bankruptcy.
+  // TODO(pending debts): the collect-from-every-player card is built in task 18.
   fail("insufficient_funds", `A player cannot pay $${amount}`);
+
+/** The player owes the bank. Pay at once, or become a debtor. */
+function payBank(state: GameState, playerId: string, amount: number, events: GameEvent[]): Landing {
+  const owed = owe(
+    state,
+    playerId,
+    { creditor: { type: "bank" }, amount, reason: "card" },
+    events,
+    "finish_roll",
+  );
+  if (!owed.ok) return owed;
+  if (!owed.settled) return ok(owed.state);
+  events.push({ type: "CashChanged", playerId, amount: -amount, reason: "card" });
+  return ok(finishRoll(owed.state, events));
+}
 
 function cashChange(state: GameState, playerId: string, amount: number, events: GameEvent[]) {
   events.push({ type: "CashChanged", playerId, amount, reason: "card" });
@@ -60,17 +77,34 @@ export function playCard(
     case "collect":
       return ok(finishRoll(cashChange(drawn, player.id, effect.amount, events), events));
 
-    case "pay": {
-      if (!charge(drawn, player.id, effect.amount)) return cannotPay(effect.amount);
-      return ok(finishRoll(cashChange(drawn, player.id, -effect.amount, events), events));
-    }
+    case "pay":
+      return payBank(drawn, player.id, effect.amount, events);
 
     case "pay_each_player": {
-      const total = effect.amount * others.length;
-      if (!charge(drawn, player.id, total)) return cannotPay(total);
-      let next = cashChange(drawn, player.id, -total, events);
-      for (const other of others) next = cashChange(next, other.id, effect.amount, events);
-      return ok(finishRoll(next, events));
+      // One total for all creditors, so the cash and the liquidation tests see the whole amount.
+      const charges: Charge[] = others.map((other) => ({
+        creditor: { type: "player", id: other.id },
+        amount: effect.amount,
+        reason: "card",
+      }));
+      const owed = oweMany(drawn, player.id, charges, events, "finish_roll");
+      if (!owed.ok) return owed;
+      if (!owed.settled) return ok(owed.state);
+      events.push({
+        type: "CashChanged",
+        playerId: player.id,
+        amount: -effect.amount * others.length,
+        reason: "card",
+      });
+      for (const other of others) {
+        events.push({
+          type: "CashChanged",
+          playerId: other.id,
+          amount: effect.amount,
+          reason: "card",
+        });
+      }
+      return ok(finishRoll(owed.state, events));
     }
 
     case "collect_from_each_player": {
@@ -85,8 +119,7 @@ export function playCard(
       const { houses, hotels } = buildingCounts(drawn, player.id);
       const amount = houses * effect.perHouse + hotels * effect.perHotel;
       if (amount === 0) return ok(finishRoll(drawn, events));
-      if (!charge(drawn, player.id, amount)) return cannotPay(amount);
-      return ok(finishRoll(cashChange(drawn, player.id, -amount, events), events));
+      return payBank(drawn, player.id, amount, events);
     }
 
     case "go_to_jail":

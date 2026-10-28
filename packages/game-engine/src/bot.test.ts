@@ -5,6 +5,7 @@ import {
   CHEST_CARDS,
   createGame,
   createRng,
+  groupLevels,
   isProperty,
   JAIL_FINE,
   nextInt,
@@ -54,9 +55,35 @@ type PlainAction = Action extends infer A
     : never
   : never;
 
+/** Raise cash for a debt: sell a building, else mortgage a property, else pay. */
+function debtAction(state: GameState, playerId: string): Action {
+  const debt = state.debts.find((d) => d.debtorId === playerId);
+  const player = state.players.find((p) => p.id === playerId);
+  if (!debt || !player) throw new Error("no debt");
+  if (player.cash >= debt.amount) return { type: "PayDebt", playerId };
+
+  const owned = Object.entries(state.ownership)
+    .filter(([, entry]) => entry.ownerId === playerId)
+    .map(([square, entry]) => ({ square: Number(square), entry }))
+    .sort((a, c) => a.square - c.square);
+  const sellable = owned.find(({ square, entry }) => {
+    const info = SQUARES[square];
+    return (
+      info?.kind === "street" &&
+      entry.houses > 0 &&
+      entry.houses === Math.max(...groupLevels(state, info.group))
+    );
+  });
+  if (sellable) return { type: "SellBuilding", playerId, square: sellable.square };
+  const mortgageable = owned.find(({ entry }) => !entry.mortgaged);
+  if (mortgageable) return { type: "Mortgage", playerId, square: mortgageable.square };
+  throw new Error(`Seed state: ${playerId} cannot raise cash for the debt`);
+}
+
 /** Pick a legal action. The bot has its own RNG, so it does not touch the game's RNG. */
-function choose(state: GameState, rng: RngState): { action: PlainAction; rng: RngState } {
+function choose(state: GameState, rng: RngState): { action: Action; rng: RngState } {
   const playerId = state.turn.currentPlayerId;
+  if (state.turn.phase === "awaiting_debt") return { action: debtAction(state, playerId), rng };
   const player = state.players.find((p) => p.id === playerId);
   if (!player) throw new Error("no current player");
   const dice = nextInt(rng, 100);

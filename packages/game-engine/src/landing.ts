@@ -1,7 +1,8 @@
 import type { ActionOf } from "./actions.ts";
 import { isProperty, SQUARES, STATION_RENT, UTILITY_MULTIPLIER } from "./board.ts";
 import { playCard } from "./cardplay.ts";
-import { charge, finishRoll, getPlayer, sendToJail, updatePlayer } from "./helpers.ts";
+import { owe } from "./debt.ts";
+import { charge, finishRoll, getPlayer, sendToJail } from "./helpers.ts";
 import { entryOf, ownedInGroup, ownerOf, ownsFullGroup, setEntry } from "./ownership.ts";
 import { rollDice } from "./rng.ts";
 import { fail } from "./state.ts";
@@ -25,9 +26,7 @@ export function rentFor(state: GameState, position: number, diceTotal: number): 
   return ownsFullGroup(state, square.group, entry.ownerId) ? square.rent[0] * 2 : square.rent[0];
 }
 
-const cannotPay = (amount: number): Failure =>
-  // TODO(debt): replace this rejection with debt and bankruptcy.
-  fail("insufficient_funds", `The player cannot pay $${amount}`);
+const BANK = { type: "bank" } as const;
 
 /** Rules a card can change for the landing that follows it. */
 export interface LandingOptions {
@@ -61,15 +60,22 @@ export function resolveLanding(
       return { ok: true, state: finishRoll(sendToJail(state, player.id, events), events) };
 
     case "tax": {
-      const paid = charge(state, player.id, square.amount);
-      if (!paid) return cannotPay(square.amount);
+      const owed = owe(
+        state,
+        player.id,
+        { creditor: BANK, amount: square.amount, reason: "tax" },
+        events,
+        "finish_roll",
+      );
+      if (!owed.ok) return owed;
+      if (!owed.settled) return { ok: true, state: owed.state };
       events.push({
         type: "TaxPaid",
         playerId: player.id,
         square: player.position,
         amount: square.amount,
       });
-      return { ok: true, state: finishRoll(paid, events) };
+      return { ok: true, state: finishRoll(owed.state, events) };
     }
 
     case "street":
@@ -100,9 +106,15 @@ export function resolveLanding(
         const multiplier = square.kind === "station" ? (options.stationRentMultiplier ?? 1) : 1;
         amount = rentFor(state, player.position, diceTotal) * multiplier;
       }
-      const paid = charge(working, player.id, amount);
-      if (!paid) return cannotPay(amount);
-      const owner = getPlayer(paid, ownerId);
+      const owed = owe(
+        working,
+        player.id,
+        { creditor: { type: "player", id: ownerId }, amount, reason: "rent" },
+        events,
+        "finish_roll",
+      );
+      if (!owed.ok) return owed;
+      if (!owed.settled) return { ok: true, state: owed.state };
       events.push({
         type: "RentPaid",
         payerId: player.id,
@@ -110,8 +122,7 @@ export function resolveLanding(
         square: player.position,
         amount,
       });
-      const settled = updatePlayer(paid, ownerId, { cash: owner.cash + amount });
-      return { ok: true, state: finishRoll(settled, events) };
+      return { ok: true, state: finishRoll(owed.state, events) };
     }
   }
 }
