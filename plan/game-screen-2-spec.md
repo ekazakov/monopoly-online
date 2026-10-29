@@ -128,15 +128,15 @@ Fonts load from Google Fonts: Barlow 500/600 and Barlow Condensed 600/700.
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-| Region       | Spec                                                                                                                                                 |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Root         | `min-height: 900px`, a flex column, `overflow: hidden`, ground background                                                                            |
-| Top bar      | The log bar is centred in a row with `padding: 0 280px` and `max-width: 640px`. The Menu button is absolutely positioned at `top: 12px; right: 12px` |
-| Middle row   | `flex: 1`, a row of three columns: player rail, board, right spacer                                                                                  |
-| Player rail  | `flex: 0 0 auto`, `padding: 16px 0 16px 8px`, `gap: 16px`, top-aligned                                                                               |
-| Board column | `flex: 1 1 0`, `container-type: size`, centres the board, `padding: 8px`                                                                             |
-| Right spacer | `flex: 0 0 168px`, empty. It balances the rail so the board sits centred                                                                             |
-| Bottom hand  | A centred row of stacks with `gap: 28px` and `margin-bottom: -48px`, so the cards peek up from the bottom edge. This is the collapsed state; the expanded state is in 4.6                                       |
+| Region       | Spec                                                                                                                                                                      |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Root         | `min-height: 900px`, a flex column, `overflow: hidden`, ground background                                                                                                 |
+| Top bar      | The log bar is centred in a row with `padding: 0 280px` and `max-width: 640px`. The Menu button is absolutely positioned at `top: 12px; right: 12px`                      |
+| Middle row   | `flex: 1`, a row of three columns: player rail, board, right spacer                                                                                                       |
+| Player rail  | `flex: 0 0 auto`, `padding: 16px 0 16px 8px`, `gap: 16px`, top-aligned                                                                                                    |
+| Board column | `flex: 1 1 0`, `container-type: size`, centres the board, `padding: 8px`                                                                                                  |
+| Right spacer | `flex: 0 0 168px`, empty. It balances the rail so the board sits centred                                                                                                  |
+| Bottom hand  | A centred row of stacks with `gap: 28px` and `margin-bottom: -48px`, so the cards peek up from the bottom edge. This is the collapsed state; the expanded state is in 4.6 |
 
 ### 3.2 Board sizing
 
@@ -178,7 +178,7 @@ Fonts load from Google Fonts: Barlow 500/600 and Barlow Condensed 600/700.
 
 - **Size:** at least 44px tall, `padding: 0 18px`.
 - **Style:** `#121f2a` fill, `#2c4254` border, 14/600 uppercase label "Menu".
-- **Opens:** settings, rules, sound, leave game. These aren't designed yet (R-G9).
+- **Opens:** settings, rules, sound, leave game. The session owner also gets save and exit, and finish game (gameplay doc 3.1). These aren't designed yet (R-G9).
 
 ### 4.3 Player rail
 
@@ -352,17 +352,17 @@ The board centre changes with each phase of the turn. The phase list and what ea
 | Players differ by **shape** (unique avatar) as well as colour                                      | Done            |
 | The active player isn't shown by colour alone: use size, a tag or a marker                         | Gap             |
 | Respect `prefers-reduced-motion` for dice, token movement and the log highlight                    | Gap             |
-| Expanded hand opens on focus, closes on Esc, and its card actions are reachable by keyboard | Gap              |
+| Expanded hand opens on focus, closes on Esc, and its card actions are reachable by keyboard        | Gap             |
 | Keyboard order: log toggle → Menu → turn actions → hand                                            | Gap (to verify) |
 
 ---
 
 ## 7. Responsive behaviour (desktop and tablet)
 
-| Width                            | Layout                                                                                                                                                                          |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **≥ 1280**                       | As drawn: left rail, centred board, 168px right spacer, hand at the bottom                                                                                                      |
-| **1024–1279** (tablet landscape) | The right spacer shrinks to 0–80px. The board stays as large as fits. The hand cards shrink to 132px wide (the expanded hand wraps into more rows)                                                                       |
+| Width                            | Layout                                                                                                                                                                                                           |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **≥ 1280**                       | As drawn: left rail, centred board, 168px right spacer, hand at the bottom                                                                                                                                       |
+| **1024–1279** (tablet landscape) | The right spacer shrinks to 0–80px. The board stays as large as fits. The hand cards shrink to 132px wide (the expanded hand wraps into more rows)                                                               |
 | **768–1023** (tablet portrait)   | The rail becomes a **horizontal strip** above the board, with the avatar, name and cash in a row. The board takes the full width. The collapsed hand is a compact strip, and a tap opens the expanded hand (4.6) |
 
 Rules:
@@ -429,14 +429,14 @@ Rules:
 
 The rules behind each flow are in the gameplay doc, section 5. **There are no modal dialogs for now**: each flow below is shown in the board centre, except Manage properties, which lives in the expanded hand (4.6). The "Dialog or screen" column is the flow's name only.
 
-| ID   | Level  | Status | Dialog or screen                                                                                   |
-| ---- | ------ | ------ | -------------------------------------------------------------------------------------------------- |
-| R-G4 | MUST   | Gap    | Auction: current bid, bidders, timer, bid buttons                                                  |
-| R-G5 | MUST   | Gap    | Trade builder: two columns of properties, cash and cards, then propose, counter, accept or decline |
-| R-G6 | MUST   | Gap    | Chance and Chest card reveal                                                                       |
-| R-G7 | MUST   | Gap    | Manage properties: build, sell, mortgage, unmortgage                                               |
-| R-G8 | MUST   | Gap    | Bankruptcy, and the end-of-game result screen                                                      |
-| R-G9 | SHOULD | Gap    | Menu contents: rules, settings (sound, motion, theme), leave game                                  |
+| ID   | Level  | Status | Dialog or screen                                                                                                     |
+| ---- | ------ | ------ | -------------------------------------------------------------------------------------------------------------------- |
+| R-G4 | MUST   | Gap    | Auction: current bid, bidders, timer, bid buttons                                                                    |
+| R-G5 | MUST   | Gap    | Trade builder: two columns of properties, cash and cards, then propose, counter, accept or decline                   |
+| R-G6 | MUST   | Gap    | Chance and Chest card reveal                                                                                         |
+| R-G7 | MUST   | Gap    | Manage properties: build, sell, mortgage, unmortgage                                                                 |
+| R-G8 | MUST   | Gap    | Bankruptcy, and the end-of-game result screen                                                                        |
+| R-G9 | SHOULD | Gap    | Menu contents: rules, settings (sound, motion, theme), leave game; for the session owner, save and exit, finish game |
 
 ---
 
@@ -461,9 +461,9 @@ Gameplay questions (player limits, disconnects, trades, house rules, timer, bots
 
 ## 10. Change log
 
-| Date       | Change                                                                                                                                                                                                                                                                                                                |
-| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-10-24 | Critique of Game screen 2. Decisions recorded: mixed device and hot-seat play, turn actions in the board centre, desktop and tablet targets                                                                                                                                                                           |
-| 2026-10-25 | Dice moved from top right to the board centre. Next turn button added under the dice. Player names added to the right of the avatars, above the cash, with no label background. Generic person icons replaced with unique outline avatars (cat, terrier, penguin, racing car) drawn from the Harborfront Avatars page |
-| 2026-10-25 | Gameplay logic and gameplay questions moved to [game-screen-2-gameplay.md](game-screen-2-gameplay.md). This spec now covers UI and design only                                                                                                                                                                        |
+| Date       | Change                                                                                                                                                                                                                                                                                                                                                   |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-24 | Critique of Game screen 2. Decisions recorded: mixed device and hot-seat play, turn actions in the board centre, desktop and tablet targets                                                                                                                                                                                                              |
+| 2026-10-25 | Dice moved from top right to the board centre. Next turn button added under the dice. Player names added to the right of the avatars, above the cash, with no label background. Generic person icons replaced with unique outline avatars (cat, terrier, penguin, racing car) drawn from the Harborfront Avatars page                                    |
+| 2026-10-25 | Gameplay logic and gameplay questions moved to [game-screen-2-gameplay.md](game-screen-2-gameplay.md). This spec now covers UI and design only                                                                                                                                                                                                           |
 | 2026-10-25 | Rules review: expanded-hand model replaces per-card pop-ups (4.6, R-H6), no modal dialogs for now, debt and spectator states added to the rail and board centre (5.2, 5.3, R-P6), tablet hand behaviour updated (7). Open design questions 5 to 12 added to section 9. Rules and property data are in [game-rules-reference.md](game-rules-reference.md) |

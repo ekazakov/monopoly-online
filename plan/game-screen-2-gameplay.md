@@ -5,7 +5,7 @@
 | Companion doc | [game-screen-2-spec.md](game-screen-2-spec.md): the UI and visual design of the same screen |
 | Canvas        | Harborfront Design System: https://claude.ai/artifact/RtcjA9YX1Sq77osCjy58PK                |
 | Artboard      | `project/Wireframe2.dc.html`, titled "Game screen 2"                                        |
-| Status        | Draft. Last updated 2026-10-25                                                              |
+| Status        | Draft. Last updated 2026-10-29                                                              |
 
 This document covers the game rules and turn logic that Game screen 2 has to present. How each item looks, its layout, tokens and components, is in the design spec.
 
@@ -65,7 +65,7 @@ The rules are in [game-rules-reference.md](game-rules-reference.md). Decisions t
 | Acting out of turn  | Rules section 10               | Only on your own turn (before the roll and after the landing) and while settling a debt                                                                                          |
 | Debt and bankruptcy | Rules section 12               | Automatic bankruptcy when the assets can't cover the debt. Otherwise the player raises the cash themselves. Off-turn debts fall due at the start of the debtor's next turn       |
 | Taxes               | Rules section 3                | Flat: Income Tax $200, Luxury Tax $100                                                                                                                                           |
-| End of game         | Rules section 13               | The last active player wins. Eliminated players keep watching                                                                                                                    |
+| End of game         | Rules section 13               | The last active player wins. Eliminated players keep watching. The session owner can also finish the game early, with no winner (3.1)                                            |
 
 ---
 
@@ -81,6 +81,38 @@ The rules are in [game-rules-reference.md](game-rules-reference.md). Decisions t
 - **Acting out of turn.** A player who is not on turn can only bid in an auction when it is their turn to bid, and settle a debt that has fallen due. Building, mortgaging and proposing a trade happen on a player's own turn (rules section 10), so a remote turn stays watch-only except for auction bids and answering a trade offer.
 - **Trades between devices.** A trade proposed from one device needs confirmation from the other player on their own device. Whether a hot-seat trade between two players on one device needs a handoff is open (question 3).
 - **Connection state.** Each remote player is online, reconnecting or away. Behaviour on disconnect is open (question 2).
+
+### 3.1 Session owner
+
+The **session owner** is the player who created the game. Owner rights never move to another player. The owner keeps them when bankrupt (as a spectator) and when disconnected. An owner who does not come back is a normal disconnect (question 2).
+
+The owner has two controls in the Menu (design spec R-G9). Only the owner's device shows them. Each one needs a confirmation on the owner's device only. Other players do not vote.
+
+**Finish game**
+
+| Rule        | Decision                                                                                                          |
+| ----------- | ----------------------------------------------------------------------------------------------------------------- |
+| When        | At any moment, also during an auction, a trade offer or a debt                                                    |
+| Game state  | The game rolls back to the start of the current turn. An auction, trade offer or debt from this turn is discarded |
+| Result      | No winner. The game is cancelled. The final standings show for information only                                   |
+| All devices | The board centre shows "Game finished by <owner>" and the standings, with **OK**. Then the device goes to home    |
+
+**Save and exit**
+
+| Rule         | Decision                                                                                                                       |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| When         | At any moment, also during an auction, a trade offer or a debt                                                                 |
+| Saved state  | The state at the start of the current turn. An auction, trade offer or debt from this turn is discarded                        |
+| Random state | The save keeps the dice and deck random state. A restored turn gives the same rolls and cards, so a save can't undo a bad roll |
+| Slots        | One save per game. A new save replaces the old one                                                                             |
+| Expiry       | Never. The save stays until the owner continues or finishes the game                                                           |
+| All devices  | The board centre shows "Game saved by <owner>" with **OK**. Then every device goes to home                                     |
+
+**Restore**
+
+- Only the owner restores a game. The owner's saved-games list shows **Continue** and **Finish** for each saved game. Finish from the list ends the game with no winner, as above.
+- Seating is free. Each player claims their seat from any device, so hot-seat groups can change.
+- The game continues when the owner starts it. Players who are not back follow the disconnect rule (question 2).
 
 ---
 
@@ -102,6 +134,9 @@ Every state below comes from the rules. The design spec defines how each one loo
 | Houses 1–4 / hotel           | Property        | Built during Manage                                                                    | Sold back                                                           |
 | Mortgaged                    | Property        | Mortgaged during Manage or Raise cash                                                  | Unmortgaged                                                         |
 | Round number                 | Game            | Every player has had one turn                                                          | Never; it only counts up                                            |
+| Session owner                | Player          | They create the game                                                                   | Never                                                               |
+| Saved                        | Game            | The owner saves the game (3.1)                                                         | The owner continues or finishes it                                  |
+| Finished, no winner          | Game            | The owner finishes the game (3.1)                                                      | Never                                                               |
 
 ---
 
@@ -140,6 +175,8 @@ The design spec lists these as screens (R-G4 to R-G8). **For now none of them is
 17. [] A pending debt whose creditor is eliminated before it falls due: is it cancelled or paid to the bank?
 18. [] Which branded wording should change: Chance, GO, Jail, Free Parking? (Community Chest, railroad and Title Deed are already Chest, Station and Deed.)
 19. [] With remote players, are dice rolls and deck shuffles decided on a server so a device can't cheat?
+20. [] On restore (3.1), can a new person take the seat of a player who does not come back?
+21. [] The owner saves or finishes while a remote player is on turn. What does that player's device show for the discarded part of the turn? Proposed: the same notice as on every device.
 
 ---
 
@@ -150,3 +187,4 @@ The design spec lists these as screens (R-G4 to R-G8). **For now none of them is
 | 2026-10-24 | Decisions recorded: mixed device and hot-seat play, turn actions in the board centre                                                                                                                                                                                                                                                                                                                                                 |
 | 2026-10-25 | Split out of the design spec into its own document: play modes, turn flow, mixed-device rules, rule-driven states, and gameplay questions                                                                                                                                                                                                                                                                                            |
 | 2026-10-25 | Rules review: bankruptcy is automatic from the assets' liquidation value, off-turn debts fall due on the debtor's next turn, bankrupt players become spectators, out-of-turn actions limited to defined windows, auctions turn-based, flat taxes, no building supply limit, no modals for now. Rules rewritten with property data and card decks in [game-rules-reference.md](game-rules-reference.md). Open questions 7 to 19 added |
+| 2026-10-29 | Session owner controls (3.1): finish the game with no winner, save and exit, restore by the owner only. Both roll back to the start of the turn and keep the random state. One save slot, no expiry, free re-seating. Open questions 20 and 21 added                                                                                                                                                                                 |

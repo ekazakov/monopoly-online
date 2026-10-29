@@ -179,6 +179,8 @@ Properties that are already mortgaged add nothing. Trades are not counted.
 
 The game ends when only one active player is left. That player wins. A time or round limit is open **[Q15]**.
 
+The session owner can also finish the game early. Then there is no winner (gameplay doc section 3.1).
+
 ---
 
 # Appendix A: board layout
