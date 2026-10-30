@@ -224,6 +224,12 @@ function choose(state: GameState, start: RngState): Choice {
     rng: random.state,
   });
 
+  // Now and then any active player resigns, also off turn. It is refused during an auction.
+  if (random.int(3000) === 0) {
+    const quitter = random.pick(state.players.filter((p) => p.active));
+    if (quitter) return done({ type: "Resign", playerId: quitter.id }, true);
+  }
+
   switch (state.turn.phase) {
     case "awaiting_debt":
       return done(debtAction(state, playerId));
@@ -355,6 +361,7 @@ describe("random bot games", () => {
       "BankruptcyDeclared",
       "AssetsTransferred",
       "PlayerEliminated",
+      "PlayerResigned",
       "AuctionStarted",
       "BidPlaced",
       "BidPassed",

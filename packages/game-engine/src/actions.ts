@@ -23,7 +23,8 @@ export type Action =
   | { type: "AcceptTrade"; playerId: string }
   | { type: "RejectTrade"; playerId: string }
   | { type: "CancelTrade"; playerId: string }
-  | { type: "EndTurn"; playerId: string };
+  | { type: "EndTurn"; playerId: string }
+  | { type: "Resign"; playerId: string };
 
 export type ActionType = Action["type"];
 export type ActionOf<T extends ActionType> = Extract<Action, { type: T }>;
@@ -57,6 +58,8 @@ export const ALLOWED_PHASES: Readonly<Record<ActionType, readonly Phase[]>> = {
   AcceptTrade: ["awaiting_trade_response"],
   RejectTrade: ["awaiting_trade_response"],
   CancelTrade: ["awaiting_trade_response"],
+  // Any phase but the end. The handler refuses it while an auction runs.
+  Resign: [...DEBT_PHASES, "awaiting_buy_decision", "awaiting_bid", "awaiting_trade_response"],
 };
 
 /** The player who must act now: the bidder, the trade partner, or the player on turn. */
@@ -66,8 +69,12 @@ export function actorFor(state: GameState): string {
   return state.turn.currentPlayerId;
 }
 
-/** Whether a player may do this action now. Only the proposer can cancel an open trade. */
+/**
+ * Whether a player may do this action now. Only the proposer can cancel an open trade. Any
+ * active player may resign, also off turn.
+ */
 export function mayAct(state: GameState, type: ActionType, playerId: string): boolean {
+  if (type === "Resign") return true;
   if (type === "CancelTrade" && state.trade) return playerId === state.trade.fromId;
   return actorFor(state) === playerId;
 }

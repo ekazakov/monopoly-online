@@ -174,7 +174,7 @@ Properties that are already mortgaged add nothing. Trades are not counted.
 - A pending debt whose creditor is eliminated before it falls due is cancelled (decided, **[Q17]**).
 - The bankrupt player is **eliminated**. They stay in the game as a **spectator** who can watch the board and log but not act.
 
-**Resigning.** A player may resign at any time, also off turn, but not while an auction runs. Resigning is a bankruptcy: to the creditor if the player owes a debt to a player, otherwise to the bank. An open trade offer with that player is cancelled. On a device with several hot-seat players, one chosen player resigns (decided, **[Q16]**).
+**Resigning.** A player may resign at any time, also off turn, but not while an auction runs. Resigning is a bankruptcy: to the creditor if the player owes a debt to a player, otherwise to the bank. An open trade offer is cancelled. On a device with several hot-seat players, one chosen player resigns (decided, **[Q16]**).
 
 ---
 

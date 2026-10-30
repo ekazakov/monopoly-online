@@ -44,6 +44,7 @@ export function startAuction(
     actorId: actorId ?? "",
     then,
     queue,
+    returnPhase: state.turn.phase,
   };
   if (actorId === undefined) return endAuction(state, auction, events);
   return { ...state, auction, turn: { ...state.turn, phase: "awaiting_bid" } };
@@ -72,6 +73,13 @@ function endAuction(state: GameState, auction: Auction, events: GameEvent[]): Ga
       const [following, ...rest] = auction.queue;
       if (following === undefined) return advanceTurn(next, events);
       return startAuction(next, following, "next_in_queue", events, rest);
+    }
+    case "resume": {
+      // The same for a player who resigned off turn. Then the turn continues where it was.
+      const resumed = { ...next, turn: { ...next.turn, phase: auction.returnPhase } };
+      const [following, ...rest] = auction.queue;
+      if (following === undefined) return resumed;
+      return startAuction(resumed, following, "resume", events, rest);
     }
   }
 }

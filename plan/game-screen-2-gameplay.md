@@ -189,7 +189,7 @@ All questions are closed. The decision for each one is below.
 13. [x] Several creditors: the cash is split in proportion to the debts. The deeds go to the creditor owed the most (rules section 12).
 14. [x] Get Out of Jail Free cards of an eliminated player always go back to the bottom of their decks, also on a debt to a player.
 15. [x] No time or round limit in v1. The owner can finish the game early (3.1).
-16. [x] A player may resign at any time, but not while an auction runs. It is a bankruptcy: to the creditor if they owe a debt to a player, otherwise to the bank. On a shared device, "Leave game" asks which player resigns. An open trade offer with that player is cancelled.
+16. [x] A player may resign at any time, but not while an auction runs. It is a bankruptcy: to the creditor if they owe a debt to a player, otherwise to the bank. On a shared device, "Leave game" asks which player resigns. An open trade offer is cancelled.
 17. [x] A pending debt whose creditor is eliminated before it falls due is cancelled.
 18. [x] GO is renamed **Start**. Chance, Jail and Free Parking keep their names.
 19. [x] The server decides dice rolls and deck shuffles. Devices do not get the random state or the deck order.

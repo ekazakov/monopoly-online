@@ -58,8 +58,12 @@ export interface Debt {
   readonly then: DebtThen;
 }
 
-/** What continues when an auction ends. */
-export type AuctionThen = "finish_roll" | "next_in_queue";
+/**
+ * What continues when an auction ends. `next_in_queue` sells the next deed of a player who went
+ * bankrupt on their turn, then moves the turn on. `resume` does the same for a player who resigned
+ * off turn, then returns to `returnPhase`.
+ */
+export type AuctionThen = "finish_roll" | "next_in_queue" | "resume";
 
 export interface Auction {
   readonly square: number;
@@ -75,6 +79,8 @@ export interface Auction {
   readonly then: AuctionThen;
   /** Squares the bank still has to sell after this one (bankruptcy to the bank), in board order. */
   readonly queue: readonly number[];
+  /** The phase of the player on turn when the auction started. */
+  readonly returnPhase: Phase;
 }
 
 /** What one side of a trade hands over. */
@@ -154,6 +160,7 @@ export type GameEvent =
       jailCards: readonly DeckName[];
       cash: readonly { playerId: string; amount: number }[];
     }
+  | { type: "PlayerResigned"; playerId: string }
   | { type: "PlayerEliminated"; playerId: string }
   | { type: "AuctionStarted"; square: number; bidderIds: readonly string[] }
   | { type: "BidPlaced"; playerId: string; amount: number }
@@ -191,7 +198,9 @@ export type GameErrorCode =
   | "has_buildings"
   | "no_debt"
   | "invalid_bid"
-  | "invalid_trade";
+  | "invalid_trade"
+  /** A player cannot resign while an auction runs. */
+  | "auction_running";
 
 export interface GameError {
   readonly code: GameErrorCode;

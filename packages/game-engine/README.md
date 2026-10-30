@@ -51,6 +51,8 @@ if (result.ok) {
 
 The management actions are `Build`, `SellBuilding`, `Mortgage`, `Unmortgage` and `ProposeTrade`. A player can use them only before the roll and after the landing (rules section 10), and while settling a debt.
 
+Any active player can `Resign` in any phase except `game_over`, also off turn. It is refused with `auction_running` while an auction runs.
+
 Every action has a `playerId`. Use `actorFor(state)` to get the player who must act now, and `mayAct(state, type, playerId)` to check one action.
 
 ## Rules that are built
@@ -60,7 +62,8 @@ Every action has a `playerId`. Use `actorFor(state)` to get the player who must 
 - Buildings (even, on a full group) and mortgages (lifting costs the mortgage value plus 10%, rounded up).
 - Auctions (+$10, +$50 or +$100 raises, bids capped by cash, a pass is final) when a property is declined or cannot be afforded.
 - Debt: a payment that cash cannot cover becomes a debt if the player's assets can cover it. Debts of other players (the Festival card) fall due when their turn starts.
-- Bankruptcy: to players (cash split pro rata, deeds and jail cards to the biggest creditor) and to the bank (deeds auctioned one at a time). The game ends when one active player is left.
+- Bankruptcy: to players (cash split pro rata, deeds to the biggest creditor) and to the bank (deeds auctioned one at a time). Jail cards always go back to their decks. The game ends when one active player is left.
+- Resign: a bankruptcy to the players the player owes debts to, or else to the bank. An open trade is cancelled. Off turn, the turn continues after the bank auctions.
 - Trades: one open proposal at a time; cash, deeds and jail cards; no deed from a colour group with buildings.
 
 ## Files
@@ -79,17 +82,17 @@ Every action has a `playerId`. Use `actorFor(state)` to get the player who must 
 | `liquidation.ts`, `debt.ts`, `paydebt.ts` | Liquidation value, `owe`, pending debts, `PayDebt`.                          |
 | `bankruptcy.ts`                           | Bankruptcy to players and to the bank.                                       |
 | `auction.ts`, `trade.ts`                  | Auctions and trades.                                                         |
+| `resign.ts`                               | `Resign`.                                                                    |
 | `gameend.ts`                              | The game ends when one active player is left.                                |
 | `helpers.ts`                              | Small state helpers that the handlers share.                                 |
 
-## Not built, and open questions
+## Not built
 
 - **Saving to the database.** The plan is an event log with a snapshot, written in one transaction. The engine only gives plain JSON state and events.
-- **Resign and a round limit** (open questions Q15 and Q16 in `plan/game-screen-2-gameplay.md`).
-- **Disconnected players and bots** (Q2 and Q6). A game waits for the player who must act.
-- **Player limit** (Q1). The engine accepts 2 to 8 players (`MIN_PLAYERS`, `MAX_PLAYERS`).
+- **The autopilot for away players** (Q2 and Q22 in `plan/game-screen-2-gameplay.md`). It belongs to the server: it sends normal actions for an away player. The engine waits for the player who must act.
+- **Hiding the random state.** The server must not send `rng` or the deck order to devices (Q19).
 
-Some rules use a default that is not decided yet. They are marked as defaults in [plan/game-rules-reference.md](../../plan/game-rules-reference.md): Q10 (doubles after paying out of Jail), Q11, Q12, Q14 and Q17.
+The engine accepts 2 to 6 players (`MIN_PLAYERS`, `MAX_PLAYERS`, Q1). All rule questions are decided in [plan/game-rules-reference.md](../../plan/game-rules-reference.md).
 
 ## Test
 

@@ -9,6 +9,7 @@ import {
   handleRejectTrade,
 } from "./trade.ts";
 import { handlePayDebt } from "./paydebt.ts";
+import { handleResign } from "./resign.ts";
 import { handleMortgage, handleUnmortgage } from "./mortgage.ts";
 import { handlePayJailFine, handleUseJailCard } from "./jail.ts";
 import { handleBuyProperty, handleDeclineProperty } from "./landing.ts";
@@ -40,6 +41,7 @@ export const defaultHandlers: Handlers = {
   AcceptTrade: handleAcceptTrade,
   RejectTrade: handleRejectTrade,
   CancelTrade: handleCancelTrade,
+  Resign: handleResign,
 };
 
 /** Check who may act, and in which phase. Return an error `Result`, or null when valid. */
