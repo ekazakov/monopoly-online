@@ -150,6 +150,7 @@ export type GameEvent =
       /** The player who gets the assets, or null when they go to the bank. */
       toId: string | null;
       squares: readonly number[];
+      /** The jail cards the player held. They always return to their decks (Q14). */
       jailCards: readonly DeckName[];
       cash: readonly { playerId: string; amount: number }[];
     }

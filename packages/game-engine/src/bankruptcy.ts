@@ -2,7 +2,9 @@ import { isProperty, SQUARES } from "./board.ts";
 import { getPlayer, updatePlayer } from "./helpers.ts";
 import { CHANCE_CARDS, CHEST_CARDS } from "./cards.ts";
 import { entryOf, ownedSquares, removeEntry, setEntry } from "./ownership.ts";
-import type { DebtCreditor, GameEvent, GameState } from "./state.ts";
+import type { DebtCreditor, DeckName, GameEvent, GameState } from "./state.ts";
+
+const DECKS = { chance: CHANCE_CARDS, chest: CHEST_CARDS } as const;
 
 export interface Obligation {
   readonly creditor: DebtCreditor;
@@ -25,9 +27,19 @@ function turnOrderAfter(state: GameState, playerId: string): string[] {
  * The debtor cannot pay what they owe to players. Their buildings are sold to the bank at half
  * price. Their cash is split among the creditors in proportion to the amounts owed (each share
  * rounded down, the remainder to the biggest creditor). The deeds, still mortgaged if they
- * were, and the jail cards go to the biggest creditor (a tie goes to whoever plays first after
- * the debtor). The debtor is eliminated. The caller moves the turn on if it was their turn.
+ * were, go to the biggest creditor (a tie goes to whoever plays first after the debtor). The
+ * jail cards return to the bottom of their decks. The debtor is eliminated. The caller moves the
+ * turn on if it was their turn.
  */
+/** Puts each held Get Out of Jail Free card back at the bottom of its deck. */
+function returnJailCards(state: GameState, jailCards: readonly DeckName[]): GameState {
+  const decks = { chance: [...state.decks.chance], chest: [...state.decks.chest] };
+  for (const deck of jailCards) {
+    decks[deck].push(DECKS[deck].findIndex((card) => card.effect.type === "jail_free"));
+  }
+  return { ...state, decks };
+}
+
 export function declareBankruptcy(
   state: GameState,
   debtorId: string,
@@ -74,7 +86,7 @@ export function declareBankruptcy(
     next = updatePlayer(next, playerId, { cash: getPlayer(next, playerId).cash + amount });
   }
 
-  // Deeds and jail cards go to the biggest creditor.
+  // Deeds go to the biggest creditor. Jail cards go back to their decks.
   const squares = ownedSquares(next, debtorId).filter((sq) => {
     const info = SQUARES[sq];
     return info !== undefined && isProperty(info);
@@ -84,8 +96,7 @@ export function declareBankruptcy(
     if (entry) next = setEntry(next, square, { ...entry, ownerId: biggest.id });
   }
   const jailCards = getPlayer(next, debtorId).heldJailCards;
-  const heir = getPlayer(next, biggest.id);
-  next = updatePlayer(next, biggest.id, { heldJailCards: [...heir.heldJailCards, ...jailCards] });
+  next = returnJailCards(next, jailCards);
   events.push({
     type: "AssetsTransferred",
     fromId: debtorId,
@@ -109,8 +120,6 @@ export function declareBankruptcy(
   return next;
 }
 
-const DECKS = { chance: CHANCE_CARDS, chest: CHEST_CARDS } as const;
-
 /**
  * The debtor cannot pay a debt to the bank. Everything goes to the bank: the buildings are
  * removed, the deeds become unowned (mortgages are cleared), the cash goes to the bank, and the
@@ -129,11 +138,7 @@ export function declareBankruptcyToBank(
   for (const square of queue) next = removeEntry(next, square);
 
   const jailCards = getPlayer(state, debtorId).heldJailCards;
-  const decks = { chance: [...next.decks.chance], chest: [...next.decks.chest] };
-  for (const deck of jailCards) {
-    decks[deck].push(DECKS[deck].findIndex((card) => card.effect.type === "jail_free"));
-  }
-  next = { ...next, decks };
+  next = returnJailCards(next, jailCards);
   events.push({
     type: "AssetsTransferred",
     fromId: debtorId,

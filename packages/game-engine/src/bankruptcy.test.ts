@@ -79,11 +79,21 @@ describe("bankruptcy to a player", () => {
     expect(after.ownership["8"]?.mortgaged).toBe(false);
   });
 
-  test("jail cards go to the creditor", () => {
-    const state = broke(setCurrent({ heldJailCards: ["chance", "chest"] }));
+  test("jail cards return to their decks, not to the creditor (Q14)", () => {
+    const state = broke((s) => ({
+      ...setCurrent({ heldJailCards: ["chance", "chest"] })(s),
+      decks: {
+        chance: s.decks.chance.filter((i) => i !== 15),
+        chest: s.decks.chest.filter((i) => i !== 15),
+      },
+    }));
     const { state: after } = roll(state);
-    expect(player(after, ownerId(state)).heldJailCards).toEqual(["chance", "chest"]);
+    expect(player(after, ownerId(state)).heldJailCards).toEqual([]);
     expect(player(after, current(state)).heldJailCards).toEqual([]);
+    expect(after.decks.chance.at(-1)).toBe(15);
+    expect(after.decks.chest.at(-1)).toBe(15);
+    expect(after.decks.chance).toHaveLength(16);
+    expect(after.decks.chest).toHaveLength(16);
   });
 
   test("several creditors split the cash pro rata and the biggest gets the deeds", () => {
