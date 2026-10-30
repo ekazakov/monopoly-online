@@ -1,5 +1,7 @@
 import type { ActionOf } from "./actions.ts";
+import { declareInsolvent } from "./debt.ts";
 import { charge, getPlayer } from "./helpers.ts";
+import { liquidationValue, outstanding } from "./liquidation.ts";
 import { setEntry } from "./ownership.ts";
 import { fail } from "./state.ts";
 import type { Auction, AuctionThen, GameEvent, GameState, Result } from "./state.ts";
@@ -78,8 +80,17 @@ function endAuction(state: GameState, auction: Auction, events: GameEvent[]): Ga
       // The same for a player who resigned off turn. Then the turn continues where it was.
       const resumed = { ...next, turn: { ...next.turn, phase: auction.returnPhase } };
       const [following, ...rest] = auction.queue;
-      if (following === undefined) return resumed;
-      return startAuction(resumed, following, "resume", events, rest);
+      if (following !== undefined) return startAuction(resumed, following, "resume", events, rest);
+      // A player on turn who was raising cash may have spent it on bids. Test again.
+      const debtorId = resumed.turn.currentPlayerId;
+      if (
+        resumed.turn.phase !== "awaiting_debt" ||
+        liquidationValue(resumed, debtorId) >= outstanding(resumed, debtorId)
+      ) {
+        return resumed;
+      }
+      const debts = resumed.debts.filter((d) => d.debtorId === debtorId);
+      return declareInsolvent(resumed, debtorId, debts, events);
     }
   }
 }

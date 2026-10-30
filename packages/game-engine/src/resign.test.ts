@@ -137,3 +137,96 @@ describe("limits", () => {
     expect(types(events).at(-1)).toBe("GameEnded");
   });
 });
+
+describe("the player on turn owes the player who resigns", () => {
+  /** The player on turn is raising cash for rent to the other player. */
+  const owing = (state: GameState): GameState => ({
+    ...setCurrent({ cash: 10 })(holding("current", { 6: {} })(state)),
+    debts: [
+      {
+        debtorId: current(state),
+        creditor: { type: "player", id: other(state) },
+        amount: 40,
+        reason: "rent",
+        then: "finish_roll",
+      },
+    ],
+    turn: { ...state.turn, phase: "awaiting_debt" },
+  });
+  const third = (state: GameState) =>
+    state.players.find((p) => p.id !== current(state) && p.id !== other(state))?.id ?? "";
+
+  test("the debt is cancelled and the turn goes on", () => {
+    const state = owing(base(1));
+    const { state: after } = ok(state, { type: "Resign", playerId: other(state) });
+    expect(after.debts).toEqual([]);
+    expect(after.turn).toMatchObject({
+      currentPlayerId: current(state),
+      phase: "awaiting_end_turn",
+    });
+    expect(player(after, current(state)).cash).toBe(10);
+  });
+
+  test("with deeds, the bank auctions them, then the turn goes on", () => {
+    const state = holding("other", { 15: {} })(owing(base(1)));
+    const { state: after } = ok(state, { type: "Resign", playerId: other(state) });
+    expect(after.auction).toMatchObject({ then: "resume", returnPhase: "awaiting_end_turn" });
+
+    let next = after;
+    while (next.auction) next = ok(next, { type: "PassBid", playerId: next.auction.actorId }).state;
+    expect(next.turn).toMatchObject({
+      currentPlayerId: current(state),
+      phase: "awaiting_end_turn",
+    });
+  });
+
+  test("with a debt to a third player, that player gets the assets and the turn goes on", () => {
+    const start = owing(base(1));
+    const state: GameState = {
+      ...start,
+      debts: [
+        ...start.debts,
+        {
+          debtorId: other(start),
+          creditor: { type: "player", id: third(start) },
+          amount: 50,
+          reason: "card",
+          then: "due_at_turn_start",
+        },
+      ],
+    };
+    const { state: after } = ok(state, { type: "Resign", playerId: other(state) });
+    expect(player(after, third(state)).cash).toBe(1500 + 1500);
+    expect(after.debts).toEqual([]);
+    expect(after.turn).toMatchObject({
+      currentPlayerId: current(state),
+      phase: "awaiting_end_turn",
+    });
+  });
+});
+
+test("a player raising cash who overspends in the bank auction is bankrupt", () => {
+  // Cash $150 and Lantern Row (mortgage $50) cover the $200 tax. A $110 bid for North
+  // Station (mortgage $100) leaves $40 + $50 + $100 = $190.
+  const start = setCurrent({ cash: 150 })(holding("current", { 6: {} })(base(1)));
+  const state: GameState = holding("other", { 15: {} })({
+    ...start,
+    debts: [
+      {
+        debtorId: current(start),
+        creditor: { type: "bank" },
+        amount: 200,
+        reason: "tax",
+        then: "finish_roll",
+      },
+    ],
+    turn: { ...start.turn, phase: "awaiting_debt" },
+  });
+  const id = current(state);
+  let next = ok(state, { type: "Resign", playerId: other(state) }).state;
+  next = ok(next, { type: "Bid", playerId: id, amount: 110 }).state;
+  while (next.auction?.actorId && next.auction.actorId !== id) {
+    next = ok(next, { type: "PassBid", playerId: next.auction.actorId }).state;
+  }
+  expect(player(next, id).active).toBe(false);
+});

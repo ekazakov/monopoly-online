@@ -92,17 +92,13 @@ export function declareInsolvent(
 }
 
 /**
- * The debtor goes bankrupt to the bank. The bank then sells the deeds at auction, one at a time,
- * unless fewer than two players are left. On the debtor's own turn the turn then moves on. Off
- * turn (a player who resigns), the turn continues where it was.
+ * Bankruptcy to the bank on the debtor's own turn. The bank then sells the deeds at auction, one
+ * at a time, unless fewer than two players are left. Then the turn moves on.
  */
 export function bankruptToBank(state: GameState, debtorId: string, events: GameEvent[]): GameState {
-  const onTurn = state.turn.currentPlayerId === debtorId;
   const { state: eliminated, queue } = declareBankruptcyToBank(state, debtorId, events);
   const [first, ...rest] = queue;
   const left = eliminated.players.filter((p) => p.active).length;
-  if (first === undefined || left < 2) {
-    return onTurn ? advanceTurn(eliminated, events) : eliminated;
-  }
-  return startAuction(eliminated, first, onTurn ? "next_in_queue" : "resume", events, rest);
+  if (first === undefined || left < 2) return advanceTurn(eliminated, events);
+  return startAuction(eliminated, first, "next_in_queue", events, rest);
 }

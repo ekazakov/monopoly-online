@@ -7,7 +7,7 @@ import type { DebtThen, GameEvent, GameState, Result } from "./state.ts";
 import { finishRoll } from "./turnflow.ts";
 
 /** Continue the turn that a debt interrupted. */
-function resume(state: GameState, then: DebtThen, events: GameEvent[]): Result {
+export function continueAfterDebt(state: GameState, then: DebtThen, events: GameEvent[]): Result {
   switch (then) {
     case "finish_roll":
       return { ok: true, state: finishRoll(state, events), events };
@@ -39,5 +39,5 @@ export function handlePayDebt(state: GameState, action: ActionOf<"PayDebt">): Re
   if (next.debts.some((d) => d.debtorId === action.playerId)) {
     return { ok: true, state: next, events };
   }
-  return resume(next, debt.then, events);
+  return continueAfterDebt(next, debt.then, events);
 }
