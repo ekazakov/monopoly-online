@@ -47,9 +47,9 @@ const left = [prop('Orchard Way', 140, 'pink'), util('Power Works'), prop('Mill 
 const top = [prop('Beacon Hill', 220, 'red'), chance(), prop('Signal Street', 220, 'red'), prop('Lighthouse Road', 240, 'red'), rail('South Station'), prop('Canal Street', 260, 'yellow'), prop('Bridge Road', 260, 'yellow'), util('Waterworks'), prop('Fountain Plaza', 280, 'yellow')];
 const right = [prop('Pinecrest Avenue', 300, 'green'), prop('Aspen Way', 300, 'green'), chest(), prop('Cedar Heights', 320, 'green'), rail('West Station'), chance(), prop('Parkview', 350, 'navy'), tax('Luxury Tax', 100), prop('Grand Esplanade', 400, 'navy')];
 
-// index 0 is GO, then clockwise: bottom row, Jail, left column, Free Parking, top row, Go to Jail, right column
+// index 0 is Start, then clockwise: bottom row, Jail, left column, Free Parking, top row, Go to Jail, right column
 export const SQUARES = [
-  corner('go', 'GO'), ...bottom.map((c, k) => ({ ...c, side: 'bottom', k })),
+  corner('go', 'Start'), ...bottom.map((c, k) => ({ ...c, side: 'bottom', k })),
   corner('jail', 'Jail'), ...left.map((c, k) => ({ ...c, side: 'left', k })),
   corner('parking', 'Free Parking'), ...top.map((c, k) => ({ ...c, side: 'top', k })),
   corner('gotojail', 'Go to Jail'), ...right.map((c, k) => ({ ...c, side: 'right', k }))
@@ -93,7 +93,7 @@ export const LOG = [
   { p: 'ravi', t: '{n} rolled 6 and 2 and landed on Canal Street.' },
   { p: 'tove', t: '{n} bought Pinecrest Avenue for $300.', money: true },
   { p: 'tove', t: '{n} rolled 5 and 4 and landed on Pinecrest Avenue.' },
-  { p: 'ines', t: '{n} collected $200 passing GO.', money: true },
+  { p: 'ines', t: '{n} collected $200 passing Start.', money: true },
   { p: 'ines', t: '{n} rolled 2 and 1 and landed on Chance.' },
   { p: 'marlow', t: '{n} paid $200 Harbor Tax.', money: true }
 ];

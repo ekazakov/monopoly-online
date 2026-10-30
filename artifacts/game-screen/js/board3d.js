@@ -176,7 +176,7 @@ export async function createBoard(host, { frame, players, ownership, reduced, on
       if (kind === 'go') {
         g.fillStyle = ink; g.font = `600 36px ${BODY}`;
         g.fillText('COLLECT $200', 280, 80); g.fillText('SALARY AS YOU PASS', 280, 122);
-        g.fillStyle = '#c8322b'; g.font = `700 270px ${DISPLAY}`; g.fillText('GO', 280, 380);
+        g.fillStyle = '#c8322b'; g.font = `700 200px ${DISPLAY}`; g.fillText('START', 280, 370, 480);
         g.strokeStyle = '#c8322b'; g.lineWidth = 22; g.lineCap = 'round'; g.lineJoin = 'round';
         g.beginPath(); g.moveTo(450, 470); g.lineTo(110, 470); g.moveTo(170, 425); g.lineTo(110, 470); g.lineTo(170, 515); g.stroke();
       } else if (kind === 'jail') {

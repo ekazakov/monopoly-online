@@ -133,7 +133,7 @@ function deedHTML(i, { compact = false, current = -1 } = {}) {
     body = row('One utility owned', '4 × dice') + row('Both utilities owned', '10 × dice') + (compact ? '' : `<div class="sep"></div>${row('Mortgage value', fmt(sq.mortgage))}`);
   } else {
     const about = {
-      go: 'Collect $200 salary as you pass.', jail: 'In jail, or just visiting.', parking: 'Nothing happens here.', gotojail: 'Go directly to jail. Do not pass GO.',
+      go: 'Collect $200 salary as you pass.', jail: 'In jail, or just visiting.', parking: 'Nothing happens here.', gotojail: 'Go directly to jail. Do not pass Start.',
       chance: 'Draw the top Chance card.', chest: 'Draw the top Community Chest card.', tax: `Pay ${fmt(sq.amount || 0)}.`
     }[sq.kind];
     body = `${SQUARE_ICON[sq.kind] ? `<div class="deed-icon">${SQUARE_ICON[sq.kind]}</div>` : ''}<div class="r" style="justify-content:center;text-align:center">${about}</div>`;
@@ -333,7 +333,7 @@ async function roll() {
   for (let i = p.pos; i !== r.to;) { i = (i + 1) % 40; path.push(i); }
   if (board) await board.moveToken(p.id, path);
   p.pos = r.to;
-  if (r.passGo) { p.cash += 200; addLog(p.id, '{n} collected $200 passing GO.', true); }
+  if (r.passGo) { p.cash += 200; addLog(p.id, '{n} collected $200 passing Start.', true); }
   if (r.land === 'none') afterLanding(); else { S.phase = r.land; render(); }
 }
 function afterLanding() {
@@ -608,13 +608,35 @@ function openManage({ debt = false } = {}) {
   draw();
 }
 
+// Resigning (gameplay Q16): one local player at a time, a bankruptcy to the bank or to the player they owe.
+function openLeave() {
+  const locals = S.players.filter((p) => p.device === 'local' && !p.bankrupt);
+  let pick = locals.length === 1 ? locals[0].id : null;
+  const d = dialog({ title: 'Leave game?', narrow: true });
+  const draw = () => {
+    const chooser = locals.length > 1
+      ? `<p class="muted">Choose who resigns. The other players on this device stay in the game.</p>
+        <div class="chips" role="group" aria-label="Player who resigns">${locals.map((p) => `<button type="button" class="chip" data-who="${p.id}" aria-pressed="${pick === p.id}"><span class="mini-av" style="--pc:${p.color}">${avatarSVG(p.avatar, 18)}</span><span class="grow">${esc(p.name)}</span></button>`).join('')}</div>`
+      : '';
+    d.body.innerHTML = `${chooser}
+      <div class="summary">${pick ? esc(P(pick).name) : 'The player'} resigns. Their properties go to the player they owe, or to the bank for auction. Then they watch the game.</div>
+      <p class="muted">Not possible while an auction runs. This can't be undone.</p>`;
+    d.setActions([{ label: 'Stay' }, { label: 'Resign', danger: true, disabled: !pick, onClick: () => announce('Prototype: resigning is not wired up.') }]);
+  };
+  d.body.addEventListener('click', (e) => {
+    const c = e.target.closest('[data-who]');
+    if (c) { pick = c.dataset.who; draw(); $(`[data-who="${pick}"]`, d.body)?.focus(); }
+  });
+  draw();
+}
+
 function openBankruptcy() {
   const p = P(S.active), creditor = S.ctx.owner ? P(S.ctx.owner) : P('ines');
   const props = ownedBy(p.id);
   dialog({
     title: 'Declare bankruptcy?', narrow: true,
     body: `<p class="muted">${esc(p.name)} can't raise enough to pay ${fmt(S.ctx.amount || 0)} to ${esc(creditor.name)}.</p>
-      <div class="summary">${esc(creditor.name)} receives ${fmt(p.cash)} cash and ${props.length} propert${props.length === 1 ? 'y' : 'ies'}${p.cards ? ` and ${p.cards} jail card` : ''}. ${esc(p.name)} leaves the game.</div>
+      <div class="summary">${esc(creditor.name)} receives ${fmt(p.cash)} cash and ${props.length} propert${props.length === 1 ? 'y' : 'ies'}.${p.cards ? ` The jail card goes back to its deck.` : ''} ${esc(p.name)} leaves the game.</div>
       <p class="muted">This can't be undone.</p>`,
     actions: [{ label: 'Keep playing' }, { label: 'Declare bankruptcy', danger: true, onClick: () => {
       creditor.cash += Math.max(0, p.cash);
@@ -654,7 +676,7 @@ function openMenu() {
       <div class="setting"><label for="mMusic">Music<small>${S.music}%</small></label><input type="range" id="mMusic" min="0" max="100" step="5" value="${S.music}"></div>
       ${sw('mMotion', S.reduceMotion, 'Reduce motion', 'Dice, tokens and highlights without animation')}
       <div class="setting"><span class="lbl">Board camera</span><div class="seg" role="group" aria-label="Board camera">${[['angle', 'Angle'], ['top', 'Top']].map(([v, l]) => `<button type="button" data-view="${v}" aria-pressed="${S.view === v}">${l}</button>`).join('')}</div></div>
-      <div class="setting"><span class="lbl">Leave game<small>Your seats on this device are released</small></span><button type="button" class="hf-outline hf-danger" data-m="leave">Leave</button></div>
+      <div class="setting"><span class="lbl">Leave game<small>Resign one of your players</small></span><button type="button" class="hf-outline hf-danger" data-m="leave">Leave</button></div>
     </div>`;
   };
   d.body.addEventListener('click', (e) => {
@@ -664,10 +686,8 @@ function openMenu() {
     else if (b.id === 'mMotion') { S.reduceMotion = !S.reduceMotion; document.documentElement.classList.toggle('reduce-motion', S.reduceMotion); }
     else if (b.dataset.view) { S.view = b.dataset.view; board?.setView(S.view); }
     else if (b.dataset.m === 'rules') { openRules(); return; }
-    else if (b.dataset.m === 'leave') {
-      dialog({ title: 'Leave game?', narrow: true, body: '<p class="muted">Marlow and Tove leave the game. Their turns are handled as the table agreed (skip, pause or bot; still an open question).</p>', actions: [{ label: 'Stay' }, { label: 'Leave game', danger: true, onClick: () => announce('Prototype: leaving is not wired up.') }] });
-      return;
-    } else return;
+    else if (b.dataset.m === 'leave') { openLeave(); return; }
+    else return;
     const id = b.id ? '#' + b.id : `[data-view="${b.dataset.view}"]`;
     draw(); $(id, d.body)?.focus();
   });
@@ -676,14 +696,14 @@ function openMenu() {
 }
 function openRules() {
   dialog({ title: 'Rules', narrow: true, body: `<ul class="rules">
-    <li>Roll two dice and move clockwise. Passing GO collects $200.</li>
+    <li>Roll two dice and move clockwise. Passing Start collects $200.</li>
     <li>Land on an unowned property to buy it, or send it to auction.</li>
     <li>Land on an owned property and pay its owner rent.</li>
     <li>Doubles roll again. Three doubles in a row go to jail.</li>
     <li>Leave jail by rolling doubles, paying $50 or using a card.</li>
     <li>Own a full colour set to build houses, then a hotel.</li>
     <li>Can't pay? Sell buildings and mortgage, or declare bankruptcy.</li>
-  </ul><p class="muted">Draft summary; the full rules are still open in the gameplay doc.</p>`, actions: [{ label: 'Close', primary: true }] });
+  </ul><p class="muted">Short summary; the full rules are in the rules reference.</p>`, actions: [{ label: 'Close', primary: true }] });
 }
 $('#menuBtn').addEventListener('click', openMenu);
 
