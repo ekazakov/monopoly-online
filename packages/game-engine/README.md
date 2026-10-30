@@ -57,7 +57,7 @@ Every action has a `playerId`. Use `actorFor(state)` to get the player who must 
 
 ## Rules that are built
 
-- Dice, movement, GO salary, doubles, three doubles to Jail, Jail (pay, card, roll for doubles, forced fine).
+- Dice, movement, Start salary, doubles, three doubles to Jail, Jail (pay, card, roll for doubles, forced fine).
 - Tax, rent (houses and hotels, the full-group double, stations, utilities, mortgaged deeds), Chance and Chest.
 - Buildings (even, on a full group) and mortgages (lifting costs the mortgage value plus 10%, rounded up).
 - Auctions (+$10, +$50 or +$100 raises, bids capped by cash, a pass is final) when a property is declined or cannot be afforded.

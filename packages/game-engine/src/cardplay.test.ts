@@ -102,14 +102,14 @@ describe("money cards", () => {
 });
 
 describe("move cards", () => {
-  test("Sail home goes to GO and pays the salary", () => {
+  test("Sail home goes to Start and pays the salary", () => {
     const state = onChance(0);
     const { state: after } = roll(state);
     expect(player(after, current(state)).position).toBe(0);
     expect(me(after)).toBe(me(state) + 200);
   });
 
-  test("moving forward without passing GO pays nothing and lands normally", () => {
+  test("moving forward without passing Start pays nothing and lands normally", () => {
     const state = onChance(1);
     const { state: after } = roll(state);
     expect(player(after, current(state)).position).toBe(21);
@@ -117,7 +117,7 @@ describe("move cards", () => {
     expect(after.turn.phase).toBe("awaiting_buy_decision");
   });
 
-  test("moving past GO pays the salary", () => {
+  test("moving past Start pays the salary", () => {
     const state = landing(14, 8, topCard("chance", 3));
     const { state: after } = roll(state);
     expect(player(after, current(state)).position).toBe(11);
@@ -137,7 +137,7 @@ describe("move cards", () => {
     expect(cash(after, ownerId(state))).toBe(cash(state, ownerId(state)) + 50);
   });
 
-  test("the nearest station wraps past GO and pays the salary", () => {
+  test("the nearest station wraps past Start and pays the salary", () => {
     const state = landing(30, 6, topCard("chance", 4));
     const { state: after } = roll(state);
     expect(player(after, current(state)).position).toBe(5);

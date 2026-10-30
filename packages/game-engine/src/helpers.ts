@@ -19,7 +19,7 @@ export function updatePlayer(
   };
 }
 
-/** Move the token straight to Jail. No GO salary. Does not end the turn. */
+/** Move the token straight to Jail. No Start salary. Does not end the turn. */
 export function sendToJail(state: GameState, playerId: string, events: GameEvent[]): GameState {
   const from = getPlayer(state, playerId).position;
   events.push({ type: "PlayerMoved", playerId, from, to: JAIL_SQUARE });
@@ -38,7 +38,7 @@ export function charge(state: GameState, playerId: string, amount: number): Game
   return updatePlayer(state, playerId, { cash: player.cash - amount });
 }
 
-/** Move a token to a square. Pays the GO salary when `collectGo` is true. */
+/** Move a token to a square. Pays the Start salary when `collectGo` is true. */
 export function movePlayer(
   state: GameState,
   playerId: string,

@@ -58,9 +58,9 @@ const utility = (name: string): Square => ({
 const chance = (): Square => ({ kind: "chance", name: "Chance" });
 const chest = (): Square => ({ kind: "chest", name: "Chest" });
 
-/** Square index equals board position, clockwise from GO. Data from the rules reference, Appendix A and B. */
+/** Square index equals board position, clockwise from Start. Data from the rules reference, Appendix A and B. */
 export const SQUARES: readonly Square[] = [
-  { kind: "go", name: "GO" },
+  { kind: "go", name: "Start" },
   street("Driftwood Lane", "brown", 60, [2, 10, 30, 90, 160, 250], 50),
   chest(),
   street("Kelp Court", "brown", 60, [4, 20, 60, 180, 320, 450], 50),

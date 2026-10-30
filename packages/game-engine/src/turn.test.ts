@@ -39,7 +39,7 @@ describe("RollDice", () => {
     });
   });
 
-  test("passing GO pays the salary and wraps the position", () => {
+  test("passing Start pays the salary and wraps the position", () => {
     const state = gameWhere((d) => !isDouble(d) && d[0] + d[1] !== 6, setCurrent({ position: 38 }));
     const id = current(state);
     const { state: after, events } = roll(state);
@@ -49,7 +49,7 @@ describe("RollDice", () => {
     expect(types(events)).toEqual(["DiceRolled", "PlayerMoved", "PassedGo"]);
   });
 
-  test("landing exactly on GO pays the salary", () => {
+  test("landing exactly on Start pays the salary", () => {
     const state = gameWhere(
       (d) => d[0] + d[1] === 10 && !isDouble(d),
       setCurrent({ position: 30 }),
@@ -59,7 +59,7 @@ describe("RollDice", () => {
     expect(player(after, current(state)).cash).toBe(player(state, current(state)).cash + GO_SALARY);
   });
 
-  test("no salary when the token does not pass GO", () => {
+  test("no salary when the token does not pass Start", () => {
     const state = gameWhere((d) => !isDouble(d), setCurrent({ position: 5 }));
     const { state: after } = roll(state);
     expect(player(after, current(state)).cash).toBe(player(state, current(state)).cash);
