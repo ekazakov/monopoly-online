@@ -56,6 +56,10 @@ describe("createGame", () => {
 
   test("rejects a bad player list", () => {
     expect(() => newGame(1, [{ id: "a", name: "Ann" }])).toThrow("invalid_players");
+    const many = (count: number) =>
+      Array.from({ length: count }, (_, i) => ({ id: `p${i}`, name: `P${i}` }));
+    expect(newGame(1, many(6)).players).toHaveLength(6);
+    expect(() => newGame(1, many(7))).toThrow("invalid_players");
     expect(() =>
       newGame(1, [
         { id: "a", name: "Ann" },

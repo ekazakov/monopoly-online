@@ -59,6 +59,14 @@ describe("paying the fine", () => {
     expect(paid.ok && roll(paid.state).events[0]?.type).toBe("DiceRolled");
   });
 
+  test("a double after paying gives another roll (Q10)", () => {
+    const state = rolling(double10);
+    const paid = ok(state, { type: "PayJailFine", playerId: current(state) });
+    const { state: after } = roll(paid.state);
+    expect(me(after)).toMatchObject({ inJail: false, position: 20 });
+    expect(after.turn).toMatchObject({ phase: "awaiting_roll", doubles: 1 });
+  });
+
   test("is rejected without enough cash (temporary)", () => {
     const state = setCurrent({ cash: 40 })(inJail()(base(1)));
     expect(act(state, "PayJailFine")).toMatchObject({
@@ -82,6 +90,14 @@ describe("using a jail card", () => {
     expect(result.ok && result.state.decks.chest.at(-1)).toBe(15);
     expect(result.ok && result.state.turn.phase).toBe("awaiting_roll");
     expect(result.ok && cash(result.state)).toBe(cash(state));
+  });
+
+  test("a double after using the card gives another roll (Q10)", () => {
+    const state = rolling(double10, 0, withCard);
+    const used = ok(state, { type: "UseJailCard", playerId: current(state) });
+    const { state: after } = roll(used.state);
+    expect(me(after)).toMatchObject({ inJail: false, position: 20 });
+    expect(after.turn).toMatchObject({ phase: "awaiting_roll", doubles: 1 });
   });
 
   test("is rejected without a card", () => {

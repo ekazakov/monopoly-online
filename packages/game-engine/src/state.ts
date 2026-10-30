@@ -5,9 +5,9 @@ export const GO_SALARY = 200;
 export const JAIL_FINE = 50;
 /** Failed rolls for doubles before the fine is mandatory. */
 export const MAX_JAIL_ATTEMPTS = 3;
-/** Open question Q1: the real limit is not decided. The engine accepts the wide range. */
+/** Two to six players in a game, with any number on one device (decided, Q1). */
 export const MIN_PLAYERS = 2;
-export const MAX_PLAYERS = 8;
+export const MAX_PLAYERS = 6;
 
 export type DeckName = "chance" | "chest";
 
