@@ -2,19 +2,19 @@
 
 | | |
 |---|---|
-| Companion docs | [game-screen-2-gameplay.md](game-screen-2-gameplay.md) (turn flow, states, open questions) and [game-screen-2-spec.md](game-screen-2-spec.md) (UI) |
-| Status | Draft. Last updated 2026-10-27 |
+| Companion docs | [game-screen-2-gameplay.md](game-screen-2-gameplay.md) (turn flow, states, questions and decisions) and [game-screen-2-spec.md](game-screen-2-spec.md) (UI) |
+| Status | Draft. Last updated 2026-10-30 |
 
-This is the rule set the game implements. It is written in our own words for a property-trading game on a 40-square loop. Rules that are still undecided are marked **[Q8]**, **[Q9]** and so on, which point to the open questions in section 6 of the gameplay doc.
+This is the rule set the game implements. It is written in our own words for a property-trading game on a 40-square loop. Rules that came from a question are marked **[Q8]**, **[Q9]** and so on, which point to the questions in section 6 of the gameplay doc.
 
-**Terms.** Community Chest is **Chest**, a railroad is a **Station**, a title deed is a **Deed**. Chance, GO, Jail and Free Parking keep their names for now (open question Q18).
+**Terms.** Community Chest is **Chest**, a railroad is a **Station**, a title deed is a **Deed**. GO is **Start**. Chance, Jail and Free Parking keep their names (decided, Q18).
 
 **Key numbers**
 
 | Item | Value |
 |---|---|
 | Starting cash | $1,500 per player |
-| GO salary | $200 |
+| Start salary | $200 |
 | Jail fine | $50 |
 | Income Tax / Luxury Tax | $200 / $100 (flat) |
 | Mortgage value | Half the price |
@@ -26,7 +26,7 @@ This is the rule set the game implements. It is written in our own words for a p
 
 ## 1. Setup and turn order
 
-1. Every player starts with their token on GO and $1,500.
+1. Every player starts with their token on Start and $1,500.
 2. Before the game starts, the server puts the players in a random turn order. The first player in that order plays first.
 3. Play then follows that order (clockwise on the rail, top to bottom). Tokens stay where they are between turns. Any number of tokens may share a square.
 
@@ -49,7 +49,7 @@ Being sent to Jail ends the turn at once, even on a double.
 
 | Square | Effect |
 |---|---|
-| GO | Collect the salary when landing on or passing it, once per lap. The salary is also paid when a card moves the token past or onto GO (unless the card says otherwise), so a player can collect twice in one turn |
+| Start | Collect the salary when landing on or passing it, once per lap. The salary is also paid when a card moves the token past or onto Start (unless the card says otherwise), so a player can collect twice in one turn |
 | Property, unowned | Buy at the printed price, or the property goes to auction (section 11) |
 | Property, owned by another player | Pay rent (section 4). No rent if it is mortgaged |
 | Property, owned by the player | Nothing |
@@ -59,13 +59,13 @@ Being sent to Jail ends the turn at once, even on a double.
 | Free Parking | Nothing. A resting place with no reward |
 | Go to Jail | Move directly to Jail (section 6) |
 
-The token never earns the GO salary when it is sent to Jail or moved backwards.
+The token never earns the Start salary when it is sent to Jail or moved backwards.
 
 ---
 
 ## 4. Rent
 
-Rent is collected automatically **[Q9]**. The owner can be in Jail and still collects.
+Rent is collected automatically. The owner does not need to ask for it (decided, **[Q9]**). The owner can be in Jail and still collects.
 
 - **Streets.** The rent depends on the buildings on the street (table in Appendix B). A street with no buildings pays **double** its base rent when the owner holds every street of its colour group, even if one of those streets is mortgaged.
 - **Stations.** $25, $50, $100 or $200 for owning one, two, three or four stations.
@@ -76,13 +76,13 @@ Rent is collected automatically **[Q9]**. The owner can be in Jail and still col
 
 ## 5. Chance and Chest
 
-Draw the top card, follow it, then put it at the bottom of its deck. A **Get Out of Jail Free** card is kept by the player instead and returns to the bottom of its deck when it is used. Cards are in Appendix C. A card that moves the token resolves the new square as a normal landing. A card that sends the token backwards does not pay GO. "Nearest" means the next one ahead, and passing GO on the way pays the salary.
+Draw the top card, follow it, then put it at the bottom of its deck. A **Get Out of Jail Free** card is kept by the player instead and returns to the bottom of its deck when it is used. Cards are in Appendix C. A card that moves the token resolves the new square as a normal landing. A card that sends the token backwards does not pay Start. "Nearest" means the next one ahead, and passing Start on the way pays the salary.
 
 ---
 
 ## 6. Jail
 
-**Going to Jail.** Land on Go to Jail, draw a jail card, or roll three doubles in a row. The token moves straight to the Jail square, gets the in-jail marker, and the turn ends. No GO salary.
+**Going to Jail.** Land on Go to Jail, draw a jail card, or roll three doubles in a row. The token moves straight to the Jail square, gets the in-jail marker, and the turn ends. No Start salary.
 
 **Staying.** A player in Jail still collects rent, can manage properties and trade.
 
@@ -90,9 +90,9 @@ Draw the top card, follow it, then put it at the bottom of its deck. A **Get Out
 - pay $50, or
 - use a Get Out of Jail Free card.
 
-Either way they then roll and move normally. Whether doubles on that roll give an extra turn is open **[Q10]**.
+Either way they then roll and move normally. Doubles on that roll give another roll, as on any turn (decided, **[Q10]**).
 
-Otherwise the player rolls for doubles. If it is a double they leave Jail, move the rolled number, and do **not** get another roll. If not, they stay in Jail and the turn ends. After the third failed attempt the $50 fine is mandatory, the player leaves Jail and moves the number just rolled. If they can't afford the fine, section 12 applies: the debt is settled first, then the player leaves Jail and moves the number just rolled (default, **[Q11]**).
+Otherwise the player rolls for doubles. If it is a double they leave Jail, move the rolled number, and do **not** get another roll. If not, they stay in Jail and the turn ends. After the third failed attempt the $50 fine is mandatory, the player leaves Jail and moves the number just rolled. If they can't afford the fine, section 12 applies: the debt is settled first, then the player leaves Jail and moves the number just rolled. The player can't stay in Jail (decided, **[Q11]**).
 
 ---
 
@@ -145,7 +145,7 @@ An auction starts when a player declines to buy an unowned property or cannot af
 - **Limit.** No bid above the bidder's cash.
 - **Passing.** A pass is final: the player cannot return to the auction.
 - **End.** The auction ends when every bidder but the highest has passed. The winner pays the bank and gets the Deed.
-- **No bids.** The property stays unowned. The next player who lands on it can buy it or start an auction (default, **[Q12]**).
+- **No bids.** The property stays unowned. The next player who lands on it can buy it or start an auction (decided, **[Q12]**).
 - **Several properties.** A bankrupt player's properties are auctioned one at a time in board order.
 
 ---
@@ -168,16 +168,19 @@ Properties that are already mortgaged add nothing. Trades are not counted.
 - Several debts are paid in the order they arose. If the assets can't cover all of them, the player is bankrupt.
 
 **What bankruptcy does.**
-- Debt to a **player**: the player's buildings are sold to the bank at half price, and the player gives the creditor all their cash (including that money), their properties and any Get Out of Jail Free cards. Mortgaged properties stay mortgaged (decided, **[Q8]**). A debt to several players: the cash is split in proportion to the amounts owed, each share rounded down, and the remainder goes to the creditor owed the most. The deeds and the Get Out of Jail Free cards go to that same creditor. On a tie, the creditor who plays first after the debtor wins (decided, **[Q13]**).
-- Debt to the **bank**: everything goes to the bank. Buildings are removed, and the properties are auctioned one at a time (section 11). Get Out of Jail Free cards return to their decks (default, **[Q14]**).
-- A pending debt whose creditor is eliminated before it falls due is cancelled (default, **[Q17]**).
+- Debt to a **player**: the player's buildings are sold to the bank at half price, and the player gives the creditor all their cash (including that money) and their properties. Mortgaged properties stay mortgaged (decided, **[Q8]**). A debt to several players: the cash is split in proportion to the amounts owed, each share rounded down, and the remainder goes to the creditor owed the most. The deeds go to that same creditor. On a tie, the creditor who plays first after the debtor wins (decided, **[Q13]**).
+- Debt to the **bank**: everything goes to the bank. Buildings are removed, and the properties are auctioned one at a time (section 11).
+- Get Out of Jail Free cards held by the bankrupt player always return to the bottom of their decks, also on a debt to a player (decided, **[Q14]**).
+- A pending debt whose creditor is eliminated before it falls due is cancelled (decided, **[Q17]**).
 - The bankrupt player is **eliminated**. They stay in the game as a **spectator** who can watch the board and log but not act.
+
+**Resigning.** A player may resign at any time, also off turn, but not while an auction runs. Resigning is a bankruptcy: to the creditor if the player owes a debt to a player, otherwise to the bank. An open trade offer with that player is cancelled. On a device with several hot-seat players, one chosen player resigns (decided, **[Q16]**).
 
 ---
 
 ## 13. End of game
 
-The game ends when only one active player is left. That player wins. A time or round limit is open **[Q15]**.
+The game ends when only one active player is left. That player wins. There is no time or round limit (decided, **[Q15]**).
 
 The session owner can also finish the game early. Then there is no winner (gameplay doc section 3.1).
 
@@ -185,11 +188,11 @@ The session owner can also finish the game early. Then there is no winner (gamep
 
 # Appendix A: board layout
 
-40 squares, numbered from GO and running clockwise (along the bottom towards the left, then up the left side, along the top, and down the right side).
+40 squares, numbered from Start and running clockwise (along the bottom towards the left, then up the left side, along the top, and down the right side).
 
 | Side | Squares |
 |---|---|
-| Bottom | 0 GO · 1 Driftwood Lane · 2 Chest · 3 Kelp Court · 4 Income Tax · 5 North Station · 6 Lantern Row · 7 Chance · 8 Cobble Street · 9 Saltmarsh Road |
+| Bottom | 0 Start · 1 Driftwood Lane · 2 Chest · 3 Kelp Court · 4 Income Tax · 5 North Station · 6 Lantern Row · 7 Chance · 8 Cobble Street · 9 Saltmarsh Road |
 | Left | 10 Jail (just visiting) · 11 Anchor Street · 12 Power Works · 13 Rope Walk · 14 Chandlers Quay · 15 East Station · 16 Net Loft Road · 17 Chest · 18 Fishmarket Square · 19 Customs House Row |
 | Top | 20 Free Parking · 21 Beacon Hill · 22 Chance · 23 Lighthouse Road · 24 Signal Point · 25 South Station · 26 Boatyard Way · 27 Shipwright Street · 28 Pump House · 29 Dry Dock Avenue |
 | Right | 30 Go to Jail · 31 Admiralty Gardens · 32 Merchant Terrace · 33 Chest · 34 Mariners Crescent · 35 West Station · 36 Chance · 37 Harbour Heights · 38 Luxury Tax · 39 Grand Pier |
@@ -251,28 +254,28 @@ The prices of Driftwood Lane, Kelp Court, Lantern Row, Cobble Street, Saltmarsh 
 
 | # | Card | Effect |
 |---|---|---|
-| 1 | Sail home | Advance to GO. Collect $200 |
-| 2 | Climb the hill | Advance to Beacon Hill (21). Collect $200 if you pass GO |
+| 1 | Sail home | Advance to Start. Collect $200 |
+| 2 | Climb the hill | Advance to Beacon Hill (21). Collect $200 if you pass Start |
 | 3 | Pier inspection | Advance to Grand Pier (39) |
-| 4 | Anchor day | Advance to Anchor Street (11). Collect $200 if you pass GO |
+| 4 | Anchor day | Advance to Anchor Street (11). Collect $200 if you pass Start |
 | 5 | Next stop, a Station | Advance to the nearest Station. If unowned, you may buy it. If owned, pay the owner double the normal rent |
 | 6 | Next stop, a Station | Same as card 5 |
 | 7 | Nearest utility | Advance to the nearest Utility. If unowned, you may buy it. If owned, roll the dice and pay the owner 10 × the total |
-| 8 | Trip to East Station | Advance to East Station (15). Collect $200 if you pass GO |
+| 8 | Trip to East Station | Advance to East Station (15). Collect $200 if you pass Start |
 | 9 | Dividend | The bank pays you $50 |
 | 10 | Loan matures | Collect $150 |
 | 11 | Back three | Move back three squares |
 | 12 | Marina fine | Pay the bank $15 |
 | 13 | Dock repairs | Pay $25 per house and $100 per hotel you own |
 | 14 | Harbour master's party | Pay each other player $50 |
-| 15 | Go to Jail | Go directly to Jail. Do not pass GO, do not collect $200 |
+| 15 | Go to Jail | Go directly to Jail. Do not pass Start, do not collect $200 |
 | 16 | Get Out of Jail Free | Keep until needed, or sell. Returns to the bottom of the deck when used |
 
 ## Chest
 
 | # | Card | Effect |
 |---|---|---|
-| 1 | Home port | Advance to GO. Collect $200 |
+| 1 | Home port | Advance to Start. Collect $200 |
 | 2 | Bank error | Collect $200 |
 | 3 | Doctor's bill | Pay $50 |
 | 4 | Cargo sale | Collect $50 |
@@ -286,7 +289,7 @@ The prices of Driftwood Lane, Kelp Court, Lantern Row, Cobble Street, Saltmarsh 
 | 12 | Street repairs | Pay $40 per house and $115 per hotel you own |
 | 13 | Regatta prize | Collect $10 |
 | 14 | Inheritance | Collect $100 |
-| 15 | Go to Jail | Go directly to Jail. Do not pass GO, do not collect $200 |
+| 15 | Go to Jail | Go directly to Jail. Do not pass Start, do not collect $200 |
 | 16 | Get Out of Jail Free | Keep until needed, or sell. Returns to the bottom of the deck when used |
 
 The repair cards charge the bank. If the player has no buildings they pay nothing.

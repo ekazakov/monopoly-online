@@ -227,7 +227,7 @@ The reference page has four more avatars that aren't drawn as outline icons yet:
   - top row: bar at the bottom
   - left column: bar on the right
   - right column: bar on the left
-- **Order from GO**, the bottom-right corner, running clockwise towards the left:
+- **Order from Start**, the bottom-right corner, running clockwise towards the left:
   - **Bottom:** Brown, ·, Brown, ·, ·, Sky, ·, Sky, Sky
   - **Left:** Pink, ·, Pink, Pink, ·, Orange, ·, Orange, Orange
   - **Top:** Red, ·, Red, Red, ·, Yellow, Yellow, ·, Yellow
@@ -235,7 +235,7 @@ The reference page has four more avatars that aren't drawn as outline icons yet:
 
   A "·" is a non-property square (Chance, Chest, Tax, Station, Utility). These are blank in the wireframe.
 
-- **Corners:** blank in the wireframe. They will be GO, Jail, Free Parking and Go to Jail.
+- **Corners:** blank in the wireframe. They will be Start, Jail, Free Parking and Go to Jail.
 
 ### 4.5 Board centre: turn area
 
