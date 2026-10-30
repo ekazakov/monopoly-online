@@ -7,6 +7,20 @@
       "runtimeArgs": ["dev"],
       "env": { "NODE_OPTIONS": "" },
       "port": 5173
+    },
+    {
+      "name": "artifact-game-screen",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["artifacts/serve.mjs", "game-screen", "8791"],
+      "env": { "NODE_OPTIONS": "" },
+      "port": 8791
+    },
+    {
+      "name": "artifact-design-system",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["artifacts/serve.mjs", "design-system", "8792"],
+      "env": { "NODE_OPTIONS": "" },
+      "port": 8792
     }
   ]
 }
