@@ -4,14 +4,14 @@ A property-trading board game that you play in the browser.
 
 ## Structure
 
-| Path                   | Content                                                                            |
-| ---------------------- | ---------------------------------------------------------------------------------- |
-| `apps/web`             | Frontend. React, TanStack Query, three.js through React Three Fiber and drei.      |
-| `apps/api`             | Backend. Hono on Node, SQLite (better-sqlite3), Kysely queries.                    |
-| `packages/shared`      | Zod schemas and the API error format. The API and the web use them.                |
-| `packages/game-engine` | The game rules as a pure module. See its [README](packages/game-engine/README.md). |
-| `artifacts/`           | Standalone copies of the design system and game screen prototype.                  |
-| `plan/`                | Specifications and game rules.                                                     |
+| Path                   | Content                                                                                      |
+| ---------------------- | -------------------------------------------------------------------------------------------- |
+| `apps/web`             | Frontend. React, TanStack Query, three.js through React Three Fiber and drei.                |
+| `apps/api`             | Backend. Hono on Node, SQLite (better-sqlite3), Kysely queries.                              |
+| `packages/shared`      | Zod schemas and the API error format. The API and the web use them.                          |
+| `packages/game-engine` | The game rules as a pure module. See its [README](packages/game-engine/README.md).           |
+| `artifacts/`           | Standalone copies of the design system and game screen prototype.                            |
+| `plan/`                | Specifications, game rules and the [implementation roadmap](plan/implementation-roadmap.md). |
 
 The toolchain is [Vite+](https://viteplus.dev) (`vite-plus`). It supplies Vite, Vitest, Oxlint, Oxfmt and tsdown.
 
