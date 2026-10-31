@@ -40,9 +40,9 @@ Milestones M1 to M4 run on the local machine with `pnpm dev`. Deployment comes l
 
 | Milestone                     | Scope |
 | ----------------------------- | ----- |
-| **M1 Local playable game** ([tasks](milestone-1-tasks.md)) | Guest sessions (one per browser or browser profile), create a game, join by invite link, hot-seat seats, start. The engine on the server, the SSE game channel, the game screen in React with all turn actions. Done when two browser profiles and one hot-seat player finish a game on `localhost` |
-| **M2 Lobby**                  | Public game list, the full game room (host and guest views), invite by name, tokens |
-| **M3 Session and resilience** | Owner Finish, Save and Restore (gameplay 3.1), disconnect and away rules with the autopilot (3.2), resign |
+| **M1 Local playable game** ([tasks](milestone-1-tasks.md)) | Guest sessions (one per browser or browser profile), create a game, join by invite link, hot-seat seats, start. The engine on the server, the SSE game channel, the game screen in React with all turn actions, resign, and the result screen. Done when two browser profiles and one hot-seat player finish a game on `localhost` |
+| **M2 Lobby**                  | Public game list, the full game room (host and guest views), invite by name, player tokens (game pieces) |
+| **M3 Session and resilience** | Owner Finish, Save and Restore (gameplay 3.1), disconnect and away rules with the autopilot (3.2) |
 | **M4 Polish**                 | Accessibility pass, rematch, WebSocket transport, Google OAuth |
 | **M5 Deployment**             | CI, Docker image, the droplet with Cloudflare Tunnel and Access, OpenTelemetry export to Grafana Cloud |
 
@@ -60,9 +60,9 @@ Migrations go in `apps/api/src/db/migrations.ts`, types in `apps/api/src/db/sche
 | ---------------- | --------------------------------------------------------------------------------------------- |
 | `users`          | Id, display name (unique, case-insensitive), created time                                      |
 | `sessions`       | Hash of the session token, user, expiry                                                       |
-| `games`          | Extend the current table: owner, status (waiting, active, saved, finished), seat limit, version |
-| `seats`          | Game, order, name, token, the device user who controls it, the user (empty for hot-seat)      |
-| `invites`        | Game, invited user or link token, state                                                       |
+| `games`          | Extend the current table: owner, status (waiting, active, saved, finished), version. The seat limit is always 6 (`MAX_PLAYERS`) |
+| `seats`          | Game, order, name, player token (game piece, M2), the device user who controls it, the user (empty for hot-seat) |
+| `invites`        | Game, invited user, state. M2, for invite by name only. The game id link is the invite (no link token) |
 | `game_events`    | Game, version, action JSON, events JSON, time                                                 |
 | `game_snapshots` | Game, version, state JSON, a flag for a turn-start snapshot (Save and Restore)               |
 
@@ -73,20 +73,20 @@ The request and response schemas are zod schemas in `packages/shared`.
 | Area     | Endpoints                                                                                                                                                                                                                         |
 | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Session  | `POST /api/session` (guest name), `GET /api/me`, `PATCH /api/me`, `DELETE /api/session`                                                                                                                                        |
-| Lobby    | `GET /api/games?status=waiting`, `POST /api/games`, `GET /api/games/:id`, join, leave, add and remove a hot-seat seat, pick a token, invite by name, invite link (`POST /api/invites/:token/accept`), start                        |
+| Lobby    | `GET /api/games?status=waiting`, `POST /api/games`, `GET /api/games/:id`, join, leave, add and remove a hot-seat seat, pick a player token, invite by name, start. The game link (`/games/<id>`) is the invite                        |
 | Game     | `POST /api/games/:id/actions` with `{ seatId, action, expectedVersion, clientActionId }`, `GET /api/games/:id/state`, owner `POST /api/games/:id/finish`, `/save`, `/restore`, `GET /api/me/saved-games`                     |
 | Realtime | `GET /api/stream?topics=lobby,game:<id>` (SSE)                                                                                                                                                                                  |
 
 ### 3.3 Game service
 
 1. Load the state: from the in-memory cache, or else from the latest snapshot plus the events after it.
-2. Check that the session's device controls the acting seat. Use `actorFor` and `mayAct` from the engine.
+2. Check that the session's device controls the acting seat (403 otherwise). The engine checks who may act and when (`actorFor` in the reducer); the web app uses `mayAct` to enable buttons.
 3. Call `applyAction`.
-4. Write the events and, when due, a snapshot in one transaction. Write a snapshot every N versions and at the start of each turn (Save needs it, gameplay 3.1).
+4. Write the events and, when due, a snapshot in one transaction. When the events contain `GameEnded`, set the game status to `finished` in the same transaction. Write a snapshot every N versions and at the start of each turn (Save needs it, gameplay 3.1).
 5. Publish the events.
 
 - **Redaction (Q19).** Remove `rng` and the deck order before state leaves the server. Devices learn about card draws only from events.
-- **Idempotency.** `clientActionId` removes duplicate retries. `expectedVersion` refuses an action made on old state, with a clear error. The client then gets the state again.
+- **Idempotency.** `clientActionId` removes duplicate retries. A repeat returns the stored events with the current state. `expectedVersion` refuses an action made on old state, with a clear error. The client then gets the state again.
 - **OpenAPI.** Generate `apps/api/openapi.json` from the zod routes. Commit it with each controller or schema change (CLAUDE.md).
 - **Portability.** Use only portable SQL through Kysely. Store JSON as text, ids as UUID text and times as ISO text. Do not use functions that only SQLite has. Keep dialect-specific code in `db/client.ts`, and in migrations where it is necessary.
 
@@ -99,7 +99,7 @@ The request and response schemas are zod schemas in `packages/shared`.
 - **`Bus`**: publish and subscribe by topic, in memory in the API process.
 - **`Transport`**: connects one device. SSE now, WebSocket later.
 - **Envelope**: `{ topic, type, version, payload }`.
-- **SSE.** Hono `streamSSE`. The event id is the game version. A heartbeat every 15 seconds. On reconnect the browser sends `Last-Event-ID`: the server sends the events after that version, or a new snapshot when the gap is too large.
+- **SSE.** Hono `streamSSE`. The event id is the engine version; room messages have no id. A heartbeat every 15 seconds. On reconnect the browser sends `Last-Event-ID`: the server sends the events after that version, or a new snapshot when the gap is more than 100 versions (see [api-schema.md](api-schema.md)).
 - **Presence.** A device is online while it has an open stream (or WebSocket). When the stream closes, its players are "reconnecting". After 60 seconds they are "away" (gameplay 3.2). The timers run in the API process. At start, the API makes them again from the database.
 
 ### 4.2 Client (`apps/web`)
@@ -113,7 +113,7 @@ The request and response schemas are zod schemas in `packages/shared`.
 ## 5. Auth
 
 - **Now: guest name.** The player types a display name (2 to 16 characters, unique, case-insensitive). The server creates a user and a session.
-  - The cookie is HttpOnly, Secure and SameSite=Lax. It holds a random token. The database keeps only the hash of the token.
+  - The cookie is HttpOnly, Secure and SameSite=Lax. Secure is off when `NODE_ENV` is `development` or `test`, because local development uses plain HTTP. It holds a random token. The database keeps only the hash of the token.
   - The session expires after 30 days without use.
 - **Hot-seat players** are seats, not users. They belong to the device user who added them.
 - **Later: Google OAuth.** A table `auth_identities` (provider, subject, user). A guest who signs in with Google keeps the same user and their games. The OAuth client is Arctic. The sessions stay ours.
@@ -126,9 +126,9 @@ The request and response schemas are zod schemas in `packages/shared`.
 - **Routing.** TanStack Router: sign-in, lobby, game room, game, result.
 - **Screens.** Sign-in (guest name), lobby list, game room (host and guest: seats, invites, tokens), game screen, saved games (owner), result.
 - **Game screen.** Port `artifacts/game-screen` to React components, following [game-screen-2-spec.md](game-screen-2-spec.md): player rail, log, board, board-centre turn area, hand, and the dialogs (auction, trade, manage, card, bankruptcy, leave and resign, owner finish and save). Move the board logic of `board3d.js` into React Three Fiber in `apps/web/src/scene/`.
-- **State.** TanStack Query for REST data. A game store applies realtime events to the redacted state and starts the animations from the events. The static board and card data come from `packages/game-engine` (`board.ts`, `cards.ts`).
+- **State.** TanStack Query for REST data. A game store keeps the latest redacted state from the stream (no client reducer). The events in each message fill the log and start the animations. The static board and card data come from `packages/game-engine` (`board.ts`, `cards.ts`).
 - **Design tokens.** Colours, type and spacing from the design system, as CSS variables.
-- **Designs that are still missing.** Sign-in screen, saved-games list, away and reconnecting seat states in the rail, connection banner. Ask before new artboards are added to the canvas.
+- **Designs that are still missing.** Game result screen, saved-games list, away and reconnecting seat states in the rail, connection banner. Ask before new artboards are added to the canvas.
 
 ---
 
@@ -140,7 +140,7 @@ The request and response schemas are zod schemas in `packages/shared`.
 | API        | Vitest with `app.request` (as in `apps/api/src/app.test.ts`), SQLite in memory |
 | Realtime   | Tests open an SSE stream, apply actions, reconnect with `Last-Event-ID`, and check the events that the server sends again                           |
 | Web        | Vitest and Testing Library for components and for the game store                                                                                      |
-| End to end | Playwright. Two browser contexts and one hot-seat seat play a short seeded game: a handoff, a trade, a disconnect and a reconnect. Runs locally against `pnpm dev` from M1 |
+| End to end | Playwright. Two browser contexts and one hot-seat seat play a short seeded game: a handoff and a trade (M1). A disconnect and a reconnect are added with M3. Runs locally against `pnpm dev` from M1 |
 | CI         | From M5: GitHub Actions runs `pnpm check`, `pnpm test`, `pnpm build`, and Playwright on `main` |
 
 - **Seeded.** The engine takes its dice and decks from a seed (`createGame({ seed })`). A test-only environment flag, never on in production, lets the test set the seed. Then the dice give the same numbers on each run, and the test knows where each token lands.
@@ -216,3 +216,4 @@ Only persons on an allow list can open the game. Cloudflare Access (Zero Trust, 
 | 2026-10-31 | The local playable game is the first milestone; deployment moved to the end. SQLite only, with portable queries; no Neon, no PgNotifyBus |
 | 2026-10-31 | Task list for milestone 1 in [milestone-1-tasks.md](milestone-1-tasks.md) |
 | 2026-10-31 | API schema for milestone 1 in [api-schema.md](api-schema.md) |
+| 2026-10-31 | Review fixes: seat limit always 6, resign moved to M1, `finished` status, SSE ids and resume limit, Secure cookie outside development, invites by name only (M2 tokens are game pieces), E2E scope per milestone |
