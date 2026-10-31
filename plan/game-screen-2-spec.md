@@ -8,7 +8,7 @@
 | Reference frame  | 1440 × 900 px                                                                                               |
 | Related boards   | Game screen (`Screens.dc.html`), Game parts (`GameParts.dc.html`), Colour tokens (`Main.dc.html`)           |
 | Avatar reference | Harborfront Avatars: https://claude.ai/artifact/RaQcXVRWRdHJo58bJx2SaC                                      |
-| Status           | Wireframe, mid-fidelity. Last updated 2026-10-25                                                            |
+| Status           | Wireframe, mid-fidelity. Last updated 2026-10-31                                                            |
 
 In the requirement lists, **MUST** means required for the first playable release and **SHOULD** means strongly recommended. Each requirement has a tag:
 
@@ -431,11 +431,11 @@ The rules behind each flow are in the gameplay doc, section 5. **There are no mo
 
 | ID   | Level  | Status | Dialog or screen                                                                                                     |
 | ---- | ------ | ------ | -------------------------------------------------------------------------------------------------------------------- |
-| R-G4 | MUST   | Gap    | Auction: current bid, bidders, timer, bid buttons                                                                    |
-| R-G5 | MUST   | Gap    | Trade builder: two columns of properties, cash and cards, then propose, counter, accept or decline                   |
+| R-G4 | MUST   | Gap    | Auction: current bid, bidders, bid buttons (no timer, gameplay 2.1)                                                  |
+| R-G5 | MUST   | Gap    | Trade builder: two columns of properties, cash and cards, then propose, accept, reject or cancel (no counter-offers) |
 | R-G6 | MUST   | Gap    | Chance and Chest card reveal                                                                                         |
 | R-G7 | MUST   | Gap    | Manage properties: build, sell, mortgage, unmortgage                                                                 |
-| R-G8 | MUST   | Gap    | Bankruptcy, and the end-of-game result screen                                                                        |
+| R-G8 | MUST   | Gap    | Bankruptcy, and the end-of-game result screen ("Game result" board, task H10a)                                       |
 | R-G9 | SHOULD | Gap    | Menu contents: rules, settings (sound, motion, theme), leave game; for the session owner, save and exit, finish game |
 
 ---
@@ -447,12 +447,12 @@ Gameplay questions (player limits, disconnects, trades, house rules, timer, bots
 1. Are the 3D camera views from the Game screen board (Angle, Top, Low) still planned for this screen?
 2. Which sound, music and motion settings does the Menu need?
 3. Should a light theme (Light theme board) apply to this screen?
-4. If there is a turn timer, where is it shown: in the log bar, on the active avatar, or in the board centre?
+4. ~~Turn timer placement.~~ Closed: there is no turn timer in v1 (gameplay Q5).
 5. **Colour collisions (parked).** Every player colour is close to a property-group colour: Marlow's red and the Red group, Ines's blue and Navy, Tove's green and Green, Ravi's gold and Yellow (and the cash coin). The owner marker (R-B4) can't rely on colour. Leading idea: show the owner's avatar glyph on owned squares and pick a separate palette for rings and log dots.
 6. **Next turn placement.** The button sits where "Roll" would, right under the dice. Should it be disabled while a decision or debt is pending, show "Roll again" after doubles, and ask for confirmation when the player still has unspent options?
-7. **Board density.** Squares are about 60px on desktop and 50px on tablet landscape, yet each holds a name, price, up to 8 tokens, an owner marker and up to 4 houses. The 9 × 9 centre (about 430px) must also hold a title deed, an auction or a debt state. Does it fit?
+7. **Board density.** Squares are about 60px on desktop and 50px on tablet landscape, yet each holds a name, price, up to 6 tokens, an owner marker and up to 4 houses. The 9 × 9 centre (about 430px) must also hold a title deed, an auction or a debt state. Does it fit?
 8. **Inspecting other players.** There is no way yet to see an opponent's properties or cash, which trades and rent decisions need. Where does it live (tap an avatar on the rail)?
-9. **Tablet portrait strip.** The horizontal player strip doesn't fit 8 players at 768px.
+9. **Tablet portrait strip.** The horizontal player strip doesn't fit 6 players at 768px.
 10. **Expanded hand overlap.** The expanded hand covers the lower board. Does it ever hide something the player needs, such as the centre during an auction?
 11. **Modals.** Revisit the decision to avoid modal dialogs once the board-centre flows are drawn.
 12. **Wireframe data.** Marlow shows $1,500 cash yet holds about $1,210 of properties at purchase price. The sample data should be made consistent.
@@ -467,3 +467,4 @@ Gameplay questions (player limits, disconnects, trades, house rules, timer, bots
 | 2026-10-25 | Dice moved from top right to the board centre. Next turn button added under the dice. Player names added to the right of the avatars, above the cash, with no label background. Generic person icons replaced with unique outline avatars (cat, terrier, penguin, racing car) drawn from the Harborfront Avatars page                                    |
 | 2026-10-25 | Gameplay logic and gameplay questions moved to [game-screen-2-gameplay.md](game-screen-2-gameplay.md). This spec now covers UI and design only                                                                                                                                                                                                           |
 | 2026-10-25 | Rules review: expanded-hand model replaces per-card pop-ups (4.6, R-H6), no modal dialogs for now, debt and spectator states added to the rail and board centre (5.2, 5.3, R-P6), tablet hand behaviour updated (7). Open design questions 5 to 12 added to section 9. Rules and property data are in [game-rules-reference.md](game-rules-reference.md) |
+| 2026-10-31 | Review against the decided rules: no auction timer (R-G4), no counter-offers (R-G5), 6 players and tokens (questions 7 and 9), the turn timer question closed (question 4), the result screen gets its own board (R-G8) |

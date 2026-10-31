@@ -5,7 +5,7 @@
 | Companion doc | [game-screen-2-spec.md](game-screen-2-spec.md): the UI and visual design of the same screen |
 | Canvas        | Harborfront Design System: https://claude.ai/artifact/RtcjA9YX1Sq77osCjy58PK                |
 | Artboard      | `project/Wireframe2.dc.html`, titled "Game screen 2"                                        |
-| Status        | Draft. Last updated 2026-10-30                                                              |
+| Status        | Draft. Last updated 2026-10-31                                                              |
 
 This document covers the game rules and turn logic that Game screen 2 has to present. How each item looks, its layout, tokens and components, is in the design spec.
 
@@ -39,9 +39,9 @@ A turn moves through these phases. Each phase offers one **primary** action and 
 | Rolling                | Two dice are rolled and the sum is the move                                                                     | none                                                                | none                               |
 | Moving                 | The token moves that many squares clockwise. Passing Start collects $200                                           | none                                                                | none                               |
 | On an unowned property | The player may buy at the listed price                                                                          | **Buy $X**                                                          | Auction                            |
-| On an owned property   | Rent is due to the owner, unless the property is mortgaged or the owner is the player on turn                   | **Pay**                                                             | none                               |
-| On Chance or Chest     | The top card is drawn and resolved                                                                              | **OK**                                                              | none                               |
-| On a tax square        | The tax is due                                                                                                  | **Pay**                                                             | none                               |
+| On an owned property   | Rent is paid to the owner automatically, unless the property is mortgaged or the owner is the player on turn   | none: the centre shows the amount paid (Q9)                         | none                               |
+| On Chance or Chest     | The top card is drawn and resolved                                                                              | **OK** (closes the card on this device; it sends no action)         | none                               |
+| On a tax square        | The tax is paid to the bank automatically                                                                       | none: the centre shows the amount paid                              | none                               |
 | Doubles                | The player rolls again. Three doubles in a row sends them to jail                                               | **Roll again**                                                      | none                               |
 | In jail                | The player tries to get out                                                                                     | **Roll for doubles**                                                | Pay $50, Use card                  |
 | Turn resolved          | Nothing is due                                                                                                  | **Next turn**                                                       | Trade, Manage                      |
@@ -208,3 +208,4 @@ All questions are closed. The decision for each one is below.
 | 2026-10-25 | Rules review: bankruptcy is automatic from the assets' liquidation value, off-turn debts fall due on the debtor's next turn, bankrupt players become spectators, out-of-turn actions limited to defined windows, auctions turn-based, flat taxes, no building supply limit, no modals for now. Rules rewritten with property data and card decks in [game-rules-reference.md](game-rules-reference.md). Open questions 7 to 19 added |
 | 2026-10-29 | Session owner controls (3.1): finish the game with no winner, save and exit, restore by the owner only. Both roll back to the start of the turn and keep the random state. One save slot, no expiry, free re-seating. Open questions 20 to 22 added                                                                                                                                                                                  |
 | 2026-10-30 | All open questions decided (section 6). Disconnect rules (3.2), server-side dice and decks, no bots or timers in v1, hot-seat trade handoff, resigning as a bankruptcy, jail cards always back to their decks, 2 to 6 players, GO renamed Start |
+| 2026-10-31 | Turn flow (section 2): rent and tax are paid automatically and have no Pay button; the card OK only closes the card on this device |

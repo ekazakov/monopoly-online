@@ -1,5 +1,7 @@
 # Game engine plan
 
+> **History.** This file records the engine tasks and the decisions of their time. Some decisions changed later: jail cards of a bankrupt player always go back to their decks (Q14), and the engine has `Resign` (Q16). The current sources are [game-rules-reference.md](game-rules-reference.md) and the [engine README](../packages/game-engine/README.md).
+
 This file is the live to-do list. Mark each task `[x]` when it is done. Do one task, then stop and ask the user.
 
 ## Context
