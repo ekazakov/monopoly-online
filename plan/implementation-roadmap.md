@@ -215,3 +215,4 @@ Only persons on an allow list can open the game. Cloudflare Access (Zero Trust, 
 | 2026-10-31 | Access control with Cloudflare Access (section 10). Hosting: one droplet behind Cloudflare Tunnel, web and API on one origin |
 | 2026-10-31 | The local playable game is the first milestone; deployment moved to the end. SQLite only, with portable queries; no Neon, no PgNotifyBus |
 | 2026-10-31 | Task list for milestone 1 in [milestone-1-tasks.md](milestone-1-tasks.md) |
+| 2026-10-31 | API schema for milestone 1 in [api-schema.md](api-schema.md) |
