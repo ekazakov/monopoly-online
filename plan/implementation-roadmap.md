@@ -40,7 +40,7 @@ Milestones M1 to M4 run on the local machine with `pnpm dev`. Deployment comes l
 
 | Milestone                     | Scope |
 | ----------------------------- | ----- |
-| **M1 Local playable game**    | Guest sessions (one per browser or browser profile), create a game, join by invite link, hot-seat seats, start. The engine on the server, the SSE game channel, the game screen in React with all turn actions. Done when two browser profiles and one hot-seat player finish a game on `localhost` |
+| **M1 Local playable game** ([tasks](milestone-1-tasks.md)) | Guest sessions (one per browser or browser profile), create a game, join by invite link, hot-seat seats, start. The engine on the server, the SSE game channel, the game screen in React with all turn actions. Done when two browser profiles and one hot-seat player finish a game on `localhost` |
 | **M2 Lobby**                  | Public game list, the full game room (host and guest views), invite by name, tokens |
 | **M3 Session and resilience** | Owner Finish, Save and Restore (gameplay 3.1), disconnect and away rules with the autopilot (3.2), resign |
 | **M4 Polish**                 | Accessibility pass, rematch, WebSocket transport, Google OAuth |
@@ -214,3 +214,4 @@ Only persons on an allow list can open the game. Cloudflare Access (Zero Trust, 
 | 2026-10-31 | First version: architecture, milestones, API, realtime, auth, UI, testing, telemetry, hosting and risks |
 | 2026-10-31 | Access control with Cloudflare Access (section 10). Hosting: one droplet behind Cloudflare Tunnel, web and API on one origin |
 | 2026-10-31 | The local playable game is the first milestone; deployment moved to the end. SQLite only, with portable queries; no Neon, no PgNotifyBus |
+| 2026-10-31 | Task list for milestone 1 in [milestone-1-tasks.md](milestone-1-tasks.md) |
