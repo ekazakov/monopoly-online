@@ -56,7 +56,7 @@
 - **F3. API client.** Extend `api.ts` for the new routes; session query; redirect to sign-in without a session.
 - **F4. Realtime client.** `RealtimeClient` interface and `SseHttpClient` (`EventSource` + POST). Status and reconnect.
 - **F5. Game store.** Applies events to the redacted state, exposes selectors (current player, my seats, phase). Tests for the store with recorded events.
-- **F6. Sign-in screen.** Guest name form. Needs a design: ask first.
+- **F6. Sign-in screen.** Guest name form. Design: board `SignIn.dc.html` in the design system canvas (seven states and a11y notes).
 
 ### G. Game room screen
 

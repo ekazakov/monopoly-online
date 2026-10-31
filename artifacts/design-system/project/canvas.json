@@ -103,6 +103,13 @@
       "w": 1440,
       "x": 6080,
       "y": 8400
+    },
+    "SignIn.dc.html": {
+      "h": 1024,
+      "title": "Sign in \u00b7 guest name",
+      "w": 1440,
+      "x": 7640,
+      "y": 8400
     }
   },
   "createdOnFiles": {
@@ -119,7 +126,7 @@
       "y": 8100,
       "text": "Game start",
       "kind": "title1",
-      "maxW": 7520
+      "maxW": 9080
     }
   },
   "order": [
@@ -136,7 +143,8 @@
     "LobbyHost.dc.html",
     "LobbyHostReady.dc.html",
     "LobbyGuest.dc.html",
-    "LobbyStates.dc.html"
+    "LobbyStates.dc.html",
+    "SignIn.dc.html"
   ],
   "pages": [],
   "title": "Harborfront Design System"
