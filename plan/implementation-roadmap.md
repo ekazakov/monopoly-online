@@ -16,7 +16,8 @@ This document is the plan from the current scaffold to a fully working online ga
 | --------- | --------------------------------------------------------------------------------------------------------- |
 | Auth      | Guest name only for now. Google OAuth later                                                               |
 | Realtime  | SSE + HTTP POST now, behind a transport layer. WebSocket later, with a fallback from WebSocket to SSE + POST |
-| Database  | SQLite and Postgres through Kysely. SQLite for development and tests, Postgres in production            |
+| Database  | SQLite. All queries go through Kysely and stay portable, so a later change to Postgres needs only a new dialect in `db/client.ts` |
+| First goal | A playable game on the local machine: hot-seat on one device, and several browsers or browser profiles as separate devices |
 | Hosting   | Minimal cost, free tiers where possible                                                                   |
 | Access    | Only selected persons can open the game. Cloudflare Access (Zero Trust) stands in front of the web app and the API (section 10) |
 | Telemetry | Full OpenTelemetry: traces, metrics and logs                                                              |
@@ -26,7 +27,8 @@ This document is the plan from the current scaffold to a fully working online ga
 ## 1. Architecture
 
 - **One authority.** One API process runs the engine, keeps the game state and pushes events. Devices send actions only (gameplay Q19).
-- **Data.** Kysely with two dialects. `DATABASE_URL` selects SQLite or Postgres.
+- **Data.** SQLite through Kysely. Portable queries keep Postgres possible (section 3.3).
+- **Scale.** One API instance. The game is not built for scale.
 - **Realtime.** A transport layer on the server and in the client. SSE + POST now, WebSocket later.
 - **Web app.** A static build, served by the API container on the same origin. It calls `/api` with the Hono RPC client (`apps/web/src/api.ts`, `AppType` from `apps/api/src/app.ts`).
 
@@ -34,15 +36,17 @@ This document is the plan from the current scaffold to a fully working online ga
 
 ## 2. Milestones
 
-Each milestone ends deployed and tested.
+Milestones M1 to M4 run on the local machine with `pnpm dev`. Deployment comes last.
 
-| Milestone                     | Scope                                                                                                     |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------- |
-| **M1 Foundations**            | CI, the two database dialects, guest auth, the deploy pipeline behind Cloudflare Access, the telemetry base |
-| **M2 Lobby**                  | Public game list, game room, seats, hot-seat players, invite by name and by link, tokens                  |
-| **M3 Playable game**          | Engine on the server, the SSE game channel, the game screen in React, all turn actions                     |
-| **M4 Session and resilience** | Owner Finish, Save and Restore (gameplay 3.1), disconnect and away rules with the autopilot (3.2), resign |
-| **M5 Polish and later**       | Google OAuth, WebSocket transport, accessibility pass, rematch                                            |
+| Milestone                     | Scope |
+| ----------------------------- | ----- |
+| **M1 Local playable game**    | Guest sessions (one per browser or browser profile), create a game, join by invite link, hot-seat seats, start. The engine on the server, the SSE game channel, the game screen in React with all turn actions. Done when two browser profiles and one hot-seat player finish a game on `localhost` |
+| **M2 Lobby**                  | Public game list, the full game room (host and guest views), invite by name, tokens |
+| **M3 Session and resilience** | Owner Finish, Save and Restore (gameplay 3.1), disconnect and away rules with the autopilot (3.2), resign |
+| **M4 Polish**                 | Accessibility pass, rematch, WebSocket transport, Google OAuth |
+| **M5 Deployment**             | CI, Docker image, the droplet with Cloudflare Tunnel and Access, OpenTelemetry export to Grafana Cloud |
+
+Tests are written with each milestone (section 7). CI runs them from M5. Until M5, the API writes plain pino logs to the console.
 
 ---
 
@@ -92,9 +96,7 @@ The request and response schemas are zod schemas in `packages/shared`.
 
 ### 4.1 Server
 
-- **`Bus`**: publish and subscribe by topic.
-  - `InMemoryBus` (now) sends a message only to the streams in the same API process.
-  - `PgNotifyBus` (later) uses Postgres `LISTEN` and `NOTIFY`. Each API instance listens on a Postgres channel, so an event that one instance publishes reaches devices that are connected to another instance. It needs no extra service, for example no Redis.
+- **`Bus`**: publish and subscribe by topic, in memory in the API process.
 - **`Transport`**: connects one device. SSE now, WebSocket later.
 - **Envelope**: `{ topic, type, version, payload }`.
 - **SSE.** Hono `streamSSE`. The event id is the game version. A heartbeat every 15 seconds. On reconnect the browser sends `Last-Event-ID`: the server sends the events after that version, or a new snapshot when the gap is too large.
@@ -135,11 +137,11 @@ The request and response schemas are zod schemas in `packages/shared`.
 | Level      | Plan                                                                                                                                                  |
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Engine     | The current Vitest suite and the seeded random bot stay                                                                                              |
-| API        | Vitest with `app.request` (as in `apps/api/src/app.test.ts`). The suite runs two times: SQLite in memory and Postgres (a CI service container)    |
+| API        | Vitest with `app.request` (as in `apps/api/src/app.test.ts`), SQLite in memory |
 | Realtime   | Tests open an SSE stream, apply actions, reconnect with `Last-Event-ID`, and check the events that the server sends again                           |
 | Web        | Vitest and Testing Library for components and for the game store                                                                                      |
-| End to end | Playwright. Two browser contexts and one hot-seat seat play a short seeded game: a handoff, a trade, a disconnect and a reconnect                    |
-| CI         | GitHub Actions: `pnpm check`, `pnpm test` (both dialects), `pnpm build`. Playwright on `main`                                                        |
+| End to end | Playwright. Two browser contexts and one hot-seat seat play a short seeded game: a handoff, a trade, a disconnect and a reconnect. Runs locally against `pnpm dev` from M1 |
+| CI         | From M5: GitHub Actions runs `pnpm check`, `pnpm test`, `pnpm build`, and Playwright on `main` |
 
 - **Seeded.** The engine takes its dice and decks from a seed (`createGame({ seed })`). A test-only environment flag, never on in production, lets the test set the seed. Then the dice give the same numbers on each run, and the test knows where each token lands.
 - **Short.** The test plays a fixed script of a few turns, for example roll, buy, pay rent, trade, end turn. It does not play a full game to a winner. The full games stay in the engine's bot test.
@@ -164,14 +166,14 @@ The request and response schemas are zod schemas in `packages/shared`.
 | --------- | ------------------------------------------------------------------------------------------------------------ | ---------------- |
 | API + web | One small DigitalOcean droplet with Docker. The API container also serves the static web build. One instance in v1 | About $4–6/month |
 | Edge      | Cloudflare: DNS, TLS, Cloudflare Tunnel to the droplet, Cloudflare Access (section 10)                       | Free             |
-| Database  | Neon Postgres, free tier                                                                                     | Free             |
+| Database  | SQLite file on the droplet volume. A daily backup of the file (`sqlite3 .backup`), copied to the local machine | Free             |
 | Telemetry | Grafana Cloud, free tier                                                                                     | Free             |
 
 - **One origin.** The web app and the API share one hostname, for example `play.<domain>`, with the API under `/api`. Then one Access application covers both, and the session cookie needs no cross-site settings.
 - **Why a droplet and not App Platform.** On a droplet, `cloudflared` runs next to the API and opens an outbound tunnel. The droplet then needs no public HTTP port, so nobody can go around Cloudflare Access. App Platform is still possible, but then only the JWT check in the API (section 10) protects the origin.
 - **Why the API is not on Vercel.** Serverless functions run for a short time only. They cannot keep SSE streams open or run the grace and autopilot timers.
 - **Pipeline.** GitHub Actions builds a Docker image and deploys on each push to `main`. The API applies the migrations at start. Secrets are platform environment variables. The health check is `/api/health`.
-- **Scaling later.** `PgNotifyBus` and one timer owner (a Postgres advisory lock) let more than one API instance run.
+- **One instance.** The game is not built for scale. One API process holds the bus, the game cache and the timers.
 
 ---
 
@@ -200,7 +202,7 @@ Only persons on an allow list can open the game. Cloudflare Access (Zero Trust, 
 | Some proxies buffer or close SSE streams                 | Heartbeats, and the header `X-Accel-Buffering: no`                         |
 | The Access session ends during a game                    | Long Access sessions; the client detects the redirect or 403 and reloads   |
 | The origin is reached without Cloudflare                 | Cloudflare Tunnel with no open HTTP port, and the JWT check in the API     |
-| Free Postgres tiers stop when idle, so the first request is slow | Keep the game cache in memory                                        |
+| The SQLite file is lost with the droplet                 | Daily backup of the file                                                   |
 | Timers in the API process are lost on a restart          | Make them again from the database at start                                 |
 
 ---
@@ -211,3 +213,4 @@ Only persons on an allow list can open the game. Cloudflare Access (Zero Trust, 
 | ---------- | ---------------------------------------------------------------------------------------------------------- |
 | 2026-10-31 | First version: architecture, milestones, API, realtime, auth, UI, testing, telemetry, hosting and risks |
 | 2026-10-31 | Access control with Cloudflare Access (section 10). Hosting: one droplet behind Cloudflare Tunnel, web and API on one origin |
+| 2026-10-31 | The local playable game is the first milestone; deployment moved to the end. SQLite only, with portable queries; no Neon, no PgNotifyBus |
