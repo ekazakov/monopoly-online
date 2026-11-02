@@ -1,4 +1,4 @@
-import { act, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, test, vi } from "vite-plus/test";
@@ -269,7 +269,7 @@ describe("PropertyHand: managing", () => {
     await t.user.click(screen.getByRole("button", { name: "Build $50" }));
     expect(t.send).toHaveBeenCalledExactlyOnceWith(
       { type: "Build", square: 8 },
-      { seatId: t.id("a") },
+      { seatId: t.id("a"), source: "hand" },
     );
   });
 
@@ -287,21 +287,21 @@ describe("PropertyHand: managing", () => {
     await t.user.click(screen.getByRole("button", { name: "Sell building +$25" }));
     expect(t.send).toHaveBeenLastCalledWith(
       { type: "SellBuilding", square: 6 },
-      { seatId: t.id("a") },
+      { seatId: t.id("a"), source: "hand" },
     );
 
     await t.user.click(cardButton(/Beacon Hill/));
     await t.user.click(screen.getByRole("button", { name: "Mortgage +$110" }));
     expect(t.send).toHaveBeenLastCalledWith(
       { type: "Mortgage", square: 21 },
-      { seatId: t.id("a") },
+      { seatId: t.id("a"), source: "hand" },
     );
 
     await t.user.click(cardButton(/North Station/));
     await t.user.click(screen.getByRole("button", { name: "Unmortgage $110" }));
     expect(t.send).toHaveBeenLastCalledWith(
       { type: "Unmortgage", square: 5 },
-      { seatId: t.id("a") },
+      { seatId: t.id("a"), source: "hand" },
     );
     expect(t.send).toHaveBeenCalledTimes(3);
   });
@@ -413,6 +413,7 @@ describe("PropertyHand: pending and errors", () => {
     quiet.view.unmount();
 
     setup(undefined, {
+      errorSource: "hand",
       error: new ApiError(
         409,
         "uneven_build",
@@ -422,6 +423,14 @@ describe("PropertyHand: pending and errors", () => {
     expect(screen.getByRole("status")).toHaveTextContent(
       "Build evenly: build on a street with fewer buildings first",
     );
+  });
+
+  test("does not show an error that another part of the screen sent", () => {
+    setup(undefined, { error: new ApiError(409, "wrong_phase", "Not now") });
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+    cleanup();
+    setup(undefined, { error: new ApiError(409, "wrong_phase", "Not now"), errorSource: "menu" });
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
   });
 
   test("a rejected send does not break the hand", async () => {
@@ -502,7 +511,7 @@ describe("PropertyHand: whose hand", () => {
     await t.user.click(screen.getByRole("button", { name: "Build $50" }));
     expect(t.send).toHaveBeenCalledExactlyOnceWith(
       { type: "Build", square: 6 },
-      { seatId: t.id("c") },
+      { seatId: t.id("c"), source: "hand" },
     );
   });
 

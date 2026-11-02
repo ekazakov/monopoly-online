@@ -9,7 +9,7 @@
     }
   },
   "scripts": {
-    "dev": "node --watch src/index.ts",
+    "dev": "NODE_ENV=development node --watch src/index.ts",
     "build": "vp pack",
     "start": "node dist/index.mjs",
     "test": "vp test",

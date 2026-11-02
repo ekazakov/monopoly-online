@@ -1,11 +1,7 @@
 /*
- * Sign-in screen (design board SignIn.dc.html). Tokens only, except the two colours below:
- * the board uses a success green and a light error ink that tokens.css does not define yet.
+ * Sign-in screen (design board SignIn.dc.html). Tokens only.
  */
 .sign-in {
-  --sign-in-ok: #3ccf7a;
-  --sign-in-error-ink: #ffb4ad;
-
   display: flex;
   flex-direction: column;
   min-height: 100%;
@@ -98,7 +94,7 @@
 }
 
 .sign-in__control[data-tone="ok"] {
-  border-color: var(--sign-in-ok);
+  border-color: var(--hf-ok);
 }
 
 .sign-in__control[data-tone="error"] {
@@ -151,11 +147,11 @@
 }
 
 .sign-in__hint[data-tone="ok"] {
-  color: var(--sign-in-ok);
+  color: var(--hf-ok);
 }
 
 .sign-in__hint[data-tone="error"] {
-  color: var(--sign-in-error-ink);
+  color: var(--hf-danger-ink);
 }
 
 .sign-in__icon {

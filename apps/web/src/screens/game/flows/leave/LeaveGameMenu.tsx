@@ -92,7 +92,7 @@ export function LeaveGameMenu({ userId, onLeft }: LeaveGameMenuProps) {
     setSending(true);
     setError(null);
     try {
-      await actions.send({ type: "Resign" }, { seatId: choice.id });
+      await actions.send({ type: "Resign" }, { seatId: choice.id, source: "menu" });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not resign. Try again.");
       setSending(false);

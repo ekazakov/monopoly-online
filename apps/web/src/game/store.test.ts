@@ -11,6 +11,7 @@ import {
 } from "./fixtures.ts";
 import {
   applyActionResponse,
+  applyRoomResponse,
   applyStartResponse,
   applyStateResponse,
   applyStreamMessage,
@@ -322,5 +323,31 @@ describe("store", () => {
     expect(store.getState().gapDetected).toBe(false);
     store.reset();
     expect(store.getState()).toEqual({ ...initialGameState, connection: "open" });
+  });
+});
+
+describe("applyRoomResponse", () => {
+  test("sets the room and keeps the state", () => {
+    const withState = apply(initialGameState, start);
+    const room = { ...fx.game, name: "Renamed", version: fx.game.version + 1 };
+    const next = applyRoomResponse(withState, room);
+    expect(next.game?.name).toBe("Renamed");
+    expect(next.state).toBe(withState.state);
+    expect(next.status).toBe("ready");
+  });
+
+  test("ignores a room older than the one in the store", () => {
+    const newer = { ...fx.game, version: 5 };
+    const state = applyRoomResponse(initialGameState, newer);
+    expect(applyRoomResponse(state, { ...fx.game, version: 4 })).toBe(state);
+  });
+});
+
+describe("applyStateResponse: first state", () => {
+  test("takes a state at version 0 when the store has none", () => {
+    const state = redact(fx.start);
+    const next = applyStateResponse(initialGameState, { version: 0, state });
+    expect(next.state).toBe(state);
+    expect(next.version).toBe(0);
   });
 });

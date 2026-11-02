@@ -286,7 +286,7 @@ export function PropertyHand({ userId }: PropertyHandProps) {
   const view = useGame(userId);
   const { game, state } = view;
   const actions = useGameActions();
-  const { pending, error } = actions;
+  const { pending, error, errorSource } = actions;
   const panelId = useId();
   const detailId = useId();
 
@@ -401,7 +401,7 @@ export function PropertyHand({ userId }: PropertyHandProps) {
   const togglePinned = () => setMode((m) => (m === "pinned" ? "closed" : "pinned"));
 
   const run = (type: ManageAction, square: number) => {
-    actions.send({ type, square }, { seatId: seat.id }).catch(() => {
+    actions.send({ type, square }, { seatId: seat.id, source: "hand" }).catch(() => {
       // The rejection is shown from `error` of the actions context.
     });
   };
@@ -444,7 +444,7 @@ export function PropertyHand({ userId }: PropertyHandProps) {
         onBlur={onBlur}
       >
         <p className="property-hand__status" role="status" aria-live="polite" aria-atomic="true">
-          {error ? error.message : ""}
+          {error && errorSource === "hand" ? error.message : ""}
         </p>
         <div className="property-hand__head">
           <button

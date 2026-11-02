@@ -123,7 +123,7 @@ describe("LeaveGameMenu: one seat", () => {
     await openConfirm(user);
     await user.click(screen.getByRole("button", { name: "Resign" }));
     expect(send).toHaveBeenCalledTimes(1);
-    expect(send).toHaveBeenCalledWith({ type: "Resign" }, { seatId: b.id });
+    expect(send).toHaveBeenCalledWith({ type: "Resign" }, { seatId: b.id, source: "menu" });
     expect(onLeft).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("heading", { name: "Leave game?" })).not.toBeInTheDocument();
   });
@@ -173,7 +173,7 @@ describe("LeaveGameMenu: shared device", () => {
     expect(screen.getByText(/^Cy resigns\./)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Resign" }));
     expect(send).toHaveBeenCalledTimes(1);
-    expect(send).toHaveBeenCalledWith({ type: "Resign" }, { seatId: c.id });
+    expect(send).toHaveBeenCalledWith({ type: "Resign" }, { seatId: c.id, source: "menu" });
   });
 
   test("sends Resign for the acting seat when it stays picked", async () => {
@@ -181,7 +181,7 @@ describe("LeaveGameMenu: shared device", () => {
     const { send } = setup();
     await openConfirm(user);
     await user.click(screen.getByRole("button", { name: "Resign" }));
-    expect(send).toHaveBeenCalledWith({ type: "Resign" }, { seatId: a.id });
+    expect(send).toHaveBeenCalledWith({ type: "Resign" }, { seatId: a.id, source: "menu" });
   });
 
   test("with no acting seat on this device, nothing is picked and Resign stays disabled", async () => {
@@ -218,8 +218,8 @@ describe("LeaveGameMenu: shared device", () => {
     expect(screen.queryByRole("radio")).not.toBeInTheDocument();
     expect(screen.getByText(/^Cy resigns\./)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Resign" }));
-    expect(send).toHaveBeenNthCalledWith(1, { type: "Resign" }, { seatId: a.id });
-    expect(send).toHaveBeenNthCalledWith(2, { type: "Resign" }, { seatId: c.id });
+    expect(send).toHaveBeenNthCalledWith(1, { type: "Resign" }, { seatId: a.id, source: "menu" });
+    expect(send).toHaveBeenNthCalledWith(2, { type: "Resign" }, { seatId: c.id, source: "menu" });
     expect(onLeft).toHaveBeenCalledTimes(1);
   });
 
@@ -230,7 +230,7 @@ describe("LeaveGameMenu: shared device", () => {
     expect(screen.queryByRole("radio")).not.toBeInTheDocument();
     expect(screen.getByText(/^Ann resigns\./)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Resign" }));
-    expect(send).toHaveBeenCalledWith({ type: "Resign" }, { seatId: a.id });
+    expect(send).toHaveBeenCalledWith({ type: "Resign" }, { seatId: a.id, source: "menu" });
   });
 });
 

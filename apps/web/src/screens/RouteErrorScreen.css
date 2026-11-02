@@ -1,0 +1,34 @@
+/* Route error view. Tokens only. */
+.route-error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--hf-space-12);
+  max-width: 480px;
+  padding: var(--hf-gutter);
+  color: var(--hf-ink);
+}
+
+.route-error__title,
+.route-error__text {
+  margin: 0;
+}
+
+.route-error__text {
+  color: var(--hf-ink-soft);
+  font: var(--hf-type-body);
+}
+
+.route-error__retry {
+  padding: var(--hf-space-8) var(--hf-space-16);
+  border: 0;
+  border-radius: var(--hf-radius-control);
+  background: var(--hf-accent);
+  color: var(--hf-accent-ink);
+  font: var(--hf-type-label);
+  cursor: pointer;
+}
+
+.route-error__retry:hover {
+  background: var(--hf-accent-hover);
+}

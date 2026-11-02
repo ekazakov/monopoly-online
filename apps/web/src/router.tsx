@@ -9,6 +9,7 @@ import {
 import { GameScreen } from "./screens/GameScreen.tsx";
 import { HomeScreen } from "./screens/HomeScreen.tsx";
 import { NotFoundScreen } from "./screens/NotFoundScreen.tsx";
+import { RouteErrorScreen } from "./screens/RouteErrorScreen.tsx";
 import { RoomScreen } from "./screens/RoomScreen.tsx";
 import { SignInScreen } from "./screens/SignInScreen.tsx";
 import {
@@ -26,6 +27,7 @@ export interface RouterContext {
 const rootRoute = createRootRouteWithContext<RouterContext>()({
   component: Outlet,
   notFoundComponent: NotFoundScreen,
+  errorComponent: RouteErrorScreen,
 });
 
 const homeRoute = createRoute({

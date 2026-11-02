@@ -24,6 +24,9 @@ const required: Record<string, string[]> = {
     "accent-ink",
     "focus",
     "hover",
+    "ok",
+    "danger",
+    "danger-ink",
   ],
   "board surface": [
     "slab",

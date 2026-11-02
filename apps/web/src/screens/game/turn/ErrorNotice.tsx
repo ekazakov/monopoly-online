@@ -4,9 +4,10 @@ import { useGameActions } from "../../../game/index.ts";
 
 // The live region stays in the DOM, so a screen reader announces the message that appears in it.
 export function ErrorNotice() {
-  const { error } = useGameActions();
+  const { error, errorSource } = useGameActions();
   const [dismissed, setDismissed] = useState<ApiError | null>(null);
-  const shown = error && error !== dismissed ? error : null;
+  // The hand and the menu show the errors of their own sends.
+  const shown = error && !errorSource && error !== dismissed ? error : null;
 
   return (
     <div className="turn-area__errors" role="status" aria-live="polite" aria-atomic="true">

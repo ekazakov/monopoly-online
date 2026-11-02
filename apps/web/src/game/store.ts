@@ -142,6 +142,10 @@ export function applyStateResponse(
   response: { version: number; state: RedactedGameState },
 ): GameStoreState {
   if (response.state.version < prev.version) return prev;
+  // The first state may be the one at version 0, which `applyNewerState` takes for a repeat.
+  if (!prev.state) {
+    return { ...prev, state: response.state, version: response.state.version, gapDetected: false };
+  }
   const next = applyNewerState(prev, response.state, response.state.version, []);
   return next.gapDetected ? { ...next, gapDetected: false } : next;
 }
@@ -152,6 +156,12 @@ export function applyStartResponse(
   response: { game: Game; state: RedactedGameState },
 ): GameStoreState {
   return applySnapshot(prev, response.game, response.state);
+}
+
+/** The response of `GET /api/games/:id`. A room older than the one in the store is ignored. */
+export function applyRoomResponse(prev: GameStoreState, game: Game): GameStoreState {
+  if (prev.game?.id === game.id && prev.game.version > game.version) return prev;
+  return { ...prev, game, status: "ready" };
 }
 
 /** A new game id resets the store. The connection stays. */
@@ -166,6 +176,7 @@ export interface GameStore {
   applyActionResponse: (response: ActionResponse) => void;
   applyStateResponse: (response: { version: number; state: RedactedGameState }) => void;
   applyStartResponse: (response: { game: Game; state: RedactedGameState }) => void;
+  applyRoomResponse: (game: Game) => void;
   setConnection: (connection: ConnectionStatus) => void;
   /** The first load of a game started. A game that is ready stays ready. */
   setLoading: () => void;
@@ -199,6 +210,7 @@ export function createGameStore(initial: GameStoreState = initialGameState): Gam
     applyActionResponse: (response) => update((prev) => applyActionResponse(prev, response)),
     applyStateResponse: (response) => update((prev) => applyStateResponse(prev, response)),
     applyStartResponse: (response) => update((prev) => applyStartResponse(prev, response)),
+    applyRoomResponse: (game) => update((prev) => applyRoomResponse(prev, game)),
     setConnection: (connection) =>
       update((prev) => (prev.connection === connection ? prev : { ...prev, connection })),
     setLoading: () =>

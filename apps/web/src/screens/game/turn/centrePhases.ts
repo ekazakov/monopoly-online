@@ -1,5 +1,8 @@
 import type { Phase } from "@monopoly/shared";
 import type { ComponentType } from "react";
+import { AuctionView } from "../flows/auction/index.ts";
+import { DebtView } from "../flows/debt/index.ts";
+import { TradeResponseView } from "../flows/trade/index.ts";
 import { BuyView } from "./BuyView.tsx";
 import { EndTurnView } from "./EndTurnView.tsx";
 import { JailView } from "./JailView.tsx";
@@ -12,11 +15,14 @@ export interface CentrePhaseProps {
 
 export type CentrePhaseView = ComponentType<CentrePhaseProps>;
 
-// Extension point: the view of each phase in the board centre. A phase with no entry shows the
-// neutral "waiting" view. H7 adds auction, trade, card, debt and bankruptcy views here.
+// The view of each phase in the board centre. A phase with no entry (game_over) shows the neutral
+// "waiting" view. The card reveal is no phase: the game screen shows it above this view.
 export const centrePhases: Partial<Record<Phase, CentrePhaseView>> = {
   awaiting_roll: RollView,
   awaiting_buy_decision: BuyView,
   awaiting_jail_choice: JailView,
   awaiting_end_turn: EndTurnView,
+  awaiting_bid: AuctionView,
+  awaiting_debt: DebtView,
+  awaiting_trade_response: TradeResponseView,
 };

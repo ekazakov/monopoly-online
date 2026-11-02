@@ -2,6 +2,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, createMemoryHistory } from "@tanstack/react-router";
 import { render, type RenderResult } from "@testing-library/react";
 import type { ReactElement } from "react";
+import { RealtimeProvider } from "../realtime/index.ts";
+import type { RealtimeClient } from "../realtime/index.ts";
 import { createAppRouter } from "../router.tsx";
 import { sessionKey } from "../session/index.ts";
 import { userFixture } from "./fakeApi.ts";
@@ -20,6 +22,10 @@ export function renderWithQuery(ui: ReactElement, queryClient = createTestQueryC
   };
 }
 
+export interface RouteOptions {
+  realtime?: RealtimeClient;
+}
+
 type RouteView = RenderResult & {
   queryClient: QueryClient;
   router: ReturnType<typeof createAppRouter>;
@@ -28,20 +34,23 @@ type RouteView = RenderResult & {
 // Renders the real route tree on a memory history at `path`. Waits for the first navigation to load.
 // The route guard needs a session, so the cache starts with `userFixture` signed in and the screen
 // tests need no /api/me mock. Pass your own `queryClient` to start from another cache.
+// Pass `realtime` to give the tree a fake `RealtimeClient`.
 export async function renderRoute(
   path: string,
   queryClient = createTestQueryClient(),
+  options: RouteOptions = {},
 ): Promise<RouteView> {
   if (queryClient.getQueryData(sessionKey) === undefined) {
     queryClient.setQueryData(sessionKey, userFixture);
   }
-  return renderRouteWithServerSession(path, queryClient);
+  return renderRouteWithServerSession(path, queryClient, options);
 }
 
 // Same, but the session cache starts empty, so the guard asks `GET /api/me` (mock it with `mockApi`).
 export async function renderRouteWithServerSession(
   path: string,
   queryClient = createTestQueryClient(),
+  options: RouteOptions = {},
 ): Promise<RouteView> {
   const router = createAppRouter({
     queryClient,
@@ -50,7 +59,9 @@ export async function renderRouteWithServerSession(
   await router.load();
   const result = render(
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <RealtimeProvider client={options.realtime}>
+        <RouterProvider router={router} />
+      </RealtimeProvider>
     </QueryClientProvider>,
   );
   return { ...result, queryClient, router };

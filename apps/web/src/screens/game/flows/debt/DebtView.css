@@ -1,11 +1,8 @@
 /*
  * Debt and bankruptcy in the board centre (spec 4.5, 5.2; design boards TurnArea and Dialogs).
- * It sits inside `.turn-area` and reuses its buttons, status and note styles. Tokens only,
- * except the danger ink: the design board uses #a3241d, which the token file has no name for.
+ * It sits inside `.turn-area` and reuses its buttons, status and note styles. Tokens only.
  */
 .debt-view {
-  --debt-danger: #a3241d;
-
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -49,7 +46,7 @@
 .debt-view__short {
   font: var(--hf-type-body-small);
   font-weight: 700;
-  color: var(--debt-danger);
+  color: var(--hf-danger);
   font-variant-numeric: tabular-nums;
 }
 
@@ -138,12 +135,12 @@
 }
 
 .turn-area .debt-view__danger {
-  border-color: var(--debt-danger);
-  color: var(--debt-danger);
+  border-color: var(--hf-danger);
+  color: var(--hf-danger);
 }
 
 .turn-area .debt-view__danger:hover:not(:disabled) {
-  background: var(--debt-danger);
+  background: var(--hf-danger);
   color: var(--hf-paper);
 }
 
@@ -155,7 +152,7 @@
   gap: var(--hf-space-8);
   width: min(360px, 100%);
   padding: var(--hf-space-12);
-  border: 1px solid var(--debt-danger);
+  border: 1px solid var(--hf-danger);
   border-radius: var(--hf-radius-control);
   background: var(--hf-paper);
 }

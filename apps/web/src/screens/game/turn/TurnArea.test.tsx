@@ -71,16 +71,21 @@ function renderTurn(setup: Setup, userId = fx.ownerId, over: Partial<GameActions
 }
 
 const buttonNames = () => screen.queryAllByRole("button").map((button) => button.textContent);
+// The buttons of the phase itself: the Trade button has its own tests.
+const phaseButtons = () => buttonNames().filter((name) => name !== "Trade");
 
 describe("TurnArea: shell", () => {
   test("renders one root element and handles the four turn phases", () => {
     const { container } = renderTurn({ phase: "awaiting_roll" });
     expect(container.children).toHaveLength(1);
     expect(Object.keys(centrePhases).sort()).toEqual([
+      "awaiting_bid",
       "awaiting_buy_decision",
+      "awaiting_debt",
       "awaiting_end_turn",
       "awaiting_jail_choice",
       "awaiting_roll",
+      "awaiting_trade_response",
     ]);
   });
 
@@ -96,15 +101,16 @@ describe("TurnArea: shell", () => {
     expect(buttonNames()).toEqual([]);
   });
 
-  test.each([["awaiting_bid", "Auction"] as const, ["awaiting_debt", "Debt to settle"] as const])(
-    "shows a neutral view with no buttons for %s",
-    (phase, title) => {
-      renderTurn({ phase, current: "b" });
-      expect(screen.getByText(title)).toBeInTheDocument();
-      expect(screen.getByText("Waiting for Bo")).toBeInTheDocument();
-      expect(buttonNames()).toEqual([]);
-    },
-  );
+  test.each([
+    ["awaiting_bid", "Auction", "auction"] as const,
+    ["awaiting_debt", "Debt to settle", "debt-view"] as const,
+    ["awaiting_trade_response", "Trade offer", "trade-flow"] as const,
+  ])("registers the %s view and not the neutral one", (phase, title, className) => {
+    const { container } = renderTurn({ phase, current: "b" });
+    expect(screen.getAllByText(new RegExp(title)).length).toBeGreaterThan(0);
+    expect(container.querySelector(`.${className}`)).not.toBeNull();
+    expect(container.querySelector(".turn-area__waiting, .trade-flow")).not.toBeNull();
+  });
 
   test("shows no waiting line when the game is over", () => {
     renderTurn({ phase: "game_over" });
@@ -117,7 +123,7 @@ describe("TurnArea: awaiting_roll", () => {
   test("shows Roll on the turn of this device and sends RollDice as that seat", async () => {
     const { send } = renderTurn({ phase: "awaiting_roll", current: "a" });
     expect(screen.getByText(/Ann.s turn/)).toBeInTheDocument();
-    expect(buttonNames()).toEqual(["Roll"]);
+    expect(phaseButtons()).toEqual(["Roll"]);
     await userEvent.click(screen.getByRole("button", { name: "Roll" }));
     expect(send).toHaveBeenCalledExactlyOnceWith({ type: "RollDice" }, { seatId: a.id });
   });
@@ -131,7 +137,7 @@ describe("TurnArea: awaiting_roll", () => {
     expect(
       screen.getByText("Roll again. Three doubles in a row sends you to jail."),
     ).toBeInTheDocument();
-    expect(buttonNames()).toEqual(["Roll again"]);
+    expect(phaseButtons()).toEqual(["Roll again"]);
     expect(screen.getByRole("img", { name: "Dice: 4 and 4" })).toBeInTheDocument();
   });
 
@@ -211,7 +217,7 @@ describe("TurnArea: awaiting_jail_choice", () => {
     });
     expect(screen.getByText("In jail")).toBeInTheDocument();
     expect(screen.getByText("Attempt 1 of 3. Roll doubles, pay $50 or use a card.")).toBeVisible();
-    expect(buttonNames()).toEqual(["Roll for doubles", "Pay $50", "Use card"]);
+    expect(phaseButtons()).toEqual(["Roll for doubles", "Pay $50", "Use card"]);
 
     await userEvent.click(screen.getByRole("button", { name: "Roll for doubles" }));
     expect(send).toHaveBeenLastCalledWith({ type: "RollDice" }, { seatId: a.id });
@@ -249,7 +255,7 @@ describe("TurnArea: awaiting_end_turn", () => {
   test("shows Next turn and sends EndTurn", async () => {
     const { send } = renderTurn({ phase: "awaiting_end_turn", turn: { dice: [3, 4] } });
     expect(screen.getByRole("img", { name: "Dice: 3 and 4" })).toBeInTheDocument();
-    expect(buttonNames()).toEqual(["Next turn"]);
+    expect(phaseButtons()).toEqual(["Next turn"]);
     await userEvent.click(screen.getByRole("button", { name: "Next turn" }));
     expect(send).toHaveBeenCalledExactlyOnceWith({ type: "EndTurn" }, { seatId: a.id });
   });
@@ -259,7 +265,7 @@ describe("TurnArea: awaiting_end_turn", () => {
     expect(
       screen.getByText("Doubles that free you from jail give no extra roll."),
     ).toBeInTheDocument();
-    expect(buttonNames()).toEqual(["Next turn"]);
+    expect(phaseButtons()).toEqual(["Next turn"]);
   });
 });
 
@@ -376,5 +382,61 @@ describe("TurnArea: pending and errors", () => {
     });
     process.off("unhandledRejection", unhandled);
     expect(unhandled).not.toHaveBeenCalled();
+  });
+});
+
+describe("TurnArea: Trade button", () => {
+  test("opens the trade builder in place of the phase view and closes it again", async () => {
+    renderTurn({ phase: "awaiting_roll", current: "a" });
+    expect(buttonNames()).toEqual(["Roll", "Trade"]);
+    await userEvent.click(screen.getByRole("button", { name: "Trade" }));
+    expect(screen.getByRole("heading", { name: "Propose a trade" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Roll" })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(buttonNames()).toEqual(["Roll", "Trade"]);
+  });
+
+  test("closes the builder when the phase no longer allows a proposal", async () => {
+    const { store } = renderTurn({ phase: "awaiting_roll", current: "a" });
+    await userEvent.click(screen.getByRole("button", { name: "Trade" }));
+    act(() =>
+      store.applyStateResponse({
+        version: 101,
+        state: { ...stateFor({ phase: "awaiting_trade_response", current: "b" }), version: 101 },
+      }),
+    );
+    expect(screen.queryByRole("heading", { name: "Propose a trade" })).not.toBeInTheDocument();
+  });
+
+  test("is not offered on a remote turn, while an action is pending, or in a bid", () => {
+    const remote = renderTurn({ phase: "awaiting_roll", current: "b" });
+    expect(buttonNames()).not.toContain("Trade");
+    remote.unmount();
+    const pending = renderTurn({ phase: "awaiting_roll", current: "a" }, fx.ownerId, {
+      pending: true,
+    });
+    expect(buttonNames()).not.toContain("Trade");
+    pending.unmount();
+    renderTurn({ phase: "awaiting_bid", current: "a" });
+    expect(buttonNames()).not.toContain("Trade");
+  });
+
+  test("is offered in the debt view of the debtor", () => {
+    renderTurn({ phase: "awaiting_debt", current: "a" });
+    expect(buttonNames()).toContain("Trade");
+  });
+});
+
+describe("TurnArea: error source", () => {
+  const error = new ApiError(409, "wrong_phase", "Not now");
+
+  test("shows an error with no source", () => {
+    renderTurn({ phase: "awaiting_roll" }, fx.ownerId, { error });
+    expect(screen.getByText("Not now")).toBeInTheDocument();
+  });
+
+  test("leaves the error of the hand and the menu to them", () => {
+    renderTurn({ phase: "awaiting_roll" }, fx.ownerId, { error, errorSource: "hand" });
+    expect(screen.queryByText("Not now")).not.toBeInTheDocument();
   });
 });

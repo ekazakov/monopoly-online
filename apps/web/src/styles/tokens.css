@@ -21,6 +21,9 @@
   --hf-accent-ink: #1a0b09;
   --hf-focus: #e9f0ea;
   --hf-hover: rgba(255, 255, 255, 0.08);
+  --hf-ok: #3ccf7a;
+  --hf-danger: #a3241d;
+  --hf-danger-ink: #ffb4ad;
 
   /* Board surface */
   --hf-slab: #e9e2cf;
