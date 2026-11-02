@@ -73,7 +73,7 @@ Mark a task `[x]` in the commit that completes it. Design for F6 is done (board 
 
 ### H. Game screen (port `artifacts/game-screen`)
 
-- [ ] **H1. Layout shell.** Regions per spec 3.1: rail, log, board, centre, hand, menu.
+- [x] **H1. Layout shell.** Regions per spec 3.1: rail, log, board, centre, hand, menu.
 - [ ] **H2. Board scene.** Port `board3d.js` into `apps/web/src/scene/`: tiles, tokens, houses, ownership colours. Static data from the engine (`board.ts`, `cards.ts`).
 - [ ] **H3. Player rail.** Players, money, active turn, device/seat labels (spec 4.3, 5.3).
 - [ ] **H4. Game log.** Render engine events as text (spec 4.1).

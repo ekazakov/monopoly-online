@@ -1,0 +1,186 @@
+/*
+ * Game screen shell (spec 3.1, 7). Tokens only.
+ * Layers: board 0, rail 1, centre 2, hand 3, top bar 5. The handoff screen (H8) goes above these.
+ * --game-card-w is the property card width the hand (H6) reads: 156px, 132px on tablet landscape.
+ */
+.game-layout {
+  --game-side: 168px;
+  --game-spacer: 168px;
+  --game-top-h: 44px;
+  --game-card-w: 156px;
+
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(var(--game-side), auto) minmax(0, 1fr) var(--game-spacer);
+  grid-template-rows: var(--game-top-h) minmax(0, 1fr) auto;
+  grid-template-areas:
+    "top top top"
+    "rail centre ."
+    "hand hand hand";
+  height: 100%;
+  min-height: 560px;
+  overflow: hidden;
+  background: var(--hf-ground);
+  color: var(--hf-ink);
+}
+
+.game-layout :focus-visible {
+  outline: 2px solid var(--hf-focus);
+  outline-offset: 2px;
+}
+
+.game-layout__title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* The canvas fills the whole screen. The empty layout areas below let the pointer through to it. */
+.game-layout__board {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.game-layout__top {
+  grid-area: top;
+  position: relative;
+  z-index: 5;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-inline: clamp(16px, 20vw, 280px);
+  pointer-events: none;
+}
+
+/* Fixed row height: an open log drops over the board instead of resizing it. */
+.game-layout__log {
+  width: 100%;
+  max-width: 640px;
+  padding: var(--hf-space-8) var(--hf-space-8) var(--hf-space-8) 20px;
+  border-radius: 0 0 var(--hf-radius-panel) var(--hf-radius-panel);
+  background: var(--hf-panel-log);
+  pointer-events: auto;
+}
+
+.game-layout__menu {
+  position: absolute;
+  top: var(--hf-space-12);
+  right: var(--hf-space-12);
+  display: flex;
+  align-items: center;
+  gap: var(--hf-space-12);
+  pointer-events: auto;
+}
+
+.game-layout__rail {
+  grid-area: rail;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--hf-space-16);
+  min-width: 0;
+  padding: var(--hf-space-16) 0 var(--hf-space-16) var(--hf-space-8);
+  overflow: hidden auto;
+  pointer-events: none;
+}
+
+.game-layout__centre {
+  grid-area: centre;
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  padding: var(--hf-space-8);
+  container-type: size;
+  pointer-events: none;
+}
+
+/* The collapsed hand peeks up from the bottom edge (spec 3.1). */
+.game-layout__hand {
+  grid-area: hand;
+  position: relative;
+  z-index: 3;
+  display: flex;
+  justify-content: center;
+  margin-bottom: calc(-1 * var(--hf-space-48));
+  pointer-events: none;
+}
+
+.game-layout__rail > *,
+.game-layout__centre > *,
+.game-layout__hand > * {
+  pointer-events: auto;
+}
+
+/* Empty slot content for tasks that have not filled the slot yet. */
+.game-placeholder {
+  margin: 0;
+  color: var(--hf-ink-soft);
+  font: var(--hf-type-caption);
+}
+
+.game-layout__centre > .game-placeholder {
+  padding: var(--hf-space-8) var(--hf-space-16);
+  border: 1px solid var(--hf-panel-line);
+  border-radius: var(--hf-radius-panel);
+  background: var(--hf-panel-glass);
+  backdrop-filter: blur(var(--hf-blur-panel));
+  text-align: center;
+}
+
+/* Tablet landscape */
+@media (max-width: 1279px) {
+  .game-layout {
+    --game-spacer: clamp(0px, calc((100vw - 1024px) * 0.31), 80px);
+    --game-card-w: 132px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .game-layout__top {
+    padding-right: 200px;
+  }
+}
+
+/* Tablet portrait: the rail becomes a strip above the board. */
+@media (max-width: 1023px) {
+  .game-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: var(--game-top-h) auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "top"
+      "rail"
+      "centre"
+      "hand";
+  }
+
+  .game-layout__top {
+    justify-content: flex-start;
+    padding-inline: var(--hf-gutter) 196px;
+  }
+
+  .game-layout__rail {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--hf-space-24);
+    padding: var(--hf-space-12) var(--hf-gutter) var(--hf-space-6);
+    overflow: auto hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-layout,
+  .game-layout * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
