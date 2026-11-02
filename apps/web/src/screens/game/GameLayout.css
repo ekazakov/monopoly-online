@@ -158,24 +158,6 @@
   min-height: 0;
 }
 
-.game-over {
-  padding: var(--hf-space-16) var(--hf-space-24);
-  border: 1px solid var(--hf-board-ink);
-  border-radius: var(--hf-radius-panel);
-  background: var(--hf-paper);
-  color: var(--hf-board-ink);
-  text-align: center;
-}
-
-.game-over__title {
-  margin: 0;
-}
-
-.game-over__text {
-  margin: var(--hf-space-8) 0 0;
-  font: var(--hf-type-body-small);
-}
-
 /* Tablet landscape */
 @media (max-width: 1279px) {
   .game-layout {

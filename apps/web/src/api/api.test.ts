@@ -8,6 +8,7 @@ import {
   deleteSession,
   getGame,
   getMe,
+  getResult,
   getState,
   joinGame,
   leaveGame,
@@ -117,6 +118,25 @@ describe("game calls", () => {
   test("getState turns an error body into ApiError", async () => {
     mockApi({ [`GET /api/games/${id}/state`]: errorReply(409, "game_not_active") });
     await expect(getState(id)).rejects.toMatchObject({ status: 409, code: "game_not_active" });
+  });
+});
+
+describe("getResult", () => {
+  const result = {
+    gameId: id,
+    rounds: 3,
+    winner: { seatId, name: "Marlow" },
+    standings: [],
+  };
+
+  test("returns the result of the response", async () => {
+    mockApi({ [`GET /api/games/${id}/result`]: Response.json({ result }) });
+    expect(await getResult(id)).toEqual(result);
+  });
+
+  test("turns an error body into ApiError", async () => {
+    mockApi({ [`GET /api/games/${id}/result`]: errorReply(409, "game_not_finished") });
+    await expect(getResult(id)).rejects.toMatchObject({ status: 409, code: "game_not_finished" });
   });
 });
 

@@ -20,13 +20,13 @@ import type { ScenePlayer } from "../scene/model.ts";
 import { useSession } from "../session/index.ts";
 import { GameLayout } from "./game/GameLayout.tsx";
 import { HandoffPrompt } from "./game/handoff/index.ts";
-import { GameOverPlaceholder } from "./game/GameOverPlaceholder.tsx";
 import { CardNotice } from "./game/flows/card/index.ts";
 import { LeaveGameMenu } from "./game/flows/leave/index.ts";
 import { GameLog } from "./game/log/index.ts";
 import { PlayerRail } from "./game/rail/index.ts";
 import { PropertyHand } from "./game/hand/index.ts";
 import { TurnArea } from "./game/turn/index.ts";
+import { GameResultScreen } from "./result/index.ts";
 import { NotFoundScreen } from "./NotFoundScreen.tsx";
 
 const route = getRouteApi("/games/$gameId/play");
@@ -59,6 +59,8 @@ function GameRoute({ gameId }: { gameId: string }) {
   const room = useQuery(gameRoomQuery(store, gameId));
   const status = useGameSelector((s) => s.game?.status) ?? room.data?.status;
   const live = room.isSuccess && status !== "waiting";
+  const finished = useGameSelector((s) => isFinished(s.game, s.state));
+  const roomGame = useGameSelector((s) => s.game) ?? room.data ?? null;
   const state = useQuery(gameStateQuery(store, gameId, live));
 
   useEffect(() => store.setLoading(), [store]);
@@ -78,6 +80,14 @@ function GameRoute({ gameId }: { gameId: string }) {
       if (result.isSuccess) store.clearGap();
     });
   }, [gap, refetch, store]);
+
+  // A game that ends live: the store sees the end first, so the room is read again to bring its
+  // status to `finished`.
+  const { refetch: refetchRoom } = room;
+  const roomStatus = room.data?.status;
+  useEffect(() => {
+    if (finished && roomStatus !== undefined && roomStatus !== "finished") void refetchRoom();
+  }, [finished, roomStatus, refetchRoom]);
 
   const actions = useGameActionsProvider(gameId, userId, () => void refetch());
 
@@ -104,6 +114,9 @@ function GameRoute({ gameId }: { gameId: string }) {
     return <Navigate to="/games/$gameId" params={{ gameId }} replace />;
   }
   if (!userId) return null;
+  if (finished && roomGame) {
+    return <GameResultScreen gameId={gameId} seats={roomGame.seats} userId={userId} />;
+  }
 
   return (
     <GameActionsContext value={actions}>
@@ -150,9 +163,8 @@ function Board({ userId }: { userId: string }) {
 }
 
 // The card reveal stays mounted from the first render, so it sees the version at mount. Over the
-// phase view it shows the card of the latest action. A finished game shows the result placeholder.
+// phase view it shows the card of the latest action.
 function Centre({ userId, loadFailed }: { userId: string; loadFailed: boolean }) {
-  const { game, state } = useGame(userId);
   return (
     <div className="game-centre">
       <CardNotice userId={userId} />
@@ -161,7 +173,7 @@ function Centre({ userId, loadFailed }: { userId: string; loadFailed: boolean })
           Could not load the game state.
         </p>
       )}
-      {isFinished(game, state) ? <GameOverPlaceholder /> : <TurnArea userId={userId} />}
+      <TurnArea userId={userId} />
     </div>
   );
 }

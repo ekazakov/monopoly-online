@@ -124,9 +124,16 @@ describe("GameScreen: loading", () => {
     expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
   });
 
-  test("shows a marked Game over placeholder when the game is finished", async () => {
-    await setup({ game: withStatus(fx.game, "finished") });
-    expect(await screen.findByRole("heading", { name: "Game over" })).toBeInTheDocument();
+  test("shows the result screen, not the controls, when the game is finished", async () => {
+    mockApi({
+      [`GET /api/games/${gameId}`]: Response.json({ game: withStatus(fx.game, "finished") }),
+      [`GET /api/games/${gameId}/state`]: Response.json({ version: 0, state: redact(fx.start) }),
+      [`GET /api/games/${gameId}/result`]: new Promise<Response>(() => {}),
+    });
+    const queryClient = createTestQueryClient();
+    queryClient.setQueryData(sessionKey, { ...userFixture, id: fx.guestId });
+    await renderRoute(path, queryClient, { realtime: new FakeRealtimeClient() });
+    expect(await screen.findByText("Loading the result…")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Roll" })).not.toBeInTheDocument();
   });
 });

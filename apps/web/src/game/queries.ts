@@ -1,5 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
-import { getGame, getState } from "../api/index.ts";
+import { getGame, getResult, getState } from "../api/index.ts";
 import type { GameStore } from "./store.ts";
 
 // The answer goes into the store as it arrives, so a refetch (a gap, a version conflict, a focus
@@ -25,6 +25,16 @@ export const gameStateQuery = (store: GameStore, gameId: string, enabled: boolea
       return response;
     },
     enabled,
+    gcTime: 0,
+    retry: false,
+  });
+
+// The result of a finished game never changes, but `gcTime: 0` keeps the screen honest after a
+// retry. A failure is not retried by itself: the screen offers "Try again".
+export const gameResultQuery = (gameId: string) =>
+  queryOptions({
+    queryKey: ["games", gameId, "result"],
+    queryFn: () => getResult(gameId),
     gcTime: 0,
     retry: false,
   });

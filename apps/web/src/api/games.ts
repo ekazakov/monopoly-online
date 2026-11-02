@@ -1,4 +1,4 @@
-import { gameStateResponseSchema, type Game } from "@monopoly/shared";
+import { gameStateResponseSchema, type Game, type GameResult } from "@monopoly/shared";
 import { apiFetch, client, unwrap } from "../api.ts";
 
 export async function createGame(name: string): Promise<Game> {
@@ -39,4 +39,9 @@ export async function startGame(id: string) {
 export async function getState(id: string) {
   const res = await apiFetch(`/api/games/${encodeURIComponent(id)}/state`);
   return gameStateResponseSchema.parse(await unwrap(res));
+}
+
+/** The result of a finished game. Answers 409 `game_not_finished` for a game that is still running. */
+export async function getResult(id: string): Promise<GameResult> {
+  return (await unwrap(await client.api.games[":id"].result.$get({ param: { id } }))).result;
 }
