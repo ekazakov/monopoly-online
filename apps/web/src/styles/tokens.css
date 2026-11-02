@@ -1,0 +1,128 @@
+/*
+ * Harborfront design tokens (design spec section 2, design system Foundations and Main boards).
+ * The dark shell is the only theme. The light theme in Light.dc.html is open question 3 of the spec.
+ * Spec-only roles that the design system does not name get an --hf- name of their own.
+ */
+:root {
+  color-scheme: dark;
+
+  /* Shell colour */
+  --hf-ground: #0e1822;
+  --hf-table: #16222d;
+  --hf-panel: #121f2a;
+  --hf-panel-log: #1a2d3d;
+  --hf-panel-glass: rgba(18, 31, 42, 0.82);
+  --hf-panel-line: #2c4254;
+  --hf-ink: #e9f0ea;
+  --hf-ink-soft: #a9bcc9;
+  --hf-ring: #6b8294;
+  --hf-accent: #e2574c;
+  --hf-accent-hover: #ea6d63;
+  --hf-accent-ink: #1a0b09;
+  --hf-focus: #e9f0ea;
+  --hf-hover: rgba(255, 255, 255, 0.08);
+
+  /* Board surface */
+  --hf-slab: #e9e2cf;
+  --hf-edge: #cdd6c6;
+  --hf-centre: #cfe3cc;
+  --hf-paper: #eef4e9;
+  --hf-board-ink: #17211b;
+  --hf-zone-ink: #2f4a3b;
+  --hf-base: #1d2b24;
+  --hf-board-red: #c8322b;
+  --hf-chance: #c0302a;
+  --hf-chest: #1f4f96;
+  --hf-coin: #f0b429;
+  --hf-coin-rim: #8a5a3c;
+
+  /* Street colours */
+  --hf-street-brown: #8a5a3c;
+  --hf-street-sky: #9bd4ea;
+  --hf-street-pink: #d9569b;
+  --hf-street-orange: #ee8a2c;
+  --hf-street-red: #d93a32;
+  --hf-street-yellow: #f2cd2e;
+  --hf-street-green: #2f9e5b;
+  --hf-street-navy: #2459a6;
+  --hf-street-station: #17211b;
+  --hf-street-utility: #a9bcc9;
+
+  /* Pieces */
+  --hf-pawn-red: #d9392f;
+  --hf-pawn-blue: #2f6fd0;
+  --hf-pawn-green: #2fa05c;
+  --hf-pawn-gold: #f0b429;
+  --hf-die: #f7f5ee;
+  --hf-die-edge: #3d5a4a;
+  --hf-pip: #1b1b1b;
+  --hf-house: #38b36a;
+  --hf-house-roof: #1f7a46;
+  --hf-hotel: #d4372f;
+  --hf-hotel-roof: #8e231d;
+
+  /* Type: families, then one font shorthand and one tracking value per style */
+  --hf-font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --hf-font-body: "Barlow", system-ui, sans-serif;
+
+  --hf-type-display-xl: 700 48px/1 var(--hf-font-display);
+  --hf-type-display-l: 700 30px/1 var(--hf-font-display);
+  --hf-type-display-m: 700 22px/1.1 var(--hf-font-display);
+  --hf-type-display-s: 600 16px/1.1 var(--hf-font-display);
+  --hf-type-body: 500 16px/1.5 var(--hf-font-body);
+  --hf-type-body-small: 500 14px/1.45 var(--hf-font-body);
+  --hf-type-label: 600 14px/1 var(--hf-font-body);
+  --hf-type-price: 600 18px/1 var(--hf-font-body);
+  --hf-type-caption: 500 13px/1.4 var(--hf-font-body);
+
+  --hf-track-display-xl: 0.1em;
+  --hf-track-display-l: 0.1em;
+  --hf-track-display-m: 0.08em;
+  --hf-track-display-s: 0.1em;
+  --hf-track-label: 0.04em;
+
+  /* Spacing */
+  --hf-space-2: 2px;
+  --hf-space-4: 4px;
+  --hf-space-6: 6px;
+  --hf-space-8: 8px;
+  --hf-space-12: 12px;
+  --hf-space-16: 16px;
+  --hf-space-24: 24px;
+  --hf-space-32: 32px;
+  --hf-space-48: 48px;
+  --hf-space-64: 64px;
+  --hf-gutter: 16px;
+  --hf-target: 44px;
+
+  /* Radius */
+  --hf-radius-control: 7px;
+  --hf-radius-panel: 10px;
+  --hf-radius-dialog: 16px;
+  --hf-radius-pill: 999px;
+
+  /* Elevation. Level 1 is a glass panel: --hf-panel-glass fill plus --hf-blur-panel, no shadow. */
+  --hf-elev-0: none;
+  --hf-elev-1: none;
+  --hf-elev-2: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --hf-elev-3: 0 24px 64px rgba(0, 0, 0, 0.55);
+  --hf-blur-panel: 8px;
+
+  /* Motion */
+  --hf-dur-fast: 120ms;
+  --hf-dur-base: 240ms;
+  --hf-dur-hop: 400ms;
+  --hf-dur-camera: 700ms;
+  --hf-ease-out: ease-out;
+  --hf-ease-in-out: ease-in-out;
+  --hf-ease-camera: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --hf-dur-fast: 0ms;
+    --hf-dur-base: 0ms;
+    --hf-dur-hop: 0ms;
+    --hf-dur-camera: 0ms;
+  }
+}
