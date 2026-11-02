@@ -110,6 +110,13 @@
       "w": 1440,
       "x": 7640,
       "y": 8400
+    },
+    "GameResult.dc.html": {
+      "h": 3200,
+      "title": "Game result",
+      "w": 1440,
+      "x": 9160,
+      "y": 8400
     }
   },
   "createdOnFiles": {
@@ -144,7 +151,8 @@
     "LobbyHostReady.dc.html",
     "LobbyGuest.dc.html",
     "LobbyStates.dc.html",
-    "SignIn.dc.html"
+    "SignIn.dc.html",
+    "GameResult.dc.html"
   ],
   "pages": [],
   "title": "Harborfront Design System"
