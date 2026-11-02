@@ -12,7 +12,8 @@
     "dev": "node --watch src/index.ts",
     "build": "vp pack",
     "start": "node dist/index.mjs",
-    "test": "vp test"
+    "test": "vp test",
+    "openapi": "node scripts/generate-openapi.ts"
   },
   "dependencies": {
     "@hono/node-server": "catalog:",

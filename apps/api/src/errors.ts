@@ -14,7 +14,7 @@ function toIssues(error: core.$ZodError): ApiIssue[] {
   }));
 }
 
-// Hook for zValidator: send validation errors in the shared error format.
+// Default hook of the OpenAPIHono app: send validation errors in the shared error format.
 export function validationHook(
   result: { success: true } | { success: false; error: core.$ZodError },
   c: Context,

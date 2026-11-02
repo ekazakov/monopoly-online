@@ -28,7 +28,7 @@ Mark a task `[x]` in the commit that completes it. Design for F6 is done (board 
   - [x] **A1d.** Stream envelope schemas.
   - [x] **A1e.** Drift test against the engine.
 - [x] **A2. Migrations and DB types.** `users`, `sessions`, extend `games` (owner, status, version), `seats`, `game_events` (unique `(game_id, version)` and `(game_id, client_action_id)`), `game_snapshots`. No seat limit column: the limit is always 6 (`MAX_PLAYERS`). Update `db/schema.ts`. Test migrations on in-memory SQLite.
-- [ ] **A3. OpenAPI generation.** Script that writes `apps/api/openapi.json` from the zod routes; commit it.
+- [x] **A3. OpenAPI generation.** Script that writes `apps/api/openapi.json` from the zod routes; commit it.
 
 ### B. Session (guest)
 
