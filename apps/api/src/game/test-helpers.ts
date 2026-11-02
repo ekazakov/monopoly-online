@@ -18,14 +18,13 @@ export interface PlayedGame {
   steps: Step[];
 }
 
-export function newGame(seed: number): GameState {
+export const DEFAULT_SEAT_IDS = ["seat-a", "seat-b", "seat-c"] as const;
+const SEAT_NAMES = ["Ann", "Bo", "Cy"] as const;
+
+export function newGame(seed: number, seatIds: readonly string[] = DEFAULT_SEAT_IDS): GameState {
   return createGame({
     seed,
-    players: [
-      { id: "seat-a", name: "Ann" },
-      { id: "seat-b", name: "Bo" },
-      { id: "seat-c", name: "Cy" },
-    ],
+    players: seatIds.map((id, i) => ({ id, name: SEAT_NAMES[i] ?? `Player ${i + 1}` })),
   });
 }
 
@@ -59,8 +58,11 @@ function nextAction(state: GameState): Action {
 }
 
 /** Play a seeded game with the policy above. Every step keeps the state after the action. */
-export function playGame(seed: number, maxActions: number): PlayedGame {
-  const initial = newGame(seed);
+export function playGame(
+  seed: number,
+  maxActions: number,
+  initial: GameState = newGame(seed),
+): PlayedGame {
   const steps: Step[] = [];
   let state = initial;
   while (steps.length < maxActions && state.turn.phase !== "game_over") {
@@ -128,4 +130,64 @@ export async function insertSteps(
       })),
     )
     .execute();
+}
+
+export const OTHER_USER_ID = "00000000-0000-4000-8000-000000000002";
+export const STRANGER_ID = "00000000-0000-4000-8000-000000000003";
+export const UUID_SEAT_IDS = [
+  "20000000-0000-4000-8000-000000000001",
+  "20000000-0000-4000-8000-000000000002",
+  "20000000-0000-4000-8000-000000000003",
+] as const;
+
+/**
+ * An active game of three seats, listed in turn order: the first (on turn) is a hot-seat seat of
+ * `USER_ID`, the second a seat of `OTHER_USER_ID`, the third a seat of `USER_ID`. `STRANGER_ID`
+ * has no seat. Writes the users, game, seats and the version-0 snapshot.
+ */
+export async function insertActiveGame(
+  db: Kysely<Database>,
+  state: GameState,
+  gameId = GAME_ID,
+): Promise<{ seats: readonly string[]; controllers: Record<string, string> }> {
+  await db
+    .insertInto("users")
+    .values([
+      { id: USER_ID, name: "Owner", name_key: "owner" },
+      { id: OTHER_USER_ID, name: "Other", name_key: "other" },
+      { id: STRANGER_ID, name: "Stranger", name_key: "stranger" },
+    ])
+    .onConflict((oc) => oc.doNothing())
+    .execute();
+  await db
+    .insertInto("games")
+    .values({ id: gameId, name: "Game", owner_id: USER_ID, status: "active" })
+    .execute();
+  const roles = [
+    { userId: null, controllerId: USER_ID, kind: "hotseat" as const },
+    { userId: OTHER_USER_ID, controllerId: OTHER_USER_ID, kind: "user" as const },
+    { userId: USER_ID, controllerId: USER_ID, kind: "user" as const },
+  ];
+  const controllers: Record<string, string> = {};
+  await db
+    .insertInto("seats")
+    .values(
+      state.players.map((p, i) => {
+        const role = roles[i] as (typeof roles)[number];
+        controllers[p.id] = role.controllerId;
+        return {
+          id: p.id,
+          game_id: gameId,
+          seat_order: i,
+          name: p.name,
+          name_key: p.name.toLowerCase(),
+          kind: role.kind,
+          user_id: role.userId,
+          controller_user_id: role.controllerId,
+        };
+      }),
+    )
+    .execute();
+  await insertSnapshot(db, state, gameId);
+  return { seats: state.players.map((p) => p.id), controllers };
 }

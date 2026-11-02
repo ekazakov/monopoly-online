@@ -46,9 +46,9 @@ Mark a task `[x]` in the commit that completes it. Design for F6 is done (board 
 ### D. Game service
 
 - [x] **D1. State loader.** Load from in-memory cache, else latest snapshot plus events after it.
-- [ ] **D2. Action endpoint.** `POST /api/games/:id/actions`: check that the device controls `seatId` (else 403 `not_your_seat`), check `expectedVersion`, dedupe by `clientActionId`, call `applyAction` (the engine checks the actor and the phase: 422 `not_your_turn`, `wrong_phase`), write events (and snapshot at turn start and every N versions) in one transaction. When the events contain `GameEnded`, set status `finished` in the same transaction. A repeat of a `clientActionId` returns the stored version and events with the current state.
+- [x] **D2. Action endpoint.** `POST /api/games/:id/actions`: check that the device controls `seatId` (else 403 `not_your_seat`), check `expectedVersion`, dedupe by `clientActionId`, call `applyAction` (the engine checks the actor and the phase: 422 `not_your_turn`, `wrong_phase`), write events (and snapshot at turn start and every N versions) in one transaction. When the events contain `GameEnded`, set status `finished` in the same transaction. A repeat of a `clientActionId` returns the stored version and events with the current state.
 - [ ] **D3. Redaction.** Remove `rng` and deck order from state before it leaves the server. `GET /api/games/:id/state` returns the redacted state with version, for `active` and `finished` games. Only a seated user may read state or open the stream.
-- [ ] **D4. Game service tests.** Replay a seeded script through the service; stale version; duplicate action; wrong device; seat that is not the actor; resign; a game that ends is `finished`, its state stays readable and actions are refused; redaction check.
+- [x] **D4. Game service tests.** Replay a seeded script through the service; stale version; duplicate action; wrong device; seat that is not the actor; resign; a game that ends is `finished`, its state stays readable and actions are refused; redaction check.
 
 ### E. Realtime
 
@@ -74,8 +74,8 @@ Mark a task `[x]` in the commit that completes it. Design for F6 is done (board 
 ### H. Game screen (port `artifacts/game-screen`)
 
 - [x] **H1. Layout shell.** Regions per spec 3.1: rail, log, board, centre, hand, menu.
-- [ ] **H2. Board scene.** Port `board3d.js` into `apps/web/src/scene/`: tiles, tokens, houses, ownership colours. Static data from the engine (`board.ts`, `cards.ts`).
-- [ ] **H3. Player rail.** Players, money, active turn, device/seat labels (spec 4.3, 5.3).
+- [x] **H2. Board scene.** Port `board3d.js` into `apps/web/src/scene/`: tiles, tokens, houses, ownership colours. Static data from the engine (`board.ts`, `cards.ts`).
+- [x] **H3. Player rail.** Players, money, active turn, device/seat labels (spec 4.3, 5.3).
 - [ ] **H4. Game log.** Render engine events as text (spec 4.1).
 - [ ] **H5. Turn area.** Roll, buy, end turn, jail options, doubles. Buttons that send engine actions are driven by `mayAct`. Rent and tax are paid automatically and have no button; the card OK only closes the card on this device (gameplay 2).
 - [ ] **H6. Property hand.** Collapsed and expanded; build, sell, mortgage, unmortgage from the hand.
