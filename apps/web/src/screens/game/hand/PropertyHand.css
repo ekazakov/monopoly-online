@@ -1,0 +1,411 @@
+/*
+ * Property hand (spec 4.6). Tokens only.
+ * The root keeps the height of the tallest collapsed stack and lets the pointer through. The
+ * surface hangs from its bottom edge, so the open panel rises over the board and never resizes it.
+ */
+.property-hand {
+  --hand-card-w: var(--game-card-w, 156px);
+  --hand-cut: min(var(--hf-space-48), var(--hand-h, 0px));
+
+  position: relative;
+  width: 100%;
+  height: var(--hand-h, 0px);
+  pointer-events: none;
+}
+
+/* The slot sets `pointer-events: auto` on its children; the root must not catch the board's. */
+.game-layout__hand > .property-hand {
+  pointer-events: none;
+}
+
+.property-hand__surface {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+  transform: translateX(-50%);
+  pointer-events: auto;
+}
+
+.property-hand__surface[data-open="true"] {
+  width: min(960px, 100%);
+  max-height: 60vh;
+  padding-bottom: var(--hand-cut);
+  border: 1px solid var(--hf-panel-line);
+  border-bottom: 0;
+  border-radius: var(--hf-radius-panel) var(--hf-radius-panel) 0 0;
+  background: var(--hf-panel-glass);
+  backdrop-filter: blur(var(--hf-blur-panel));
+}
+
+.property-hand__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* The live region is always mounted; it shows only while it holds a message. */
+.property-hand__status {
+  margin: 0 auto;
+  padding: var(--hf-space-6) var(--hf-space-12);
+  border: 1px solid var(--hf-accent);
+  border-radius: var(--hf-radius-control);
+  background: var(--hf-panel);
+  color: var(--hf-ink);
+  font: var(--hf-type-body-small);
+}
+
+/* Not display: none. An empty box stays in the accessibility tree, so a new message is announced. */
+.property-hand__status:empty {
+  padding: 0;
+  border: 0;
+}
+
+.property-hand__head {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--hf-space-12);
+}
+
+.property-hand__surface[data-open="true"] .property-hand__head {
+  padding: var(--hf-space-4) var(--hf-space-12);
+  border-bottom: 1px solid var(--hf-panel-line);
+}
+
+.property-hand__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hf-space-12);
+  padding: 0 var(--hf-space-12);
+  border: 1px solid var(--hf-panel-line);
+  border-radius: var(--hf-radius-control);
+  background: var(--hf-panel);
+  color: var(--hf-ink);
+  cursor: pointer;
+}
+
+.property-hand__surface[data-open="true"] .property-hand__toggle {
+  flex: 1 1 auto;
+  border-color: transparent;
+  background: transparent;
+}
+
+.property-hand__toggle:hover {
+  background: var(--hf-hover);
+}
+
+.property-hand__title {
+  font: var(--hf-type-label);
+  letter-spacing: var(--hf-track-label);
+  text-transform: uppercase;
+}
+
+.property-hand__meta {
+  margin-left: auto;
+  color: var(--hf-ink-soft);
+  font: var(--hf-type-body-small);
+  font-variant-numeric: tabular-nums;
+}
+
+.property-hand__chevron {
+  flex: 0 0 auto;
+}
+
+.property-hand__toggle[aria-expanded="true"] .property-hand__chevron {
+  transform: rotate(180deg);
+}
+
+.property-hand__owes {
+  padding: var(--hf-space-4) var(--hf-space-12);
+  border: 1px solid var(--hf-accent);
+  border-radius: var(--hf-radius-pill);
+  color: var(--hf-ink);
+  font: var(--hf-type-label);
+  white-space: nowrap;
+}
+
+.property-hand__switcher {
+  display: flex;
+  gap: var(--hf-space-4);
+}
+
+.property-hand__seat {
+  padding: 0 var(--hf-space-12);
+  border: 1px solid var(--hf-panel-line);
+  border-radius: var(--hf-radius-control);
+  background: transparent;
+  color: var(--hf-ink-soft);
+  font: var(--hf-type-label);
+  cursor: pointer;
+}
+
+.property-hand__seat:hover {
+  background: var(--hf-hover);
+}
+
+.property-hand__seat[aria-pressed="true"] {
+  border-color: var(--hf-ink);
+  color: var(--hf-ink);
+}
+
+/* Collapsed: stacks that overlap sideways when they do not fit, 56px of each stack stays (spec 4.6). */
+.property-hand__peek {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 28px;
+  padding: 0 var(--hf-gutter);
+  min-width: 0;
+  cursor: pointer;
+}
+
+.property-hand__stack {
+  display: flex;
+  flex: 0 1 var(--hand-card-w);
+  flex-direction: column;
+  gap: var(--hf-space-4);
+  min-width: 56px;
+}
+
+.property-hand__label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hf-space-4);
+  min-height: 16px;
+  color: var(--hf-ink-soft);
+  font: var(--hf-type-caption);
+  white-space: nowrap;
+}
+
+.property-hand__tick {
+  color: var(--hf-house);
+}
+
+.property-hand__stack-cards {
+  position: relative;
+  width: var(--hand-card-w);
+}
+
+.property-hand__stack-cards > .property-hand__card {
+  position: absolute;
+  left: 0;
+  bottom: calc((var(--n) - 1 - var(--i)) * 25px);
+}
+
+/* The card face, shared by the collapsed stacks and the open panel. */
+.property-hand__card {
+  display: flex;
+  flex-direction: column;
+  width: var(--hand-card-w);
+  height: 72px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--hf-board-ink);
+  border-radius: 4px 4px 0 0;
+  background: var(--hf-paper);
+  color: var(--hf-board-ink);
+  text-align: left;
+}
+
+.property-hand__card--button {
+  min-height: var(--hf-target);
+  cursor: pointer;
+}
+
+.property-hand__card--button:hover {
+  background: #fff;
+}
+
+.property-hand__card--button[aria-expanded="true"] {
+  outline: 3px solid var(--hf-accent);
+  outline-offset: 1px;
+}
+
+.property-hand__card[data-mortgaged] {
+  background: repeating-linear-gradient(135deg, #e4e8df 0 6px, #d3d9cf 6px 12px);
+  color: var(--hf-zone-ink);
+}
+
+.property-hand__card[data-mortgaged] .property-hand__band {
+  opacity: 0.45;
+}
+
+.property-hand__band {
+  display: block;
+  flex: 0 0 8px;
+  border-bottom: 1px solid var(--hf-board-ink);
+}
+
+.property-hand__row {
+  display: flex;
+  align-items: center;
+  gap: var(--hf-space-6);
+  min-height: 17px;
+  padding: 0 var(--hf-space-8);
+}
+
+.property-hand__row--state {
+  justify-content: space-between;
+  padding-top: var(--hf-space-4);
+}
+
+.property-hand__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font: var(--hf-type-display-s);
+  font-size: 13px;
+  line-height: 16px;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.property-hand__price {
+  font: 600 13px/1 var(--hf-font-body);
+  font-variant-numeric: tabular-nums;
+}
+
+.property-hand__pips {
+  display: flex;
+  align-items: center;
+  gap: var(--hf-space-2);
+  min-height: 14px;
+}
+
+.property-hand__tag {
+  font: 600 10px/1 var(--hf-font-body);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.property-hand__rent {
+  font: 500 12px/1 var(--hf-font-body);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Expanded: every card at full size, grouped, wrapping into rows. The groups scroll, the detail stays. */
+.property-hand__panel {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.property-hand__groups {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  justify-content: center;
+  gap: var(--hf-space-16) 28px;
+  min-height: 0;
+  margin: 0;
+  padding: var(--hf-space-12) var(--hf-space-16);
+  overflow-y: auto;
+  list-style: none;
+}
+
+.property-hand__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hf-space-4);
+}
+
+.property-hand__cards {
+  display: flex;
+  gap: var(--hf-space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.property-hand__empty {
+  margin: 0;
+  padding: var(--hf-space-16);
+  color: var(--hf-ink-soft);
+  font: var(--hf-type-body-small);
+  text-align: center;
+}
+
+.property-hand__detail {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--hf-space-8) var(--hf-space-16);
+  padding: var(--hf-space-12) var(--hf-space-16);
+  border-top: 1px solid var(--hf-panel-line);
+}
+
+.property-hand__info,
+.property-hand__viewonly {
+  margin: 0;
+  color: var(--hf-ink-soft);
+  font: var(--hf-type-body-small);
+}
+
+.property-hand__info strong {
+  color: var(--hf-ink);
+}
+
+.property-hand__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--hf-space-8);
+}
+
+.property-hand__action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--hf-space-2);
+  max-width: 180px;
+}
+
+.property-hand__button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hf-space-8);
+  padding: 0 var(--hf-space-12);
+  border: 1px solid var(--hf-panel-line);
+  border-radius: var(--hf-radius-control);
+  background: var(--hf-panel);
+  color: var(--hf-ink);
+  font: var(--hf-type-label);
+  letter-spacing: var(--hf-track-label);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.property-hand__button:hover:not([aria-disabled="true"]) {
+  background: var(--hf-hover);
+}
+
+.property-hand__button[aria-disabled="true"] {
+  color: var(--hf-ink-soft);
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.property-hand__amount {
+  font-variant-numeric: tabular-nums;
+}
+
+.property-hand__reason {
+  color: var(--hf-ink-soft);
+  font: var(--hf-type-caption);
+}
