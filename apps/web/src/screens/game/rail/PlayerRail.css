@@ -1,0 +1,192 @@
+/*
+ * Player rail (spec 4.3, 5.3). Tokens only. The pawn colour reaches the ring as --player-color.
+ * The turn marker is a tag, a ring and a larger avatar, so colour is never the only signal.
+ * The cash highlight is a static background with a signed amount: it has no motion to reduce.
+ */
+.player-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--hf-space-16);
+  min-width: 0;
+}
+
+.player-rail__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hf-space-12);
+}
+
+.player-rail__heading {
+  margin: 0;
+  padding-left: var(--hf-space-4);
+  color: var(--hf-ink-soft);
+  font: var(--hf-type-caption);
+  font-weight: 600;
+  letter-spacing: var(--hf-track-label);
+  text-transform: uppercase;
+}
+
+.player-rail__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hf-space-12);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.player-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: var(--hf-space-4);
+  color: var(--hf-ink);
+}
+
+.player-row__avatar {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 56px;
+  height: 56px;
+  border: 2px solid var(--player-color, var(--hf-ring));
+  border-radius: 50%;
+  background: var(--hf-table);
+  color: var(--hf-ink-soft);
+}
+
+.player-row[data-active] .player-row__avatar {
+  width: 62px;
+  height: 62px;
+  border-width: 3px;
+  box-shadow:
+    0 0 0 3px var(--hf-ground),
+    0 0 0 5px var(--hf-accent);
+  color: var(--hf-ink);
+}
+
+.player-row__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hf-space-2);
+  min-width: 0;
+}
+
+.player-row__name {
+  display: flex;
+  align-items: center;
+  gap: var(--hf-space-8);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.player-row__tag {
+  padding: 0 var(--hf-space-6);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.player-row__tag--turn {
+  background: var(--hf-accent);
+  color: var(--hf-accent-ink);
+}
+
+.player-row__tag--seat {
+  border: 1px solid var(--hf-panel-line);
+  color: var(--hf-ink-soft);
+}
+
+.player-row__cash {
+  display: flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: var(--hf-space-6);
+  padding: 0 var(--hf-space-4);
+  margin-left: calc(-1 * var(--hf-space-4));
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.player-row__cash[data-change="up"] {
+  background: var(--hf-street-green);
+  color: var(--hf-board-ink);
+}
+
+.player-row__cash[data-change="down"] {
+  background: var(--hf-accent);
+  color: var(--hf-accent-ink);
+}
+
+.player-row__delta {
+  font-size: 13px;
+}
+
+.player-row__coin {
+  width: 14px;
+  height: 14px;
+  box-sizing: border-box;
+  border: 2px solid var(--hf-coin-rim);
+  border-radius: 50%;
+  background: var(--hf-coin);
+}
+
+.player-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--hf-space-8);
+  color: var(--hf-ink-soft);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.player-row[data-eliminated] {
+  opacity: 0.5;
+}
+
+.player-row[data-eliminated] .player-row__name-text {
+  text-decoration: line-through;
+}
+
+.player-row[data-eliminated] .player-row__avatar {
+  border-style: dashed;
+  filter: grayscale(1);
+}
+
+.player-row__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Tablet portrait: the layout makes the rail a strip, so the groups sit in a row. */
+@media (max-width: 1023px) {
+  .player-rail {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--hf-space-24);
+  }
+
+  .player-rail__group,
+  .player-rail__list {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--hf-space-24);
+  }
+
+  .player-rail__heading {
+    display: none;
+  }
+}
