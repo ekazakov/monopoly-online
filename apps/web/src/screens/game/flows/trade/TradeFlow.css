@@ -1,0 +1,288 @@
+/*
+ * Trade builder and trade response in the board centre (spec 4.5, 5.2; design board Dialogs).
+ * Tokens only. The text sits on the light board surface, so it uses the board ink.
+ */
+.trade-flow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hf-space-12);
+  box-sizing: border-box;
+  width: min(560px, 100%);
+  max-height: 100%;
+  padding: var(--hf-space-12);
+  overflow: hidden auto;
+  border: 1px solid var(--hf-board-ink);
+  border-radius: 4px;
+  background: var(--hf-paper);
+  box-shadow: 0 8px 18px rgba(23, 33, 27, 0.2);
+  color: var(--hf-board-ink);
+  text-align: left;
+}
+
+.trade-flow > :where(*) {
+  margin-block: 0;
+}
+
+.trade-flow--response {
+  width: min(520px, 100%);
+}
+
+.trade-flow__title {
+  margin: 0;
+  font: var(--hf-type-display-m);
+  letter-spacing: var(--hf-track-display-m);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.trade-flow__heading {
+  margin: 0;
+  font: var(--hf-type-display-s);
+  letter-spacing: var(--hf-track-display-s);
+  text-transform: uppercase;
+}
+
+.trade-flow__partners {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hf-space-8);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.trade-flow__partners legend {
+  padding: 0;
+  margin-bottom: var(--hf-space-6);
+  font: var(--hf-type-caption);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.trade-flow__partner {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hf-space-6);
+  min-height: var(--hf-target);
+  padding: 0 var(--hf-space-12);
+  border: 1px solid var(--hf-zone-ink);
+  border-radius: var(--hf-radius-control);
+  font: var(--hf-type-label);
+  cursor: pointer;
+}
+
+.trade-flow__partner:has(input:checked) {
+  background: var(--hf-board-ink);
+  color: var(--hf-paper);
+}
+
+.trade-flow__columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: var(--hf-space-12);
+}
+
+.trade-flow__column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hf-space-6);
+  min-width: 0;
+  padding: var(--hf-space-8);
+  border: 1px solid rgba(23, 33, 27, 0.25);
+  border-radius: 4px;
+}
+
+.trade-flow__items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hf-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trade-flow__item,
+.trade-flow__row {
+  display: flex;
+  align-items: center;
+  gap: var(--hf-space-8);
+  font: var(--hf-type-body-small);
+}
+
+.trade-flow__row {
+  min-height: var(--hf-target);
+  cursor: pointer;
+}
+
+.trade-flow__row input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--hf-board-ink);
+}
+
+.trade-flow__row input:disabled {
+  cursor: not-allowed;
+}
+
+.trade-flow__row:has(input:disabled) {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.trade-flow__chip {
+  flex: none;
+  width: 12px;
+  height: 20px;
+  border: 1px solid var(--hf-board-ink);
+  border-radius: 2px;
+}
+
+.trade-flow__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.trade-flow__note {
+  font-weight: 500;
+  color: var(--hf-zone-ink);
+}
+
+.trade-flow__value {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.trade-flow__none {
+  margin: 0;
+  font: var(--hf-type-body-small);
+  color: var(--hf-zone-ink);
+}
+
+.trade-flow__reason {
+  margin: 0;
+  font: var(--hf-type-caption);
+  color: var(--hf-board-red);
+  font-weight: 600;
+}
+
+.trade-flow__cash {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hf-space-8);
+  font: var(--hf-type-caption);
+  font-weight: 600;
+}
+
+.trade-flow__cash-field {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hf-space-4);
+  font: var(--hf-type-price);
+}
+
+.trade-flow__cash-field input {
+  box-sizing: border-box;
+  width: 6.5em;
+  min-height: var(--hf-target);
+  padding: 0 var(--hf-space-8);
+  border: 1px solid var(--hf-board-ink);
+  border-radius: var(--hf-radius-control);
+  background: #fff;
+  color: var(--hf-board-ink);
+  font: var(--hf-type-price);
+  font-variant-numeric: tabular-nums;
+}
+
+.trade-flow__cash-field input[aria-invalid="true"] {
+  border-color: var(--hf-board-red);
+}
+
+.trade-flow__available {
+  font-weight: 500;
+  color: var(--hf-zone-ink);
+}
+
+.trade-flow__summary {
+  margin: 0;
+  font: var(--hf-type-body-small);
+  font-weight: 600;
+  text-align: center;
+}
+
+.trade-flow__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.trade-flow__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: var(--hf-target);
+  min-height: var(--hf-target);
+  padding: 0 var(--hf-space-16);
+  border: 1px solid transparent;
+  border-radius: var(--hf-radius-control);
+  background: transparent;
+  color: inherit;
+  font: var(--hf-type-label);
+  letter-spacing: var(--hf-track-label);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.trade-flow__btn--primary {
+  padding: 0 28px;
+  border-color: var(--hf-accent);
+  background: var(--hf-accent);
+  color: var(--hf-accent-ink);
+  font-size: 15px;
+}
+
+.trade-flow__btn--primary:hover:not(:disabled) {
+  border-color: var(--hf-accent-hover);
+  background: var(--hf-accent-hover);
+}
+
+.trade-flow__btn--outline {
+  border-color: var(--hf-board-ink);
+  background: rgba(238, 244, 233, 0.55);
+}
+
+.trade-flow__btn--outline:hover:not(:disabled) {
+  background: rgba(238, 244, 233, 0.95);
+}
+
+.trade-flow__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* The layout focus ring is light for the dark shell; on the board it needs the dark ink. */
+.trade-flow :focus-visible {
+  outline: 2px solid var(--hf-board-ink);
+  outline-offset: 2px;
+}
+
+/* An empty live region stays in the accessibility tree, but takes no room. */
+.trade-flow__errors:empty {
+  position: absolute;
+}
+
+.trade-flow__error {
+  margin: 0;
+  padding: var(--hf-space-6) var(--hf-space-12);
+  border: 1px solid var(--hf-board-red);
+  border-radius: var(--hf-radius-control);
+  background: var(--hf-paper);
+  font: var(--hf-type-body-small);
+  font-weight: 600;
+}
