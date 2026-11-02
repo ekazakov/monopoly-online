@@ -3,6 +3,7 @@ export * from "./common.ts";
 export * from "./errors.ts";
 export * from "./events.ts";
 export * from "./games.ts";
+export * from "./result.ts";
 export * from "./session.ts";
 export * from "./state.ts";
 export * from "./stream.ts";

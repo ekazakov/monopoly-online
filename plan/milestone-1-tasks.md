@@ -83,7 +83,7 @@ Mark a task `[x]` in the commit that completes it. Design for F6 is done (board 
 - [x] **H8. Hot-seat handoff.** Pass-device prompt when the acting seat changes to another hot-seat seat on the same device (gameplay 3).
 - [ ] **H9. Dice and token animation** from events. Keep optional if time is short.
 - [x] **H10a. Result artboard.** A "Game result" board in the design system: winner, final standings, Back to home. Ask before adding it to the canvas.
-- [ ] **H10. Game end / result screen.** Winner and final standings, per the H10a board. The game route shows it when the status is `finished`, also after a reload.
+- [x] **H10. Game end / result screen.** Winner and final standings, per the H10a board. The game route shows it when the status is `finished`, also after a reload.
 
 ### I. Verification
 

@@ -36,6 +36,7 @@
                   "game_full",
                   "game_not_waiting",
                   "game_not_active",
+                  "game_not_finished",
                   "not_enough_players",
                   "seat_name_taken",
                   "owner_cannot_leave",
@@ -3746,6 +3747,196 @@
                     }
                   },
                   "required": ["version", "state"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/games/{id}/result": {
+      "get": {
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["games"],
+        "summary": "Read the result of a finished game",
+        "description": "For `finished` games. `standings` are in rank order: rank 1 is the winner, the others rank by elimination order (the last one out is 2). A round is `1 + floor(TurnEnded events so far / seats at game start)`; `rounds` is the round at the end and `outRound` the round in which a player went out. Net worth is cash, plus the price of each owned property (half when mortgaged), plus the build cost of each house and hotel. A player who is out has cash, properties and net worth 0. Answers 409 `game_not_finished` while the game is `waiting` or `active`, and for a finished game that has no winner.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object",
+                      "properties": {
+                        "gameId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "rounds": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "winner": {
+                          "type": "object",
+                          "properties": {
+                            "seatId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "name": {
+                              "type": "string",
+                              "minLength": 2,
+                              "maxLength": 16
+                            }
+                          },
+                          "required": ["seatId", "name"],
+                          "additionalProperties": false
+                        },
+                        "standings": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "rank": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 6
+                              },
+                              "seatId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 2,
+                                "maxLength": 16
+                              },
+                              "controllerUserId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": ["winner", "bankrupt", "resigned"]
+                              },
+                              "outRound": {
+                                "type": ["integer", "null"],
+                                "minimum": 1
+                              },
+                              "cash": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "properties": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "netWorth": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "required": [
+                              "rank",
+                              "seatId",
+                              "name",
+                              "controllerUserId",
+                              "status",
+                              "outRound",
+                              "cash",
+                              "properties",
+                              "netWorth"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "minItems": 2,
+                          "maxItems": 6
+                        }
+                      },
+                      "required": ["gameId", "rounds", "winner", "standings"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["result"],
                   "additionalProperties": false
                 }
               }

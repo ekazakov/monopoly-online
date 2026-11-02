@@ -45,7 +45,7 @@ This document fixes the request and response schema of each API method in milest
 | 401 | `unauthorized` |
 | 403 | `forbidden_origin`, `not_game_owner`, `not_a_member`, `not_your_seat` |
 | 404 | `not_found` (game, seat, route) |
-| 409 | `already_signed_in`, `name_taken`, `already_joined`, `game_full`, `game_not_waiting`, `game_not_active`, `not_enough_players`, `seat_name_taken`, `owner_cannot_leave`, `cannot_remove_user_seat`, `version_conflict` (adds `currentVersion`) |
+| 409 | `already_signed_in`, `name_taken`, `already_joined`, `game_full`, `game_not_waiting`, `game_not_active`, `game_not_finished`, `not_enough_players`, `seat_name_taken`, `owner_cannot_leave`, `cannot_remove_user_seat`, `version_conflict` (adds `currentVersion`) |
 | 422 | Engine rejection: `not_your_turn`, `wrong_phase`, `insufficient_funds`, … (all engine codes) |
 | 500 | `internal_error` |
 
@@ -68,6 +68,7 @@ The engine code `not_owner` means "does not own the property". Owner-only API ro
 | 12 | `POST /api/games/:id/actions` | body `{ seatId, action: actionInput, expectedVersion: int ≥ 0, clientActionId: uuid }` | 200 `{ version, events, state }`. A repeat of the same `clientActionId` returns the stored `version` and `events` with the current `state`, so `state.version` can be greater than `version` | 403 `not_a_member` / `not_your_seat`, 404 seat, 409 `game_not_active` (`waiting` or `finished`) / `version_conflict`, 422 engine code |
 | 13 | `GET /api/games/:id/state` | – | 200 `{ version, state }` for `active` and `finished` games | 403 `not_a_member`, 409 `game_not_active` (only while `waiting`) |
 | 14 | `GET /api/stream?topics=game:<id>` | query `topics` (comma list, only `game:<uuid>`, max 5) | `text/event-stream` | 400 bad topic, 403 `not_a_member` |
+| 15 | `GET /api/games/:id/result` | – | 200 `{ result }` for `finished` games: `{ gameId, rounds, winner: { seatId, name }, standings: [{ rank, seatId, name, controllerUserId, status: "winner" \| "bankrupt" \| "resigned", outRound, cash, properties, netWorth }] }` in rank order. Round = 1 + floor(`TurnEnded` events so far / seats at start). Net worth = cash + property prices (half when mortgaged) + build cost of houses (hotel = 5). Players who are out show 0 | 400, 401, 403 `not_a_member`, 404, 409 `game_not_finished` |
 
 Rules for rows 8–10: the owner's own seat cannot be removed and the owner cannot leave in M1 (no owner transfer; owner rights never move, gameplay 3.1). Seat names are unique within a game, case-insensitive. When a join fails with `seat_name_taken`, the controller of the hot-seat seat removes it and adds it again with another name.
 

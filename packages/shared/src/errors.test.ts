@@ -27,6 +27,7 @@ describe("error codes", () => {
         "game_full",
         "game_not_waiting",
         "game_not_active",
+        "game_not_finished",
         "not_enough_players",
         "seat_name_taken",
         "owner_cannot_leave",
