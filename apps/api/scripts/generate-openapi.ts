@@ -1,6 +1,4 @@
 // Writes apps/api/openapi.json. Run: node scripts/generate-openapi.ts (from apps/api) or pnpm openapi.
-// scripts/ is outside the tsconfig include, so the node types come from this reference.
-/// <reference types="node" />
 import { writeFile } from "node:fs/promises";
 import type { Kysely } from "kysely";
 import { createApp } from "../src/app.ts";

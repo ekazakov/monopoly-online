@@ -32,8 +32,8 @@ Mark a task `[x]` in the commit that completes it. Design for F6 is done (board 
 
 ### B. Session (guest)
 
-- [ ] **B1. Session API.** `POST /api/session`, `GET /api/me`, `DELETE /api/session`. Name 2–16 chars, unique, case-insensitive. Cookie HttpOnly, SameSite=Lax, and Secure unless `NODE_ENV` is `development` or `test`; DB stores token hash only. Auth middleware for protected routes. Origin check on state-changing routes.
-- [ ] **B2. Session tests.** Duplicate name, bad name, expired session, missing cookie.
+- [x] **B1. Session API.** `POST /api/session`, `GET /api/me`, `DELETE /api/session`. Name 2–16 chars, unique, case-insensitive. Cookie HttpOnly, SameSite=Lax, and Secure unless `NODE_ENV` is `development` or `test`; DB stores token hash only. Auth middleware for protected routes. Origin check on state-changing routes.
+- [x] **B2. Session tests.** Duplicate name, bad name, expired session, missing cookie.
 
 ### C. Game room (lobby, minimal)
 

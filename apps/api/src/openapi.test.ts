@@ -19,11 +19,11 @@ describe("openapi", () => {
     ).toBe(expected);
   });
 
-  test("the document is OpenAPI 3.1 and lists the health route under /api", () => {
+  test("the document is OpenAPI 3.1 and lists the routes under /api", () => {
     const doc = buildOpenApiDocument(app);
     expect(doc.openapi).toBe("3.1.0");
     expect(doc.info.title).toBe("Harborfront API");
-    expect(Object.keys(doc.paths ?? {})).toEqual(["/api/health"]);
+    expect(Object.keys(doc.paths ?? {})).toEqual(["/api/health", "/api/session", "/api/me"]);
   });
 
   test("the document declares the session cookie scheme", () => {
