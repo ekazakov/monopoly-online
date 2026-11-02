@@ -1,6 +1,6 @@
 /*
  * Game screen shell (spec 3.1, 7). Tokens only.
- * Layers: board 0, rail 1, centre 2, hand 3, top bar 5. The handoff screen (H8) goes above these.
+ * Layers: board 0, rail 1, centre 2, hand 3, top bar 5. The handoff overlay (H8, z-index 10) sits above these.
  * --game-card-w is the property card width the hand (H6) reads: 156px, 132px on tablet landscape.
  */
 .game-layout {
@@ -27,6 +27,11 @@
 .game-layout :focus-visible {
   outline: 2px solid var(--hf-focus);
   outline-offset: 2px;
+}
+
+/* Groups the regions so an overlay can make them inert; the regions stay direct grid items. */
+.game-layout__regions {
+  display: contents;
 }
 
 .game-layout__title {

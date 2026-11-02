@@ -19,6 +19,7 @@ import { BoardScene } from "../scene/BoardScene.tsx";
 import type { ScenePlayer } from "../scene/model.ts";
 import { useSession } from "../session/index.ts";
 import { GameLayout } from "./game/GameLayout.tsx";
+import { HandoffPrompt } from "./game/handoff/index.ts";
 import { GameOverPlaceholder } from "./game/GameOverPlaceholder.tsx";
 import { CardNotice } from "./game/flows/card/index.ts";
 import { LeaveGameMenu } from "./game/flows/leave/index.ts";
@@ -113,6 +114,7 @@ function GameRoute({ gameId }: { gameId: string }) {
         centre={<Centre userId={userId} loadFailed={state.isError && state.data === undefined} />}
         hand={<PropertyHand userId={userId} />}
         menu={<LeaveGameMenu userId={userId} onLeft={() => void navigate({ to: "/" })} />}
+        overlay={<HandoffPrompt userId={userId} />}
       />
     </GameActionsContext>
   );

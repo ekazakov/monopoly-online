@@ -338,6 +338,23 @@ describe("GameScreen: hot-seat device", () => {
     expect(realtime.send.mock.calls[0]?.[0]).toMatchObject({ seatId: c.id });
   });
 
+  test("shows the pass-the-device prompt when the turn moves to another seat of this device", async () => {
+    const onA = {
+      ...redact(fx.start),
+      turn: { currentPlayerId: a.id, phase: "awaiting_roll" as const, doubles: 0, dice: null },
+    };
+    const onC = { ...onA, version: 1, turn: { ...onA.turn, currentPlayerId: c.id } };
+    const { realtime } = await setup({ state: onA, userId: fx.ownerId });
+    await roll();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    act(() => realtime.emit(snapshotMessage(fx.game, onC, 1)));
+    const prompt = await screen.findByRole("dialog", { name: "Pass to Cy" });
+    expect(prompt).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Roll" })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /^I.m Cy/ }));
+    expect(await roll()).toBeInTheDocument();
+  });
+
   test("a device with no seat on turn only watches", async () => {
     await setup({ userId: fx.ownerId });
     expect(await screen.findByText("Waiting for Bo")).toBeInTheDocument();

@@ -80,7 +80,7 @@ Mark a task `[x]` in the commit that completes it. Design for F6 is done (board 
 - [x] **H5. Turn area.** Roll, buy, end turn, jail options, doubles. Buttons that send engine actions are driven by `mayAct`. Rent and tax are paid automatically and have no button; the card OK only closes the card on this device (gameplay 2).
 - [x] **H6. Property hand.** Collapsed and expanded; build, sell, mortgage, unmortgage from the hand.
 - [x] **H7. Board-centre flows.** Auction, trade, card draw, debt/pay, bankruptcy, Leave game (resign; on a shared device it asks which seat resigns). No modals (spec 5.2). One task per flow.
-- [ ] **H8. Hot-seat handoff.** Pass-device prompt when the acting seat changes to another hot-seat seat on the same device (gameplay 3).
+- [x] **H8. Hot-seat handoff.** Pass-device prompt when the acting seat changes to another hot-seat seat on the same device (gameplay 3).
 - [ ] **H9. Dice and token animation** from events. Keep optional if time is short.
 - [x] **H10a. Result artboard.** A "Game result" board in the design system: winner, final standings, Back to home. Ask before adding it to the canvas.
 - [ ] **H10. Game end / result screen.** Winner and final standings, per the H10a board. The game route shows it when the status is `finished`, also after a reload.
