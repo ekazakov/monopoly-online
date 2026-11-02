@@ -2,7 +2,26 @@ import type { AppType } from "@monopoly/api/app";
 import { apiErrorSchema, type ApiIssue, type ErrorCode } from "@monopoly/shared";
 import { hc } from "hono/client";
 
-export const client = hc<AppType>("/");
+type UnauthorizedHandler = () => void;
+let onUnauthorized: UnauthorizedHandler | null = null;
+
+// One handler at a time: the router installs it (see `session/unauthorized.ts`). Returns a remover.
+export function setUnauthorizedHandler(handler: UnauthorizedHandler | null): () => void {
+  onUnauthorized = handler;
+  return () => {
+    if (onUnauthorized === handler) onUnauthorized = null;
+  };
+}
+
+// Looks up `fetch` at call time, so tests can stub it. Any 401 tells the session layer that the
+// session is gone, whatever call got it.
+export const apiFetch: typeof fetch = async (input, init) => {
+  const res = await globalThis.fetch(input, init);
+  if (res.status === 401) onUnauthorized?.();
+  return res;
+};
+
+export const client = hc<AppType>("/", { fetch: apiFetch });
 
 export class ApiError extends Error {
   readonly status: number;
