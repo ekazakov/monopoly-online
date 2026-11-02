@@ -45,7 +45,7 @@ Mark a task `[x]` in the commit that completes it. Design for F6 is done (board 
 
 ### D. Game service
 
-- [ ] **D1. State loader.** Load from in-memory cache, else latest snapshot plus events after it.
+- [x] **D1. State loader.** Load from in-memory cache, else latest snapshot plus events after it.
 - [ ] **D2. Action endpoint.** `POST /api/games/:id/actions`: check that the device controls `seatId` (else 403 `not_your_seat`), check `expectedVersion`, dedupe by `clientActionId`, call `applyAction` (the engine checks the actor and the phase: 422 `not_your_turn`, `wrong_phase`), write events (and snapshot at turn start and every N versions) in one transaction. When the events contain `GameEnded`, set status `finished` in the same transaction. A repeat of a `clientActionId` returns the stored version and events with the current state.
 - [ ] **D3. Redaction.** Remove `rng` and deck order from state before it leaves the server. `GET /api/games/:id/state` returns the redacted state with version, for `active` and `finished` games. Only a seated user may read state or open the stream.
 - [ ] **D4. Game service tests.** Replay a seeded script through the service; stale version; duplicate action; wrong device; seat that is not the actor; resign; a game that ends is `finished`, its state stays readable and actions are refused; redaction check.
