@@ -1,7 +1,7 @@
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vite-plus/test";
-import { errorReply, mockApi, userFixture, type ApiCall } from "../testing/fakeApi.ts";
+import { errorReply, gameFixture, mockApi, userFixture, type ApiCall } from "../testing/fakeApi.ts";
 import { renderRouteWithServerSession as renderRoute } from "../testing/render.tsx";
 
 const created = () => Response.json({ user: userFixture }, { status: 201 });
@@ -254,13 +254,16 @@ describe("201 created", () => {
   test("opens the redirect target", async () => {
     const gameId = "7b0f7a3e-3a53-4c2e-9a53-2f0d5f6f9d11";
     const { input, user, router } = await openSignIn(
-      { "POST /api/session": created() },
+      {
+        "POST /api/session": created(),
+        [`GET /api/games/${gameId}`]: Response.json({ game: gameFixture() }),
+      },
       `/sign-in?redirect=${encodeURIComponent(`/games/${gameId}`)}`,
     );
     await user.type(input, "Marlow");
     await user.click(button());
     await waitFor(() => expect(router.state.location.pathname).toBe(`/games/${gameId}`));
-    expect(await screen.findByRole("heading", { name: "Room" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: gameFixture().name })).toBeInTheDocument();
   });
 
   test.each(["//evil.com", "https://x", "/\\x"])(

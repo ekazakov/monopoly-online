@@ -26,10 +26,13 @@ describe("routes with a session", () => {
     expect(await screen.findByRole("heading", { name: "Home" })).toBeInTheDocument();
   });
 
-  test("/games/$gameId renders the room with the game id", async () => {
+  test("/games/$gameId renders the room", async () => {
+    mockApi({
+      "GET /api/me": Response.json({ user: userFixture }),
+      [`GET /api/games/${gameId}`]: Response.json({ game: gameFixture() }),
+    });
     await renderRoute(`/games/${gameId}`);
-    expect(await screen.findByRole("heading", { name: "Room" })).toBeInTheDocument();
-    expect(screen.getByText(`Game ${gameId}`)).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: gameFixture().name })).toBeInTheDocument();
   });
 
   test("/games/$gameId/play sends a waiting room to the room page", async () => {
@@ -38,7 +41,7 @@ describe("routes with a session", () => {
       [`GET /api/games/${gameId}`]: Response.json({ game: gameFixture() }),
     });
     await renderRoute(`/games/${gameId}/play`);
-    expect(await screen.findByRole("heading", { name: "Room" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: gameFixture().name })).toBeInTheDocument();
   });
 
   test("an unknown path renders the not-found view", async () => {

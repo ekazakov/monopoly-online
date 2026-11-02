@@ -9,6 +9,7 @@ import { sessionKey } from "./queries.ts";
 const gameId = gameFixture().id;
 const me = () => Response.json({ user: userFixture });
 const signedOut = () => errorReply(401, "unauthorized");
+const game = () => Response.json({ game: gameFixture() });
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -71,19 +72,19 @@ describe("guard with a session", () => {
   });
 
   test("/sign-in goes to the redirect target", async () => {
-    mockApi({ "GET /api/me": me() });
+    mockApi({ "GET /api/me": me(), [`GET /api/games/${gameId}`]: game() });
     const { router } = await renderRoute(
       `/sign-in?redirect=${encodeURIComponent(`/games/${gameId}`)}`,
     );
-    expect(await screen.findByRole("heading", { name: "Room" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: gameFixture().name })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe(`/games/${gameId}`);
   });
 
   test("the redirect target keeps its query string", async () => {
-    mockApi({ "GET /api/me": me() });
+    mockApi({ "GET /api/me": me(), [`GET /api/games/${gameId}`]: game() });
     const target = `/games/${gameId}?seat=2`;
     const { router } = await renderRoute(`/sign-in?redirect=${encodeURIComponent(target)}`);
-    await screen.findByRole("heading", { name: "Room" });
+    await screen.findByRole("heading", { name: gameFixture().name });
     expect(router.state.location.href).toBe(target);
   });
 
@@ -109,12 +110,16 @@ describe("guard with a session", () => {
 
 describe("401 handling", () => {
   test("a 401 from any call clears the session and sends the user to sign-in", async () => {
+    const calls: string[] = [];
     mockApi({
       "GET /api/me": me(),
-      [`GET /api/games/${gameId}`]: errorReply(401, "unauthorized"),
+      [`GET /api/games/${gameId}`]: () => {
+        calls.push("game");
+        return calls.length === 1 ? game() : errorReply(401, "unauthorized");
+      },
     });
     const { router, queryClient } = await renderRoute(`/games/${gameId}`);
-    await screen.findByRole("heading", { name: "Room" });
+    await screen.findByRole("heading", { name: gameFixture().name });
     expect(queryClient.getQueryData(sessionKey)).toEqual(userFixture);
 
     await expect(getGame(gameId)).rejects.toMatchObject({ status: 401 });

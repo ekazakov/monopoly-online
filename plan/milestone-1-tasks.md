@@ -68,7 +68,7 @@ Mark a task `[x]` in the commit that completes it. Design for F6 is done (board 
 
 ### G. Game room screen
 
-- [ ] **G1. Room view.** Seat list, invite link copy, add/remove hot-seat seat, start button for the owner, live updates by SSE. On `seat_name_taken` at join, tell the user to ask the seat's controller to change it. Needs a design: ask first (existing lobby artboards may cover it).
+- [x] **G1. Room view.** Seat list, invite link copy, add/remove hot-seat seat, start button for the owner, live updates by SSE. On `seat_name_taken` at join, tell the user to ask the seat's controller to change it. Needs a design: ask first (existing lobby artboards may cover it).
 - [ ] **G2. Create game flow.** From sign-in to a new room; join page for the game link.
 
 ### H. Game screen (port `artifacts/game-screen`)
