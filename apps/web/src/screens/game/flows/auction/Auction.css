@@ -1,0 +1,178 @@
+/*
+ * Auction in the board centre (spec 5.2, 8.7 R-G4; design board Dialogs, "Auction"). Tokens only.
+ * It sits inside `.turn-area` and reuses the button and status classes of that area. The text is
+ * on the light board surface, so it uses the board ink.
+ */
+.auction {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--hf-space-12);
+  max-width: 100%;
+}
+
+.auction :where(p, ul, form, dl) {
+  margin: 0;
+}
+
+.auction__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--hf-space-16);
+}
+
+.auction__label,
+.auction__by {
+  font: var(--hf-type-caption);
+  color: var(--hf-zone-ink);
+}
+
+.auction__amount {
+  font: var(--hf-type-display-l);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--hf-track-display-l);
+}
+
+.auction__bidders {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--hf-space-4) var(--hf-space-16);
+  width: 100%;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.auction__bidder {
+  display: flex;
+  align-items: center;
+  gap: var(--hf-space-8);
+  min-width: 0;
+  min-height: 28px;
+  font: var(--hf-type-body-small);
+}
+
+.auction__dot {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--hf-board-ink);
+  border-radius: 50%;
+}
+
+.auction__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auction__device {
+  color: var(--hf-zone-ink);
+}
+
+.auction__state {
+  margin-left: auto;
+  font: var(--hf-type-caption);
+  font-weight: 600;
+  color: var(--hf-zone-ink);
+}
+
+.auction__bidder--leading .auction__state {
+  color: var(--hf-board-ink);
+}
+
+.auction__bidder--turn {
+  font-weight: 700;
+}
+
+.auction__bidder--passed .auction__name {
+  text-decoration: line-through;
+}
+
+.auction__form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--hf-space-8);
+}
+
+.auction__cash {
+  font: var(--hf-type-body-small);
+  font-weight: 600;
+  color: var(--hf-zone-ink);
+}
+
+.auction__field {
+  display: flex;
+  align-items: center;
+  gap: var(--hf-space-8);
+}
+
+.auction__field-label {
+  font: var(--hf-type-label);
+  letter-spacing: var(--hf-track-label);
+  text-transform: uppercase;
+}
+
+.auction__input-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--hf-space-4);
+  padding: 0 var(--hf-space-12);
+  border: 1px solid var(--hf-board-ink);
+  border-radius: var(--hf-radius-control);
+  background: var(--hf-paper);
+  font: var(--hf-type-price);
+}
+
+.auction__input {
+  box-sizing: border-box;
+  width: 6ch;
+  min-height: var(--hf-target);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--hf-board-ink);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.auction__input:focus-visible {
+  outline: 2px solid var(--hf-board-ink);
+  outline-offset: 2px;
+}
+
+.auction__input-wrap:has([aria-invalid="true"]) {
+  border-color: var(--hf-board-red);
+}
+
+.auction__raises {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--hf-space-8);
+}
+
+.auction__hint,
+.auction__why {
+  font: var(--hf-type-caption);
+  color: var(--hf-zone-ink);
+}
+
+.auction__why {
+  font-weight: 600;
+  color: var(--hf-board-ink);
+}
+
+/* An empty live region stays in the accessibility tree, but takes no room in the flex column. */
+.auction__sending:empty {
+  position: absolute;
+}
+
+.auction__sending {
+  font: var(--hf-type-caption);
+  color: var(--hf-zone-ink);
+}
