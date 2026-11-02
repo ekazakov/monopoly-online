@@ -61,10 +61,10 @@ Mark a task `[x]` in the commit that completes it. Design for F6 is done (board 
 
 - [x] **F1. Tooling.** Add TanStack Router, Vitest + Testing Library for the web app. Routes: sign-in, room, game.
 - [x] **F2. Design tokens.** Colours, type and spacing from the design system as CSS variables (spec section 2).
-- [ ] **F3. API client.** Extend `api.ts` for the new routes; session query; redirect to sign-in without a session.
+- [x] **F3. API client.** Extend `api.ts` for the new routes; session query; redirect to sign-in without a session.
 - [x] **F4. Realtime client.** `RealtimeClient` interface and `SseHttpClient` (`EventSource` + POST). Status and reconnect.
 - [x] **F5. Game store.** Keeps the latest redacted state from the stream and the action responses (no client reducer). Events drive the log and the animations. Exposes selectors (current player, my seats, phase). Tests for the store with recorded messages.
-- [ ] **F6. Sign-in screen.** Guest name form. Design: board `SignIn.dc.html` in the design system canvas (eight states and a11y notes). On 409 `already_signed_in`, read `/api/me` and go on.
+- [x] **F6. Sign-in screen.** Guest name form. Design: board `SignIn.dc.html` in the design system canvas (eight states and a11y notes). On 409 `already_signed_in`, read `/api/me` and go on.
 
 ### G. Game room screen
 

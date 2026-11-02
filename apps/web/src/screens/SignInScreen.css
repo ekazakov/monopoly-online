@@ -1,0 +1,214 @@
+/*
+ * Sign-in screen (design board SignIn.dc.html). Tokens only, except the two colours below:
+ * the board uses a success green and a light error ink that tokens.css does not define yet.
+ */
+.sign-in {
+  --sign-in-ok: #3ccf7a;
+  --sign-in-error-ink: #ffb4ad;
+
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: var(--hf-ground);
+  color: var(--hf-ink);
+}
+
+.sign-in__top {
+  display: flex;
+  align-items: center;
+  padding: var(--hf-space-12) var(--hf-space-24);
+  border-bottom: 1px solid var(--hf-panel-line);
+}
+
+.sign-in__brand {
+  font: var(--hf-type-display-l);
+  font-size: 26px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.sign-in__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hf-space-24);
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: var(--hf-space-32) var(--hf-gutter);
+}
+
+.sign-in__intro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hf-space-6);
+}
+
+.sign-in__eyebrow {
+  margin: 0;
+  font: var(--hf-type-display-s);
+  font-size: 14px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--hf-accent);
+}
+
+.sign-in__title {
+  font: var(--hf-type-display-xl);
+  font-size: clamp(34px, 11vw, 48px);
+  letter-spacing: var(--hf-track-display-m);
+}
+
+.sign-in__lead {
+  margin: 0;
+  font: var(--hf-type-body-small);
+  color: var(--hf-ink-soft);
+}
+
+.sign-in__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hf-space-16);
+  padding: var(--hf-space-24);
+  background: var(--hf-panel);
+  border: 1px solid var(--hf-panel-line);
+  border-radius: var(--hf-radius-panel);
+}
+
+.sign-in__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hf-space-6);
+}
+
+.sign-in__label {
+  font: var(--hf-type-label);
+  color: var(--hf-ink-soft);
+}
+
+.sign-in__control {
+  display: flex;
+  align-items: center;
+  gap: var(--hf-space-8);
+  min-height: var(--hf-target);
+  padding: 0 var(--hf-space-12);
+  background: var(--hf-ground);
+  border: 1px solid var(--hf-panel-line);
+  border-radius: var(--hf-radius-control);
+  color: var(--hf-ink);
+}
+
+.sign-in__control[data-tone="ok"] {
+  border-color: var(--sign-in-ok);
+}
+
+.sign-in__control[data-tone="error"] {
+  border-color: var(--hf-accent);
+}
+
+.sign-in__control[data-busy] {
+  opacity: 0.6;
+}
+
+.sign-in__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: var(--hf-target);
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: var(--hf-ink);
+  font: var(--hf-type-body);
+}
+
+.sign-in__input::placeholder {
+  color: var(--hf-ring);
+}
+
+/* The control draws the ring so it frames the whole field, not only the text. */
+.sign-in__input:focus-visible {
+  outline: none;
+}
+
+.sign-in__control:has(.sign-in__input:focus-visible) {
+  outline: 2px solid var(--hf-focus);
+  outline-offset: 2px;
+}
+
+.sign-in__meta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--hf-space-12);
+  min-height: 18px;
+  font: var(--hf-type-caption);
+}
+
+.sign-in__hint {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--hf-space-6);
+  color: var(--hf-ink-soft);
+}
+
+.sign-in__hint[data-tone="ok"] {
+  color: var(--sign-in-ok);
+}
+
+.sign-in__hint[data-tone="error"] {
+  color: var(--sign-in-error-ink);
+}
+
+.sign-in__icon {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.sign-in__count {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  color: var(--hf-ink-soft);
+}
+
+.sign-in__submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--hf-space-8);
+  width: 100%;
+  padding: 0 var(--hf-space-24);
+  background: var(--hf-accent);
+  border: 1px solid var(--hf-accent);
+  border-radius: var(--hf-radius-control);
+  color: var(--hf-accent-ink);
+  font: var(--hf-type-label);
+  letter-spacing: var(--hf-track-label);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.sign-in__submit:hover {
+  background: var(--hf-accent-hover);
+  border-color: var(--hf-accent-hover);
+}
+
+.sign-in__submit[aria-disabled="true"] {
+  opacity: 0.8;
+  cursor: progress;
+}
+
+.sign-in__spinner {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  border: 2px solid var(--hf-accent-ink);
+  border-top-color: transparent;
+  border-radius: 50%;
+  opacity: 0.8;
+  animation: sign-in-spin 800ms linear infinite;
+}
+
+@keyframes sign-in-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
