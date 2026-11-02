@@ -1,0 +1,261 @@
+/*
+ * Turn area in the board centre (spec 4.5, 5.2; design board TurnArea). Tokens only.
+ * The text sits on the light board surface, so it uses the board ink and not the shell ink.
+ * The layout centre cell is a size container: the dice scale with its smaller side.
+ */
+.turn-area {
+  --turn-die: clamp(44px, 14cqmin, 72px);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(460px, 100%);
+  max-height: 100%;
+  overflow: hidden auto;
+  color: var(--hf-board-ink);
+  text-align: center;
+}
+
+.turn-area > :where(*) {
+  margin-block: 0;
+}
+
+.turn-area__dice {
+  display: flex;
+  gap: var(--hf-space-16);
+  filter: drop-shadow(0 4px 6px rgba(23, 33, 27, 0.25));
+}
+
+.turn-area__dice--dim {
+  opacity: 0.45;
+}
+
+.turn-area__die {
+  display: block;
+  width: var(--turn-die);
+  height: var(--turn-die);
+}
+
+.turn-area__die-face {
+  fill: var(--hf-die);
+  stroke: var(--hf-die-edge);
+  stroke-width: 2;
+}
+
+.turn-area__pip {
+  fill: var(--hf-pip);
+}
+
+.turn-area__pip--one {
+  fill: var(--hf-board-red);
+}
+
+.turn-area__tag {
+  padding: 2px var(--hf-space-8);
+  border-radius: 4px;
+  background: rgba(23, 33, 27, 0.12);
+  font: var(--hf-type-caption);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.turn-area__status {
+  font: var(--hf-type-display-m);
+  letter-spacing: var(--hf-track-display-m);
+  text-transform: uppercase;
+}
+
+.turn-area__sub {
+  font: var(--hf-type-body-small);
+  font-weight: 600;
+  color: var(--hf-zone-ink);
+}
+
+.turn-area__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.turn-area__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: var(--hf-target);
+  min-height: var(--hf-target);
+  padding: 0 var(--hf-space-16);
+  border: 1px solid transparent;
+  border-radius: var(--hf-radius-control);
+  background: transparent;
+  color: inherit;
+  font: var(--hf-type-label);
+  letter-spacing: var(--hf-track-label);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.turn-area__btn--primary {
+  padding: 0 28px;
+  border-color: var(--hf-accent);
+  background: var(--hf-accent);
+  color: var(--hf-accent-ink);
+  font-size: 15px;
+}
+
+.turn-area__btn--primary:hover:not(:disabled) {
+  border-color: var(--hf-accent-hover);
+  background: var(--hf-accent-hover);
+}
+
+.turn-area__btn--outline {
+  border-color: var(--hf-panel-line);
+  background: rgba(238, 244, 233, 0.55);
+  color: var(--hf-board-ink);
+}
+
+.turn-area__btn--outline:hover:not(:disabled) {
+  background: rgba(238, 244, 233, 0.95);
+}
+
+.turn-area__btn--small {
+  padding: 0 var(--hf-space-12);
+}
+
+.turn-area__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* The layout focus ring is light for the dark shell; on the board it needs the dark ink. */
+.turn-area .turn-area__btn:focus-visible {
+  outline: 2px solid var(--hf-board-ink);
+  outline-offset: 2px;
+}
+
+.turn-area__notes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font: var(--hf-type-caption);
+  color: var(--hf-zone-ink);
+}
+
+.turn-area__waiting {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--hf-target);
+  font: var(--hf-type-body-small);
+  font-weight: 600;
+  color: var(--hf-base);
+}
+
+.turn-area__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(23, 33, 27, 0.25);
+  border-top-color: var(--hf-board-ink);
+  border-radius: 50%;
+  animation: turn-area-spin 0.9s linear infinite;
+}
+
+@keyframes turn-area-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.turn-area__deed {
+  width: 240px;
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--hf-board-ink);
+  border-radius: 4px;
+  background: var(--hf-paper);
+  box-shadow: 0 8px 18px rgba(23, 33, 27, 0.2);
+  text-align: left;
+}
+
+.turn-area__deed-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--hf-board-ink);
+  color: var(--hf-board-ink);
+}
+
+.turn-area__deed-head--dark {
+  color: #fff;
+}
+
+.turn-area__deed-kind {
+  font: var(--hf-type-caption);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.turn-area__deed-name {
+  font: var(--hf-type-display-m);
+  letter-spacing: var(--hf-track-display-m);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.turn-area__deed-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 10px 14px 12px;
+  font: var(--hf-type-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+.turn-area__deed-body > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--hf-space-12);
+}
+
+.turn-area__deed-body dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* An empty live region stays in the accessibility tree, but takes no room in the flex column. */
+.turn-area__errors:empty {
+  position: absolute;
+}
+
+.turn-area__error {
+  display: flex;
+  align-items: center;
+  gap: var(--hf-space-12);
+  padding: var(--hf-space-6) var(--hf-space-6) var(--hf-space-6) var(--hf-space-12);
+  border: 1px solid var(--hf-board-red);
+  border-radius: var(--hf-radius-control);
+  background: var(--hf-paper);
+  text-align: left;
+}
+
+.turn-area__error-text {
+  margin: 0;
+  font: var(--hf-type-body-small);
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .turn-area__spinner {
+    animation: none;
+  }
+}
