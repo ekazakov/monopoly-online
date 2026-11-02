@@ -1,0 +1,172 @@
+/*
+ * Debt and bankruptcy in the board centre (spec 4.5, 5.2; design boards TurnArea and Dialogs).
+ * It sits inside `.turn-area` and reuses its buttons, status and note styles. Tokens only,
+ * except the danger ink: the design board uses #a3241d, which the token file has no name for.
+ */
+.debt-view {
+  --debt-danger: #a3241d;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--hf-space-12);
+  max-width: 100%;
+  min-width: 0;
+}
+
+.debt-view > :where(*) {
+  margin-block: 0;
+}
+
+.debt-view__head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--hf-space-2);
+}
+
+.debt-view__label {
+  font: var(--hf-type-caption);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.debt-view__amount {
+  font: var(--hf-type-display-xl);
+  font-size: clamp(36px, 11cqmin, 52px);
+  font-variant-numeric: tabular-nums;
+}
+
+.debt-view__cash {
+  font: var(--hf-type-body-small);
+  font-weight: 600;
+  color: var(--hf-zone-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.debt-view__short {
+  font: var(--hf-type-body-small);
+  font-weight: 700;
+  color: var(--debt-danger);
+  font-variant-numeric: tabular-nums;
+}
+
+.debt-view__short--ok {
+  color: var(--hf-zone-ink);
+}
+
+.debt-view__raise {
+  box-sizing: border-box;
+  width: min(360px, 100%);
+  text-align: left;
+}
+
+.debt-view__raise-title {
+  margin: 0 0 var(--hf-space-4);
+  font: var(--hf-type-display-s);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.debt-view__rows {
+  max-height: 168px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--hf-panel-line);
+  border-radius: var(--hf-radius-control);
+  background: var(--hf-paper);
+}
+
+.debt-view__row {
+  display: flex;
+  align-items: center;
+  gap: var(--hf-space-8);
+  padding: var(--hf-space-4) var(--hf-space-6) var(--hf-space-4) var(--hf-space-8);
+  border-bottom: 1px solid var(--hf-edge);
+}
+
+.debt-view__row:last-child {
+  border-bottom: 0;
+}
+
+.debt-view__swatch {
+  flex: none;
+  width: 8px;
+  align-self: stretch;
+  border-radius: 2px;
+  border: 1px solid var(--hf-board-ink);
+}
+
+.debt-view__what {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  font: var(--hf-type-caption);
+}
+
+.debt-view__what strong {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.debt-view__what span {
+  color: var(--hf-zone-ink);
+}
+
+.debt-view__row .turn-area__btn {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.debt-view__none {
+  padding: var(--hf-space-8);
+  font: var(--hf-type-caption);
+  color: var(--hf-zone-ink);
+}
+
+.debt-view__note {
+  margin: var(--hf-space-4) 0 0;
+  font: var(--hf-type-caption);
+  color: var(--hf-zone-ink);
+}
+
+.turn-area .debt-view__danger {
+  border-color: var(--debt-danger);
+  color: var(--debt-danger);
+}
+
+.turn-area .debt-view__danger:hover:not(:disabled) {
+  background: var(--debt-danger);
+  color: var(--hf-paper);
+}
+
+.debt-view__confirm {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--hf-space-8);
+  width: min(360px, 100%);
+  padding: var(--hf-space-12);
+  border: 1px solid var(--debt-danger);
+  border-radius: var(--hf-radius-control);
+  background: var(--hf-paper);
+}
+
+.debt-view__confirm-title {
+  font: var(--hf-type-display-s);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.debt-view__confirm-text {
+  font: var(--hf-type-caption);
+  text-align: left;
+}
