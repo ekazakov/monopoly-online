@@ -21,12 +21,12 @@ Mark a task `[x]` in the commit that completes it. Design for F6 is done (board 
 
 ### A. Foundation (shared + database)
 
-- [ ] **A1. Shared schemas.** Schemas per [api-schema.md](api-schema.md), in `packages/shared`. Sub-tasks:
-  - [ ] **A1a.** Error codes and session schemas.
-  - [ ] **A1b.** Game and seat schemas.
-  - [ ] **A1c.** Action, redacted state and event schemas (zod mirror of the engine).
-  - [ ] **A1d.** Stream envelope schemas.
-  - [ ] **A1e.** Drift test against the engine.
+- [x] **A1. Shared schemas.** Schemas per [api-schema.md](api-schema.md), in `packages/shared`. Sub-tasks:
+  - [x] **A1a.** Error codes and session schemas.
+  - [x] **A1b.** Game and seat schemas.
+  - [x] **A1c.** Action, redacted state and event schemas (zod mirror of the engine).
+  - [x] **A1d.** Stream envelope schemas.
+  - [x] **A1e.** Drift test against the engine.
 - [x] **A2. Migrations and DB types.** `users`, `sessions`, extend `games` (owner, status, version), `seats`, `game_events` (unique `(game_id, version)` and `(game_id, client_action_id)`), `game_snapshots`. No seat limit column: the limit is always 6 (`MAX_PLAYERS`). Update `db/schema.ts`. Test migrations on in-memory SQLite.
 - [ ] **A3. OpenAPI generation.** Script that writes `apps/api/openapi.json` from the zod routes; commit it.
 
