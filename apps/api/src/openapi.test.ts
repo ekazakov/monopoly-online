@@ -24,8 +24,24 @@ describe("openapi", () => {
     expect(doc.openapi).toBe("3.1.0");
     expect(doc.info.title).toBe("Harborfront API");
     expect(Object.keys(doc.paths ?? {})).toEqual(
-      expect.arrayContaining(["/api/health", "/api/session", "/api/me", "/api/games"]),
+      expect.arrayContaining([
+        "/api/health",
+        "/api/session",
+        "/api/me",
+        "/api/games",
+        "/api/games/{id}/actions",
+        "/api/games/{id}/state",
+        "/api/stream",
+      ]),
     );
+  });
+
+  test("the stream is documented as text/event-stream with JSON errors", () => {
+    const get = buildOpenApiDocument(app).paths?.["/api/stream"]?.get;
+    expect(get?.responses?.["200"]).toMatchObject({
+      content: { "text/event-stream": { schema: { type: "string" } } },
+    });
+    expect(Object.keys(get?.responses ?? {})).toEqual(["200", "400", "401", "403", "404", "500"]);
   });
 
   test("the document declares the session cookie scheme", () => {

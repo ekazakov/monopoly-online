@@ -9,11 +9,16 @@ import {
   type AppEnv,
   type AppOptions as BaseAppOptions,
 } from "./routes/common.ts";
-import type { GameStateLoader } from "./game/loader.ts";
+import { createGameStateLoader, type GameStateLoader } from "./game/loader.ts";
+import { createGameService } from "./game/service.ts";
+import { createBus, type Bus } from "./realtime/bus.ts";
+import { createPublishers, type StreamEnvelope } from "./realtime/messages.ts";
 import { createRoomService, type RoomEvent } from "./rooms/service.ts";
 import { gameRoutes } from "./routes/games.ts";
+import { gameplayRoutes } from "./routes/gameplay.ts";
 import { healthRoutes } from "./routes/health.ts";
 import { sessionRoutes } from "./routes/session.ts";
+import { streamRoutes } from "./routes/stream.ts";
 
 export type { AppEnv } from "./routes/common.ts";
 
@@ -21,21 +26,39 @@ export type { AppEnv } from "./routes/common.ts";
 export type AppOptions = BaseAppOptions & {
   /** Extra origins that may send state-changing requests. Defaults to the `ALLOWED_ORIGINS` env comma list. */
   allowedOrigins?: string[];
-  /** Called after a join, leave, seat change or start has been committed (the bus publishes from here). */
+  /** Also called after a join, leave, seat change or start has been committed. The app publishes to the bus itself. */
   onRoomEvent?: (event: RoomEvent) => void;
-  /** Shared state loader. Start puts the new state in its cache. */
+  /** Shared state loader of the room service, the action service and the stream. Defaults to a new one. */
   loader?: GameStateLoader;
+  /** The bus that carries the stream messages. Defaults to a new one. Tests pass their own to publish or count subscribers. */
+  bus?: Bus<StreamEnvelope>;
+  /** Interval of the stream heartbeat comment in ms. Defaults to 15 s. */
+  heartbeatMs?: number;
+  /** Largest version gap a stream reconnect replays. Defaults to `RESUME_MAX_GAP` (100). */
+  resumeMaxGap?: number;
 };
 
 export function createApp(db: Kysely<Database>, options?: AppOptions) {
   const deps = resolveDeps(db, options);
   const extraOrigins = options?.allowedOrigins ?? parseOrigins(process.env.ALLOWED_ORIGINS);
+  const loader = options?.loader ?? createGameStateLoader(db);
+  const bus = options?.bus ?? createBus<StreamEnvelope>();
+  const publish = createPublishers(bus);
   const rooms = createRoomService({
     db,
     now: deps.now,
     seed: deps.seed,
-    onRoomEvent: options?.onRoomEvent,
-    loader: options?.loader,
+    onRoomEvent: (event) => {
+      publish.onRoomEvent(event);
+      options?.onRoomEvent?.(event);
+    },
+    loader,
+  });
+  const service = createGameService({
+    db,
+    loader,
+    now: deps.now,
+    onCommitted: (committed) => publish.onCommitted(committed),
   });
   const api = new OpenAPIHono<AppEnv>({ defaultHook: validationHook }).basePath("/api");
   // Registered before every route, so later routes are covered too. `.use` returns a plain
@@ -46,7 +69,21 @@ export function createApp(db: Kysely<Database>, options?: AppOptions) {
     .onError(errorHandler)
     .route("/", healthRoutes(deps))
     .route("/", sessionRoutes(deps))
-    .route("/", gameRoutes({ ...deps, rooms }));
+    .route("/", gameRoutes({ ...deps, rooms }))
+    // After `gameRoutes`: its `/games/*` session middleware also covers these routes, and the
+    // handlers read `c.get("user")`.
+    .route("/", gameplayRoutes({ ...deps, service }))
+    .route(
+      "/",
+      streamRoutes({
+        ...deps,
+        rooms,
+        loader,
+        bus,
+        heartbeatMs: options?.heartbeatMs,
+        resumeMaxGap: options?.resumeMaxGap,
+      }),
+    );
 
   app.openAPIRegistry.registerComponent("securitySchemes", "sessionCookie", {
     type: "apiKey",

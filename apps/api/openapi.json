@@ -1790,6 +1790,2114 @@
           }
         }
       }
+    },
+    "/api/games/{id}/actions": {
+      "post": {
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["games"],
+        "summary": "Submit an action for a seat",
+        "description": "The server sets `playerId` from `seatId`. A repeat of the same `clientActionId` returns the stored `version` and `events` with the current `state`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "seatId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "action": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": ["RollDice"]
+                          }
+                        },
+                        "required": ["type"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": ["BuyProperty"]
+                          }
+                        },
+                        "required": ["type"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": ["DeclineProperty"]
+                          }
+                        },
+                        "required": ["type"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": ["PayJailFine"]
+                          }
+                        },
+                        "required": ["type"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": ["UseJailCard"]
+                          }
+                        },
+                        "required": ["type"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": ["Build"]
+                          },
+                          "square": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 39
+                          }
+                        },
+                        "required": ["type", "square"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": ["SellBuilding"]
+                          },
+                          "square": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 39
+                          }
+                        },
+                        "required": ["type", "square"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": ["Mortgage"]
+                          },
+                          "square": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 39
+                          }
+                        },
+                        "required": ["type", "square"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": ["Unmortgage"]
+                          },
+                          "square": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 39
+                          }
+                        },
+                        "required": ["type", "square"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": ["PayDebt"]
+                          }
+                        },
+                        "required": ["type"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": ["Bid"]
+                          },
+                          "amount": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": ["type", "amount"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": ["PassBid"]
+                          }
+                        },
+                        "required": ["type"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": ["ProposeTrade"]
+                          },
+                          "toPlayerId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "give": {
+                            "type": "object",
+                            "properties": {
+                              "cash": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "squares": {
+                                "type": "array",
+                                "items": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 39
+                                }
+                              },
+                              "jailCards": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "enum": ["chance", "chest"]
+                                }
+                              }
+                            },
+                            "required": ["cash", "squares", "jailCards"],
+                            "additionalProperties": false
+                          },
+                          "get": {
+                            "type": "object",
+                            "properties": {
+                              "cash": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "squares": {
+                                "type": "array",
+                                "items": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 39
+                                }
+                              },
+                              "jailCards": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "enum": ["chance", "chest"]
+                                }
+                              }
+                            },
+                            "required": ["cash", "squares", "jailCards"],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": ["type", "toPlayerId", "give", "get"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": ["AcceptTrade"]
+                          }
+                        },
+                        "required": ["type"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": ["RejectTrade"]
+                          }
+                        },
+                        "required": ["type"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": ["CancelTrade"]
+                          }
+                        },
+                        "required": ["type"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": ["EndTurn"]
+                          }
+                        },
+                        "required": ["type"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": ["Resign"]
+                          }
+                        },
+                        "required": ["type"],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "clientActionId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": ["seatId", "action", "expectedVersion", "clientActionId"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The action was accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["DiceRolled"]
+                              },
+                              "playerId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "dice": {
+                                "type": "array",
+                                "prefixItems": [
+                                  {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 6
+                                  },
+                                  {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 6
+                                  }
+                                ]
+                              }
+                            },
+                            "required": ["type", "playerId", "dice"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["PlayerMoved"]
+                              },
+                              "playerId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "from": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 39
+                              },
+                              "to": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 39
+                              }
+                            },
+                            "required": ["type", "playerId", "from", "to"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["PassedGo"]
+                              },
+                              "playerId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "amount": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "required": ["type", "playerId", "amount"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["PropertyBought"]
+                              },
+                              "playerId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "square": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 39
+                              },
+                              "price": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "required": ["type", "playerId", "square", "price"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["RentPaid"]
+                              },
+                              "payerId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "ownerId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "square": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 39
+                              },
+                              "amount": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "required": ["type", "payerId", "ownerId", "square", "amount"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["TaxPaid"]
+                              },
+                              "playerId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "square": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 39
+                              },
+                              "amount": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "required": ["type", "playerId", "square", "amount"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["CardDrawn"]
+                              },
+                              "playerId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "deck": {
+                                "type": "string",
+                                "enum": ["chance", "chest"]
+                              },
+                              "cardIndex": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "required": ["type", "playerId", "deck", "cardIndex"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["CashChanged"]
+                              },
+                              "playerId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "amount": {
+                                "type": "integer"
+                              },
+                              "reason": {
+                                "type": "string",
+                                "enum": ["card"]
+                              }
+                            },
+                            "required": ["type", "playerId", "amount", "reason"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["BuildingBuilt"]
+                              },
+                              "playerId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "square": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 39
+                              },
+                              "houses": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 5
+                              },
+                              "cost": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "required": ["type", "playerId", "square", "houses", "cost"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["BuildingSold"]
+                              },
+                              "playerId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "square": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 39
+                              },
+                              "houses": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 5
+                              },
+                              "refund": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "required": ["type", "playerId", "square", "houses", "refund"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["PropertyMortgaged"]
+                              },
+                              "playerId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "square": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 39
+                              },
+                              "amount": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "required": ["type", "playerId", "square", "amount"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["PropertyUnmortgaged"]
+                              },
+                              "playerId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "square": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 39
+                              },
+                              "cost": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "required": ["type", "playerId", "square", "cost"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["DebtIncurred"]
+                              },
+                              "debtorId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "creditor": {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "enum": ["bank"]
+                                      }
+                                    },
+                                    "required": ["type"],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "enum": ["player"]
+                                      },
+                                      "id": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": ["type", "id"],
+                                    "additionalProperties": false
+                                  }
+                                ]
+                              },
+                              "amount": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "reason": {
+                                "type": "string",
+                                "enum": ["tax", "rent", "card", "fine"]
+                              }
+                            },
+                            "required": ["type", "debtorId", "creditor", "amount", "reason"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["DebtPaid"]
+                              },
+                              "debtorId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "creditor": {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "enum": ["bank"]
+                                      }
+                                    },
+                                    "required": ["type"],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "enum": ["player"]
+                                      },
+                                      "id": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": ["type", "id"],
+                                    "additionalProperties": false
+                                  }
+                                ]
+                              },
+                              "amount": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "required": ["type", "debtorId", "creditor", "amount"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["BankruptcyDeclared"]
+                              },
+                              "playerId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "creditorIds": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              }
+                            },
+                            "required": ["type", "playerId", "creditorIds"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["AssetsTransferred"]
+                              },
+                              "fromId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "toId": {
+                                "type": ["string", "null"],
+                                "minLength": 1
+                              },
+                              "squares": {
+                                "type": "array",
+                                "items": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 39
+                                }
+                              },
+                              "jailCards": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "enum": ["chance", "chest"]
+                                }
+                              },
+                              "cash": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "playerId": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "amount": {
+                                      "type": "integer",
+                                      "minimum": 0
+                                    }
+                                  },
+                                  "required": ["playerId", "amount"],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": ["type", "fromId", "toId", "squares", "jailCards", "cash"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["PlayerResigned"]
+                              },
+                              "playerId": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": ["type", "playerId"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["PlayerEliminated"]
+                              },
+                              "playerId": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": ["type", "playerId"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["AuctionStarted"]
+                              },
+                              "square": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 39
+                              },
+                              "bidderIds": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              }
+                            },
+                            "required": ["type", "square", "bidderIds"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["BidPlaced"]
+                              },
+                              "playerId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "amount": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "required": ["type", "playerId", "amount"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["BidPassed"]
+                              },
+                              "playerId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "auto": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": ["type", "playerId", "auto"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["AuctionEnded"]
+                              },
+                              "square": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 39
+                              },
+                              "winnerId": {
+                                "type": ["string", "null"],
+                                "minLength": 1
+                              },
+                              "price": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "required": ["type", "square", "winnerId", "price"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["TradeProposed"]
+                              },
+                              "fromId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "toId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "give": {
+                                "type": "object",
+                                "properties": {
+                                  "cash": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "squares": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 39
+                                    }
+                                  },
+                                  "jailCards": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "enum": ["chance", "chest"]
+                                    }
+                                  }
+                                },
+                                "required": ["cash", "squares", "jailCards"],
+                                "additionalProperties": false
+                              },
+                              "get": {
+                                "type": "object",
+                                "properties": {
+                                  "cash": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "squares": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 39
+                                    }
+                                  },
+                                  "jailCards": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "enum": ["chance", "chest"]
+                                    }
+                                  }
+                                },
+                                "required": ["cash", "squares", "jailCards"],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": ["type", "fromId", "toId", "give", "get"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["TradeAccepted"]
+                              },
+                              "fromId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "toId": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": ["type", "fromId", "toId"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["TradeRejected"]
+                              },
+                              "fromId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "toId": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": ["type", "fromId", "toId"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["TradeCancelled"]
+                              },
+                              "fromId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "toId": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": ["type", "fromId", "toId"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["FinePaid"]
+                              },
+                              "playerId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "amount": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "required": ["type", "playerId", "amount"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["SentToJail"]
+                              },
+                              "playerId": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": ["type", "playerId"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["LeftJail"]
+                              },
+                              "playerId": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": ["type", "playerId"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["TurnEnded"]
+                              },
+                              "playerId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "nextPlayerId": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": ["type", "playerId", "nextPlayerId"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["GameEnded"]
+                              },
+                              "winnerId": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": ["type", "winnerId"],
+                            "additionalProperties": false
+                          }
+                        ]
+                      }
+                    },
+                    "state": {
+                      "type": "object",
+                      "properties": {
+                        "version": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "players": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "cash": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "position": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 39
+                              },
+                              "inJail": {
+                                "type": "boolean"
+                              },
+                              "jailTurns": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "heldJailCards": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "enum": ["chance", "chest"]
+                                }
+                              },
+                              "active": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "cash",
+                              "position",
+                              "inJail",
+                              "jailTurns",
+                              "heldJailCards",
+                              "active"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "ownership": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "object",
+                            "properties": {
+                              "ownerId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "houses": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 5
+                              },
+                              "mortgaged": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": ["ownerId", "houses", "mortgaged"],
+                            "additionalProperties": false
+                          }
+                        },
+                        "turn": {
+                          "type": "object",
+                          "properties": {
+                            "currentPlayerId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "phase": {
+                              "type": "string",
+                              "enum": [
+                                "awaiting_roll",
+                                "awaiting_buy_decision",
+                                "awaiting_jail_choice",
+                                "awaiting_end_turn",
+                                "awaiting_debt",
+                                "awaiting_bid",
+                                "awaiting_trade_response",
+                                "game_over"
+                              ]
+                            },
+                            "doubles": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "dice": {
+                              "type": ["array", "null"],
+                              "prefixItems": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 6
+                                },
+                                {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 6
+                                }
+                              ]
+                            }
+                          },
+                          "required": ["currentPlayerId", "phase", "doubles", "dice"],
+                          "additionalProperties": false
+                        },
+                        "debts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "debtorId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "creditor": {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "enum": ["bank"]
+                                      }
+                                    },
+                                    "required": ["type"],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "enum": ["player"]
+                                      },
+                                      "id": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": ["type", "id"],
+                                    "additionalProperties": false
+                                  }
+                                ]
+                              },
+                              "amount": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "reason": {
+                                "type": "string",
+                                "enum": ["tax", "rent", "card", "fine"]
+                              },
+                              "then": {
+                                "type": "string",
+                                "enum": ["finish_roll", "due_at_turn_start", "leave_jail_and_move"]
+                              }
+                            },
+                            "required": ["debtorId", "creditor", "amount", "reason", "then"],
+                            "additionalProperties": false
+                          }
+                        },
+                        "auction": {
+                          "type": ["object", "null"],
+                          "properties": {
+                            "square": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 39
+                            },
+                            "bidderOrder": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "passed": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "highBid": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "highBidderId": {
+                              "type": ["string", "null"],
+                              "minLength": 1
+                            },
+                            "actorId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "then": {
+                              "type": "string",
+                              "enum": ["finish_roll", "next_in_queue", "resume"]
+                            },
+                            "queue": {
+                              "type": "array",
+                              "items": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 39
+                              }
+                            },
+                            "returnPhase": {
+                              "type": "string",
+                              "enum": [
+                                "awaiting_roll",
+                                "awaiting_buy_decision",
+                                "awaiting_jail_choice",
+                                "awaiting_end_turn",
+                                "awaiting_debt",
+                                "awaiting_bid",
+                                "awaiting_trade_response",
+                                "game_over"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "square",
+                            "bidderOrder",
+                            "passed",
+                            "highBid",
+                            "highBidderId",
+                            "actorId",
+                            "then",
+                            "queue",
+                            "returnPhase"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "trade": {
+                          "type": ["object", "null"],
+                          "properties": {
+                            "fromId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "toId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "give": {
+                              "type": "object",
+                              "properties": {
+                                "cash": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "squares": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 39
+                                  }
+                                },
+                                "jailCards": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "enum": ["chance", "chest"]
+                                  }
+                                }
+                              },
+                              "required": ["cash", "squares", "jailCards"],
+                              "additionalProperties": false
+                            },
+                            "get": {
+                              "type": "object",
+                              "properties": {
+                                "cash": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "squares": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 39
+                                  }
+                                },
+                                "jailCards": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "enum": ["chance", "chest"]
+                                  }
+                                }
+                              },
+                              "required": ["cash", "squares", "jailCards"],
+                              "additionalProperties": false
+                            },
+                            "returnPhase": {
+                              "type": "string",
+                              "enum": [
+                                "awaiting_roll",
+                                "awaiting_buy_decision",
+                                "awaiting_jail_choice",
+                                "awaiting_end_turn",
+                                "awaiting_debt",
+                                "awaiting_bid",
+                                "awaiting_trade_response",
+                                "game_over"
+                              ]
+                            }
+                          },
+                          "required": ["fromId", "toId", "give", "get", "returnPhase"],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "version",
+                        "players",
+                        "ownership",
+                        "turn",
+                        "debts",
+                        "auction",
+                        "trade"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["version", "events", "state"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Rejected by the game engine",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/games/{id}/state": {
+      "get": {
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["games"],
+        "summary": "Read the redacted game state",
+        "description": "For `active` and `finished` games. A game that is still `waiting` has no state.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The state with its version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "state": {
+                      "type": "object",
+                      "properties": {
+                        "version": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "players": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "cash": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "position": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 39
+                              },
+                              "inJail": {
+                                "type": "boolean"
+                              },
+                              "jailTurns": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "heldJailCards": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "enum": ["chance", "chest"]
+                                }
+                              },
+                              "active": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "cash",
+                              "position",
+                              "inJail",
+                              "jailTurns",
+                              "heldJailCards",
+                              "active"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "ownership": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "object",
+                            "properties": {
+                              "ownerId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "houses": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 5
+                              },
+                              "mortgaged": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": ["ownerId", "houses", "mortgaged"],
+                            "additionalProperties": false
+                          }
+                        },
+                        "turn": {
+                          "type": "object",
+                          "properties": {
+                            "currentPlayerId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "phase": {
+                              "type": "string",
+                              "enum": [
+                                "awaiting_roll",
+                                "awaiting_buy_decision",
+                                "awaiting_jail_choice",
+                                "awaiting_end_turn",
+                                "awaiting_debt",
+                                "awaiting_bid",
+                                "awaiting_trade_response",
+                                "game_over"
+                              ]
+                            },
+                            "doubles": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "dice": {
+                              "type": ["array", "null"],
+                              "prefixItems": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 6
+                                },
+                                {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 6
+                                }
+                              ]
+                            }
+                          },
+                          "required": ["currentPlayerId", "phase", "doubles", "dice"],
+                          "additionalProperties": false
+                        },
+                        "debts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "debtorId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "creditor": {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "enum": ["bank"]
+                                      }
+                                    },
+                                    "required": ["type"],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "enum": ["player"]
+                                      },
+                                      "id": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": ["type", "id"],
+                                    "additionalProperties": false
+                                  }
+                                ]
+                              },
+                              "amount": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "reason": {
+                                "type": "string",
+                                "enum": ["tax", "rent", "card", "fine"]
+                              },
+                              "then": {
+                                "type": "string",
+                                "enum": ["finish_roll", "due_at_turn_start", "leave_jail_and_move"]
+                              }
+                            },
+                            "required": ["debtorId", "creditor", "amount", "reason", "then"],
+                            "additionalProperties": false
+                          }
+                        },
+                        "auction": {
+                          "type": ["object", "null"],
+                          "properties": {
+                            "square": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 39
+                            },
+                            "bidderOrder": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "passed": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "highBid": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "highBidderId": {
+                              "type": ["string", "null"],
+                              "minLength": 1
+                            },
+                            "actorId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "then": {
+                              "type": "string",
+                              "enum": ["finish_roll", "next_in_queue", "resume"]
+                            },
+                            "queue": {
+                              "type": "array",
+                              "items": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 39
+                              }
+                            },
+                            "returnPhase": {
+                              "type": "string",
+                              "enum": [
+                                "awaiting_roll",
+                                "awaiting_buy_decision",
+                                "awaiting_jail_choice",
+                                "awaiting_end_turn",
+                                "awaiting_debt",
+                                "awaiting_bid",
+                                "awaiting_trade_response",
+                                "game_over"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "square",
+                            "bidderOrder",
+                            "passed",
+                            "highBid",
+                            "highBidderId",
+                            "actorId",
+                            "then",
+                            "queue",
+                            "returnPhase"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "trade": {
+                          "type": ["object", "null"],
+                          "properties": {
+                            "fromId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "toId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "give": {
+                              "type": "object",
+                              "properties": {
+                                "cash": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "squares": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 39
+                                  }
+                                },
+                                "jailCards": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "enum": ["chance", "chest"]
+                                  }
+                                }
+                              },
+                              "required": ["cash", "squares", "jailCards"],
+                              "additionalProperties": false
+                            },
+                            "get": {
+                              "type": "object",
+                              "properties": {
+                                "cash": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "squares": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 39
+                                  }
+                                },
+                                "jailCards": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "enum": ["chance", "chest"]
+                                  }
+                                }
+                              },
+                              "required": ["cash", "squares", "jailCards"],
+                              "additionalProperties": false
+                            },
+                            "returnPhase": {
+                              "type": "string",
+                              "enum": [
+                                "awaiting_roll",
+                                "awaiting_buy_decision",
+                                "awaiting_jail_choice",
+                                "awaiting_end_turn",
+                                "awaiting_debt",
+                                "awaiting_bid",
+                                "awaiting_trade_response",
+                                "game_over"
+                              ]
+                            }
+                          },
+                          "required": ["fromId", "toId", "give", "get", "returnPhase"],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "version",
+                        "players",
+                        "ownership",
+                        "turn",
+                        "debts",
+                        "auction",
+                        "trade"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["version", "state"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stream": {
+      "get": {
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["realtime"],
+        "summary": "Open the event stream of one or more games",
+        "description": "Server-sent events. Each message has `event:` set to its type (`snapshot`, `room.updated`, `game.actions`) and `data:` set to the JSON envelope `{ topic, type, version, payload }`. `id:` is the engine version and is set only on `snapshot` of a started game and on `game.actions`. A comment line every 15 seconds keeps the stream open. After a reconnect with `Last-Event-ID`, the missed `game.actions` are replayed when the gap is 1 to 100 versions, and a `snapshot` is sent when the gap is larger, the id is not a valid version, or the game is not `active`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "topics",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An event stream, kept open until the client disconnects",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "webhooks": {}

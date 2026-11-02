@@ -47,15 +47,15 @@ Mark a task `[x]` in the commit that completes it. Design for F6 is done (board 
 
 - [x] **D1. State loader.** Load from in-memory cache, else latest snapshot plus events after it.
 - [x] **D2. Action endpoint.** `POST /api/games/:id/actions`: check that the device controls `seatId` (else 403 `not_your_seat`), check `expectedVersion`, dedupe by `clientActionId`, call `applyAction` (the engine checks the actor and the phase: 422 `not_your_turn`, `wrong_phase`), write events (and snapshot at turn start and every N versions) in one transaction. When the events contain `GameEnded`, set status `finished` in the same transaction. A repeat of a `clientActionId` returns the stored version and events with the current state.
-- [ ] **D3. Redaction.** Remove `rng` and deck order from state before it leaves the server. `GET /api/games/:id/state` returns the redacted state with version, for `active` and `finished` games. Only a seated user may read state or open the stream.
+- [x] **D3. Redaction.** Remove `rng` and deck order from state before it leaves the server. `GET /api/games/:id/state` returns the redacted state with version, for `active` and `finished` games. Only a seated user may read state or open the stream.
 - [x] **D4. Game service tests.** Replay a seeded script through the service; stale version; duplicate action; wrong device; seat that is not the actor; resign; a game that ends is `finished`, its state stays readable and actions are refused; redaction check.
 
 ### E. Realtime
 
 - [x] **E1. Bus.** In-memory publish/subscribe by topic.
-- [ ] **E2. SSE endpoint.** `GET /api/stream?topics=game:<id>` with `streamSSE`, heartbeat every 15 s, `X-Accel-Buffering: no`. Message types and payloads per [api-schema.md](api-schema.md) (SSE stream): `snapshot`, `room.updated`, `game.actions`. SSE `id` = engine version, set only on `snapshot` after start and on `game.actions`. Publish after commit in D2. Room changes (join, leave, seat add/remove) publish `room.updated` on the game topic; start publishes a `snapshot`.
-- [ ] **E3. Resume.** Honour `Last-Event-ID`: replay the missed `game.actions` from `game_events` when the gap is 1–100 versions (`RESUME_MAX_GAP`). Send a `snapshot` when the gap is larger, or the id is missing or not a valid version. While `waiting`, every connect gets a `snapshot`.
-- [ ] **E4. Realtime tests.** Open stream, apply actions, reconnect with `Last-Event-ID`, check events. Check a gap above the limit and a reconnect while `waiting`.
+- [x] **E2. SSE endpoint.** `GET /api/stream?topics=game:<id>` with `streamSSE`, heartbeat every 15 s, `X-Accel-Buffering: no`. Message types and payloads per [api-schema.md](api-schema.md) (SSE stream): `snapshot`, `room.updated`, `game.actions`. SSE `id` = engine version, set only on `snapshot` after start and on `game.actions`. Publish after commit in D2. Room changes (join, leave, seat add/remove) publish `room.updated` on the game topic; start publishes a `snapshot`.
+- [x] **E3. Resume.** Honour `Last-Event-ID`: replay the missed `game.actions` from `game_events` when the gap is 1–100 versions (`RESUME_MAX_GAP`). Send a `snapshot` when the gap is larger, or the id is missing or not a valid version. While `waiting`, every connect gets a `snapshot`.
+- [x] **E4. Realtime tests.** Open stream, apply actions, reconnect with `Last-Event-ID`, check events. Check a gap above the limit and a reconnect while `waiting`.
 
 ### F. Web client foundation
 
