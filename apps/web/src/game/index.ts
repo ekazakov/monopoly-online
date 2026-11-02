@@ -11,3 +11,5 @@ export {
   useMayAct,
 } from "./useGame.ts";
 export type { GameView } from "./useGame.ts";
+export { GameActionsContext, useGameActions } from "./actions.ts";
+export type { GameActions } from "./actions.ts";
