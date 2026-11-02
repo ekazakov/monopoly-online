@@ -1,0 +1,120 @@
+/*
+ * Card reveal in the board centre (spec 5.2; design board TurnArea, Chance card). Tokens only.
+ * The text sits on the light board surface, so it uses the board ink and not the shell ink.
+ */
+.card-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(460px, 100%);
+  max-height: 100%;
+  overflow: hidden auto;
+  color: var(--hf-board-ink);
+  text-align: center;
+}
+
+.card-notice > :where(*) {
+  margin-block: 0;
+}
+
+.card-notice[data-deck="chance"] {
+  --card-colour: var(--hf-chance);
+}
+
+.card-notice[data-deck="chest"] {
+  --card-colour: var(--hf-chest);
+}
+
+.card-notice__who {
+  font: var(--hf-type-body-small);
+  font-weight: 600;
+  color: var(--hf-zone-ink);
+}
+
+.card-notice__face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  width: 260px;
+  max-width: 100%;
+  min-height: 150px;
+  padding: 16px 18px;
+  border: 2px solid var(--card-colour);
+  border-radius: var(--hf-radius-panel);
+  background: var(--hf-paper);
+  box-shadow: 0 10px 22px rgba(23, 33, 27, 0.25);
+  animation: card-notice-flip var(--hf-dur-base) var(--hf-ease-out) both;
+}
+
+.card-notice__face > :where(*) {
+  margin-block: 0;
+}
+
+.card-notice__deck {
+  font-family: var(--hf-font-display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--card-colour);
+}
+
+.card-notice__title {
+  font: var(--hf-type-display-m);
+  letter-spacing: var(--hf-track-display-m);
+  text-transform: uppercase;
+}
+
+.card-notice__text {
+  font: var(--hf-type-body);
+  font-size: 16px;
+  line-height: 1.35;
+  font-weight: 600;
+}
+
+.card-notice__ok {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: var(--hf-target);
+  min-height: var(--hf-target);
+  padding: 0 28px;
+  border: 1px solid var(--hf-accent);
+  border-radius: var(--hf-radius-control);
+  background: var(--hf-accent);
+  color: var(--hf-accent-ink);
+  font: var(--hf-type-label);
+  font-size: 15px;
+  letter-spacing: var(--hf-track-label);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.card-notice__ok:hover {
+  border-color: var(--hf-accent-hover);
+  background: var(--hf-accent-hover);
+}
+
+/* The layout focus ring is light for the dark shell; on the board it needs the dark ink. */
+.card-notice .card-notice__ok:focus-visible {
+  outline: 2px solid var(--hf-board-ink);
+  outline-offset: 2px;
+}
+
+@keyframes card-notice-flip {
+  from {
+    opacity: 0;
+    transform: perspective(600px) rotateY(-90deg);
+  }
+
+  to {
+    opacity: 1;
+    transform: perspective(600px) rotateY(0);
+  }
+}

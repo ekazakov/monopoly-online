@@ -1,0 +1,236 @@
+/*
+ * Menu button and its panel in the top right (spec 4.2; design board Dialogs, Menu and Leave game).
+ * The panel opens in place under the button and is not a modal. Tokens only. The text sits on the
+ * dark shell, so it uses the shell ink.
+ */
+.leave-menu {
+  position: relative;
+}
+
+.leave-menu__button {
+  min-height: var(--hf-target);
+  padding: 0 18px;
+  border: 1px solid var(--hf-panel-line);
+  border-radius: var(--hf-radius-control);
+  background: var(--hf-panel);
+  color: var(--hf-ink);
+  font: var(--hf-type-label);
+  letter-spacing: var(--hf-track-label);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.leave-menu__button:hover,
+.leave-menu__button[aria-expanded="true"] {
+  background: var(--hf-panel-log);
+}
+
+.leave-menu__panel {
+  position: absolute;
+  top: calc(100% + var(--hf-space-8));
+  right: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: var(--hf-space-12);
+  box-sizing: border-box;
+  width: 320px;
+  max-width: calc(100vw - 2 * var(--hf-space-12));
+  max-height: calc(100vh - 80px);
+  padding: var(--hf-space-16);
+  overflow: hidden auto;
+  border: 1px solid var(--hf-panel-line);
+  border-radius: var(--hf-radius-panel);
+  background: var(--hf-panel);
+  box-shadow: var(--hf-elev-2);
+  color: var(--hf-ink);
+  text-align: left;
+}
+
+.leave-menu__panel > :where(*) {
+  margin-block: 0;
+}
+
+.leave-menu__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--hf-space-16);
+}
+
+.leave-menu__row-text {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+.leave-menu__row-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.leave-menu__hint {
+  margin: 0;
+  padding: 0;
+  font: var(--hf-type-caption);
+  color: var(--hf-ink-soft);
+}
+
+.leave-menu__confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hf-space-12);
+}
+
+.leave-menu__confirm > :where(*) {
+  margin-block: 0;
+}
+
+.leave-menu__title {
+  font: var(--hf-type-display-l);
+  font-size: 24px;
+  letter-spacing: var(--hf-track-display-m);
+  text-transform: uppercase;
+}
+
+.leave-menu__title:focus-visible {
+  outline: none;
+}
+
+.leave-menu__seats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hf-space-6);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.leave-menu__seats > legend {
+  margin-bottom: var(--hf-space-8);
+}
+
+.leave-menu__seat {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--hf-space-8);
+  box-sizing: border-box;
+  min-height: var(--hf-target);
+  padding: 0 var(--hf-space-12);
+  border: 1px solid var(--hf-panel-line);
+  border-radius: var(--hf-radius-control);
+  font: var(--hf-type-label);
+  cursor: pointer;
+}
+
+.leave-menu__seat--on {
+  border-color: var(--hf-accent);
+  background: rgba(226, 87, 76, 0.16);
+}
+
+/* The radio stays in the accessibility tree and keeps the keyboard focus, but the row draws it. */
+.leave-menu__seat > input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.leave-menu__seat:has(input:focus-visible) {
+  outline: 2px solid var(--hf-focus);
+  outline-offset: 2px;
+}
+
+.leave-menu__disc {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+}
+
+.leave-menu__seat-name {
+  flex: 1 1 auto;
+}
+
+.leave-menu__tick {
+  color: var(--hf-accent);
+  visibility: hidden;
+}
+
+.leave-menu__seat--on .leave-menu__tick {
+  visibility: visible;
+}
+
+.leave-menu__consequence {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--hf-panel-log);
+  font: var(--hf-type-body-small);
+}
+
+.leave-menu__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.leave-menu__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: var(--hf-target);
+  min-height: var(--hf-target);
+  padding: 0 var(--hf-space-16);
+  border: 1px solid var(--hf-panel-line);
+  border-radius: var(--hf-radius-control);
+  background: transparent;
+  color: var(--hf-ink);
+  font: var(--hf-type-label);
+  letter-spacing: var(--hf-track-label);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.leave-menu__btn:hover:not(:disabled) {
+  background: var(--hf-hover);
+}
+
+.leave-menu__btn--danger {
+  border-color: var(--hf-accent);
+  color: var(--hf-accent-hover);
+}
+
+.leave-menu__btn--primary {
+  border-color: var(--hf-accent);
+  background: var(--hf-accent);
+  color: var(--hf-accent-ink);
+}
+
+.leave-menu__btn--primary:hover:not(:disabled) {
+  border-color: var(--hf-accent-hover);
+  background: var(--hf-accent-hover);
+}
+
+.leave-menu__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.leave-menu__status {
+  font: var(--hf-type-caption);
+  font-weight: 600;
+}
+
+.leave-menu__status--error {
+  color: var(--hf-accent-hover);
+}
+
+/* An empty live region stays in the accessibility tree, but takes no room in the panel. */
+.leave-menu__status:empty {
+  position: absolute;
+}
