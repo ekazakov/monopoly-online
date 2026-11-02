@@ -52,7 +52,7 @@ Mark a task `[x]` in the commit that completes it. Design for F6 is done (board 
 
 ### E. Realtime
 
-- [ ] **E1. Bus.** In-memory publish/subscribe by topic.
+- [x] **E1. Bus.** In-memory publish/subscribe by topic.
 - [ ] **E2. SSE endpoint.** `GET /api/stream?topics=game:<id>` with `streamSSE`, heartbeat every 15 s, `X-Accel-Buffering: no`. Message types and payloads per [api-schema.md](api-schema.md) (SSE stream): `snapshot`, `room.updated`, `game.actions`. SSE `id` = engine version, set only on `snapshot` after start and on `game.actions`. Publish after commit in D2. Room changes (join, leave, seat add/remove) publish `room.updated` on the game topic; start publishes a `snapshot`.
 - [ ] **E3. Resume.** Honour `Last-Event-ID`: replay the missed `game.actions` from `game_events` when the gap is 1–100 versions (`RESUME_MAX_GAP`). Send a `snapshot` when the gap is larger, or the id is missing or not a valid version. While `waiting`, every connect gets a `snapshot`.
 - [ ] **E4. Realtime tests.** Open stream, apply actions, reconnect with `Last-Event-ID`, check events. Check a gap above the limit and a reconnect while `waiting`.
