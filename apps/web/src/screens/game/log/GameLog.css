@@ -1,0 +1,182 @@
+/*
+ * Game log (spec 4.1, 5.1). Tokens only, except the lifted tone colours for text on the log bar.
+ * The root keeps the 28px height of the closed log. The panel is absolute, so the open log drops
+ * over the board. The slot padding is 8px 8px 8px 20px, hence the panel offsets.
+ */
+.game-log {
+  --log-line: 28px;
+  --log-open: 240px;
+  --log-gain: #72d69e;
+  --log-loss: #ff958b;
+  --log-alert: #f5c95c;
+
+  position: relative;
+  height: var(--log-line);
+  color: var(--hf-ink);
+}
+
+.game-log__panel {
+  position: absolute;
+  inset: calc(-1 * var(--hf-space-8)) calc(-1 * var(--hf-space-8)) auto -20px;
+  padding: var(--hf-space-8) var(--hf-space-8) var(--hf-space-8) 20px;
+  border-radius: 0 0 var(--hf-radius-panel) var(--hf-radius-panel);
+  background: var(--hf-panel-log);
+}
+
+.game-log[data-open="true"] .game-log__panel {
+  box-shadow: var(--hf-elev-2);
+}
+
+.game-log__row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--hf-space-8);
+}
+
+.game-log__list {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: var(--log-line);
+  overflow: hidden;
+  scrollbar-width: thin;
+}
+
+.game-log[data-open="true"] .game-log__list {
+  height: var(--log-open);
+  overflow-y: auto;
+}
+
+/* The newest line sits at the bottom, right above the board, also when there are few lines. */
+.game-log__list > :first-child {
+  margin-top: auto;
+}
+
+.game-log__line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  min-height: var(--log-line);
+  margin: 0;
+  padding-right: var(--hf-space-6);
+  border-radius: 4px;
+  font: var(--hf-type-body-small);
+  line-height: 20px;
+}
+
+.game-log__note {
+  color: var(--hf-ink-soft);
+}
+
+.game-log__dot {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--hf-ring);
+}
+
+.game-log__icon {
+  flex: 0 0 auto;
+  color: var(--hf-ink-soft);
+}
+
+.game-log__line[data-tone="gain"] .game-log__icon {
+  color: var(--log-gain);
+}
+
+.game-log__line[data-tone="loss"] .game-log__icon {
+  color: var(--log-loss);
+}
+
+.game-log__line[data-tone="alert"] .game-log__icon {
+  color: var(--log-alert);
+}
+
+.game-log__name {
+  font-weight: 600;
+}
+
+/* The closed log shows one line, so a long line is cut. The open log wraps it. */
+.game-log[data-open="false"] .game-log__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.game-log__line[data-fresh="true"] {
+  animation: game-log-fresh 1.6s var(--hf-ease-out);
+}
+
+@keyframes game-log-fresh {
+  from {
+    background: rgba(226, 87, 76, 0.35);
+  }
+
+  to {
+    background: transparent;
+  }
+}
+
+.game-log__toggle {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: var(--hf-target);
+  height: var(--hf-target);
+  margin-top: calc(-1 * var(--hf-space-8));
+  padding: 0;
+  border: 0;
+  border-radius: var(--hf-radius-control);
+  background: transparent;
+  color: var(--hf-ink);
+  cursor: pointer;
+}
+
+.game-log__toggle:hover {
+  background: var(--hf-hover);
+}
+
+.game-log__toggle svg {
+  transition: transform var(--hf-dur-base) var(--hf-ease-out);
+}
+
+.game-log[data-open="true"] .game-log__toggle svg {
+  transform: rotate(180deg);
+}
+
+.game-log__jump {
+  position: absolute;
+  right: calc(var(--hf-target) + var(--hf-space-16));
+  bottom: var(--hf-space-16);
+  min-height: var(--hf-target);
+  padding: 0 var(--hf-space-16);
+  border: 1px solid var(--hf-panel-line);
+  border-radius: var(--hf-radius-control);
+  background: var(--hf-panel);
+  color: var(--hf-ink);
+  font: var(--hf-type-label);
+  cursor: pointer;
+}
+
+.game-log__jump:hover {
+  background: var(--hf-hover);
+}
+
+.game-log :focus-visible {
+  outline: 2px solid var(--hf-focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-log__line[data-fresh="true"] {
+    animation: none;
+  }
+
+  .game-log__toggle svg {
+    transition: none;
+  }
+}

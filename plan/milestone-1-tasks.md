@@ -76,7 +76,7 @@ Mark a task `[x]` in the commit that completes it. Design for F6 is done (board 
 - [x] **H1. Layout shell.** Regions per spec 3.1: rail, log, board, centre, hand, menu.
 - [x] **H2. Board scene.** Port `board3d.js` into `apps/web/src/scene/`: tiles, tokens, houses, ownership colours. Static data from the engine (`board.ts`, `cards.ts`).
 - [x] **H3. Player rail.** Players, money, active turn, device/seat labels (spec 4.3, 5.3).
-- [ ] **H4. Game log.** Render engine events as text (spec 4.1).
+- [x] **H4. Game log.** Render engine events as text (spec 4.1).
 - [x] **H5. Turn area.** Roll, buy, end turn, jail options, doubles. Buttons that send engine actions are driven by `mayAct`. Rent and tax are paid automatically and have no button; the card OK only closes the card on this device (gameplay 2).
 - [ ] **H6. Property hand.** Collapsed and expanded; build, sell, mortgage, unmortgage from the hand.
 - [ ] **H7. Board-centre flows.** Auction, trade, card draw, debt/pay, bankruptcy, Leave game (resign; on a shared device it asks which seat resigns). No modals (spec 5.2). One task per flow.
