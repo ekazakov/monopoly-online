@@ -16,7 +16,9 @@
   },
   "dependencies": {
     "@hono/node-server": "catalog:",
+    "@hono/zod-openapi": "catalog:",
     "@hono/zod-validator": "catalog:",
+    "@monopoly/game-engine": "workspace:*",
     "@monopoly/shared": "workspace:*",
     "better-sqlite3": "catalog:",
     "hono": "catalog:",

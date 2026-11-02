@@ -6,10 +6,14 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "scripts": {
+    "test": "vp test --passWithNoTests"
+  },
   "dependencies": {
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@monopoly/game-engine": "workspace:*",
     "typescript": "catalog:"
   }
 }
