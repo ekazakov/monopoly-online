@@ -37,11 +37,11 @@ Mark a task `[x]` in the commit that completes it. Design for F6 is done (board 
 
 ### C. Game room (lobby, minimal)
 
-- [ ] **C1. Create and read game.** `POST /api/games` (name only; owner seat), `GET /api/games/:id`. Replace the old unauthenticated `/games` routes.
-- [ ] **C2. Join by game id.** The game id is the invite (link `/games/<uuid>`). `POST /api/games/:id/join` seats the device user while the game is `waiting` and a seat is free. Join fails with `seat_name_taken` when a hot-seat seat already has the user's name; the controller of that seat removes it and adds it again with another name. `POST /api/games/:id/leave`. No invite token.
-- [ ] **C3. Hot-seat seats.** Add and remove a hot-seat seat (owned by the device user, no user id). Rules: name 2–16 chars, unique in the game (case-insensitive), max 6 seats (`MAX_PLAYERS`), only while `waiting`.
-- [ ] **C4. Start game.** Owner only, min 2 seats. Calls `createGame({ seed })` with the seat list, stores version 0 snapshot, sets status `active`. Seed comes from a test-only env flag when set.
-- [ ] **C5. Room tests.** Join twice, full room, non-owner start, start with one seat, join with a name a hot-seat seat already has.
+- [x] **C1. Create and read game.** `POST /api/games` (name only; owner seat), `GET /api/games/:id`. Replace the old unauthenticated `/games` routes.
+- [x] **C2. Join by game id.** The game id is the invite (link `/games/<uuid>`). `POST /api/games/:id/join` seats the device user while the game is `waiting` and a seat is free. Join fails with `seat_name_taken` when a hot-seat seat already has the user's name; the controller of that seat removes it and adds it again with another name. `POST /api/games/:id/leave`. No invite token.
+- [x] **C3. Hot-seat seats.** Add and remove a hot-seat seat (owned by the device user, no user id). Rules: name 2–16 chars, unique in the game (case-insensitive), max 6 seats (`MAX_PLAYERS`), only while `waiting`.
+- [x] **C4. Start game.** Owner only, min 2 seats. Calls `createGame({ seed })` with the seat list, stores version 0 snapshot, sets status `active`. Seed comes from a test-only env flag when set.
+- [x] **C5. Room tests.** Join twice, full room, non-owner start, start with one seat, join with a name a hot-seat seat already has.
 
 ### D. Game service
 

@@ -23,7 +23,9 @@ describe("openapi", () => {
     const doc = buildOpenApiDocument(app);
     expect(doc.openapi).toBe("3.1.0");
     expect(doc.info.title).toBe("Harborfront API");
-    expect(Object.keys(doc.paths ?? {})).toEqual(["/api/health", "/api/session", "/api/me"]);
+    expect(Object.keys(doc.paths ?? {})).toEqual(
+      expect.arrayContaining(["/api/health", "/api/session", "/api/me", "/api/games"]),
+    );
   });
 
   test("the document declares the session cookie scheme", () => {

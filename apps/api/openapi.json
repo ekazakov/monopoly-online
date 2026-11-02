@@ -315,6 +315,1481 @@
           }
         }
       }
+    },
+    "/api/games": {
+      "post": {
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["games"],
+        "summary": "Create a game room",
+        "description": "The caller owns the game and gets the first seat, named after their display name.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60
+                  }
+                },
+                "required": ["name"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new game, status `waiting`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "game": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 60
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["waiting", "active", "saved", "finished"]
+                        },
+                        "ownerId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "seats": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "order": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 2,
+                                "maxLength": 16
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": ["user", "hotseat"]
+                              },
+                              "userId": {
+                                "type": ["string", "null"],
+                                "format": "uuid"
+                              },
+                              "controllerUserId": {
+                                "type": "string",
+                                "format": "uuid"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "order",
+                              "name",
+                              "kind",
+                              "userId",
+                              "controllerUserId"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "maxItems": 6
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "status",
+                        "ownerId",
+                        "version",
+                        "createdAt",
+                        "seats"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["game"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/games/{id}": {
+      "get": {
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["games"],
+        "summary": "Read a game room",
+        "description": "Any signed-in user can read it. The game id is the invite.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The game with its seats in order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "game": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 60
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["waiting", "active", "saved", "finished"]
+                        },
+                        "ownerId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "seats": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "order": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 2,
+                                "maxLength": 16
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": ["user", "hotseat"]
+                              },
+                              "userId": {
+                                "type": ["string", "null"],
+                                "format": "uuid"
+                              },
+                              "controllerUserId": {
+                                "type": "string",
+                                "format": "uuid"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "order",
+                              "name",
+                              "kind",
+                              "userId",
+                              "controllerUserId"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "maxItems": 6
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "status",
+                        "ownerId",
+                        "version",
+                        "createdAt",
+                        "seats"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["game"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/games/{id}/join": {
+      "post": {
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["games"],
+        "summary": "Join a waiting game",
+        "description": "Adds a seat named after the user. `seat_name_taken` means a hot-seat seat has this name: its controller removes it and adds it again with another name.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The game with the new seat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "game": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 60
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["waiting", "active", "saved", "finished"]
+                        },
+                        "ownerId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "seats": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "order": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 2,
+                                "maxLength": 16
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": ["user", "hotseat"]
+                              },
+                              "userId": {
+                                "type": ["string", "null"],
+                                "format": "uuid"
+                              },
+                              "controllerUserId": {
+                                "type": "string",
+                                "format": "uuid"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "order",
+                              "name",
+                              "kind",
+                              "userId",
+                              "controllerUserId"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "maxItems": 6
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "status",
+                        "ownerId",
+                        "version",
+                        "createdAt",
+                        "seats"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["game"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/games/{id}/leave": {
+      "post": {
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["games"],
+        "summary": "Leave a waiting game",
+        "description": "Removes every seat the caller controls, hot-seat seats included. The owner cannot leave.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The game without the seats of the caller",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "game": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 60
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["waiting", "active", "saved", "finished"]
+                        },
+                        "ownerId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "seats": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "order": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 2,
+                                "maxLength": 16
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": ["user", "hotseat"]
+                              },
+                              "userId": {
+                                "type": ["string", "null"],
+                                "format": "uuid"
+                              },
+                              "controllerUserId": {
+                                "type": "string",
+                                "format": "uuid"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "order",
+                              "name",
+                              "kind",
+                              "userId",
+                              "controllerUserId"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "maxItems": 6
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "status",
+                        "ownerId",
+                        "version",
+                        "createdAt",
+                        "seats"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["game"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/games/{id}/seats": {
+      "post": {
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["games"],
+        "summary": "Add a hot-seat seat",
+        "description": "The seat is controlled by the caller, who must have a seat in the game.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 16
+                  }
+                },
+                "required": ["name"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The game with the new hot-seat seat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "game": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 60
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["waiting", "active", "saved", "finished"]
+                        },
+                        "ownerId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "seats": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "order": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 2,
+                                "maxLength": 16
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": ["user", "hotseat"]
+                              },
+                              "userId": {
+                                "type": ["string", "null"],
+                                "format": "uuid"
+                              },
+                              "controllerUserId": {
+                                "type": "string",
+                                "format": "uuid"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "order",
+                              "name",
+                              "kind",
+                              "userId",
+                              "controllerUserId"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "maxItems": 6
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "status",
+                        "ownerId",
+                        "version",
+                        "createdAt",
+                        "seats"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["game"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/games/{id}/seats/{seatId}": {
+      "delete": {
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["games"],
+        "summary": "Remove a hot-seat seat",
+        "description": "User seats are removed through `leave`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "seatId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The game without the seat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "game": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 60
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["waiting", "active", "saved", "finished"]
+                        },
+                        "ownerId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "seats": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "order": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 2,
+                                "maxLength": 16
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": ["user", "hotseat"]
+                              },
+                              "userId": {
+                                "type": ["string", "null"],
+                                "format": "uuid"
+                              },
+                              "controllerUserId": {
+                                "type": "string",
+                                "format": "uuid"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "order",
+                              "name",
+                              "kind",
+                              "userId",
+                              "controllerUserId"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "maxItems": 6
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "status",
+                        "ownerId",
+                        "version",
+                        "createdAt",
+                        "seats"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["game"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/games/{id}/start": {
+      "post": {
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["games"],
+        "summary": "Start the game",
+        "description": "Owner only, with at least two seats. Writes the version 0 snapshot and sets the status to `active`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The active game and its redacted start state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "game": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 60
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["waiting", "active", "saved", "finished"]
+                        },
+                        "ownerId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "seats": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "order": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 2,
+                                "maxLength": 16
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": ["user", "hotseat"]
+                              },
+                              "userId": {
+                                "type": ["string", "null"],
+                                "format": "uuid"
+                              },
+                              "controllerUserId": {
+                                "type": "string",
+                                "format": "uuid"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "order",
+                              "name",
+                              "kind",
+                              "userId",
+                              "controllerUserId"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "maxItems": 6
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "status",
+                        "ownerId",
+                        "version",
+                        "createdAt",
+                        "seats"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "state": {
+                      "type": "object",
+                      "properties": {
+                        "version": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "players": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "cash": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "position": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 39
+                              },
+                              "inJail": {
+                                "type": "boolean"
+                              },
+                              "jailTurns": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "heldJailCards": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "enum": ["chance", "chest"]
+                                }
+                              },
+                              "active": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "cash",
+                              "position",
+                              "inJail",
+                              "jailTurns",
+                              "heldJailCards",
+                              "active"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "ownership": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "object",
+                            "properties": {
+                              "ownerId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "houses": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 5
+                              },
+                              "mortgaged": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": ["ownerId", "houses", "mortgaged"],
+                            "additionalProperties": false
+                          }
+                        },
+                        "turn": {
+                          "type": "object",
+                          "properties": {
+                            "currentPlayerId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "phase": {
+                              "type": "string",
+                              "enum": [
+                                "awaiting_roll",
+                                "awaiting_buy_decision",
+                                "awaiting_jail_choice",
+                                "awaiting_end_turn",
+                                "awaiting_debt",
+                                "awaiting_bid",
+                                "awaiting_trade_response",
+                                "game_over"
+                              ]
+                            },
+                            "doubles": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "dice": {
+                              "type": ["array", "null"],
+                              "prefixItems": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 6
+                                },
+                                {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 6
+                                }
+                              ]
+                            }
+                          },
+                          "required": ["currentPlayerId", "phase", "doubles", "dice"],
+                          "additionalProperties": false
+                        },
+                        "debts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "debtorId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "creditor": {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "enum": ["bank"]
+                                      }
+                                    },
+                                    "required": ["type"],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "enum": ["player"]
+                                      },
+                                      "id": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": ["type", "id"],
+                                    "additionalProperties": false
+                                  }
+                                ]
+                              },
+                              "amount": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "reason": {
+                                "type": "string",
+                                "enum": ["tax", "rent", "card", "fine"]
+                              },
+                              "then": {
+                                "type": "string",
+                                "enum": ["finish_roll", "due_at_turn_start", "leave_jail_and_move"]
+                              }
+                            },
+                            "required": ["debtorId", "creditor", "amount", "reason", "then"],
+                            "additionalProperties": false
+                          }
+                        },
+                        "auction": {
+                          "type": ["object", "null"],
+                          "properties": {
+                            "square": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 39
+                            },
+                            "bidderOrder": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "passed": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "highBid": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "highBidderId": {
+                              "type": ["string", "null"],
+                              "minLength": 1
+                            },
+                            "actorId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "then": {
+                              "type": "string",
+                              "enum": ["finish_roll", "next_in_queue", "resume"]
+                            },
+                            "queue": {
+                              "type": "array",
+                              "items": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 39
+                              }
+                            },
+                            "returnPhase": {
+                              "type": "string",
+                              "enum": [
+                                "awaiting_roll",
+                                "awaiting_buy_decision",
+                                "awaiting_jail_choice",
+                                "awaiting_end_turn",
+                                "awaiting_debt",
+                                "awaiting_bid",
+                                "awaiting_trade_response",
+                                "game_over"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "square",
+                            "bidderOrder",
+                            "passed",
+                            "highBid",
+                            "highBidderId",
+                            "actorId",
+                            "then",
+                            "queue",
+                            "returnPhase"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "trade": {
+                          "type": ["object", "null"],
+                          "properties": {
+                            "fromId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "toId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "give": {
+                              "type": "object",
+                              "properties": {
+                                "cash": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "squares": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 39
+                                  }
+                                },
+                                "jailCards": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "enum": ["chance", "chest"]
+                                  }
+                                }
+                              },
+                              "required": ["cash", "squares", "jailCards"],
+                              "additionalProperties": false
+                            },
+                            "get": {
+                              "type": "object",
+                              "properties": {
+                                "cash": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "squares": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 39
+                                  }
+                                },
+                                "jailCards": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "enum": ["chance", "chest"]
+                                  }
+                                }
+                              },
+                              "required": ["cash", "squares", "jailCards"],
+                              "additionalProperties": false
+                            },
+                            "returnPhase": {
+                              "type": "string",
+                              "enum": [
+                                "awaiting_roll",
+                                "awaiting_buy_decision",
+                                "awaiting_jail_choice",
+                                "awaiting_end_turn",
+                                "awaiting_debt",
+                                "awaiting_bid",
+                                "awaiting_trade_response",
+                                "game_over"
+                              ]
+                            }
+                          },
+                          "required": ["fromId", "toId", "give", "get", "returnPhase"],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "version",
+                        "players",
+                        "ownership",
+                        "turn",
+                        "debts",
+                        "auction",
+                        "trade"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["game", "state"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "webhooks": {}
