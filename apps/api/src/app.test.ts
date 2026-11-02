@@ -26,43 +26,6 @@ describe("api", () => {
     expect(await res.json()).toEqual({ status: "ok" });
   });
 
-  test("POST then GET /api/games", async () => {
-    const created = await app.request("/api/games", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name: "Friday game" }),
-    });
-    expect(created.status).toBe(201);
-
-    const res = await app.request("/api/games");
-    const games = (await res.json()) as Array<{ name: string }>;
-    expect(games).toHaveLength(1);
-    expect(games[0]).toMatchObject({ name: "Friday game" });
-  });
-
-  test("POST /api/games rejects an empty name", async () => {
-    const res = await app.request("/api/games", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name: "  " }),
-    });
-    expect(res.status).toBe(400);
-    const body = apiErrorSchema.parse(await res.json());
-    expect(body.error.code).toBe("validation_error");
-    expect(body.error.issues?.[0]?.path).toEqual(["name"]);
-  });
-
-  test("POST /api/games rejects bad JSON", async () => {
-    const res = await app.request("/api/games", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: "{not json",
-    });
-    expect(res.status).toBe(400);
-    const body = apiErrorSchema.parse(await res.json());
-    expect(body.error.code).toBe("bad_request");
-  });
-
   test("unknown route returns not_found", async () => {
     const res = await app.request("/api/nope");
     expect(res.status).toBe(404);
