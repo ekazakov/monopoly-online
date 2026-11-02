@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vp run -r --parallel dev",
+    "dev:web": "pnpm --filter @monopoly/web dev",
+    "dev:api": "pnpm --filter @monopoly/api dev",
     "build": "vp run -r build",
     "test": "vp run -r test",
     "check": "vp check",
