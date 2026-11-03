@@ -78,6 +78,8 @@ The screen has to be designed for three situations: **local turn** (full control
 | Marlow | Red `#d9392f`   | Scottish terrier |
 | Tove   | Green `#2fa05c` | Penguin          |
 | Ravi   | Gold `#f0b429`  | Racing car       |
+| Horse            | Profile, facing left. Pointed ear, a long head with eye and nostril dots, mane strokes along the neck, a deep body, two legs, and a tail on the right    |
+| Duck             | Profile, facing left. Round head, a flat bill, an eye dot, a rounded body with an upturned tail on the right, and a wing outline                       |
 
 ### 2.2 Typography
 
@@ -203,7 +205,7 @@ There is one row per player. Each row is a flex row with a 10px gap, centred on 
 | Penguin          | Front-facing. Egg-shaped body, an inner belly plate, flippers, a triangle beak, two eyes, two oval feet                                              |
 | Racing car       | Profile. A low body with a cabin, a window, two wheel arches, and two wheels with hubs. Shifted 5 units up to sit optically centred                  |
 
-The reference page has four more avatars that aren't drawn as outline icons yet: **Octopus, Dwarf jester, Horse and Duck**. They are needed for games with more than four players (R-P7).
+Each avatar has one fixed colour: dog red `#d9392f`, cat blue `#2f6fd0`, penguin green `#2fa05c`, racing car gold `#f0b429`, horse purple `#8e4fc9` (`--hf-pawn-purple`), duck teal `#1fa7a1` (`--hf-pawn-teal`). The game uses these six tokens. The reference page has two more avatars that are not used: **Octopus and Dwarf jester**.
 
 **Label block.** A flex column with a 2px gap, to the right of the avatar:
 
@@ -404,7 +406,7 @@ Rules:
 - **R-P4 SHOULD** [Gap] Colour each avatar's ring with the player's colour, so the rail matches the log dots.
 - **R-P5 MUST** [Gap] Use one currency. The rail shows a coin with "1,340", while the cards, the log and Game parts use "$". Pick one everywhere.
 - **R-P6 MUST** [Gap] Status badges on the avatar: in jail, holds a Get Out of Jail card, in debt or pending debt (with the amount), bankrupt and watching (dimmed and struck through), disconnected. When each state applies is in the gameplay doc, section 4.
-- **R-P7 SHOULD** [Gap] Outline icons for the remaining avatars (octopus, horse, duck, dwarf jester) and an avatar picker in the lobby.
+- **R-P7 SHOULD** [Done: icons] Outline icons for the horse and the duck, so 6 players have 6 avatars. The avatar picker in the lobby is still open (Token picker boards, milestone 2 A3). The octopus and the dwarf jester are not used.
 - **R-P8 MUST** [Gap] Group players by device, with a "This device" marker (5.3).
 
 ### 8.3 Board
@@ -492,3 +494,4 @@ Gameplay questions (player limits, disconnects, trades, house rules, timer, bots
 | 2026-10-31 | Review against the decided rules: no auction timer (R-G4), no counter-offers (R-G5), 6 players and tokens (questions 7 and 9), the turn timer question closed (question 4), the result screen gets its own board (R-G8) |
 | 2026-11-03 | Debug panel added (4.7, R-D1 to R-D5): the player on turn edits cash, deeds and token squares to test the game logic. It is not part of the game design |
 | 2026-11-03 | Debug panel: the Deeds list is a multi-select in three groups (Streets, Stations, Utilities), and one edit can hold a batch of changes (4.7) |
+| 2026-11-03 | Horse and duck outline icons and 3D figures added, with the purple and teal pawn colours (4.3, R-P7)                                                                                    |

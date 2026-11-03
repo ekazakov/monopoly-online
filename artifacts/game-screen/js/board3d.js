@@ -9,7 +9,7 @@ const DISPLAY = '"Barlow Condensed", "Arial Narrow", sans-serif';
 const BODY = '"Barlow", system-ui, sans-serif';
 const ink = '#17211b';
 // metal finishes from the avatars page that match the player colours
-export const METAL = { '#2f6fd0': 0x3f7fe0, '#d9392f': 0xe0463c, '#2fa05c': 0x35b066, '#f0b429': 0xf6c244 };
+export const METAL = { '#2f6fd0': 0x3f7fe0, '#d9392f': 0xe0463c, '#2fa05c': 0x35b066, '#f0b429': 0xf6c244, '#8e4fc9': 0xa56be0, '#1fa7a1': 0x2fc4bd };
 
 // host: the full-screen element the canvas fills; frame: the board column the board is fitted to
 export async function createBoard(host, { frame, players, ownership, reduced, onSquare }) {

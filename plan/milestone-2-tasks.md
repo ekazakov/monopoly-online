@@ -42,7 +42,7 @@ Mark a task `[x]` in the commit that completes it.
 
 Ask before you add or change a board. Sync the artifacts.
 
-- [ ] **Horse and duck figures (A1).**
+- [x] **Horse and duck figures (A1).**
   - Outline icons on the 48×48 grid, stroke 2.4. Add them to the avatar set in `GameParts.dc.html`.
   - 3D SDF models in the same style as the 4 figures that exist.
   - Sync `artifacts/game-screen/js/icons.js` (`avatarPaths`), `sculpt.js` (`MAKERS`), `board3d.js` (`METAL` for purple and teal) and `data.js`.

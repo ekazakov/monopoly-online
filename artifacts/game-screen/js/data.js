@@ -64,6 +64,16 @@ export const SQUARES = [
   return s;
 });
 
+// the six player tokens in free-token order: key, label and the fixed colour (--hf-pawn-*)
+export const TOKENS = [
+  { key: 'dog', name: 'Scottish terrier', color: '#d9392f' },
+  { key: 'cat', name: 'cat', color: '#2f6fd0' },
+  { key: 'penguin', name: 'penguin', color: '#2fa05c' },
+  { key: 'car', name: 'racing car', color: '#f0b429' },
+  { key: 'horse', name: 'horse', color: '#8e4fc9' },
+  { key: 'duck', name: 'duck', color: '#1fa7a1' }
+];
+
 export const PLAYERS = [
   { id: 'ines', name: 'Ines', color: '#2f6fd0', avatar: 'cat', avatarName: 'cat', device: 'remote', conn: 'online', cash: 1340, pos: 10, inJail: true, cards: 0 },
   { id: 'marlow', name: 'Marlow', color: '#d9392f', avatar: 'dog', avatarName: 'Scottish terrier', device: 'local', cash: 1500, pos: 21, cards: 1 },
