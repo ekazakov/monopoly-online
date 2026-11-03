@@ -5,7 +5,7 @@ import { centrePhases } from "./centrePhases.ts";
 import { Dice } from "./Dice.tsx";
 import { ErrorNotice } from "./ErrorNotice.tsx";
 import { Status } from "./Status.tsx";
-import { useTurn } from "./useTurn.ts";
+import { lastRoll, useTurn } from "./useTurn.ts";
 import { WaitingView } from "./WaitingView.tsx";
 import "./TurnArea.css";
 
@@ -22,12 +22,22 @@ export function TurnArea({ userId }: { userId: string }) {
   // The phase moved on (for example a remote trade offer): the builder closes for good.
   if (trading && !tradeAllowed) setTrading(false);
 
-  // Spec 5.2: while the dice roll, the centre shows only the animation and nothing is clickable.
+  // Spec 5.2: while the dice roll and the token moves, the centre shows only the animation and
+  // nothing is clickable.
   if (motion?.kind === "roll") {
     return (
       <div className="turn-area" aria-busy="true">
         <Dice dice={null} rolling />
         <Status title="Rolling…" />
+      </div>
+    );
+  }
+  if (motion) {
+    const { dice, stale } = lastRoll(turn.view);
+    return (
+      <div className="turn-area" aria-busy="true">
+        {dice && !stale && <Dice dice={dice} />}
+        <Status title="Moving…" />
       </div>
     );
   }

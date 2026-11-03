@@ -206,3 +206,8 @@ export function buildingSlots(houses: number): BuildingSlot[] {
     ],
   }));
 }
+
+/** Where a lone token stands on a square: the spot a walking token steps on. */
+export function soloSpot(square: number): TokenSpot {
+  return layoutTokens([{ id: "solo", square }]).get("solo")!;
+}

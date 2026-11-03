@@ -23,7 +23,7 @@ import { HandoffPrompt } from "./game/handoff/index.ts";
 import { CardNotice } from "./game/flows/card/index.ts";
 import { LeaveGameMenu } from "./game/flows/leave/index.ts";
 import { GameLog } from "./game/log/index.ts";
-import { MotionProvider } from "./game/motion/index.ts";
+import { MotionProvider, useMotionPlayback } from "./game/motion/index.ts";
 import { PlayerRail } from "./game/rail/index.ts";
 import { PropertyHand } from "./game/hand/index.ts";
 import { TurnArea } from "./game/turn/index.ts";
@@ -153,6 +153,7 @@ function useReducedMotion(): boolean {
 function Board({ userId }: { userId: string }) {
   const { game, state } = useGame(userId);
   const reducedMotion = useReducedMotion();
+  const motion = useMotionPlayback();
   const players = useMemo<ScenePlayer[]>(
     () =>
       (game?.seats ?? []).map((seat) => ({ id: seat.id, name: seat.name, colorIndex: seat.order })),
@@ -160,7 +161,7 @@ function Board({ userId }: { userId: string }) {
   );
   return (
     <div className="game-board">
-      <BoardScene state={state} players={players} reducedMotion={reducedMotion} />
+      <BoardScene state={state} players={players} motion={motion} reducedMotion={reducedMotion} />
     </div>
   );
 }

@@ -5,7 +5,7 @@ import type { GameActions } from "../../../game/actions.ts";
 import { actionsMessage, recordFixture, redact, snapshotMessage } from "../../../game/fixtures.ts";
 import { GameStoreProvider } from "../../../game/GameStoreProvider.tsx";
 import { createGameStore } from "../../../game/store.ts";
-import { ROLL_MS } from "../../../scene/motion.ts";
+import { ROLL_MS, planMotion, stepDuration } from "../../../scene/motion.ts";
 import { TurnArea } from "../turn/index.ts";
 import { MotionProvider } from "./MotionProvider.tsx";
 
@@ -39,8 +39,9 @@ describe("dice roll animation", () => {
     vi.useRealTimers();
   });
 
-  test("a roll that arrives live shows tumbling dice and no buttons, then the phase view", () => {
+  test("a roll that arrives live shows tumbling dice and no buttons, then the move, then the phase view", () => {
     expect(rollStep).toBeDefined();
+    const total = planMotion(rollStep!.events).reduce((sum, step) => sum + stepDuration(step), 0);
     const store = setup();
     expect(rolling()).toBeNull();
     expect(screen.getByRole("img", { name: "Dice: not rolled yet" })).toBeInTheDocument();
@@ -53,9 +54,14 @@ describe("dice roll animation", () => {
     act(() => void vi.advanceTimersByTime(ROLL_MS - 1));
     expect(rolling()).toBeInTheDocument();
 
+    // the roll ends and the token walks: still no buttons
     act(() => void vi.advanceTimersByTime(1));
     expect(rolling()).toBeNull();
-    expect(screen.queryByText("Rolling…")).toBeNull();
+    expect(screen.getByText("Moving…")).toBeInTheDocument();
+    expect(screen.queryAllByRole("button")).toHaveLength(0);
+
+    act(() => void vi.advanceTimersByTime(total - ROLL_MS));
+    expect(screen.queryByText("Moving…")).toBeNull();
     // the phase view is back: the roll led to a property, so the title deed shows
     expect(screen.getByText("Title deed")).toBeInTheDocument();
   });

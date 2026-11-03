@@ -8,9 +8,22 @@ export type DiceValues = Extract<GameEvent, { type: "DiceRolled" }>["dice"];
 
 export type MotionStep =
   | { kind: "roll"; playerId: string; dice: DiceValues }
-  /** `path` holds the squares the token enters, in order. The last one is the target. */
-  | { kind: "walk"; playerId: string; from: number; path: readonly number[] }
-  | { kind: "jump"; playerId: string; from: number; to: number };
+  /**
+   * `path` holds the squares the token enters, in order. The last one is the target. `fromJail` is
+   * true when the token leaves the jail cell with this move, so it waits in the cell until then.
+   */
+  | { kind: "walk"; playerId: string; from: number; fromJail: boolean; path: readonly number[] }
+  | { kind: "jump"; playerId: string; from: number; fromJail: boolean; to: number };
+
+export type MoveStep = Extract<MotionStep, { kind: "walk" | "jump" }>;
+
+/** What is on screen now: the step that plays, and the steps that wait behind it. */
+export interface MotionPlayback {
+  current: MotionStep | null;
+  waiting: readonly MotionStep[];
+}
+
+export const IDLE_PLAYBACK: MotionPlayback = { current: null, waiting: [] };
 
 /** Time of one dice roll. */
 export const ROLL_MS = 700;
@@ -28,6 +41,40 @@ export function stepDuration(step: MotionStep): number {
     case "jump":
       return JUMP_MS;
   }
+}
+
+/** The squares a move stands on, from the start to the target. */
+export function stepSquares(step: MoveStep): number[] {
+  return step.kind === "walk" ? [step.from, ...step.path] : [step.from, step.to];
+}
+
+/** Where along a move the token is `elapsedMs` after it began: hop number `hop` of `hops`, `t` in [0, 1]. */
+export function hopAt(step: MoveStep, elapsedMs: number): { hop: number; hops: number; t: number } {
+  const hops = step.kind === "walk" ? step.path.length : 1;
+  const each = step.kind === "walk" ? HOP_MS : JUMP_MS;
+  if (elapsedMs >= each * hops) return { hop: hops - 1, hops, t: 1 };
+  const elapsed = Math.max(0, elapsedMs);
+  const hop = Math.floor(elapsed / each);
+  return { hop, hops, t: (elapsed - hop * each) / each };
+}
+
+/**
+ * The tokens as they stand on the board now. The game state is already at the end of the action,
+ * so a token with a move that has not finished yet stays on the square that move starts from.
+ */
+export function restingSites<T extends { id: string; square: number; inJail: boolean }>(
+  sites: readonly T[],
+  playback: MotionPlayback,
+): T[] {
+  const first = new Map<string, MoveStep>();
+  for (const step of [playback.current, ...playback.waiting]) {
+    if (step && step.kind !== "roll" && !first.has(step.playerId)) first.set(step.playerId, step);
+  }
+  if (first.size === 0) return [...sites];
+  return sites.map((site) => {
+    const step = first.get(site.id);
+    return step ? { ...site, square: step.from, inJail: step.fromJail } : site;
+  });
 }
 
 /** The squares from `from` (not included) to `to` (included), forward round the board. */
@@ -56,16 +103,26 @@ function isBackward(move: Extract<GameEvent, { type: "PlayerMoved" }>, after?: G
 export function planMotion(events: readonly GameEvent[]): MotionStep[] {
   const steps: MotionStep[] = [];
   events.forEach((event, i) => {
+    // The jail cell holds the token until the move that frees it.
+    const fromJail = (playerId: string) =>
+      events.slice(0, i).some((e) => e.type === "LeftJail" && e.playerId === playerId);
     if (event.type === "DiceRolled") {
       steps.push({ kind: "roll", playerId: event.playerId, dice: event.dice });
     } else if (event.type === "PlayerMoved" && event.from !== event.to) {
       steps.push(
         isBackward(event, events[i + 1])
-          ? { kind: "jump", playerId: event.playerId, from: event.from, to: event.to }
+          ? {
+              kind: "jump",
+              playerId: event.playerId,
+              from: event.from,
+              fromJail: fromJail(event.playerId),
+              to: event.to,
+            }
           : {
               kind: "walk",
               playerId: event.playerId,
               from: event.from,
+              fromJail: fromJail(event.playerId),
               path: walkPath(event.from, event.to),
             },
       );
@@ -82,6 +139,8 @@ export interface MotionQueue {
   next: () => MotionStep | undefined;
   /** Drops all waiting steps, for example when a snapshot puts the tokens on their squares. */
   clear: () => void;
+  /** The waiting steps, oldest first. */
+  pending: () => MotionStep[];
   readonly size: number;
 }
 
@@ -92,6 +151,7 @@ export function createMotionQueue(): MotionQueue {
       steps = steps.concat(planMotion(events));
     },
     next: () => steps.shift(),
+    pending: () => [...steps],
     clear() {
       steps = [];
     },

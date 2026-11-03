@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { DeckName } from "@monopoly/shared";
 import { useGame } from "../../../../game/index.ts";
+import { useMotionStep } from "../../motion/index.ts";
 import { cardAt, DECK_LABELS, effectText } from "./cardText.ts";
 
 export interface CardNoticeState {
@@ -29,6 +30,8 @@ export interface CardNoticeState {
  * lives on): only an action newer than the version at mount can show a card. A draw that is
  * already the latest action at mount is treated as seen.
  *
+ * While the dice roll or the token moves (`useMotionStep`) no card shows, and it shows after.
+ *
  * One action may draw twice (Back three can land on a Chest square). The cards show one after
  * the other: OK on the first shows the second.
  */
@@ -36,8 +39,10 @@ export function useCardNotice(userId: string | null): CardNoticeState | null {
   const view = useGame(userId);
   const [mountVersion] = useState(view.version);
   const [dismissed, setDismissed] = useState<ReadonlySet<string>>(new Set());
+  const moving = useMotionStep();
 
-  if (view.version <= mountVersion) return null;
+  // The card waits for the dice and the token: it names the square the token lands on.
+  if (view.version <= mountVersion || moving) return null;
   for (const [index, event] of view.lastActionEvents.entries()) {
     if (event.type !== "CardDrawn") continue;
     const key = `${view.version}:${index}`;

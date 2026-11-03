@@ -7,7 +7,10 @@ import type { ComponentRef, ReactNode } from "react";
 import * as THREE from "three";
 import { FOV, ORBIT, VIEW_DIRECTION, fitDistance } from "./camera.ts";
 import { layoutTokens } from "./layout.ts";
+import type { TokenSpot } from "./layout.ts";
 import { buildSceneModel } from "./model.ts";
+import { IDLE_PLAYBACK, restingSites, stepSquares } from "./motion.ts";
+import type { MotionPlayback } from "./motion.ts";
 import type { ScenePlayer } from "./model.ts";
 import { createResources } from "./resources.ts";
 import { createBoardTextures, whenBoardFontsReady } from "./textures.ts";
@@ -23,7 +26,9 @@ export interface BoardSceneProps {
   highlightSquare?: number | null;
   /** Called with the square index when the player taps a square (not after a drag). */
   onSquareClick?: (square: number) => void;
-  /** Turns off camera damping. Token movement will read it too once it is animated. */
+  /** The dice and token motion that plays now. Tokens with a move that has not ended wait at its start. */
+  motion?: MotionPlayback;
+  /** Turns off camera damping. Token movement will read it too. */
   reducedMotion?: boolean;
 }
 
@@ -112,11 +117,19 @@ function useFontEpoch(): number {
 interface SceneProps extends Required<Pick<BoardSceneProps, "reducedMotion">> {
   state: RedactedGameState | null;
   players?: readonly ScenePlayer[];
+  motion: MotionPlayback;
   highlightSquare: number | null;
   onSquareClick?: (square: number) => void;
 }
 
-function Scene({ state, players, highlightSquare, onSquareClick, reducedMotion }: SceneProps) {
+function Scene({
+  state,
+  players,
+  motion,
+  highlightSquare,
+  onSquareClick,
+  reducedMotion,
+}: SceneProps) {
   const gl = useThree((s) => s.gl);
   const resources = useMemo(createResources, []);
   useEffect(() => () => resources.dispose(), [resources]);
@@ -134,10 +147,29 @@ function Scene({ state, players, highlightSquare, onSquareClick, reducedMotion }
 
   const model = useMemo(() => buildSceneModel(state, players), [state, players]);
   const deeds = useMemo(() => new Map(model.deeds.map((d) => [d.square, d])), [model]);
-  const spots = useMemo(
-    () => layoutTokens(model.tokens.map((t) => ({ id: t.id, square: t.square, inJail: t.inJail }))),
-    [model],
+  const sites = useMemo(
+    () =>
+      restingSites(model.tokens, motion).map((t) => ({
+        id: t.id,
+        square: t.square,
+        inJail: t.inJail,
+      })),
+    [model, motion],
   );
+  const spots = useMemo(() => layoutTokens(sites), [sites]);
+  // Where the moving token ends, with the other tokens where they stand now.
+  const landing = useMemo<TokenSpot | null>(() => {
+    const step = motion.current;
+    if (!step || step.kind === "roll") return null;
+    const to = stepSquares(step).at(-1)!;
+    const state = model.tokens.find((t) => t.id === step.playerId);
+    const after = sites.map((s) =>
+      s.id === step.playerId
+        ? { id: s.id, square: to, inJail: Boolean(state?.inJail) && to === 10 }
+        : s,
+    );
+    return layoutTokens(after).get(step.playerId) ?? null;
+  }, [motion, model, sites]);
 
   return (
     <>
@@ -199,7 +231,13 @@ function Scene({ state, players, highlightSquare, onSquareClick, reducedMotion }
         />
       ))}
 
-      <Tokens tokens={model.tokens} spots={spots} env={env} />
+      <Tokens
+        tokens={model.tokens}
+        spots={spots}
+        env={env}
+        step={motion.current}
+        landing={landing}
+      />
     </>
   );
 }
@@ -213,6 +251,7 @@ export function BoardScene({
   players,
   highlightSquare = null,
   onSquareClick,
+  motion = IDLE_PLAYBACK,
   reducedMotion = false,
 }: BoardSceneProps) {
   if (!hasWebGL()) return <Unavailable />;
@@ -236,6 +275,7 @@ export function BoardScene({
         <Scene
           state={state}
           players={players}
+          motion={motion}
           highlightSquare={highlightSquare}
           onSquareClick={onSquareClick}
           reducedMotion={reducedMotion}
