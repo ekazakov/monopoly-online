@@ -12,6 +12,7 @@ A property-trading board game that you play in the browser.
 | `packages/game-engine` | The game rules as a pure module. See its [README](packages/game-engine/README.md).           |
 | `artifacts/`           | Standalone copies of the design system and game screen prototype.                            |
 | `plan/`                | Specifications, game rules and the [implementation roadmap](plan/implementation-roadmap.md). |
+| `GLOSSARY.md`          | [Project terms](GLOSSARY.md): what each term means and where it is used.                     |
 
 The toolchain is [Vite+](https://viteplus.dev) (`vite-plus`). It supplies Vite, Vitest, Oxlint, Oxfmt and tsdown.
 

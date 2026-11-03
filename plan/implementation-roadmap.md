@@ -2,7 +2,7 @@
 
 |                |                                                                                                                                                                                                                   |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Companion docs | [game-rules-reference.md](game-rules-reference.md) (rules), [game-screen-2-gameplay.md](game-screen-2-gameplay.md) (turn flow, devices, session owner), [game-screen-2-spec.md](game-screen-2-spec.md) (UI) |
+| Companion docs | [game-rules-reference.md](game-rules-reference.md) (rules), [game-screen-2-gameplay.md](game-screen-2-gameplay.md) (turn flow, devices, session owner), [game-screen-2-spec.md](game-screen-2-spec.md) (UI), [GLOSSARY.md](../GLOSSARY.md) (terms) |
 | Engine         | [packages/game-engine](../packages/game-engine/README.md): complete                                                                                                                                              |
 | Status         | Draft. Last updated 2026-11-03                                                                                                                                                                                    |
 
@@ -218,3 +218,4 @@ Only persons on an allow list can open the game. Cloudflare Access (Zero Trust, 
 | 2026-10-31 | API schema for milestone 1 in [api-schema.md](api-schema.md) |
 | 2026-10-31 | Review fixes: seat limit always 6, resign moved to M1, `finished` status, SSE ids and resume limit, Secure cookie outside development, invites by name only (M2 tokens are game pieces), E2E scope per milestone |
 | 2026-11-03 | Task list for milestone 2 in [milestone-2-tasks.md](milestone-2-tasks.md), and the M2 section in [api-schema.md](api-schema.md). Dice and token animation moved from M1 to M2 |
+| 2026-11-03 | Project glossary in [GLOSSARY.md](../GLOSSARY.md): terms, preferred words, and known inconsistencies |
