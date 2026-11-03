@@ -8,6 +8,7 @@ import { createGameStore } from "../../../game/store.ts";
 import { ROLL_MS, planMotion, stepDuration } from "../../../scene/motion.ts";
 import { TurnArea } from "../turn/index.ts";
 import { MotionProvider } from "./MotionProvider.tsx";
+import { REPLAY_WINDOW_MS } from "./useMotionPlayer.ts";
 
 const fx = recordFixture(3);
 const rollStep = fx.steps.find((s) => s.events.some((e) => e.type === "DiceRolled"));
@@ -74,6 +75,73 @@ describe("dice roll animation", () => {
   test("a snapshot at a newer version does not animate", () => {
     const store = setup();
     act(() => store.applyStreamMessage(snapshotMessage(fx.game, rollStep!.state)));
+    expect(rolling()).toBeNull();
+  });
+});
+
+describe("settling instead of animating", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  const nextWithRoll = () => fx.steps.find((s) => s.events.some((e) => e.type === "DiceRolled"))!;
+
+  test("a snapshot while a roll plays stops the animation and drops the steps that wait", () => {
+    const store = setup();
+    act(() => store.applyStreamMessage(actionsMessage(fx.game, nextWithRoll())));
+    expect(rolling()).toBeInTheDocument();
+
+    act(() => store.applyStreamMessage(snapshotMessage(fx.game, fx.steps.at(-1)!.state)));
+    expect(rolling()).toBeNull();
+    expect(screen.queryByText("Moving…")).toBeNull();
+    // the timer is gone too: nothing starts again later
+    act(() => void vi.advanceTimersByTime(60_000));
+    expect(rolling()).toBeNull();
+    expect(screen.queryByText("Moving…")).toBeNull();
+  });
+
+  test("an action right after a reconnect is a replay and does not animate", () => {
+    const store = setup();
+    act(() => {
+      store.setConnection("open");
+      store.setConnection("reconnecting");
+      store.setConnection("open");
+    });
+    act(() => store.applyStreamMessage(actionsMessage(fx.game, nextWithRoll())));
+    expect(rolling()).toBeNull();
+    expect(screen.queryByText("Moving…")).toBeNull();
+  });
+
+  test("an action that comes while the connection is down does not animate", () => {
+    const store = setup();
+    act(() => {
+      store.setConnection("open");
+      store.setConnection("reconnecting");
+    });
+    act(() => store.applyStreamMessage(actionsMessage(fx.game, nextWithRoll())));
+    expect(rolling()).toBeNull();
+  });
+
+  test("an action after the replay window animates again", () => {
+    const store = setup();
+    act(() => {
+      store.setConnection("open");
+      store.setConnection("reconnecting");
+      store.setConnection("open");
+    });
+    act(() => void vi.advanceTimersByTime(REPLAY_WINDOW_MS + 1));
+    act(() => store.applyStreamMessage(actionsMessage(fx.game, nextWithRoll())));
+    expect(rolling()).toBeInTheDocument();
+  });
+
+  test("an action that comes while the tab is hidden does not animate", () => {
+    vi.spyOn(document, "hidden", "get").mockReturnValue(true);
+    const store = setup();
+    act(() => store.applyStreamMessage(actionsMessage(fx.game, nextWithRoll())));
     expect(rolling()).toBeNull();
   });
 });
