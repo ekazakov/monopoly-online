@@ -48,7 +48,7 @@ Ask before you add or change a board. Sync the artifacts.
   - Sync `artifacts/game-screen/js/icons.js` (`avatarPaths`), `sculpt.js` (`MAKERS`), `board3d.js` (`METAL` for purple and teal) and `data.js`.
   - Update the avatar set and R-P7 in [game-screen-2-spec.md](game-screen-2-spec.md).
 - [x] **Lobby board with inbox and My games (A2).** Add the invites inbox and My games to `Lobby.dc.html`. Change the seat counts to N/6.
-- [ ] **Token picker boards (A3).** A picker with 6 tokens on `LobbyGuest.dc.html`. Add the same picker to `LobbyHost.dc.html` and `LobbyHostReady.dc.html`.
+- [x] **Token picker boards (A3).** A picker with 6 tokens on `LobbyGuest.dc.html`. Add the same picker to `LobbyHost.dc.html` and `LobbyHostReady.dc.html`.
 - [ ] **Cancel game confirm (A4).** A confirm step for Cancel game in the host footer of the host boards. The "Game cancelled" notice exists in `LobbyStates.dc.html`.
 
 ### B. Shared schemas and database
