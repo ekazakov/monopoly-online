@@ -326,6 +326,29 @@ input[type="range"] { accent-color: var(--accent); width: 160px; min-height: 44p
 .proto-panel button[aria-pressed="true"] { background: var(--ink); color: var(--ground); }
 .proto-note { font-size: 12px; color: var(--ink-soft); line-height: 1.4; margin: 0; }
 
+/* ---------- debug panel (spec 4.7): a test tool, marked by the dashed border ---------- */
+.debug { position: relative; }
+.debug-btn { padding: 0 18px; background: var(--panel-raised); border: 1px dashed var(--line); color: var(--ink-soft); }
+.debug-btn[aria-expanded="true"] { color: var(--ink); }
+.debug-panel {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 30; width: 340px; max-width: calc(100vw - 24px); max-height: calc(100dvh - 80px); overflow-y: auto;
+  box-sizing: border-box; padding: 16px; display: flex; flex-direction: column; gap: 12px; text-align: left;
+  background: rgba(18, 31, 42, 0.97); border: 1px dashed #6b8294; border-radius: 10px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+.debug-panel[hidden] { display: none; }
+.debug-panel h2 { margin: 0; font-family: var(--display); font-size: 20px; letter-spacing: 0.08em; text-transform: uppercase; }
+.debug-panel h2:focus-visible { outline: none; }
+.debug-panel p { margin: 0; font-size: 12px; color: var(--ink-soft); line-height: 1.4; }
+.debug-panel fieldset { margin: 0; padding: 10px 12px 12px; border: 1px solid var(--line); border-radius: 8px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.debug-panel legend { padding: 0 6px; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); font-weight: 600; }
+.debug-row { display: grid; grid-template-columns: 76px minmax(0, 1fr) auto; align-items: center; gap: 8px; font-size: 13px; }
+.debug-row.two { grid-template-columns: 76px minmax(0, 1fr); }
+.debug-panel input:not([type="checkbox"]), .debug-panel select { min-width: 0; min-height: 34px; padding: 0 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-raised); color: var(--ink); font: inherit; font-size: 13px; }
+.debug-panel button { min-height: 34px; min-width: 0; padding: 0 12px; font-size: 11px; border: 1px solid var(--accent); color: var(--accent); }
+.debug-panel fieldset:disabled { opacity: 0.45; }
+.debug-check { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.debug-actions { display: flex; justify-content: flex-end; }
+
 /* ---------- reduced motion ---------- */
 .reduce-motion *, .reduce-motion *::before, .reduce-motion *::after { animation: none !important; transition: none !important; }
 @media (prefers-reduced-motion: reduce) {

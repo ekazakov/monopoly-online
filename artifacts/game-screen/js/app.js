@@ -299,6 +299,7 @@ function render() {
   renderHand();
   renderHandoff();
   renderProto();
+  renderDebug();
   scheduleAuto();
 }
 
@@ -706,6 +707,81 @@ function openRules() {
   </ul><p class="muted">Short summary; the full rules are in the rules reference.</p>`, actions: [{ label: 'Close', primary: true }] });
 }
 $('#menuBtn').addEventListener('click', openMenu);
+
+// ---------- debug panel (spec 4.7): the player on turn edits the state ----------
+const debugPanel = $('#debugPanel'), debugBtn = $('#debugBtn');
+const DEEDS = SQUARES.map((sq, i) => ({ sq, i })).filter(({ sq }) => sq.price);
+let debugDeed = DEEDS[0].i, debugToken = 'marlow', debugStatus = '';
+function closeDebug() { debugPanel.hidden = true; debugBtn.setAttribute('aria-expanded', 'false'); debugStatus = ''; }
+debugBtn.addEventListener('click', () => {
+  if (!debugPanel.hidden) { closeDebug(); return; }
+  debugPanel.hidden = false; debugBtn.setAttribute('aria-expanded', 'true');
+  renderDebug(); $('#debugTitle').focus();
+});
+document.addEventListener('pointerdown', (e) => { if (!debugPanel.hidden && !$('#debug').contains(e.target)) closeDebug(); });
+$('#debug').addEventListener('keydown', (e) => { if (e.key === 'Escape' && !debugPanel.hidden) { e.stopPropagation(); closeDebug(); debugBtn.focus(); } });
+function renderDebug() {
+  if (debugPanel.hidden) return;
+  const off = S.situation !== 'local';
+  const live = S.players.filter((p) => !p.bankrupt);
+  const o = S.own[debugDeed] || {};
+  const deedSq = SQUARES[debugDeed];
+  const street = deedSq.kind === 'prop';
+  const who = P(debugToken) || live[0];
+  const opt = (v, label, on) => `<option value="${v}"${on ? ' selected' : ''}>${esc(label)}</option>`;
+  debugPanel.innerHTML = `
+    <h2 id="debugTitle" tabindex="-1">Debug</h2>
+    <p>${off ? 'Wait for your turn.' : 'Edits ignore the rules. Each edit is a line in the game log.'}</p>
+    <fieldset ${off ? 'disabled' : ''}><legend>Cash</legend>
+      ${live.map((p) => `<form class="debug-row" data-cash="${p.id}"><label for="dc-${p.id}">${esc(p.name)}</label><input id="dc-${p.id}" inputmode="numeric" value="${p.cash}"><button type="submit" aria-label="Set ${esc(p.name)}'s cash">Set</button></form>`).join('')}
+    </fieldset>
+    <form data-deed><fieldset ${off ? 'disabled' : ''}><legend>Deeds</legend>
+      <label class="debug-row two">Deed <select name="sq">${DEEDS.map(({ sq, i }) => opt(i, `${sq.name} (${S.own[i] ? P(S.own[i].owner).name : 'Bank'})`, i === debugDeed)).join('')}</select></label>
+      <label class="debug-row two">Owner <select name="owner">${opt('', 'Bank', !o.owner)}${live.map((p) => opt(p.id, p.name, o.owner === p.id)).join('')}</select></label>
+      <label class="debug-row two">Buildings <select name="houses" ${!street || o.mortgaged ? 'disabled' : ''}>${[0, 1, 2, 3, 4, 5].map((h) => opt(h, h === 0 ? 'None' : h === 5 ? 'Hotel' : `${h} house${h > 1 ? 's' : ''}`, (o.houses || 0) === h)).join('')}</select></label>
+      <label class="debug-check"><input type="checkbox" name="mortgaged" ${o.mortgaged ? 'checked' : ''}> Mortgaged</label>
+      <div class="debug-actions"><button type="submit">Apply</button></div>
+    </fieldset></form>
+    <form data-token><fieldset ${off ? 'disabled' : ''}><legend>Player tokens</legend>
+      <label class="debug-row two">Player <select name="who">${live.map((p) => opt(p.id, p.name, p.id === who.id)).join('')}</select></label>
+      <label class="debug-row two">Square <select name="sq">${SQUARES.map((sq, i) => opt(i, `${i}. ${sq.name}`, i === who.pos)).join('')}</select></label>
+      <p>The token moves with no landing: no rent, card or Start salary.</p>
+      <div class="debug-actions"><button type="submit">Move</button></div>
+    </fieldset></form>
+    <p role="status" aria-live="polite">${esc(debugStatus)}</p>`;
+}
+debugPanel.addEventListener('change', (e) => {
+  const f = e.target.closest('form');
+  if (f?.dataset.deed !== undefined && e.target.name === 'sq') { debugDeed = +e.target.value; renderDebug(); }
+  if (f?.dataset.token !== undefined && e.target.name === 'who') { debugToken = e.target.value; renderDebug(); }
+});
+debugPanel.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const f = e.target, me = S.active;
+  if (f.dataset.cash) {
+    const v = f.querySelector('input').value.trim();
+    if (!/^\d+$/.test(v)) { debugStatus = 'Cash must be a whole number, 0 or more.'; renderDebug(); return; }
+    const p = P(f.dataset.cash); p.cash = +v;
+    addLog(me, `{n} (debug): ${p.name}'s cash set to ${fmt(p.cash)}.`, true);
+    debugStatus = `${p.name}'s cash is now ${fmt(p.cash)}.`;
+  } else if (f.dataset.deed !== undefined) {
+    const owner = f.owner.value, sq = SQUARES[debugDeed];
+    const mortgaged = !!owner && f.mortgaged.checked;
+    const houses = owner && !mortgaged && sq.kind === 'prop' ? +f.houses.value : 0;
+    if (owner) S.own[debugDeed] = { owner, houses, mortgaged }; else delete S.own[debugDeed];
+    const extra = [houses ? (houses === 5 ? 'a hotel' : `${houses} house${houses > 1 ? 's' : ''}`) : '', mortgaged ? 'mortgaged' : ''].filter(Boolean);
+    addLog(me, owner ? `{n} (debug): ${sq.name} given to ${P(owner).name}${extra.length ? ', ' + extra.join(', ') : ''}.` : `{n} (debug): ${sq.name} returned to the bank.`);
+    debugStatus = owner ? `${sq.name} now belongs to ${P(owner).name}.` : `${sq.name} is back with the bank.`;
+    board?.setOwnership(S.own);
+  } else if (f.dataset.token !== undefined) {
+    const p = P(f.who.value), to = +f.sq.value;
+    p.pos = to; p.inJail = false; debugToken = p.id;
+    board?.placeToken(p.id, to);
+    addLog(me, `{n} (debug): ${p.name}'s token put on ${SQUARES[to].name}.`);
+    debugStatus = `${p.name}'s player token is on ${SQUARES[to].name}.`;
+  }
+  render();
+});
 
 // ---------- prototype panel (outside the design) ----------
 const protoPanel = $('#protoPanel'), protoToggle = $('#protoToggle');
