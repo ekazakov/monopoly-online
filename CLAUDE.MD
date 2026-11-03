@@ -17,3 +17,9 @@ Write your response using ASD-STE100 Simplified Technical English."
 
 Whenever the changes introduces to GameScreen prototype or DesignSystem, sync updated versions with local artifacts.
 If new artifacts introduced to the project, then pleas ask before saving.
+
+<!-- groma:start -->
+## Groma
+
+This project uses Groma. Before you scan, inspect, or curate architecture, or change files for a Backlog task, run `groma agent-instructions` and read the guide it names for that job. When it reports a first scan, ask the user whether they want you to curate the architecture. Do not edit Groma-owned architecture files directly.
+<!-- groma:end -->
