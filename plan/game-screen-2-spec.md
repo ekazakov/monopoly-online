@@ -408,7 +408,7 @@ Rules:
 - **R-T3 MUST** [Gap] Design the board centre for every phase in the gameplay doc, section 2 (including In debt and Bankrupt), following 5.2.
 - **R-T4 MUST** [Gap] Show the read-only remote-turn state (5.3).
 - **R-T5 MUST** [Gap] Design the "Pass to <name>" handoff interstitial.
-- **R-T6 SHOULD** [Gap] Animate the dice roll and the token movement, with reduced-motion fallbacks.
+- **R-T6 SHOULD** [Partial] Animate the dice roll and the token movement, with reduced-motion fallbacks. The animation is done; the reduced-motion fallback is optional and deferred (milestone 2 tasks, H4).
 
 ### 8.5 Hand
 
