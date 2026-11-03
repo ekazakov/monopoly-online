@@ -101,6 +101,22 @@ export interface Trade {
   readonly returnPhase: Phase;
 }
 
+/**
+ * One edit from the debug panel. It ignores the game rules: a deed can go to any active player
+ * with any number of buildings, and a token moves with no landing.
+ */
+export type DebugChange =
+  | { readonly kind: "cash"; readonly targetId: string; readonly cash: number }
+  | {
+      readonly kind: "deed";
+      readonly square: number;
+      /** The new owner, or null when the deed returns to the bank. */
+      readonly ownerId: string | null;
+      readonly houses: number;
+      readonly mortgaged: boolean;
+    }
+  | { readonly kind: "position"; readonly targetId: string; readonly square: number };
+
 export interface TurnState {
   readonly currentPlayerId: string;
   readonly phase: Phase;
@@ -174,7 +190,8 @@ export type GameEvent =
   | { type: "SentToJail"; playerId: string }
   | { type: "LeftJail"; playerId: string }
   | { type: "TurnEnded"; playerId: string; nextPlayerId: string }
-  | { type: "GameEnded"; winnerId: string };
+  | { type: "GameEnded"; winnerId: string }
+  | { type: "StateEdited"; playerId: string; change: DebugChange };
 
 export type GameErrorCode =
   | "invalid_players"
@@ -200,7 +217,9 @@ export type GameErrorCode =
   | "invalid_bid"
   | "invalid_trade"
   /** A player cannot resign while an auction runs. */
-  | "auction_running";
+  | "auction_running"
+  /** A debug edit with a value out of range: negative cash or a square off the board. */
+  | "invalid_edit";
 
 export interface GameError {
   readonly code: GameErrorCode;

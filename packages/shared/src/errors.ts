@@ -49,6 +49,7 @@ export const engineErrorCodes = [
   "invalid_bid",
   "invalid_trade",
   "auction_running",
+  "invalid_edit",
 ] as const;
 
 export const errorCodes = [...apiErrorCodes, ...engineErrorCodes] as const;

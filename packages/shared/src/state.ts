@@ -87,6 +87,19 @@ export const tradeSchema = z.strictObject({
   returnPhase: phaseSchema,
 });
 
+/** One debug panel edit. It mirrors the engine `DebugChange`. */
+export const debugChangeSchema = z.discriminatedUnion("kind", [
+  z.strictObject({ kind: z.literal("cash"), targetId: playerIdSchema, cash: moneySchema }),
+  z.strictObject({
+    kind: z.literal("deed"),
+    square: squareSchema,
+    ownerId: playerIdSchema.nullable(),
+    houses: z.number().int().min(0).max(5),
+    mortgaged: z.boolean(),
+  }),
+  z.strictObject({ kind: z.literal("position"), targetId: playerIdSchema, square: squareSchema }),
+]);
+
 export const turnSchema = z.strictObject({
   currentPlayerId: playerIdSchema,
   phase: phaseSchema,
@@ -109,4 +122,5 @@ export const redactedGameStateSchema = z.strictObject({
 export type Phase = z.infer<typeof phaseSchema>;
 export type DeckName = z.infer<typeof deckNameSchema>;
 export type TradeOffer = z.infer<typeof tradeOfferSchema>;
+export type DebugChange = z.infer<typeof debugChangeSchema>;
 export type RedactedGameState = z.infer<typeof redactedGameStateSchema>;

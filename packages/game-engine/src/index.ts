@@ -5,6 +5,7 @@ export * from "./buildings.ts";
 export * from "./cardplay.ts";
 export * from "./cards.ts";
 export * from "./debt.ts";
+export * from "./debug.ts";
 export * from "./game.ts";
 export * from "./gameend.ts";
 export * from "./helpers.ts";

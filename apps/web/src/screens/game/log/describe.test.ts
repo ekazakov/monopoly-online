@@ -162,11 +162,16 @@ const TABLE: Record<GameEventType, Expected> = {
     "neutral",
   ],
   GameEnded: [{ type: "GameEnded", winnerId: b.id }, "Bo won the game!", "gain"],
+  StateEdited: [
+    { type: "StateEdited", playerId: a.id, change: { kind: "cash", targetId: b.id, cash: 1500 } },
+    "Ann (debug): Bo's cash set to $1,500.",
+    "alert",
+  ],
 };
 
 describe("describeEvent", () => {
-  test("the table has 31 event types", () => {
-    expect(Object.keys(TABLE)).toHaveLength(31);
+  test("the table has 32 event types", () => {
+    expect(Object.keys(TABLE)).toHaveLength(32);
   });
 
   test.each(Object.entries(TABLE))("%s", (type, [event, text, tone]) => {
@@ -250,6 +255,26 @@ describe("describeEvent", () => {
         get: { cash: 10, squares: [], jailCards: [] },
       }),
     ).toBe("Ann proposed a trade to Bo: gives nothing, gets $10.");
+  });
+
+  test("debug edits of deeds and tokens", () => {
+    const text = (change: Extract<GameEvent, { type: "StateEdited" }>["change"]) =>
+      describeEvent({ type: "StateEdited", playerId: a.id, change }, ctx).text;
+    expect(text({ kind: "deed", square: 1, ownerId: b.id, houses: 2, mortgaged: false })).toBe(
+      "Ann (debug): Driftwood Lane given to Bo, 2 houses.",
+    );
+    expect(text({ kind: "deed", square: 39, ownerId: c.id, houses: 5, mortgaged: false })).toMatch(
+      /given to Cy, a hotel\.$/,
+    );
+    expect(text({ kind: "deed", square: 5, ownerId: c.id, houses: 0, mortgaged: true })).toMatch(
+      /given to Cy, mortgaged\.$/,
+    );
+    expect(text({ kind: "deed", square: 1, ownerId: null, houses: 0, mortgaged: false })).toBe(
+      "Ann (debug): Driftwood Lane returned to the bank.",
+    );
+    expect(text({ kind: "position", targetId: c.id, square: 10 })).toMatch(
+      /^Ann \(debug\): Cy's token put on .+\.$/,
+    );
   });
 
   test("card texts come from the decks", () => {

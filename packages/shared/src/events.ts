@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   debtCreditorSchema,
+  debugChangeSchema,
   debtReasonSchema,
   deckNameSchema,
   diceSchema,
@@ -152,6 +153,11 @@ export const gameEventSchema = z.discriminatedUnion("type", [
     nextPlayerId: playerIdSchema,
   }),
   z.strictObject({ type: z.literal("GameEnded"), winnerId: playerIdSchema }),
+  z.strictObject({
+    type: z.literal("StateEdited"),
+    playerId: playerIdSchema,
+    change: debugChangeSchema,
+  }),
 ]);
 
 export type GameEvent = z.infer<typeof gameEventSchema>;

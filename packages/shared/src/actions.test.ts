@@ -24,6 +24,7 @@ describe("actionInputSchema", () => {
       { type: "CancelTrade" },
       { type: "EndTurn" },
       { type: "Resign" },
+      { type: "DebugEdit", change: { kind: "cash", targetId: "p2", cash: 0 } },
     ];
     expect(actionInputSchema.options).toHaveLength(actions.length);
     for (const action of actions) expect(actionInputSchema.parse(action)).toEqual(action);
@@ -52,6 +53,15 @@ describe("actionInputSchema", () => {
         give: { ...offer, jailCards: ["x"] },
         get: offer,
       }),
+    ).toBe(false);
+    const deed = { kind: "deed", square: 1, ownerId: null, houses: 0, mortgaged: false };
+    expect(bad({ type: "DebugEdit", change: deed })).toBe(true);
+    expect(bad({ type: "DebugEdit", change: { ...deed, houses: 6 } })).toBe(false);
+    expect(bad({ type: "DebugEdit", change: { kind: "cash", targetId: "p2", cash: -1 } })).toBe(
+      false,
+    );
+    expect(
+      bad({ type: "DebugEdit", change: { kind: "position", targetId: "p2", square: 40 } }),
     ).toBe(false);
     expect(bad({ type: "RollDice", extra: 1 })).toBe(false);
     expect(bad({})).toBe(false);

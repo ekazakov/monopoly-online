@@ -1,5 +1,5 @@
 import { CHANCE_CARDS, CHEST_CARDS, SQUARES } from "@monopoly/game-engine";
-import type { DeckName, GameEvent, Seat, TradeOffer } from "@monopoly/shared";
+import type { DebugChange, DeckName, GameEvent, Seat, TradeOffer } from "@monopoly/shared";
 
 /** How a line is styled. The text always says the same thing: tone adds emphasis, never meaning. */
 export type LogTone = "neutral" | "gain" | "loss" | "alert";
@@ -122,6 +122,26 @@ function assetsText(event: Extract<GameEvent, { type: "AssetsTransferred" }>): s
  * The text of one engine event, for the game log (spec 4.1). Pure: the same event and seats give
  * the same line. The `never` check at the end makes a new event type fail the type check here.
  */
+function debugParts(change: DebugChange): LogPart[] {
+  switch (change.kind) {
+    case "cash":
+      return parts`${who(change.targetId)}'s cash set to ${formatMoney(change.cash)}.`;
+    case "position":
+      return parts`${who(change.targetId)}'s token put on ${squareName(change.square)}.`;
+    case "deed": {
+      if (change.ownerId === null) return parts`${squareName(change.square)} returned to the bank.`;
+      const extras = [
+        ...(change.houses > 0
+          ? [change.houses === 5 ? "a hotel" : plural(change.houses, "house", "houses")]
+          : []),
+        ...(change.mortgaged ? ["mortgaged"] : []),
+      ];
+      const tail = extras.length > 0 ? `, ${extras.join(", ")}` : "";
+      return parts`${squareName(change.square)} given to ${who(change.ownerId)}${tail}.`;
+    }
+  }
+}
+
 export function describeEvent(event: GameEvent, ctx: DescribeContext): LogLine {
   const line = (
     tone: LogTone,
@@ -355,6 +375,11 @@ export function describeEvent(event: GameEvent, ctx: DescribeContext): LogLine {
       );
     case "GameEnded":
       return line("gain", "end", event.winnerId, parts`${who(event.winnerId)} won the game!`);
+    case "StateEdited":
+      return line("alert", undefined, event.playerId, [
+        ...parts`${who(event.playerId)} (debug): `,
+        ...debugParts(event.change),
+      ]);
     default: {
       const unhandled: never = event;
       return unhandled;

@@ -319,16 +319,59 @@ describe("scripted seeded games", () => {
     expect(runs.reduce((sum, r) => sum + r.actions, 0)).toBeGreaterThan(2000);
   });
 
+  // The scripted games play by the rules, so they never use the debug panel. The "debug edit"
+  // tests below cover these types.
+  const debugOnly = ["StateEdited", "DebugEdit"];
+
   test("the games produce every event type of the schema", () => {
-    const wanted = gameEventSchema.options.map((option) => option.shape.type.value);
+    const wanted = gameEventSchema.options
+      .map((option) => option.shape.type.value)
+      .filter((type) => !debugOnly.includes(type));
     expect(wanted).toHaveLength(31);
     expect(wanted.filter((type) => !eventTypes.has(type))).toEqual([]);
     expect([...eventTypes].filter((type) => !(wanted as string[]).includes(type))).toEqual([]);
   });
 
   test("the games use every action type of the schema", () => {
-    const wanted = actionInputSchema.options.map((option) => option.shape.type.value);
+    const wanted = actionInputSchema.options
+      .map((option) => option.shape.type.value)
+      .filter((type) => !debugOnly.includes(type));
     expect(wanted).toHaveLength(18);
     expect(wanted.filter((type) => !actionTypes.has(type))).toEqual([]);
   });
+});
+
+describe("debug edit", () => {
+  const state = createGame({
+    seed: 1,
+    players: [
+      { id: "a", name: "Ann" },
+      { id: "b", name: "Bo" },
+    ],
+  });
+  const playerId = actorFor(state);
+  const changes: ActionInput[] = [
+    { type: "DebugEdit", change: { kind: "cash", targetId: "b", cash: 20 } },
+    {
+      type: "DebugEdit",
+      change: { kind: "deed", square: 1, ownerId: "b", houses: 2, mortgaged: false },
+    },
+    {
+      type: "DebugEdit",
+      change: { kind: "deed", square: 1, ownerId: null, houses: 0, mortgaged: false },
+    },
+    { type: "DebugEdit", change: { kind: "position", targetId: "b", square: 30 } },
+  ];
+
+  test.each(changes)(
+    "the schemas parse the action, its event and the state: $change.kind",
+    (input) => {
+      const action = actionInputSchema.parse(input);
+      const result = applyAction(state, { ...action, playerId } as Action);
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.events.map((event) => gameEventSchema.parse(event))).toEqual(result.events);
+      expect(redactedGameStateSchema.parse(redact(result.state))).toEqual(redact(result.state));
+    },
+  );
 });

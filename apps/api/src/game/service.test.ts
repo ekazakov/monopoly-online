@@ -124,6 +124,34 @@ describe("submitAction: replay", () => {
     expect(types).toContain("EndTurn");
   });
 
+  test("debug edits are stored as actions and replay to the same state", async () => {
+    await act(first, { type: "DebugEdit", change: { kind: "cash", targetId: second, cash: 42 } });
+    await act(first, {
+      type: "DebugEdit",
+      change: { kind: "deed", square: 39, ownerId: third, houses: 5, mortgaged: false },
+    });
+    const result = await act(first, {
+      type: "DebugEdit",
+      change: { kind: "position", targetId: second, square: 30 },
+    });
+    expect(result.events).toEqual([
+      {
+        type: "StateEdited",
+        playerId: first,
+        change: { kind: "position", targetId: second, square: 30 },
+      },
+    ]);
+
+    const live = await loader.load(GAME_ID);
+    const replayed = await createGameStateLoader(db).load(GAME_ID);
+    expect(replayed).toEqual(live);
+    expect(replayed?.players.find((p) => p.id === second)).toMatchObject({
+      cash: 42,
+      position: 30,
+    });
+    expect(replayed?.ownership["39"]).toEqual({ ownerId: third, houses: 5, mortgaged: false });
+  });
+
   test("the server sets playerId from the seat", async () => {
     const result = await act(first, { type: "RollDice" });
     expect(result.events[0]).toMatchObject({ type: "DiceRolled", playerId: first });

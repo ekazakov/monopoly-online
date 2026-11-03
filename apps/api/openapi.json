@@ -64,7 +64,8 @@
                   "no_debt",
                   "invalid_bid",
                   "invalid_trade",
-                  "auction_running"
+                  "auction_running",
+                  "invalid_edit"
                 ]
               },
               "message": {
@@ -2103,6 +2104,88 @@
                         },
                         "required": ["type"],
                         "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": ["DebugEdit"]
+                          },
+                          "change": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": ["cash"]
+                                  },
+                                  "targetId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "cash": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  }
+                                },
+                                "required": ["kind", "targetId", "cash"],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": ["deed"]
+                                  },
+                                  "square": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 39
+                                  },
+                                  "ownerId": {
+                                    "type": ["string", "null"],
+                                    "minLength": 1
+                                  },
+                                  "houses": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 5
+                                  },
+                                  "mortgaged": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": ["kind", "square", "ownerId", "houses", "mortgaged"],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": ["position"]
+                                  },
+                                  "targetId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "square": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 39
+                                  }
+                                },
+                                "required": ["kind", "targetId", "square"],
+                                "additionalProperties": false
+                              }
+                            ]
+                          }
+                        },
+                        "required": ["type", "change"],
+                        "additionalProperties": false
                       }
                     ]
                   },
@@ -2937,6 +3020,98 @@
                               }
                             },
                             "required": ["type", "winnerId"],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["StateEdited"]
+                              },
+                              "playerId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "change": {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": ["cash"]
+                                      },
+                                      "targetId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "cash": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      }
+                                    },
+                                    "required": ["kind", "targetId", "cash"],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": ["deed"]
+                                      },
+                                      "square": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 39
+                                      },
+                                      "ownerId": {
+                                        "type": ["string", "null"],
+                                        "minLength": 1
+                                      },
+                                      "houses": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 5
+                                      },
+                                      "mortgaged": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "square",
+                                      "ownerId",
+                                      "houses",
+                                      "mortgaged"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": ["position"]
+                                      },
+                                      "targetId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "square": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 39
+                                      }
+                                    },
+                                    "required": ["kind", "targetId", "square"],
+                                    "additionalProperties": false
+                                  }
+                                ]
+                              }
+                            },
+                            "required": ["type", "playerId", "change"],
                             "additionalProperties": false
                           }
                         ]

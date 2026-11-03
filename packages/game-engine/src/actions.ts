@@ -1,4 +1,4 @@
-import type { GameState, Phase, TradeOffer } from "./state.ts";
+import type { DebugChange, GameState, Phase, TradeOffer } from "./state.ts";
 
 export type Action =
   | { type: "RollDice"; playerId: string }
@@ -24,7 +24,8 @@ export type Action =
   | { type: "RejectTrade"; playerId: string }
   | { type: "CancelTrade"; playerId: string }
   | { type: "EndTurn"; playerId: string }
-  | { type: "Resign"; playerId: string };
+  | { type: "Resign"; playerId: string }
+  | { type: "DebugEdit"; playerId: string; change: DebugChange };
 
 export type ActionType = Action["type"];
 export type ActionOf<T extends ActionType> = Extract<Action, { type: T }>;
@@ -60,6 +61,8 @@ export const ALLOWED_PHASES: Readonly<Record<ActionType, readonly Phase[]>> = {
   CancelTrade: ["awaiting_trade_response"],
   // Any phase but the end. The handler refuses it while an auction runs.
   Resign: [...DEBT_PHASES, "awaiting_buy_decision", "awaiting_bid", "awaiting_trade_response"],
+  // Not while a buy offer, an auction or a trade waits: an edit could change what they refer to.
+  DebugEdit: DEBT_PHASES,
 };
 
 /** The player who must act now: the bidder, the trade partner, or the player on turn. */
