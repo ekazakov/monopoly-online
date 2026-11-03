@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import type { DiceValues } from "./useTurn.ts";
 
 const PIPS: Record<number, readonly (readonly [number, number])[]> = {
@@ -50,24 +51,47 @@ function Die({ value }: { value: number | null }) {
   );
 }
 
+/** Time between two faces while the dice tumble. */
+export const TUMBLE_MS = 80;
+
+const randomFace = () => 1 + Math.floor(Math.random() * 6);
+
+/** Random faces that change every `TUMBLE_MS` while `active`. */
+function useTumble(active: boolean): DiceValues {
+  const [faces, setFaces] = useState<DiceValues>([randomFace(), randomFace()]);
+  useEffect(() => {
+    if (!active) return;
+    const id = setInterval(() => setFaces([randomFace(), randomFace()]), TUMBLE_MS);
+    return () => clearInterval(id);
+  }, [active]);
+  return faces;
+}
+
 interface DiceProps {
   dice: DiceValues | null;
   /** The roll is from an earlier turn: shown dimmed until the new roll. */
   stale?: boolean;
+  /** The dice tumble and show no result: `dice` is not shown until this is off. */
+  rolling?: boolean;
 }
 
-export function Dice({ dice, stale = false }: DiceProps) {
-  const label = !dice
-    ? "Dice: not rolled yet"
-    : `${stale ? "Last roll" : "Dice"}: ${dice[0]} and ${dice[1]}`;
+export function Dice({ dice, stale = false, rolling = false }: DiceProps) {
+  const tumble = useTumble(rolling);
+  const shown = rolling ? tumble : dice;
+  const label = rolling
+    ? "Rolling the dice"
+    : !dice
+      ? "Dice: not rolled yet"
+      : `${stale ? "Last roll" : "Dice"}: ${dice[0]} and ${dice[1]}`;
+  const dim = !rolling && (stale || !dice);
   return (
     <div
-      className={`turn-area__dice${stale || !dice ? " turn-area__dice--dim" : ""}`}
+      className={`turn-area__dice${dim ? " turn-area__dice--dim" : ""}${rolling ? " turn-area__dice--rolling" : ""}`}
       role="img"
       aria-label={label}
     >
-      <Die value={dice?.[0] ?? null} />
-      <Die value={dice?.[1] ?? null} />
+      <Die value={shown?.[0] ?? null} />
+      <Die value={shown?.[1] ?? null} />
     </div>
   );
 }

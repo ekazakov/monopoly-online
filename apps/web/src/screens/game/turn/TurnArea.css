@@ -40,6 +40,25 @@
   height: var(--turn-die);
 }
 
+.turn-area__dice--rolling .turn-area__die {
+  animation: turn-area-tumble 0.32s ease-in-out infinite;
+}
+
+.turn-area__dice--rolling .turn-area__die:nth-child(2) {
+  animation-delay: -0.14s;
+  animation-direction: reverse;
+}
+
+@keyframes turn-area-tumble {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-9deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(11deg);
+  }
+}
+
 .turn-area__die-face {
   fill: var(--hf-die);
   stroke: var(--hf-die-edge);
@@ -255,7 +274,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .turn-area__spinner {
+  .turn-area__spinner,
+  .turn-area__dice--rolling .turn-area__die {
     animation: none;
   }
 }

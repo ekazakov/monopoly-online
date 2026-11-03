@@ -23,6 +23,7 @@ import { HandoffPrompt } from "./game/handoff/index.ts";
 import { CardNotice } from "./game/flows/card/index.ts";
 import { LeaveGameMenu } from "./game/flows/leave/index.ts";
 import { GameLog } from "./game/log/index.ts";
+import { MotionProvider } from "./game/motion/index.ts";
 import { PlayerRail } from "./game/rail/index.ts";
 import { PropertyHand } from "./game/hand/index.ts";
 import { TurnArea } from "./game/turn/index.ts";
@@ -120,15 +121,17 @@ function GameRoute({ gameId }: { gameId: string }) {
 
   return (
     <GameActionsContext value={actions}>
-      <GameLayout
-        rail={<PlayerRail userId={userId} />}
-        log={<GameLog userId={userId} />}
-        board={<Board userId={userId} />}
-        centre={<Centre userId={userId} loadFailed={state.isError && state.data === undefined} />}
-        hand={<PropertyHand userId={userId} />}
-        menu={<LeaveGameMenu userId={userId} onLeft={() => void navigate({ to: "/" })} />}
-        overlay={<HandoffPrompt userId={userId} />}
-      />
+      <MotionProvider>
+        <GameLayout
+          rail={<PlayerRail userId={userId} />}
+          log={<GameLog userId={userId} />}
+          board={<Board userId={userId} />}
+          centre={<Centre userId={userId} loadFailed={state.isError && state.data === undefined} />}
+          hand={<PropertyHand userId={userId} />}
+          menu={<LeaveGameMenu userId={userId} onLeft={() => void navigate({ to: "/" })} />}
+          overlay={<HandoffPrompt userId={userId} />}
+        />
+      </MotionProvider>
     </GameActionsContext>
   );
 }

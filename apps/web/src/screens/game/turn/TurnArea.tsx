@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { PROPOSE_PHASES, TradeBuilder, canProposeTrade } from "../flows/trade/index.ts";
+import { useMotionStep } from "../motion/index.ts";
 import { centrePhases } from "./centrePhases.ts";
+import { Dice } from "./Dice.tsx";
 import { ErrorNotice } from "./ErrorNotice.tsx";
+import { Status } from "./Status.tsx";
 import { useTurn } from "./useTurn.ts";
 import { WaitingView } from "./WaitingView.tsx";
 import "./TurnArea.css";
@@ -11,12 +14,23 @@ import "./TurnArea.css";
 // builder in place of the phase view, in every phase where the engine allows `ProposeTrade`.
 export function TurnArea({ userId }: { userId: string }) {
   const turn = useTurn(userId);
+  const motion = useMotionStep();
   const { phase } = turn.view;
   const PhaseView = (phase && centrePhases[phase]) || WaitingView;
   const [trading, setTrading] = useState(false);
   const tradeAllowed = phase !== null && PROPOSE_PHASES.includes(phase);
   // The phase moved on (for example a remote trade offer): the builder closes for good.
   if (trading && !tradeAllowed) setTrading(false);
+
+  // Spec 5.2: while the dice roll, the centre shows only the animation and nothing is clickable.
+  if (motion?.kind === "roll") {
+    return (
+      <div className="turn-area" aria-busy="true">
+        <Dice dice={null} rolling />
+        <Status title="Rolling…" />
+      </div>
+    );
+  }
 
   if (trading) {
     return <TradeBuilder userId={userId} onClose={() => setTrading(false)} />;

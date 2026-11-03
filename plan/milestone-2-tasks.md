@@ -154,7 +154,7 @@ Files: `apps/api/src/rooms/service.ts`, `routes/games.ts`.
 
 ### H. Dice and token animation (moved from M1 H9)
 
-- [ ] **Dice roll animation (H1).** From `DiceRolled` (`dice`).
+- [x] **Dice roll animation (H1).** From `DiceRolled` (`dice`).
 - [ ] **Token movement animation (H2).** Square by square from `PlayerMoved.from` to `PlayerMoved.to`. `SentToJail` jumps with no steps. Start each move from the position in the event, not from the current state. Queue `game.actions` messages that come one after the other.
 - [ ] **No animation on snapshot or resume (H3).** A `snapshot` or a resume replay puts the tokens on their squares at once.
 - [ ] **Reduced motion fallback (H4).** With `prefers-reduced-motion`, the token goes to its square at once and the dice show at once (spec R-T6).
