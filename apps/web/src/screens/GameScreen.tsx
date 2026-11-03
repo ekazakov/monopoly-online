@@ -22,6 +22,7 @@ import { GameLayout } from "./game/GameLayout.tsx";
 import { HandoffPrompt } from "./game/handoff/index.ts";
 import { CardNotice } from "./game/flows/card/index.ts";
 import { LeaveGameMenu } from "./game/flows/leave/index.ts";
+import { DebugPanel } from "./game/debug/index.ts";
 import { GameLog } from "./game/log/index.ts";
 import { MotionProvider, useMotionPlayback } from "./game/motion/index.ts";
 import { PlayerRail } from "./game/rail/index.ts";
@@ -128,7 +129,12 @@ function GameRoute({ gameId }: { gameId: string }) {
           board={<Board userId={userId} />}
           centre={<Centre userId={userId} loadFailed={state.isError && state.data === undefined} />}
           hand={<PropertyHand userId={userId} />}
-          menu={<LeaveGameMenu userId={userId} onLeft={() => void navigate({ to: "/" })} />}
+          menu={
+            <>
+              <DebugPanel userId={userId} />
+              <LeaveGameMenu userId={userId} onLeft={() => void navigate({ to: "/" })} />
+            </>
+          }
           overlay={<HandoffPrompt userId={userId} />}
         />
       </MotionProvider>

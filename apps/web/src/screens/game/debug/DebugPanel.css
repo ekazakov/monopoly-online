@@ -1,0 +1,170 @@
+/*
+ * Debug panel next to the Menu button (spec 4.7). A tool to test the game logic, not part of the
+ * game design: the dashed border marks it. It opens in place like the Menu panel. Tokens only.
+ */
+.debug-panel {
+  position: relative;
+}
+
+.debug-panel__button {
+  min-height: var(--hf-target);
+  padding: 0 18px;
+  border: 1px dashed var(--hf-panel-line);
+  border-radius: var(--hf-radius-control);
+  background: var(--hf-panel);
+  color: var(--hf-ink-soft);
+  font: var(--hf-type-label);
+  letter-spacing: var(--hf-track-label);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.debug-panel__button:hover,
+.debug-panel__button[aria-expanded="true"] {
+  background: var(--hf-panel-log);
+  color: var(--hf-ink);
+}
+
+.debug-panel__panel {
+  position: absolute;
+  top: calc(100% + var(--hf-space-8));
+  right: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: var(--hf-space-12);
+  box-sizing: border-box;
+  width: 340px;
+  max-width: calc(100vw - 2 * var(--hf-space-12));
+  max-height: calc(100vh - 80px);
+  padding: var(--hf-space-16);
+  overflow: hidden auto;
+  border: 1px dashed var(--hf-panel-line);
+  border-radius: var(--hf-radius-panel);
+  background: var(--hf-panel);
+  box-shadow: var(--hf-elev-2);
+  color: var(--hf-ink);
+  text-align: left;
+}
+
+.debug-panel__panel :where(p, h2, form) {
+  margin: 0;
+}
+
+.debug-panel__title {
+  font: var(--hf-type-display-l);
+  font-size: 20px;
+  letter-spacing: var(--hf-track-display-m);
+  text-transform: uppercase;
+}
+
+.debug-panel__title:focus-visible {
+  outline: none;
+}
+
+.debug-panel__hint {
+  font: var(--hf-type-caption);
+  color: var(--hf-ink-soft);
+}
+
+.debug-panel__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hf-space-8);
+  min-width: 0;
+  margin: 0;
+  padding: var(--hf-space-12);
+  border: 1px solid var(--hf-panel-line);
+  border-radius: var(--hf-radius-control);
+}
+
+.debug-panel__legend {
+  padding: 0 var(--hf-space-6);
+  font: var(--hf-type-label);
+  letter-spacing: var(--hf-track-label);
+  text-transform: uppercase;
+}
+
+.debug-panel__row,
+.debug-panel__field {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--hf-space-8);
+}
+
+.debug-panel__field {
+  grid-template-columns: 84px minmax(0, 1fr);
+}
+
+.debug-panel__label {
+  overflow: hidden;
+  font: var(--hf-type-body-small);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.debug-panel__input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 36px;
+  padding: 0 var(--hf-space-8);
+  border: 1px solid var(--hf-panel-line);
+  border-radius: var(--hf-radius-control);
+  background: var(--hf-panel-log);
+  color: var(--hf-ink);
+  font: var(--hf-type-body-small);
+}
+
+.debug-panel__input[aria-invalid="true"] {
+  border-color: var(--hf-accent);
+}
+
+.debug-panel__check {
+  display: flex;
+  align-items: center;
+  gap: var(--hf-space-8);
+  font: var(--hf-type-body-small);
+}
+
+.debug-panel__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.debug-panel__btn {
+  min-width: var(--hf-target);
+  min-height: 36px;
+  padding: 0 var(--hf-space-12);
+  border: 1px solid var(--hf-accent);
+  border-radius: var(--hf-radius-control);
+  background: transparent;
+  color: var(--hf-accent-hover);
+  font: var(--hf-type-label);
+  letter-spacing: var(--hf-track-label);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.debug-panel__btn:hover:not(:disabled) {
+  background: var(--hf-hover);
+}
+
+.debug-panel__btn:disabled,
+.debug-panel__group:disabled .debug-panel__input {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.debug-panel__status {
+  font: var(--hf-type-caption);
+  font-weight: 600;
+}
+
+.debug-panel__status--error {
+  color: var(--hf-accent-hover);
+}
+
+.debug-panel__status:empty {
+  position: absolute;
+}
