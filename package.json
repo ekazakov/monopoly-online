@@ -14,7 +14,8 @@
     "artifact:game-screen": "node artifacts/serve.mjs game-screen 8791",
     "artifact:design-system": "node artifacts/serve.mjs design-system 8792",
     "ready": "vp check && vp run -r test && vp run -r build",
-    "openapi": "node apps/api/scripts/generate-openapi.ts"
+    "openapi": "node apps/api/scripts/generate-openapi.ts",
+    "graph:dashboard": "export GRAPH_DIR=\"$PWD\" && cd ~/.claude/plugins/cache/understand-anything/understand-anything/2.9.8/packages/dashboard && npx vite --host 127.0.0.1"
   },
   "devDependencies": {
     "@types/node": "catalog:",
