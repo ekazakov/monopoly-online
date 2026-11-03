@@ -297,9 +297,9 @@ A tool to test the game logic. It is not part of the game design. It is always o
 - **Who can edit:** only the player on turn, in `awaiting_roll`, `awaiting_jail_choice`, `awaiting_end_turn` and `awaiting_debt`. In the other phases the controls are disabled and a line says why: "Wait for your turn.", "Not available now. Finish the offer, auction or trade first." or "The game is over."
 - **Sections:**
   - **Cash:** one row for each active player: the name, a number field with the current cash, and **Set**.
-  - **Deeds:** a deed list in board order with the current owner, an owner list (the players and Bank), buildings (None, 1 to 4 houses, Hotel; streets only), Mortgaged, and **Apply**. The fields fill from the chosen deed. A mortgaged deed or a bank deed has no buildings.
+  - **Deeds:** a multi-select list of deeds in three groups: Streets, Stations and Utilities, each in board order, with the current owner of each deed. Then an owner list (the players and Bank), buildings (None, 1 to 4 houses, Hotel), Mortgaged, and **Apply**. Apply sets the same owner, buildings and mortgage on every chosen deed, in one action. Only streets keep buildings: a station or utility gets none. The fields fill from the first chosen deed. A mortgaged deed or a bank deed has no buildings. A line under the list says how many deeds are chosen.
   - **Player tokens:** a player list, a square list (all 40 squares), and **Move**. The move is a teleport: no rent, card, buy offer or Start salary. A jailed player who is moved leaves Jail.
-- **Result:** each edit is one `DebugEdit` action. The rail, the hand and the board show the new state. The token goes to the new square at once, with no walk. The log shows one line, for example "Ann (debug): Bo's cash set to $500." A status line in the panel confirms the edit or shows the error.
+- **Result:** each edit is one `DebugEdit` action. A batch of deeds is one action. The rail, the hand and the board show the new state. The token goes to the new square at once, with no walk. The log shows one line for each change, for example "Ann (debug): Bo's cash set to $500." A status line in the panel confirms the edit or shows the error.
 - **Words:** "player token", never "pawn".
 
 ---
@@ -491,3 +491,4 @@ Gameplay questions (player limits, disconnects, trades, house rules, timer, bots
 | 2026-10-25 | Rules review: expanded-hand model replaces per-card pop-ups (4.6, R-H6), no modal dialogs for now, debt and spectator states added to the rail and board centre (5.2, 5.3, R-P6), tablet hand behaviour updated (7). Open design questions 5 to 12 added to section 9. Rules and property data are in [game-rules-reference.md](game-rules-reference.md) |
 | 2026-10-31 | Review against the decided rules: no auction timer (R-G4), no counter-offers (R-G5), 6 players and tokens (questions 7 and 9), the turn timer question closed (question 4), the result screen gets its own board (R-G8) |
 | 2026-11-03 | Debug panel added (4.7, R-D1 to R-D5): the player on turn edits cash, deeds and token squares to test the game logic. It is not part of the game design |
+| 2026-11-03 | Debug panel: the Deeds list is a multi-select in three groups (Streets, Stations, Utilities), and one edit can hold a batch of changes (4.7) |

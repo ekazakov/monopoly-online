@@ -153,12 +153,12 @@ The user asked for a debug panel on the game screen to test the game logic. The 
 
 ## Design
 
-- **One action:** `DebugEdit { playerId, change: DebugChange }`. `DebugChange` is `cash` (`targetId`, `cash`), `deed` (`square`, `ownerId` or `null` for the bank, `houses` 0 to 5, `mortgaged`) or `position` (`targetId`, `square`). One change for each action.
+- **One action, a batch of changes:** `DebugEdit { playerId, changes: DebugChange[] }`. `DebugChange` is `cash` (`targetId`, `cash`), `deed` (`square`, `ownerId` or `null` for the bank, `houses` 0 to 5, `mortgaged`) or `position` (`targetId`, `square`). The changes apply in order and the batch is all or nothing: the first bad change refuses the whole action. An empty batch is refused (`invalid_edit`). The API accepts at most 100 changes.
 - **A real action, not a state patch.** The server stores the actions and replays them (loader, stream resume). A state that the service changed directly would be lost at the next replay.
 - **Who and when:** the player on turn (`actorFor`), in `DEBT_PHASES`: `awaiting_roll`, `awaiting_jail_choice`, `awaiting_end_turn`, `awaiting_debt`. Not in `awaiting_buy_decision`, `awaiting_bid` or `awaiting_trade_response`, because an edit could change the offer, the auction lot or the trade.
 - **Free edits:** the handler (`debug.ts`) checks only the shape: a known, active target or owner (`unknown_player`, `player_inactive`), a property square (`not_a_property`), buildings only on streets (`not_a_street`), 0 to 5 buildings (`max_buildings`), no buildings on a mortgaged deed (`has_buildings`), cash 0 or more and a square on the board (`invalid_edit`, new). Uneven building and buildings without the full group are allowed. No engine code throws on such a state.
 - **Teleport:** a position change sets `position` only. No landing, no Start salary. A jailed player who is moved leaves Jail (`inJail: false`, `jailTurns: 0`); if it is the player on turn in `awaiting_jail_choice`, the phase becomes `awaiting_roll`.
-- **Event:** `StateEdited { playerId, change }` only. No `PlayerMoved`, so the client plans no walk and the token goes to its new square at once.
+- **Events:** one `StateEdited { playerId, change }` for each change, and nothing else. No `PlayerMoved`, so the client plans no walk and the token goes to its new square at once.
 
 ## Tasks
 

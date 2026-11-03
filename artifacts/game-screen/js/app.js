@@ -711,7 +711,8 @@ $('#menuBtn').addEventListener('click', openMenu);
 // ---------- debug panel (spec 4.7): the player on turn edits the state ----------
 const debugPanel = $('#debugPanel'), debugBtn = $('#debugBtn');
 const DEEDS = SQUARES.map((sq, i) => ({ sq, i })).filter(({ sq }) => sq.price);
-let debugDeed = DEEDS[0].i, debugToken = 'marlow', debugStatus = '';
+const DEED_GROUPS = [['prop', 'Streets'], ['rail', 'Stations'], ['util', 'Utilities']];
+let debugDeeds = [DEEDS[0].i], debugToken = 'marlow', debugStatus = '';
 function closeDebug() { debugPanel.hidden = true; debugBtn.setAttribute('aria-expanded', 'false'); debugStatus = ''; }
 debugBtn.addEventListener('click', () => {
   if (!debugPanel.hidden) { closeDebug(); return; }
@@ -724,9 +725,8 @@ function renderDebug() {
   if (debugPanel.hidden) return;
   const off = S.situation !== 'local';
   const live = S.players.filter((p) => !p.bankrupt);
-  const o = S.own[debugDeed] || {};
-  const deedSq = SQUARES[debugDeed];
-  const street = deedSq.kind === 'prop';
+  const o = S.own[debugDeeds[0]] || {};
+  const street = debugDeeds.some((i) => SQUARES[i].kind === 'prop');
   const who = P(debugToken) || live[0];
   const opt = (v, label, on) => `<option value="${v}"${on ? ' selected' : ''}>${esc(label)}</option>`;
   debugPanel.innerHTML = `
@@ -736,11 +736,12 @@ function renderDebug() {
       ${live.map((p) => `<form class="debug-row" data-cash="${p.id}"><label for="dc-${p.id}">${esc(p.name)}</label><input id="dc-${p.id}" inputmode="numeric" value="${p.cash}"><button type="submit" aria-label="Set ${esc(p.name)}'s cash">Set</button></form>`).join('')}
     </fieldset>
     <form data-deed><fieldset ${off ? 'disabled' : ''}><legend>Deeds</legend>
-      <label class="debug-row two">Deed <select name="sq">${DEEDS.map(({ sq, i }) => opt(i, `${sq.name} (${S.own[i] ? P(S.own[i].owner).name : 'Bank'})`, i === debugDeed)).join('')}</select></label>
+      <label class="debug-row two list">Choose <select name="sq" multiple size="10">${DEED_GROUPS.map(([k, label]) => `<optgroup label="${label}">${DEEDS.filter(({ sq }) => sq.kind === k).map(({ sq, i }) => opt(i, `${sq.name} (${S.own[i] ? P(S.own[i].owner).name : 'Bank'})`, debugDeeds.includes(i))).join('')}</optgroup>`).join('')}</select></label>
+      <p>${debugDeeds.length ? `${debugDeeds.length} chosen. Apply sets the same owner, buildings and mortgage on all of them. Hold Shift or Ctrl to choose several.` : 'Choose one or more deeds. Hold Shift or Ctrl to choose several.'}</p>
       <label class="debug-row two">Owner <select name="owner">${opt('', 'Bank', !o.owner)}${live.map((p) => opt(p.id, p.name, o.owner === p.id)).join('')}</select></label>
       <label class="debug-row two">Buildings <select name="houses" ${!street || o.mortgaged ? 'disabled' : ''}>${[0, 1, 2, 3, 4, 5].map((h) => opt(h, h === 0 ? 'None' : h === 5 ? 'Hotel' : `${h} house${h > 1 ? 's' : ''}`, (o.houses || 0) === h)).join('')}</select></label>
       <label class="debug-check"><input type="checkbox" name="mortgaged" ${o.mortgaged ? 'checked' : ''}> Mortgaged</label>
-      <div class="debug-actions"><button type="submit">Apply</button></div>
+      <div class="debug-actions"><button type="submit" ${debugDeeds.length ? '' : 'disabled'}>Apply</button></div>
     </fieldset></form>
     <form data-token><fieldset ${off ? 'disabled' : ''}><legend>Player tokens</legend>
       <label class="debug-row two">Player <select name="who">${live.map((p) => opt(p.id, p.name, p.id === who.id)).join('')}</select></label>
@@ -752,7 +753,7 @@ function renderDebug() {
 }
 debugPanel.addEventListener('change', (e) => {
   const f = e.target.closest('form');
-  if (f?.dataset.deed !== undefined && e.target.name === 'sq') { debugDeed = +e.target.value; renderDebug(); }
+  if (f?.dataset.deed !== undefined && e.target.name === 'sq') { debugDeeds = [...e.target.selectedOptions].map((o) => +o.value); renderDebug(); }
   if (f?.dataset.token !== undefined && e.target.name === 'who') { debugToken = e.target.value; renderDebug(); }
 });
 debugPanel.addEventListener('submit', (e) => {
@@ -765,13 +766,18 @@ debugPanel.addEventListener('submit', (e) => {
     addLog(me, `{n} (debug): ${p.name}'s cash set to ${fmt(p.cash)}.`, true);
     debugStatus = `${p.name}'s cash is now ${fmt(p.cash)}.`;
   } else if (f.dataset.deed !== undefined) {
-    const owner = f.owner.value, sq = SQUARES[debugDeed];
-    const mortgaged = !!owner && f.mortgaged.checked;
-    const houses = owner && !mortgaged && sq.kind === 'prop' ? +f.houses.value : 0;
-    if (owner) S.own[debugDeed] = { owner, houses, mortgaged }; else delete S.own[debugDeed];
-    const extra = [houses ? (houses === 5 ? 'a hotel' : `${houses} house${houses > 1 ? 's' : ''}`) : '', mortgaged ? 'mortgaged' : ''].filter(Boolean);
-    addLog(me, owner ? `{n} (debug): ${sq.name} given to ${P(owner).name}${extra.length ? ', ' + extra.join(', ') : ''}.` : `{n} (debug): ${sq.name} returned to the bank.`);
-    debugStatus = owner ? `${sq.name} now belongs to ${P(owner).name}.` : `${sq.name} is back with the bank.`;
+    if (!debugDeeds.length) return;
+    const owner = f.owner.value, mortgaged = !!owner && f.mortgaged.checked;
+    // One batch for all chosen deeds. Only streets keep buildings.
+    for (const i of debugDeeds) {
+      const sq = SQUARES[i];
+      const houses = owner && !mortgaged && sq.kind === 'prop' ? +f.houses.value : 0;
+      if (owner) S.own[i] = { owner, houses, mortgaged }; else delete S.own[i];
+      const extra = [houses ? (houses === 5 ? 'a hotel' : `${houses} house${houses > 1 ? 's' : ''}`) : '', mortgaged ? 'mortgaged' : ''].filter(Boolean);
+      addLog(me, owner ? `{n} (debug): ${sq.name} given to ${P(owner).name}${extra.length ? ', ' + extra.join(', ') : ''}.` : `{n} (debug): ${sq.name} returned to the bank.`);
+    }
+    const what = debugDeeds.length === 1 ? SQUARES[debugDeeds[0]].name : `${debugDeeds.length} deeds`;
+    debugStatus = owner ? `${what} now ${debugDeeds.length === 1 ? 'belongs' : 'belong'} to ${P(owner).name}.` : `${what} back with the bank.`;
     board?.setOwnership(S.own);
   } else if (f.dataset.token !== undefined) {
     const p = P(f.who.value), to = +f.sq.value;

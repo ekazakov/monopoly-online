@@ -343,6 +343,8 @@ input[type="range"] { accent-color: var(--accent); width: 160px; min-height: 44p
 .debug-panel legend { padding: 0 6px; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); font-weight: 600; }
 .debug-row { display: grid; grid-template-columns: 76px minmax(0, 1fr) auto; align-items: center; gap: 8px; font-size: 13px; }
 .debug-row.two { grid-template-columns: 76px minmax(0, 1fr); }
+.debug-row.list { align-items: start; }
+.debug-panel select[multiple] { padding: 6px 8px; }
 .debug-panel input:not([type="checkbox"]), .debug-panel select { min-width: 0; min-height: 34px; padding: 0 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-raised); color: var(--ink); font: inherit; font-size: 13px; }
 .debug-panel button { min-height: 34px; min-width: 0; padding: 0 12px; font-size: 11px; border: 1px solid var(--accent); color: var(--accent); }
 .debug-panel fieldset:disabled { opacity: 0.45; }
