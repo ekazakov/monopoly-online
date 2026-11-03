@@ -7,6 +7,9 @@ import {
   tradeOfferSchema,
 } from "./state.ts";
 
+/** The most changes in one `DebugEdit`: every deed on the board, plus cash and tokens. */
+export const MAX_DEBUG_CHANGES = 100;
+
 const bare = <T extends string>(type: T) => z.strictObject({ type: z.literal(type) });
 const onSquare = <T extends string>(type: T) =>
   z.strictObject({ type: z.literal(type), square: squareSchema });
@@ -36,7 +39,10 @@ export const actionInputSchema = z.discriminatedUnion("type", [
   bare("CancelTrade"),
   bare("EndTurn"),
   bare("Resign"),
-  z.strictObject({ type: z.literal("DebugEdit"), change: debugChangeSchema }),
+  z.strictObject({
+    type: z.literal("DebugEdit"),
+    changes: z.array(debugChangeSchema).min(1).max(MAX_DEBUG_CHANGES),
+  }),
 ]);
 
 export type ActionInput = z.infer<typeof actionInputSchema>;

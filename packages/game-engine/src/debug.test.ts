@@ -5,8 +5,10 @@ import { base, current, holding, ownerId, player, setCurrent, types } from "./te
 import type { Setup } from "./test-helpers.ts";
 
 const game = (...setups: Setup[]): GameState => setups.reduce((s, f) => f(s), base(1));
+const editAll = (state: GameState, changes: DebugChange[], playerId = current(state)) =>
+  applyAction(state, { type: "DebugEdit", playerId, changes });
 const edit = (state: GameState, change: DebugChange, playerId = current(state)) =>
-  applyAction(state, { type: "DebugEdit", playerId, change });
+  editAll(state, [change], playerId);
 const code = (result: ReturnType<typeof edit>) => (result.ok ? "ok" : result.error.code);
 const after = (result: ReturnType<typeof edit>) => {
   if (!result.ok) throw new Error(result.error.message);
@@ -79,6 +81,38 @@ describe("DebugEdit", () => {
     expect(code(edit(state, deed(5, id, 1)))).toBe("not_a_street");
     expect(code(edit(state, deed(1, id, 6)))).toBe("max_buildings");
     expect(code(edit(state, deed(1, id, 1, true)))).toBe("has_buildings");
+  });
+
+  test("a batch applies every change in order and gives one event for each", () => {
+    const state = game();
+    const other = ownerId(state);
+    const result = editAll(state, [
+      deed(1, other, 2),
+      deed(3, other, 4),
+      deed(5, other),
+      { kind: "cash", targetId: other, cash: 9 },
+      deed(1, null),
+    ]);
+    const next = after(result);
+    expect(next.ownership["1"]).toBeUndefined();
+    expect(next.ownership["3"]).toEqual({ ownerId: other, houses: 4, mortgaged: false });
+    expect(next.ownership["5"]).toEqual({ ownerId: other, houses: 0, mortgaged: false });
+    expect(player(next, other).cash).toBe(9);
+    expect(result.ok && types(result.events)).toEqual(Array(5).fill("StateEdited"));
+    expect(next.version).toBe(state.version + 1);
+  });
+
+  test("a batch is all or nothing", () => {
+    const state = game();
+    const other = ownerId(state);
+    const result = editAll(state, [deed(1, other, 2), deed(5, other, 1)]);
+    expect(code(result)).toBe("not_a_street");
+    // The refused action leaves the state as it was: the caller keeps `state`.
+    expect(state.ownership["1"]).toBeUndefined();
+  });
+
+  test("an empty batch is refused", () => {
+    expect(code(editAll(game(), []))).toBe("invalid_edit");
   });
 
   test("only the player on turn may edit, and not during an offer, auction or trade", () => {

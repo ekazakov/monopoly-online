@@ -3,22 +3,26 @@ import { BOARD_SIZE, isProperty, SQUARES } from "./board.ts";
 import { updatePlayer } from "./helpers.ts";
 import { removeEntry, setEntry } from "./ownership.ts";
 import { fail } from "./state.ts";
-import type { DebugChange, GameState, Result } from "./state.ts";
+import type { DebugChange, GameEvent, GameState, Result } from "./state.ts";
 
 /**
- * The player on turn edits the state from the debug panel. Only the shape of the change is
- * checked: uneven building and buildings without the full group are allowed. A token move is a
- * teleport: no landing, no Start salary, and no `PlayerMoved`, so the client does not animate it.
+ * The player on turn edits the state from the debug panel. One action holds a batch of changes.
+ * They apply in order, and the batch is all or nothing: the first bad change refuses the action.
+ * Only the shape of a change is checked: uneven building and buildings without the full group
+ * are allowed. A token move is a teleport: no landing, no Start salary, and no `PlayerMoved`, so
+ * the client does not animate it. Each change gives one `StateEdited` event.
  */
 export function handleDebugEdit(state: GameState, action: ActionOf<"DebugEdit">): Result {
-  const { change } = action;
-  const edited = applyChange(state, change);
-  if (!edited.ok) return edited;
-  return {
-    ok: true,
-    state: edited.state,
-    events: [{ type: "StateEdited", playerId: action.playerId, change }],
-  };
+  if (action.changes.length === 0) return fail("invalid_edit", "Send at least one change");
+  let next = state;
+  const events: GameEvent[] = [];
+  for (const change of action.changes) {
+    const edited = applyChange(next, change);
+    if (!edited.ok) return edited;
+    next = edited.state;
+    events.push({ type: "StateEdited", playerId: action.playerId, change });
+  }
+  return { ok: true, state: next, events };
 }
 
 function applyChange(state: GameState, change: DebugChange): Result {

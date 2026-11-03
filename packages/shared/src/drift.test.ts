@@ -350,26 +350,27 @@ describe("debug edit", () => {
     ],
   });
   const playerId = actorFor(state);
-  const changes: ActionInput[] = [
-    { type: "DebugEdit", change: { kind: "cash", targetId: "b", cash: 20 } },
+  const edits: ActionInput[] = [
+    { type: "DebugEdit", changes: [{ kind: "cash", targetId: "b", cash: 20 }] },
     {
       type: "DebugEdit",
-      change: { kind: "deed", square: 1, ownerId: "b", houses: 2, mortgaged: false },
+      changes: [
+        { kind: "deed", square: 1, ownerId: "b", houses: 2, mortgaged: false },
+        { kind: "deed", square: 5, ownerId: "b", houses: 0, mortgaged: true },
+        { kind: "deed", square: 1, ownerId: null, houses: 0, mortgaged: false },
+      ],
     },
-    {
-      type: "DebugEdit",
-      change: { kind: "deed", square: 1, ownerId: null, houses: 0, mortgaged: false },
-    },
-    { type: "DebugEdit", change: { kind: "position", targetId: "b", square: 30 } },
+    { type: "DebugEdit", changes: [{ kind: "position", targetId: "b", square: 30 }] },
   ];
 
-  test.each(changes)(
-    "the schemas parse the action, its event and the state: $change.kind",
+  test.each(edits)(
+    "the schemas parse the action, its events and the state: $changes.0.kind",
     (input) => {
       const action = actionInputSchema.parse(input);
       const result = applyAction(state, { ...action, playerId } as Action);
       expect(result.ok).toBe(true);
       if (!result.ok) return;
+      expect(result.events).toHaveLength(input.type === "DebugEdit" ? input.changes.length : 0);
       expect(result.events.map((event) => gameEventSchema.parse(event))).toEqual(result.events);
       expect(redactedGameStateSchema.parse(redact(result.state))).toEqual(redact(result.state));
     },

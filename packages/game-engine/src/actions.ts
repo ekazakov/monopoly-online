@@ -25,7 +25,7 @@ export type Action =
   | { type: "CancelTrade"; playerId: string }
   | { type: "EndTurn"; playerId: string }
   | { type: "Resign"; playerId: string }
-  | { type: "DebugEdit"; playerId: string; change: DebugChange };
+  | { type: "DebugEdit"; playerId: string; changes: readonly DebugChange[] };
 
 export type ActionType = Action["type"];
 export type ActionOf<T extends ActionType> = Extract<Action, { type: T }>;

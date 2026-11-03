@@ -2112,79 +2112,84 @@
                             "type": "string",
                             "enum": ["DebugEdit"]
                           },
-                          "change": {
-                            "oneOf": [
-                              {
-                                "type": "object",
-                                "properties": {
-                                  "kind": {
-                                    "type": "string",
-                                    "enum": ["cash"]
+                          "changes": {
+                            "type": "array",
+                            "items": {
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": ["cash"]
+                                    },
+                                    "targetId": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "cash": {
+                                      "type": "integer",
+                                      "minimum": 0
+                                    }
                                   },
-                                  "targetId": {
-                                    "type": "string",
-                                    "minLength": 1
-                                  },
-                                  "cash": {
-                                    "type": "integer",
-                                    "minimum": 0
-                                  }
+                                  "required": ["kind", "targetId", "cash"],
+                                  "additionalProperties": false
                                 },
-                                "required": ["kind", "targetId", "cash"],
-                                "additionalProperties": false
-                              },
-                              {
-                                "type": "object",
-                                "properties": {
-                                  "kind": {
-                                    "type": "string",
-                                    "enum": ["deed"]
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": ["deed"]
+                                    },
+                                    "square": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 39
+                                    },
+                                    "ownerId": {
+                                      "type": ["string", "null"],
+                                      "minLength": 1
+                                    },
+                                    "houses": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 5
+                                    },
+                                    "mortgaged": {
+                                      "type": "boolean"
+                                    }
                                   },
-                                  "square": {
-                                    "type": "integer",
-                                    "minimum": 0,
-                                    "maximum": 39
-                                  },
-                                  "ownerId": {
-                                    "type": ["string", "null"],
-                                    "minLength": 1
-                                  },
-                                  "houses": {
-                                    "type": "integer",
-                                    "minimum": 0,
-                                    "maximum": 5
-                                  },
-                                  "mortgaged": {
-                                    "type": "boolean"
-                                  }
+                                  "required": ["kind", "square", "ownerId", "houses", "mortgaged"],
+                                  "additionalProperties": false
                                 },
-                                "required": ["kind", "square", "ownerId", "houses", "mortgaged"],
-                                "additionalProperties": false
-                              },
-                              {
-                                "type": "object",
-                                "properties": {
-                                  "kind": {
-                                    "type": "string",
-                                    "enum": ["position"]
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": ["position"]
+                                    },
+                                    "targetId": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "square": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 39
+                                    }
                                   },
-                                  "targetId": {
-                                    "type": "string",
-                                    "minLength": 1
-                                  },
-                                  "square": {
-                                    "type": "integer",
-                                    "minimum": 0,
-                                    "maximum": 39
-                                  }
-                                },
-                                "required": ["kind", "targetId", "square"],
-                                "additionalProperties": false
-                              }
-                            ]
+                                  "required": ["kind", "targetId", "square"],
+                                  "additionalProperties": false
+                                }
+                              ]
+                            },
+                            "minItems": 1,
+                            "maxItems": 100
                           }
                         },
-                        "required": ["type", "change"],
+                        "required": ["type", "changes"],
                         "additionalProperties": false
                       }
                     ]

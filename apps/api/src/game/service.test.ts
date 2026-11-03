@@ -125,14 +125,20 @@ describe("submitAction: replay", () => {
   });
 
   test("debug edits are stored as actions and replay to the same state", async () => {
-    await act(first, { type: "DebugEdit", change: { kind: "cash", targetId: second, cash: 42 } });
     await act(first, {
       type: "DebugEdit",
-      change: { kind: "deed", square: 39, ownerId: third, houses: 5, mortgaged: false },
+      changes: [{ kind: "cash", targetId: second, cash: 42 }],
+    });
+    await act(first, {
+      type: "DebugEdit",
+      changes: [
+        { kind: "deed", square: 39, ownerId: third, houses: 5, mortgaged: false },
+        { kind: "deed", square: 37, ownerId: third, houses: 0, mortgaged: true },
+      ],
     });
     const result = await act(first, {
       type: "DebugEdit",
-      change: { kind: "position", targetId: second, square: 30 },
+      changes: [{ kind: "position", targetId: second, square: 30 }],
     });
     expect(result.events).toEqual([
       {
@@ -150,6 +156,23 @@ describe("submitAction: replay", () => {
       position: 30,
     });
     expect(replayed?.ownership["39"]).toEqual({ ownerId: third, houses: 5, mortgaged: false });
+    expect(replayed?.ownership["37"]).toEqual({ ownerId: third, houses: 0, mortgaged: true });
+  });
+
+  test("a debug batch with one bad change is refused and stores nothing", async () => {
+    const before = await counts();
+    const error = await failure(
+      act(first, {
+        type: "DebugEdit",
+        changes: [
+          { kind: "deed", square: 39, ownerId: third, houses: 5, mortgaged: false },
+          { kind: "deed", square: 5, ownerId: third, houses: 2, mortgaged: false },
+        ],
+      }),
+    );
+    expect(error.code).toBe("not_a_street");
+    expect(await counts()).toEqual(before);
+    expect((await loader.load(GAME_ID))?.ownership["39"]).toBeUndefined();
   });
 
   test("the server sets playerId from the seat", async () => {
