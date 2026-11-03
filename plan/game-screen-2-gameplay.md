@@ -5,7 +5,7 @@
 | Companion doc | [game-screen-2-spec.md](game-screen-2-spec.md): the UI and visual design of the same screen |
 | Canvas        | Harborfront Design System: https://claude.ai/artifact/RtcjA9YX1Sq77osCjy58PK                |
 | Artboard      | `project/Wireframe2.dc.html`, titled "Game screen 2"                                        |
-| Status        | Draft. Last updated 2026-10-31                                                              |
+| Status        | Draft. Last updated 2026-11-03                                                              |
 
 This document covers the game rules and turn logic that Game screen 2 has to present. How each item looks, its layout, tokens and components, is in the design spec.
 
@@ -172,7 +172,7 @@ The design spec lists these as screens (R-G4 to R-G8). **For now none of them is
 
 ## 6. Questions and decisions
 
-All questions are closed. The decision for each one is below.
+Questions 1 to 23 are closed. The decision for each one is below. Question 24 is open.
 
 1. [x] Players: 2 to 6 in total, with any number on one device.
 2. [x] A disconnected player's turn: a 60-second grace time, then the autopilot plays it (3.2).
@@ -196,6 +196,8 @@ All questions are closed. The decision for each one is below.
 20. [x] On restore, only the original player can claim a seat. A player who does not come back is away (3.2).
 21. [x] The owner saves or finishes during a remote turn: the device of the player on turn shows the same notice as all other devices.
 22. [x] A device disconnects: all its players are handled together, with a 60-second grace time, then the away rules (3.2). They can claim their seats again from any device.
+23. [x] Debug panel: the player on turn can edit the cash of any player, the deeds and buildings, and the token squares, to test the game logic. It is always on for now, in every game. Edits ignore the rules: a token move has no landing, and buildings need not be even. Each edit is a game action and a log line. UI: [game-screen-2-spec.md](game-screen-2-spec.md) 4.7.
+24. [ ] Before release: hide the debug panel behind a server flag, make it a per-game option for the owner, or remove it?
 
 ---
 
@@ -209,3 +211,4 @@ All questions are closed. The decision for each one is below.
 | 2026-10-29 | Session owner controls (3.1): finish the game with no winner, save and exit, restore by the owner only. Both roll back to the start of the turn and keep the random state. One save slot, no expiry, free re-seating. Open questions 20 to 22 added                                                                                                                                                                                  |
 | 2026-10-30 | All open questions decided (section 6). Disconnect rules (3.2), server-side dice and decks, no bots or timers in v1, hot-seat trade handoff, resigning as a bankruptcy, jail cards always back to their decks, 2 to 6 players, GO renamed Start |
 | 2026-10-31 | Turn flow (section 2): rent and tax are paid automatically and have no Pay button; the card OK only closes the card on this device |
+| 2026-11-03 | Debug panel for the player on turn (Q23), always on for now. Open question 24: how to gate it before release |

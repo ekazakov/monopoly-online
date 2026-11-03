@@ -8,7 +8,7 @@
 | Reference frame  | 1440 × 900 px                                                                                               |
 | Related boards   | Game screen (`Screens.dc.html`), Game parts (`GameParts.dc.html`), Colour tokens (`Main.dc.html`)           |
 | Avatar reference | Harborfront Avatars: https://claude.ai/artifact/RaQcXVRWRdHJo58bJx2SaC                                      |
-| Status           | Wireframe, mid-fidelity. Last updated 2026-10-31                                                            |
+| Status           | Wireframe, mid-fidelity. Last updated 2026-11-03                                                            |
 
 In the requirement lists, **MUST** means required for the first playable release and **SHOULD** means strongly recommended. Each requirement has a tag:
 
@@ -288,6 +288,20 @@ The hand has two states. Cards don't pop up one at a time: the whole hand opens 
 - **Debt:** while the player owes money, the panel header shows "Owes $X" with a **Pay** button that enables once cash covers it. The panel opens by itself.
 - **Motion:** no animation under reduced motion.
 
+### 4.7 Debug panel
+
+A tool to test the game logic. It is not part of the game design. It is always on for now (gameplay doc, Q23 and Q24).
+
+- **Button:** "Debug", to the left of the Menu button, in the `menu` slot. The same size and type as the Menu button, with a **dashed** border and the soft ink, so that it does not look like a game control.
+- **Panel:** a disclosure in place under the button, not a modal, like the Menu panel (4.2). 340px wide, dashed border. Esc or a click outside closes it. Focus goes to the "Debug" heading when it opens.
+- **Who can edit:** only the player on turn, in `awaiting_roll`, `awaiting_jail_choice`, `awaiting_end_turn` and `awaiting_debt`. In the other phases the controls are disabled and a line says why: "Wait for your turn.", "Not available now. Finish the offer, auction or trade first." or "The game is over."
+- **Sections:**
+  - **Cash:** one row for each active player: the name, a number field with the current cash, and **Set**.
+  - **Deeds:** a deed list in board order with the current owner, an owner list (the players and Bank), buildings (None, 1 to 4 houses, Hotel; streets only), Mortgaged, and **Apply**. The fields fill from the chosen deed. A mortgaged deed or a bank deed has no buildings.
+  - **Player tokens:** a player list, a square list (all 40 squares), and **Move**. The move is a teleport: no rent, card, buy offer or Start salary. A jailed player who is moved leaves Jail.
+- **Result:** each edit is one `DebugEdit` action. The rail, the hand and the board show the new state. The token goes to the new square at once, with no walk. The log shows one line, for example "Ann (debug): Bo's cash set to $500." A status line in the panel confirms the edit or shows the error.
+- **Words:** "player token", never "pawn".
+
 ---
 
 ## 5. Interaction and behaviour
@@ -438,6 +452,14 @@ The rules behind each flow are in the gameplay doc, section 5. **There are no mo
 | R-G8 | MUST   | Gap    | Bankruptcy, and the end-of-game result screen ("Game result" board, task H10a)                                       |
 | R-G9 | SHOULD | Gap    | Menu contents: rules, settings (sound, motion, theme), leave game; for the session owner, save and exit, finish game |
 
+### 8.8 Debug panel
+
+- **R-D1 MUST** [Done] A "Debug" button next to Menu opens a panel in place (4.7). It is always on for now.
+- **R-D2 MUST** [Done] The player on turn can set the cash of any player, give any deed with buildings and a mortgage to any player or to the bank, and move any player token to any square with no landing.
+- **R-D3 MUST** [Done] Off turn, and during a buy offer, an auction or a trade, the controls are disabled and say why.
+- **R-D4 MUST** [Done] Each edit is a game action that the log shows as a "(debug)" line and that stays after a reload.
+- **R-D5 SHOULD** [Gap] Hide or limit the panel before release (gameplay Q24).
+
 ---
 
 ## 9. Open design questions
@@ -468,3 +490,4 @@ Gameplay questions (player limits, disconnects, trades, house rules, timer, bots
 | 2026-10-25 | Gameplay logic and gameplay questions moved to [game-screen-2-gameplay.md](game-screen-2-gameplay.md). This spec now covers UI and design only                                                                                                                                                                                                           |
 | 2026-10-25 | Rules review: expanded-hand model replaces per-card pop-ups (4.6, R-H6), no modal dialogs for now, debt and spectator states added to the rail and board centre (5.2, 5.3, R-P6), tablet hand behaviour updated (7). Open design questions 5 to 12 added to section 9. Rules and property data are in [game-rules-reference.md](game-rules-reference.md) |
 | 2026-10-31 | Review against the decided rules: no auction timer (R-G4), no counter-offers (R-G5), 6 players and tokens (questions 7 and 9), the turn timer question closed (question 4), the result screen gets its own board (R-G8) |
+| 2026-11-03 | Debug panel added (4.7, R-D1 to R-D5): the player on turn edits cash, deeds and token squares to test the game logic. It is not part of the game design |

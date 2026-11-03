@@ -141,3 +141,26 @@ Changed methods:
 | `game:<id>` | `room.cancelled` | `{ gameId }` | Cancel. The client drops the topic. No SSE id |
 
 None of these messages has an SSE id. The `version` field of the envelope is 0 for `lobby` and `user:` messages.
+
+## Debug edit (added 2026-11-03, not in a milestone)
+
+A debug panel on the game screen lets the player on turn edit the game state, to test the game logic. See [game-screen-2-spec.md](game-screen-2-spec.md) §4.7.
+
+### Decisions (user answers)
+- **Access:** always on for now, in every game and every environment. Gating it before release is an open question ([game-screen-2-gameplay.md](game-screen-2-gameplay.md) §6).
+- **Token move:** a teleport. No landing, no rent, no card, no Start salary, no phase change.
+- **Free edits:** only the shape of a change is checked. Uneven building and buildings without the full group are allowed.
+
+### New and changed schemas
+| Schema | Shape |
+| --- | --- |
+| `debugChangeSchema` | `{ kind: "cash", targetId, cash: money }` \| `{ kind: "deed", square, ownerId: playerId \| null, houses: 0–5, mortgaged }` \| `{ kind: "position", targetId, square }`. `ownerId: null` gives the deed back to the bank |
+| `actionInputSchema` | adds `{ type: "DebugEdit", change: debugChange }` |
+| `gameEventSchema` | adds `{ type: "StateEdited", playerId, change: debugChange }`. It is the only event of a `DebugEdit`. There is no `PlayerMoved`, so the client does not animate the token |
+
+### Method
+Row 13 (`POST /api/games/:id/actions`) accepts `DebugEdit`. The action goes into `game_events` like every other action, so the loader and the stream resume replay it.
+
+| Status | Codes |
+| --- | --- |
+| 422 | `not_your_turn` (not the player on turn), `wrong_phase` (allowed only in `awaiting_roll`, `awaiting_jail_choice`, `awaiting_end_turn` and `awaiting_debt`), `unknown_player`, `player_inactive` (target or new owner), `not_a_property`, `not_a_street` (buildings on a station or utility), `max_buildings`, `has_buildings` (buildings on a mortgaged deed), `invalid_edit` (new: negative cash or a square off the board) |

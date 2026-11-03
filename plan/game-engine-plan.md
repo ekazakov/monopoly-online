@@ -144,3 +144,22 @@ All additions keep the phase 1 style: pure functions, plain-JSON state, seeded R
 ## Verification
 
 After each task: `unset NODE_USE_SYSTEM_CA; pnpm check` and `pnpm test` must pass. The engine tests include the seeded bot invariant test; from task 23 it also asserts that most games end with exactly one active player. Final: `pnpm ready` (check, test, build).
+
+# Debug edit (added 2026-11-03)
+
+## Context
+
+The user asked for a debug panel on the game screen to test the game logic. The player on turn can set the cash of any player, give any deed with buildings and a mortgage to any player or to the bank, and put any player token on any square. The panel is always on for now.
+
+## Design
+
+- **One action:** `DebugEdit { playerId, change: DebugChange }`. `DebugChange` is `cash` (`targetId`, `cash`), `deed` (`square`, `ownerId` or `null` for the bank, `houses` 0 to 5, `mortgaged`) or `position` (`targetId`, `square`). One change for each action.
+- **A real action, not a state patch.** The server stores the actions and replays them (loader, stream resume). A state that the service changed directly would be lost at the next replay.
+- **Who and when:** the player on turn (`actorFor`), in `DEBT_PHASES`: `awaiting_roll`, `awaiting_jail_choice`, `awaiting_end_turn`, `awaiting_debt`. Not in `awaiting_buy_decision`, `awaiting_bid` or `awaiting_trade_response`, because an edit could change the offer, the auction lot or the trade.
+- **Free edits:** the handler (`debug.ts`) checks only the shape: a known, active target or owner (`unknown_player`, `player_inactive`), a property square (`not_a_property`), buildings only on streets (`not_a_street`), 0 to 5 buildings (`max_buildings`), no buildings on a mortgaged deed (`has_buildings`), cash 0 or more and a square on the board (`invalid_edit`, new). Uneven building and buildings without the full group are allowed. No engine code throws on such a state.
+- **Teleport:** a position change sets `position` only. No landing, no Start salary. A jailed player who is moved leaves Jail (`inJail: false`, `jailTurns: 0`); if it is the player on turn in `awaiting_jail_choice`, the phase becomes `awaiting_roll`.
+- **Event:** `StateEdited { playerId, change }` only. No `PlayerMoved`, so the client plans no walk and the token goes to its new square at once.
+
+## Tasks
+
+- [x] 25. `DebugEdit`, `DebugChange`, `StateEdited`, `invalid_edit`, `debug.ts` with tests (`debug.test.ts`). The bot does not use the action; the drift test names it as debug only.

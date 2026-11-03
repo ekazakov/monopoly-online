@@ -172,6 +172,17 @@ Files: `apps/api/src/rooms/service.ts`, `routes/games.ts`.
   - The dice and the token movement have an animation. (The check with reduced motion on is out of M2: see Reduced motion fallback (H4).)
 - [ ] **Milestone 2 docs (I2).** Roadmap status, README (if commands changed), [api-schema.md](api-schema.md), and sync `artifacts/` if the port changed them.
 
+### J. Debug panel (unplanned, added 2026-11-03)
+
+A tool to test the game logic. The player on turn edits the game state. Always on for now (gameplay Q23, open question Q24). Design: [game-screen-2-spec.md](game-screen-2-spec.md) 4.7. API: [api-schema.md](api-schema.md), section "Debug edit".
+
+- [x] **Debug edit action (J1).** Engine `DebugEdit` with `DebugChange` (cash, deed, position) and the `StateEdited` event, in `debug.ts`. Only the player on turn, in `awaiting_roll`, `awaiting_jail_choice`, `awaiting_end_turn` and `awaiting_debt`. Only shape checks; new error code `invalid_edit`. A token move is a teleport; a jailed player who is moved leaves Jail.
+- [x] **Debug edit schemas (J2).** `debugChangeSchema`, the action input and the event in `packages/shared`. The drift test names them as debug only. Regenerate `apps/api/openapi.json`. A service test replays the edits from the log.
+- [x] **Debug panel (J3).** `apps/web/src/screens/game/debug/`: a "Debug" disclosure next to Menu with Cash, Deeds and Player tokens. Disabled with a reason when the user may not edit.
+- [x] **Debug log lines (J4).** `describe.ts` reads `StateEdited`, for example "Ann (debug): Bo's cash set to $500."
+- [x] **Debug panel docs (J5).** This section, the API schema, the engine plan and README, the UI spec (4.7, R-D1 to R-D5), the gameplay doc (Q23, Q24).
+- [x] **Debug panel in the prototype (J6).** Sync `artifacts/game-screen` with a mock of the panel (CLAUDE.md).
+
 ## API decisions
 
 | Topic | Decision |
