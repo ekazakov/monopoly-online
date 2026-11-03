@@ -4,7 +4,7 @@
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Companion docs | [game-rules-reference.md](game-rules-reference.md) (rules), [game-screen-2-gameplay.md](game-screen-2-gameplay.md) (turn flow, devices, session owner), [game-screen-2-spec.md](game-screen-2-spec.md) (UI) |
 | Engine         | [packages/game-engine](../packages/game-engine/README.md): complete                                                                                                                                              |
-| Status         | Draft. Last updated 2026-10-31                                                                                                                                                                                    |
+| Status         | Draft. Last updated 2026-11-03                                                                                                                                                                                    |
 
 This document is the plan from the current scaffold to a fully working online game. It covers the API, the realtime layer, auth, the UI, testing, telemetry, and hosting.
 
@@ -41,7 +41,7 @@ Milestones M1 to M4 run on the local machine with `pnpm dev`. Deployment comes l
 | Milestone                     | Scope |
 | ----------------------------- | ----- |
 | **M1 Local playable game** ([tasks](milestone-1-tasks.md)) | Guest sessions (one per browser or browser profile), create a game, join by invite link, hot-seat seats, start. The engine on the server, the SSE game channel, the game screen in React with all turn actions, resign, and the result screen. Done when two browser profiles and one hot-seat player finish a game on `localhost` |
-| **M2 Lobby**                  | Public game list, the full game room (host and guest views), invite by name, player tokens (game pieces) |
+| **M2 Lobby** ([tasks](milestone-2-tasks.md)) | Public game list, My games, the full game room (host and guest views), invite by name, player tokens (game pieces), Cancel game, and the dice and token animation (moved from M1) |
 | **M3 Session and resilience** | Owner Finish, Save and Restore (gameplay 3.1), disconnect and away rules with the autopilot (3.2) |
 | **M4 Polish**                 | Accessibility pass, rematch, WebSocket transport, Google OAuth |
 | **M5 Deployment**             | CI, Docker image, the droplet with Cloudflare Tunnel and Access, OpenTelemetry export to Grafana Cloud |
@@ -217,3 +217,4 @@ Only persons on an allow list can open the game. Cloudflare Access (Zero Trust, 
 | 2026-10-31 | Task list for milestone 1 in [milestone-1-tasks.md](milestone-1-tasks.md) |
 | 2026-10-31 | API schema for milestone 1 in [api-schema.md](api-schema.md) |
 | 2026-10-31 | Review fixes: seat limit always 6, resign moved to M1, `finished` status, SSE ids and resume limit, Secure cookie outside development, invites by name only (M2 tokens are game pieces), E2E scope per milestone |
+| 2026-11-03 | Task list for milestone 2 in [milestone-2-tasks.md](milestone-2-tasks.md), and the M2 section in [api-schema.md](api-schema.md). Dice and token animation moved from M1 to M2 |

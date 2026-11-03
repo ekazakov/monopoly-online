@@ -1,11 +1,11 @@
-# Harborfront: API schema for milestone 1
+# Harborfront: API schema for milestones 1 and 2
 
 |                |                                                                                                   |
 | -------------- | ------------------------------------------------------------------------------------------------- |
-| Companion docs | [implementation-roadmap.md](implementation-roadmap.md), [milestone-1-tasks.md](milestone-1-tasks.md) |
-| Status         | Draft. Last updated 2026-10-31                                                                    |
+| Companion docs | [implementation-roadmap.md](implementation-roadmap.md), [milestone-1-tasks.md](milestone-1-tasks.md), [milestone-2-tasks.md](milestone-2-tasks.md) |
+| Status         | Draft. Last updated 2026-11-03                                                                    |
 
-This document fixes the request and response schema of each API method in milestone 1. The zod schemas live in `packages/shared`.
+This document fixes the request and response schema of each API method in milestone 1. The section "Milestone 2" adds the lobby methods. The zod schemas live in `packages/shared`.
 
 ## Decisions (user answers)
 - **State and events:** zod mirror of redacted state, events and the action union in `packages/shared`, plus a drift test against the engine.
@@ -85,3 +85,59 @@ Rules for rows 8–10: the owner's own seat cannot be removed and the owner cann
 - A1 splits into: A1a error codes and session schemas; A1b game and seat schemas; A1c action, state and event schemas; A1d stream envelope; A1e drift test (`packages/shared`, dev dependency on `@monopoly/game-engine`: parse `createGame` output minus `rng`/`decks`, parse every event and state from a scripted seeded game, and a type-level equality check of `actionInputSchema` against `Omit<Action, "playerId">`).
 - A2: no `invites` table in M1 and no seat limit column; `game_events` has a unique `(game_id, version)` and a unique `(game_id, client_action_id)` for idempotency.
 - A3: OpenAPI generated from these schemas (`hono-openapi` or `@hono/zod-openapi`; pick at A3).
+
+## Milestone 2
+
+Task list: [milestone-2-tasks.md](milestone-2-tasks.md). The conventions and the error format above stay the same.
+
+### Decisions (user answers)
+- **Tokens:** 6 tokens for 6 seats. Each token has one fixed colour. Create, join and add-seat give the first free token. The controller of a seat can change it while `waiting`.
+- **Invites:** host only, exact name match (not case-sensitive). An invite does not hold a seat. Start expires the pending invites.
+- **Cancel game:** host only, while `waiting`. The game is deleted (cascade to seats and invites).
+- **Lobby topics:** `lobby` and `user:<id>` messages have no SSE id.
+
+### New and changed schemas
+| Schema | Shape |
+| --- | --- |
+| `tokenSchema` | `"dog" \| "cat" \| "penguin" \| "car" \| "horse" \| "duck"`. `TOKENS` keeps this order; it is the free-token order |
+| `seatSchema` | adds `token: tokenSchema` |
+| `inviteStateSchema` | `"pending" \| "accepted" \| "declined" \| "expired"` |
+| `gameSchema` (room) | adds `invites: { id, userId, name, state }[]` with the pending invites only |
+| `lobbyGameSchema` | `{ id, name, ownerName, status, seatCount, tokens: token[], createdAt }` |
+| `inviteSchema` | `{ id, gameId, gameName, hostName, state, createdAt }` |
+| `streamTopicSchema` | `game:<uuid>`, `lobby` or `user:<uuid>` |
+
+### New error codes
+| Status | Codes |
+| --- | --- |
+| 403 | `forbidden_topic` (a `user:` topic of another user) |
+| 404 | `user_not_found` (invite by name) |
+| 409 | `token_taken`, `already_invited`, `cannot_invite_self` |
+
+### New methods
+| # | Method and path | Request | Success | Errors |
+| --- | --- | --- | --- | --- |
+| 16 | `GET /api/games?status=waiting` | query `status` (only `waiting`) | 200 `{ games: lobbyGame[] }`, newest first, at most 50. Full games stay in the list | 400, 401 |
+| 17 | `GET /api/me/games` | – | 200 `{ games: lobbyGame[] }`: `waiting` and `active` games where the user has a seat or controls a hot-seat seat | 401 |
+| 18 | `PUT /api/games/:id/seats/:seatId/token` | body `{ token }` | 200 `{ game }` | 403 `not_a_member` / `not_your_seat`, 404 seat, 409 `token_taken` / `game_not_waiting` |
+| 19 | `DELETE /api/games/:id` | – | 204 | 403 `not_game_owner`, 404, 409 `game_not_waiting` |
+| 20 | `POST /api/games/:id/invites` | body `{ name: displayName }` | 201 `{ game }` | 403 `not_game_owner`, 404 `user_not_found`, 409 `cannot_invite_self` / `already_joined` / `already_invited` / `game_not_waiting` |
+| 21 | `GET /api/me/invites` | – | 200 `{ invites: invite[] }` (pending only) | 401 |
+| 22 | `POST /api/invites/:id/accept` | – | 200 `{ game }`; joins the game and sets the invite to `accepted` in one transaction | 404 (no invite, or not the invitee), 409 `game_full` / `game_not_waiting` / `seat_name_taken` / `already_joined` |
+| 23 | `POST /api/invites/:id/decline` | – | 204 | 404 (no invite, or not the invitee), 409 `game_not_waiting` |
+
+Changed methods:
+- Rows 5, 7 and 9 (create, join, add seat) give the new seat the first free token.
+- Row 11 (start) sets the pending invites to `expired`.
+- Row 14 (stream) accepts the new topics. Any signed-in user can open `lobby`. `user:<id>` must be the user of the session (403 `forbidden_topic`).
+
+### New stream messages
+| Topic | Type | Payload | When |
+| --- | --- | --- | --- |
+| `lobby` | `lobby.snapshot` | `{ games: lobbyGame[] }` | Each connect |
+| `lobby` | `lobby.updated` | `{ game: lobbyGame }` | Create, join, leave, seat add and remove, token change, invite accept |
+| `lobby` | `lobby.removed` | `{ gameId }` | Start, cancel |
+| `user:<id>` | `invites.updated` | `{ invites: invite[] }` | Each connect, and each change to the user's invites (new, accept, decline, expire, cancel) |
+| `game:<id>` | `room.cancelled` | `{ gameId }` | Cancel. The client drops the topic. No SSE id |
+
+None of these messages has an SSE id. The `version` field of the envelope is 0 for `lobby` and `user:` messages.
