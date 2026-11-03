@@ -35,15 +35,31 @@ export const SQUARE_OPTIONS: readonly SquareOption[] = SQUARES.map((s, square) =
   name: s.name,
 }));
 
+export type DeedKind = "street" | "station" | "utility";
+
 export interface DeedOption extends SquareOption {
-  /** Only streets have buildings. */
-  street: boolean;
+  kind: DeedKind;
 }
 
 /** Every deed on the board, in board order. */
 export const DEED_OPTIONS: readonly DeedOption[] = SQUARES.flatMap((s, square) =>
-  isProperty(s) ? [{ square, name: s.name, street: s.kind === "street" }] : [],
+  isProperty(s) ? [{ square, name: s.name, kind: s.kind }] : [],
 );
+
+export interface DeedGroup {
+  kind: DeedKind;
+  label: string;
+  options: readonly DeedOption[];
+}
+
+/** The deed list in groups, each in board order. */
+export const DEED_GROUPS: readonly DeedGroup[] = (
+  [
+    ["street", "Streets"],
+    ["station", "Stations"],
+    ["utility", "Utilities"],
+  ] as const
+).map(([kind, label]) => ({ kind, label, options: DEED_OPTIONS.filter((o) => o.kind === kind) }));
 
 export interface DeedDraft {
   /** A player id, or "" for the bank. */
@@ -60,18 +76,24 @@ export function deedDraft(state: RedactedGameState | null, square: number): Deed
     : { ownerId: "", houses: 0, mortgaged: false };
 }
 
-/** The change a deed form sends. A bank deed has no buildings and no mortgage. */
-export function deedChange(square: number, draft: DeedDraft): DebugChange {
-  if (draft.ownerId === "") {
-    return { kind: "deed", square, ownerId: null, houses: 0, mortgaged: false };
-  }
-  return {
-    kind: "deed",
-    square,
-    ownerId: draft.ownerId,
-    houses: draft.mortgaged ? 0 : draft.houses,
-    mortgaged: draft.mortgaged,
-  };
+/**
+ * The changes a deed form sends, one for each chosen deed, in one batch. A bank deed has no
+ * buildings and no mortgage. Only streets keep the buildings: a station or utility gets none.
+ */
+export function deedChanges(squares: readonly number[], draft: DeedDraft): DebugChange[] {
+  return squares.map((square) => {
+    if (draft.ownerId === "") {
+      return { kind: "deed", square, ownerId: null, houses: 0, mortgaged: false };
+    }
+    const street = DEED_OPTIONS.find((o) => o.square === square)?.kind === "street";
+    return {
+      kind: "deed",
+      square,
+      ownerId: draft.ownerId,
+      houses: draft.mortgaged || !street ? 0 : draft.houses,
+      mortgaged: draft.mortgaged,
+    };
+  });
 }
 
 /** A typed cash value, or null when it is not a whole number of 0 or more. */

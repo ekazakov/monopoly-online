@@ -5,8 +5,9 @@ import { useGame, useGameActions } from "../../../game/index.ts";
 import {
   buildingLabel,
   debugAccess,
+  DEED_GROUPS,
   DEED_OPTIONS,
-  deedChange,
+  deedChanges,
   deedDraft,
   parseCash,
   SQUARE_OPTIONS,
@@ -19,7 +20,7 @@ export interface DebugPanelProps {
 }
 
 type Player = RedactedGameState["players"][number];
-type Send = (change: DebugChange, done: string) => Promise<void>;
+type Send = (changes: DebugChange[], done: string) => Promise<void>;
 
 // The debug panel (spec 4.7): the player on turn edits cash, deeds and token squares to test the
 // game logic. It is a disclosure in place next to the Menu button, like the Leave game panel.
@@ -65,12 +66,15 @@ export function DebugPanel({ userId }: DebugPanelProps) {
     buttonRef.current?.focus();
   };
 
-  const send: Send = async (change, done) => {
+  const send: Send = async (changes, done) => {
     if (!access.seat || disabled) return;
     setSending(true);
     setStatus(null);
     try {
-      await actions.send({ type: "DebugEdit", change }, { seatId: access.seat.id, source: "menu" });
+      await actions.send(
+        { type: "DebugEdit", changes },
+        { seatId: access.seat.id, source: "menu" },
+      );
       setStatus({ text: done, error: false });
     } catch (cause) {
       const text = cause instanceof Error ? cause.message : "The edit failed. Try again.";
@@ -116,7 +120,7 @@ export function DebugPanel({ userId }: DebugPanelProps) {
                 player={player}
                 onSet={(cash) =>
                   send(
-                    { kind: "cash", targetId: player.id, cash },
+                    [{ kind: "cash", targetId: player.id, cash }],
                     `${player.name}'s cash is now $${cash}.`,
                   )
                 }
@@ -192,26 +196,29 @@ interface DeedFormProps {
 
 function DeedForm({ state, players, disabled, send, nameOf }: DeedFormProps) {
   const id = useId();
-  const [square, setSquare] = useState(DEED_OPTIONS[0]?.square ?? 1);
-  const entry = state?.ownership[String(square)];
-  const [draft, setDraft] = useState<DeedDraft>(() => deedDraft(state, square));
-  // The form follows the deed when another square is chosen or the deed changes.
-  const entryKey = JSON.stringify(entry ?? null);
+  const [squares, setSquares] = useState<number[]>([DEED_OPTIONS[0]?.square ?? 1]);
+  // The form fills from the first chosen deed, and follows it when it changes.
+  const first = squares[0];
+  const entryKey = JSON.stringify(
+    first === undefined ? null : (state?.ownership[String(first)] ?? null),
+  );
+  const [draft, setDraft] = useState<DeedDraft>(() => deedDraft(state, first ?? 0));
   useEffect(() => {
-    setDraft(deedDraft(state, square));
-    // `state` changes on every action; the deed itself is what matters here.
+    setDraft(deedDraft(state, first ?? 0));
+    // `state` changes on every action; the first chosen deed itself is what matters here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [square, entryKey]);
+  }, [first, entryKey]);
 
-  const option = DEED_OPTIONS.find((o) => o.square === square);
+  const chosen = DEED_OPTIONS.filter((o) => squares.includes(o.square));
+  const anyStreet = chosen.some((o) => o.kind === "street");
   const bank = draft.ownerId === "";
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    const change = deedChange(square, draft);
-    const name = option?.name ?? "The deed";
+    if (chosen.length === 0) return;
+    const what = chosen.length === 1 ? (chosen[0]?.name ?? "The deed") : `${chosen.length} deeds`;
     void send(
-      change,
-      bank ? `${name} is back with the bank.` : `${name} now belongs to ${nameOf(draft.ownerId)}.`,
+      deedChanges(squares, draft),
+      bank ? `${what} back with the bank.` : `${what} now belong to ${nameOf(draft.ownerId)}.`,
     );
   };
 
@@ -219,23 +226,36 @@ function DeedForm({ state, players, disabled, send, nameOf }: DeedFormProps) {
     <form onSubmit={submit}>
       <fieldset className="debug-panel__group" disabled={disabled}>
         <legend className="debug-panel__legend">Deeds</legend>
-        <label className="debug-panel__field">
-          <span className="debug-panel__label">Deed</span>
+        <label className="debug-panel__field debug-panel__field--list">
+          <span className="debug-panel__label">Choose</span>
           <select
-            className="debug-panel__input"
-            value={square}
-            onChange={(event) => setSquare(Number(event.target.value))}
+            multiple
+            size={10}
+            className="debug-panel__input debug-panel__input--list"
+            value={squares.map(String)}
+            onChange={(event) =>
+              setSquares(Array.from(event.target.selectedOptions, (o) => Number(o.value)))
+            }
           >
-            {DEED_OPTIONS.map((o) => {
-              const owner = state?.ownership[String(o.square)]?.ownerId;
-              return (
-                <option key={o.square} value={o.square}>
-                  {o.name} ({owner ? nameOf(owner) : "Bank"})
-                </option>
-              );
-            })}
+            {DEED_GROUPS.map((group) => (
+              <optgroup key={group.kind} label={group.label}>
+                {group.options.map((o) => {
+                  const owner = state?.ownership[String(o.square)]?.ownerId;
+                  return (
+                    <option key={o.square} value={o.square}>
+                      {o.name} ({owner ? nameOf(owner) : "Bank"})
+                    </option>
+                  );
+                })}
+              </optgroup>
+            ))}
           </select>
         </label>
+        <p className="debug-panel__hint">
+          {chosen.length === 0
+            ? "Choose one or more deeds. Hold Shift or Ctrl to choose several."
+            : `${chosen.length} chosen. Apply sets the same owner, buildings and mortgage on all of them. Hold Shift or Ctrl to choose several.`}
+        </p>
         <label className="debug-panel__field">
           <span className="debug-panel__label">Owner</span>
           <select
@@ -256,7 +276,7 @@ function DeedForm({ state, players, disabled, send, nameOf }: DeedFormProps) {
           <select
             className="debug-panel__input"
             value={draft.houses}
-            disabled={bank || !option?.street || draft.mortgaged}
+            disabled={bank || !anyStreet || draft.mortgaged}
             onChange={(event) => setDraft({ ...draft, houses: Number(event.target.value) })}
           >
             {[0, 1, 2, 3, 4, 5].map((houses) => (
@@ -277,7 +297,7 @@ function DeedForm({ state, players, disabled, send, nameOf }: DeedFormProps) {
           Mortgaged
         </label>
         <div className="debug-panel__actions">
-          <button type="submit" className="debug-panel__btn">
+          <button type="submit" className="debug-panel__btn" disabled={chosen.length === 0}>
             Apply
           </button>
         </div>
@@ -301,7 +321,7 @@ function TokenForm({ players, disabled, send }: TokenFormProps) {
     if (!target) return;
     const name = SQUARE_OPTIONS[square]?.name ?? `square ${square}`;
     void send(
-      { kind: "position", targetId: target.id, square },
+      [{ kind: "position", targetId: target.id, square }],
       `${target.name}'s player token is on ${name}.`,
     );
   };

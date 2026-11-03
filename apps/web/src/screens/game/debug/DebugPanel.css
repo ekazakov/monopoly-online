@@ -97,6 +97,14 @@
   grid-template-columns: 84px minmax(0, 1fr);
 }
 
+.debug-panel__field--list {
+  align-items: start;
+}
+
+.debug-panel__input--list {
+  padding: var(--hf-space-6) var(--hf-space-8);
+}
+
 .debug-panel__label {
   overflow: hidden;
   font: var(--hf-type-body-small);
