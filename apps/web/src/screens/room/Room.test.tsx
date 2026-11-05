@@ -1,3 +1,4 @@
+import { TOKENS } from "@monopoly/shared";
 import type { Game, Seat } from "@monopoly/shared";
 import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -23,6 +24,7 @@ function seat(overrides: Partial<Seat>): Seat {
     kind: "user",
     userId: me,
     controllerUserId: me,
+    token: TOKENS[(counter - 1) % TOKENS.length]!,
     ...overrides,
   };
 }

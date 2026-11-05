@@ -44,9 +44,9 @@ export interface SeatsTable {
   // Null for a hot-seat seat.
   user_id: string | null;
   controller_user_id: string;
-  // Same values as `tokenSchema` in `@monopoly/shared`. Unique per game. Nullable only because
-  // SQLite adds the column with `ALTER TABLE`; the migration fills it for every old row.
-  token: SeatToken | null;
+  // Same values as `tokenSchema` in `@monopoly/shared`. Unique per game. The column is nullable
+  // in SQLite only because it was added with `ALTER TABLE`; the migration filled every old row.
+  token: SeatToken;
   created_at: Generated<string>;
 }
 

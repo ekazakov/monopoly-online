@@ -10,6 +10,7 @@ import {
   redactedGameStateSchema,
   roomUpdatedMessageSchema,
   snapshotMessageSchema,
+  TOKENS,
 } from "@monopoly/shared";
 import type {
   ActionResponse,
@@ -53,6 +54,7 @@ export function roomOf(fields: Partial<Game> = {}) {
     kind,
     userId,
     controllerUserId: userId ?? ownerId,
+    token: TOKENS[order]!,
   });
   const seats = {
     a: seat(0, "Ann", "user", ownerId),
@@ -67,6 +69,7 @@ export function roomOf(fields: Partial<Game> = {}) {
     version: 0,
     createdAt: "2026-11-02T10:00:00.000Z",
     seats: [seats.a, seats.b, seats.c],
+    invites: [],
     ...fields,
   });
   return { game, ownerId, guestId, seats };

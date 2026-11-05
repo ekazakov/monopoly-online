@@ -53,7 +53,7 @@ Ask before you add or change a board. Sync the artifacts.
 
 ### B. Shared schemas and database
 
-- [ ] **Lobby shared schemas (B1).** In `packages/shared/src`:
+- [x] **Lobby shared schemas (B1).** In `packages/shared/src`:
   - `tokenSchema`: an enum of the 6 keys. `TOKENS`: the keys in the free-token order.
   - `seatSchema` gets `token`.
   - `gameSchema` gets `invites`: the pending invites, `{ id, userId, name, state }[]`, for the host's seat list.

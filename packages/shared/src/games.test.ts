@@ -7,11 +7,16 @@ import {
   gameSchema,
   gameStateResponseSchema,
   gameStatusSchema,
+  inviteSchema,
+  inviteStateSchema,
+  lobbyGameSchema,
   MAX_SEATS,
   RESUME_MAX_GAP,
   seatNameSchema,
   seatSchema,
   startGameResponseSchema,
+  tokenSchema,
+  TOKENS,
 } from "./index.ts";
 
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
@@ -23,6 +28,7 @@ const seat = (n: number) => ({
   kind: "user" as const,
   userId: id(100 + n),
   controllerUserId: id(100 + n),
+  token: TOKENS[n - 1]!,
 });
 
 const game = {
@@ -33,6 +39,7 @@ const game = {
   version: 0,
   createdAt: "2026-11-02T10:00:00.000Z",
   seats: [seat(1), seat(2)],
+  invites: [],
 };
 
 const state = {
@@ -60,6 +67,21 @@ describe("constants", () => {
   test("limits", () => {
     expect(MAX_SEATS).toBe(6);
     expect(RESUME_MAX_GAP).toBe(100);
+  });
+});
+
+describe("tokens", () => {
+  test("there is one token for each seat, in the free-token order", () => {
+    expect(TOKENS).toEqual(["dog", "cat", "penguin", "car", "horse", "duck"]);
+    expect(TOKENS).toHaveLength(MAX_SEATS);
+    expect(tokenSchema.options).toEqual([...TOKENS]);
+  });
+
+  test("an unknown token is refused", () => {
+    expect(tokenSchema.safeParse("hat").success).toBe(false);
+    expect(seatSchema.safeParse({ ...seat(1), token: "hat" }).success).toBe(false);
+    const { token: _token, ...withoutToken } = seat(1);
+    expect(seatSchema.safeParse(withoutToken).success).toBe(false);
   });
 });
 
@@ -101,10 +123,59 @@ describe("gameSchema", () => {
     expect(gameStatusSchema.options).toEqual(["waiting", "active", "saved", "finished"]);
   });
 
+  test("lists the invites for the host", () => {
+    const invites = [{ id: id(50), userId: id(150), name: "Cy", state: "pending" as const }];
+    expect(gameSchema.parse({ ...game, invites })).toEqual({ ...game, invites });
+    expect(
+      gameSchema.safeParse({ ...game, invites: [{ id: id(50), userId: id(150) }] }).success,
+    ).toBe(false);
+    const { invites: _invites, ...withoutInvites } = game;
+    expect(gameSchema.safeParse(withoutInvites).success).toBe(false);
+  });
+
   test("refuses more than MAX_SEATS seats and unknown keys", () => {
     const seats = Array.from({ length: MAX_SEATS + 1 }, (_, i) => seat(i + 1));
     expect(gameSchema.safeParse({ ...game, seats }).success).toBe(false);
     expect(gameSchema.safeParse({ ...game, seatLimit: 6 }).success).toBe(false);
+  });
+});
+
+describe("lobby", () => {
+  const lobbyGame = {
+    id: id(1),
+    name: "Friday night",
+    ownerName: "Ann",
+    status: "waiting" as const,
+    seatCount: 2,
+    tokens: ["dog", "cat"] as const,
+    createdAt: "2026-11-02T10:00:00.000Z",
+  };
+  const invite = {
+    id: id(60),
+    gameId: id(1),
+    gameName: "Friday night",
+    hostName: "Ann",
+    state: "pending" as const,
+    createdAt: "2026-11-02T10:05:00.000Z",
+  };
+
+  test("an invite has four states", () => {
+    expect(inviteStateSchema.options).toEqual(["pending", "accepted", "declined", "expired"]);
+  });
+
+  test("lobbyGameSchema parses a row and refuses 7 seats or a bad token", () => {
+    expect(lobbyGameSchema.parse(lobbyGame)).toEqual(lobbyGame);
+    expect(lobbyGameSchema.safeParse({ ...lobbyGame, seatCount: MAX_SEATS + 1 }).success).toBe(
+      false,
+    );
+    expect(lobbyGameSchema.safeParse({ ...lobbyGame, tokens: ["hat"] }).success).toBe(false);
+    expect(lobbyGameSchema.safeParse({ ...lobbyGame, extra: 1 }).success).toBe(false);
+  });
+
+  test("inviteSchema parses an invite and refuses an unknown state", () => {
+    expect(inviteSchema.parse(invite)).toEqual(invite);
+    expect(inviteSchema.safeParse({ ...invite, state: "cancelled" }).success).toBe(false);
+    expect(inviteSchema.safeParse({ ...invite, gameId: "abc" }).success).toBe(false);
   });
 });
 

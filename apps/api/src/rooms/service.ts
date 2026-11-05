@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { createGame } from "@monopoly/game-engine";
-import { MAX_SEATS, errorStatus } from "@monopoly/shared";
+import { MAX_SEATS, TOKENS, errorStatus } from "@monopoly/shared";
 import type { ErrorCode, ErrorStatus, Game, RedactedGameState, User } from "@monopoly/shared";
 import type { Kysely, Transaction } from "kysely";
 import { nameKey } from "../auth/sessions.ts";
@@ -67,7 +67,10 @@ export function toApiGame(game: GameRow, seats: SeatRow[]): Game {
         kind: seat.kind,
         userId: seat.user_id,
         controllerUserId: seat.controller_user_id,
+        token: seat.token,
       })),
+    // Invites arrive with the Invites API (E). Until then no game has any.
+    invites: [],
   };
 }
 
@@ -138,6 +141,14 @@ export function createRoomService(options: RoomServiceOptions): RoomService {
     }
   };
 
+  /** The first token of `TOKENS` that no seat has. A game has at most 6 seats, so one is free. */
+  const freeToken = (seats: SeatRow[]) => {
+    const taken = new Set(seats.map((seat) => seat.token));
+    const token = TOKENS.find((candidate) => !taken.has(candidate));
+    if (!token) throw new RoomError("game_full", "The game is full");
+    return token;
+  };
+
   const insertSeat = (
     trx: Trx,
     gameId: string,
@@ -156,6 +167,7 @@ export function createRoomService(options: RoomServiceOptions): RoomService {
         kind: seat.kind,
         user_id: seat.userId,
         controller_user_id: seat.controllerId,
+        token: freeToken(seats),
         created_at: now().toISOString(),
       })
       .execute();

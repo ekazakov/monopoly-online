@@ -32,8 +32,10 @@ export function gameFixture(overrides: Partial<Game> = {}): Game {
         kind: "user",
         userId: userFixture.id,
         controllerUserId: userFixture.id,
+        token: "dog",
       },
     ],
+    invites: [],
     ...overrides,
   };
 }

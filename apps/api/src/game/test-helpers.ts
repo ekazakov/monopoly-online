@@ -1,5 +1,6 @@
 import { actorFor, applyAction, createGame, SQUARES, isProperty } from "@monopoly/game-engine";
 import type { Action, GameEvent, GameState } from "@monopoly/game-engine";
+import { TOKENS } from "@monopoly/shared";
 import type { Kysely } from "kysely";
 import type { Database } from "../db/schema.ts";
 import { serializeState } from "./loader.ts";
@@ -95,6 +96,7 @@ export async function insertGame(db: Kysely<Database>, state: GameState, gameId 
         kind: "hotseat" as const,
         user_id: null,
         controller_user_id: USER_ID,
+        token: TOKENS[i]!,
       })),
     )
     .execute();
@@ -184,6 +186,7 @@ export async function insertActiveGame(
           kind: role.kind,
           user_id: role.userId,
           controller_user_id: role.controllerId,
+          token: TOKENS[i]!,
         };
       }),
     )

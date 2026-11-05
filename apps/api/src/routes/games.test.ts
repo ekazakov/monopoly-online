@@ -94,7 +94,22 @@ describe("game room routes", () => {
           kind: "user",
           userId: ann.user.id,
           controllerUserId: ann.user.id,
+          token: "dog",
         },
+      ]);
+      expect(game.invites).toEqual([]);
+    });
+
+    test("seats get the tokens of the free-token order", async () => {
+      const { owner, room } = await fullRoom(6);
+      const game = await gameOf(await sendAs(app, "GET", `/api/games/${room.id}`, owner.cookie));
+      expect(game.seats.map((seat) => seat.token)).toEqual([
+        "dog",
+        "cat",
+        "penguin",
+        "car",
+        "horse",
+        "duck",
       ]);
     });
 

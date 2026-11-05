@@ -1,5 +1,6 @@
 import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { TOKENS } from "@monopoly/shared";
 import type { Game, GameResult, Seat, Standing } from "@monopoly/shared";
 import { afterEach, describe, expect, test, vi } from "vite-plus/test";
 import { actionsMessage, recordFixture, redact, withStatus } from "../../game/fixtures.ts";
@@ -91,6 +92,7 @@ const seatsOf = (count: number, controller: string): Seat[] =>
     kind: "hotseat" as const,
     userId: null,
     controllerUserId: controller,
+    token: TOKENS[order]!,
   }));
 
 const rowsOf = () => within(screen.getByRole("table")).getAllByRole("row").slice(1);

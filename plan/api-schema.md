@@ -102,7 +102,8 @@ Task list: [milestone-2-tasks.md](milestone-2-tasks.md). The conventions and the
 | `tokenSchema` | `"dog" \| "cat" \| "penguin" \| "car" \| "horse" \| "duck"`. `TOKENS` keeps this order; it is the free-token order |
 | `seatSchema` | adds `token: tokenSchema` |
 | `inviteStateSchema` | `"pending" \| "accepted" \| "declined" \| "expired"` |
-| `gameSchema` (room) | adds `invites: { id, userId, name, state }[]` with the pending invites only |
+| `roomInviteSchema` | `{ id, userId, name, state }`: one pending invite in the host's seat list |
+| `gameSchema` (room) | adds `invites: roomInvite[]` with the pending invites only. Until the Invites API (milestone 2, section E) exists, the server sends `[]` |
 | `lobbyGameSchema` | `{ id, name, ownerName, status, seatCount, tokens: token[], createdAt }` |
 | `inviteSchema` | `{ id, gameId, gameName, hostName, state, createdAt }` |
 | `streamTopicSchema` | `game:<uuid>`, `lobby` or `user:<uuid>` |

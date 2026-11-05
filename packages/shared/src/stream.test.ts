@@ -17,6 +17,7 @@ const game = {
   version: 0,
   createdAt: "2026-11-02T10:00:00.000Z",
   seats: [],
+  invites: [],
 };
 
 const state = {

@@ -18,8 +18,14 @@ describe("error codes", () => {
     const table = {
       400: ["bad_request", "validation_error"],
       401: ["unauthorized"],
-      403: ["forbidden_origin", "not_game_owner", "not_a_member", "not_your_seat"],
-      404: ["not_found"],
+      403: [
+        "forbidden_origin",
+        "not_game_owner",
+        "not_a_member",
+        "not_your_seat",
+        "forbidden_topic",
+      ],
+      404: ["not_found", "user_not_found"],
       409: [
         "already_signed_in",
         "name_taken",
@@ -32,6 +38,9 @@ describe("error codes", () => {
         "seat_name_taken",
         "owner_cannot_leave",
         "cannot_remove_user_seat",
+        "token_taken",
+        "already_invited",
+        "cannot_invite_self",
         "version_conflict",
       ],
       422: ["not_your_turn", "wrong_phase", "insufficient_funds"],

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "vite-plus/test";
+import { TOKENS } from "@monopoly/shared";
 import type { Kysely } from "kysely";
 import { sql } from "kysely";
 import { createDb } from "./client.ts";
@@ -48,6 +49,8 @@ describe("migrations", () => {
       kind: "user" as const,
       user_id: U1,
       controller_user_id: U1,
+      // The last digit of the seat id picks the token, so seats with different ids differ.
+      token: TOKENS[(Number(id.slice(-1)) - 1) % TOKENS.length]!,
     };
   }
 
