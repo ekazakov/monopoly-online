@@ -130,7 +130,7 @@ Files: `apps/api/src/rooms/service.ts`, `routes/games.ts`.
   - Fixtures (`testing/fakeApi.ts`): `order` starts at 1, and seats have `token`.
   - Regression test: the host at order 1 with the `dog` token shows red.
 - [x] **Horse and duck in the web app (G2).** `AvatarIcon` paths in `avatars.tsx`, SDF makers in `scene/sculpt.ts`, and `AvatarKind` with 6 kinds. Depends on Horse and duck figures (A1).
-- [ ] **Lobby screen (G3).** Replaces `HomeScreen`. Depends on Lobby board with inbox and My games (A2).
+- [x] **Lobby screen (G3).** Replaces `HomeScreen`. Depends on Lobby board with inbox and My games (A2).
   - Invites inbox with Accept and Decline. Accept goes to the room. On `game_full` or `game_not_waiting`, show the "This game is full" notice.
   - Open games: live list with Join, or Full.
   - My games: Open goes to the room (`waiting`) or to `/play` (`active`).

@@ -7,7 +7,7 @@ import {
   type RouterHistory,
 } from "@tanstack/react-router";
 import { GameScreen } from "./screens/GameScreen.tsx";
-import { HomeScreen } from "./screens/HomeScreen.tsx";
+import { LobbyScreen } from "./screens/lobby/LobbyScreen.tsx";
 import { NotFoundScreen } from "./screens/NotFoundScreen.tsx";
 import { RouteErrorScreen } from "./screens/RouteErrorScreen.tsx";
 import { RoomScreen } from "./screens/RoomScreen.tsx";
@@ -34,7 +34,7 @@ const homeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
   beforeLoad: ({ context, location }) => requireSession(context.queryClient, location),
-  component: HomeScreen,
+  component: LobbyScreen,
 });
 const signInRoute = createRoute({
   getParentRoute: () => rootRoute,

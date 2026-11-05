@@ -18,12 +18,12 @@ describe("routes with a session", () => {
 
   test("/ renders home", async () => {
     await renderRoute("/");
-    expect(await screen.findByRole("heading", { name: "Home" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Lobby" })).toBeInTheDocument();
   });
 
   test("/sign-in leaves for home", async () => {
     await renderRoute("/sign-in");
-    expect(await screen.findByRole("heading", { name: "Home" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Lobby" })).toBeInTheDocument();
   });
 
   test("/games/$gameId renders the room", async () => {
@@ -78,6 +78,6 @@ describe("route errors", () => {
 
     mockApi({ "GET /api/me": Response.json({ user: userFixture }) });
     await userEvent.click(screen.getByRole("button", { name: "Retry" }));
-    expect(await screen.findByRole("heading", { name: "Home" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Lobby" })).toBeInTheDocument();
   });
 });

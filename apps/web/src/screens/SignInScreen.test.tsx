@@ -241,7 +241,7 @@ describe("201 created", () => {
     await user.click(button());
     await waitFor(() => expect(router.state.location.pathname).toBe("/"));
     expect(posts(calls)[0]).toMatchObject({ path: "/api/session", body: { name: "Marlow" } });
-    expect(await screen.findByRole("heading", { name: "Home" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Lobby" })).toBeInTheDocument();
     expect(queryClient.getQueryData(["session"])).toEqual(userFixture);
   });
 

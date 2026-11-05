@@ -1,9 +1,9 @@
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vite-plus/test";
-import { errorReply, gameFixture, mockApi, userFixture } from "../testing/fakeApi.ts";
-import { renderRoute } from "../testing/render.tsx";
-import { gameIdFromInvite } from "./HomeScreen.tsx";
+import { errorReply, gameFixture, mockApi, userFixture } from "../../testing/fakeApi.ts";
+import { renderRoute } from "../../testing/render.tsx";
+import { gameIdFromInvite } from "./joinLink.ts";
 
 const game = gameFixture();
 
@@ -15,10 +15,11 @@ async function openHome(routes: Parameters<typeof mockApi>[0] = {}) {
   const calls = mockApi({
     "GET /api/me": Response.json({ user: userFixture }),
     [`GET /api/games/${game.id}`]: Response.json({ game }),
+    "GET /api/me/games": Response.json({ games: [] }),
     ...routes,
   });
   const view = await renderRoute("/");
-  await screen.findByRole("heading", { name: "Home" });
+  await screen.findByRole("heading", { name: "Lobby" });
   return { ...view, calls, user: userEvent.setup() };
 }
 

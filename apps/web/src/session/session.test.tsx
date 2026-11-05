@@ -59,7 +59,7 @@ describe("guard with a session", () => {
   test("/ renders home with the user name", async () => {
     mockApi({ "GET /api/me": me() });
     const { router } = await renderRoute("/");
-    expect(await screen.findByRole("heading", { name: "Home" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Lobby" })).toBeInTheDocument();
     expect(screen.getByText("Marlow")).toBeInTheDocument();
     expect(router.state.location.pathname).toBe("/");
   });
@@ -67,7 +67,7 @@ describe("guard with a session", () => {
   test("/sign-in goes to / without a redirect", async () => {
     mockApi({ "GET /api/me": me() });
     const { router } = await renderRoute("/sign-in");
-    expect(await screen.findByRole("heading", { name: "Home" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Lobby" })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe("/");
   });
 
@@ -95,7 +95,7 @@ describe("guard with a session", () => {
   ])("%s in redirect is ignored", async (_name, redirect) => {
     mockApi({ "GET /api/me": me() });
     const { router } = await renderRoute(`/sign-in?redirect=${encodeURIComponent(redirect)}`);
-    expect(await screen.findByRole("heading", { name: "Home" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Lobby" })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe("/");
     expect(window.location.hostname).not.toBe("evil.com");
   });
@@ -133,7 +133,7 @@ describe("401 handling", () => {
   test("other cached data is dropped with the session", async () => {
     mockApi({ "GET /api/me": me(), [`GET /api/games/${gameId}`]: errorReply(401, "unauthorized") });
     const { queryClient } = await renderRoute("/");
-    await screen.findByRole("heading", { name: "Home" });
+    await screen.findByRole("heading", { name: "Lobby" });
     queryClient.setQueryData(["games", gameId], gameFixture());
 
     await getGame(gameId).catch(() => undefined);
