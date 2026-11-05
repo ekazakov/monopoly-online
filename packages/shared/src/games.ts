@@ -89,6 +89,10 @@ export const gameParamsSchema = z.strictObject({ id: idSchema });
 export const seatParamsSchema = z.strictObject({ id: idSchema, seatId: idSchema });
 
 export const gameResponseSchema = z.strictObject({ game: gameSchema });
+
+/** `GET /api/games` lists open games only, so `waiting` is the one status it takes. */
+export const openGamesQuerySchema = z.strictObject({ status: z.literal("waiting") });
+export const lobbyGamesResponseSchema = z.strictObject({ games: z.array(lobbyGameSchema) });
 export const startGameResponseSchema = z.strictObject({
   game: gameSchema,
   state: redactedGameStateSchema,

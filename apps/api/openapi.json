@@ -324,6 +324,116 @@
       }
     },
     "/api/games": {
+      "get": {
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["games"],
+        "summary": "List the open games",
+        "description": "The `waiting` games, newest first, at most 50. Full games stay in the list: the client shows them as full.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": ["waiting"]
+            },
+            "required": true,
+            "name": "status",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The open games",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "games": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 60
+                          },
+                          "ownerName": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 16
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": ["waiting", "active", "saved", "finished"]
+                          },
+                          "seatCount": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 6
+                          },
+                          "tokens": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": ["dog", "cat", "penguin", "car", "horse", "duck"]
+                            },
+                            "maxItems": 6
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "ownerName",
+                          "status",
+                          "seatCount",
+                          "tokens",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": ["games"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "security": [
           {
@@ -489,6 +599,97 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/games": {
+      "get": {
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["games"],
+        "summary": "List my games",
+        "description": "The `waiting` and `active` games where the user has a seat or controls a hot-seat seat, newest first. Finished games are not listed.",
+        "responses": {
+          "200": {
+            "description": "My games",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "games": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 60
+                          },
+                          "ownerName": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 16
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": ["waiting", "active", "saved", "finished"]
+                          },
+                          "seatCount": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 6
+                          },
+                          "tokens": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": ["dog", "cat", "penguin", "car", "horse", "duck"]
+                            },
+                            "maxItems": 6
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "ownerName",
+                          "status",
+                          "seatCount",
+                          "tokens",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": ["games"],
+                  "additionalProperties": false
                 }
               }
             }

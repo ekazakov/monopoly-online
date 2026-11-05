@@ -7,6 +7,8 @@ import {
   createSeatSchema,
   gameParamsSchema,
   gameResponseSchema,
+  lobbyGamesResponseSchema,
+  openGamesQuerySchema,
   seatParamsSchema,
   startGameResponseSchema,
 } from "@monopoly/shared";
@@ -36,6 +38,35 @@ const createGameRoute = createRoute({
   responses: {
     201: jsonResponse("The new game, status `waiting`", gameResponseSchema),
     ...errorResponses(400, 401),
+  },
+});
+
+const listOpenGamesRoute = createRoute({
+  ...sessionSecurity,
+  method: "get",
+  path: "/games",
+  tags: ["games"],
+  summary: "List the open games",
+  description:
+    "The `waiting` games, newest first, at most 50. Full games stay in the list: the client shows them as full.",
+  request: { query: openGamesQuerySchema },
+  responses: {
+    200: jsonResponse("The open games", lobbyGamesResponseSchema),
+    ...errorResponses(400, 401),
+  },
+});
+
+const listMyGamesRoute = createRoute({
+  ...sessionSecurity,
+  method: "get",
+  path: "/me/games",
+  tags: ["games"],
+  summary: "List my games",
+  description:
+    "The `waiting` and `active` games where the user has a seat or controls a hot-seat seat, newest first. Finished games are not listed.",
+  responses: {
+    200: jsonResponse("My games", lobbyGamesResponseSchema),
+    ...errorResponses(401),
   },
 });
 
@@ -182,8 +213,14 @@ export function gameRoutes(deps: AppDeps & { rooms: RoomService }) {
   const routes = new OpenAPIHono<AppEnv>({ defaultHook: roomHook });
   // `.use` returns a plain Hono type, so it stays out of the typed chain below.
   routes.use("/games/*", requireSession(deps));
+  routes.use("/games", requireSession(deps));
+  routes.use("/me/games", requireSession(deps));
 
   return routes
+    .openapi(listOpenGamesRoute, async (c) => c.json({ games: await rooms.listOpen() }, 200))
+    .openapi(listMyGamesRoute, async (c) =>
+      c.json({ games: await rooms.listMine(c.get("user")) }, 200),
+    )
     .openapi(createGameRoute, async (c) => {
       const game = await rooms.create(c.get("user"), c.req.valid("json").name);
       return c.json({ game }, 201);

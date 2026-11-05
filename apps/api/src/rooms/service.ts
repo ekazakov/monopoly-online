@@ -5,6 +5,7 @@ import type {
   ErrorCode,
   ErrorStatus,
   Game,
+  LobbyGame,
   RedactedGameState,
   Token,
   User,
@@ -49,6 +50,10 @@ export interface RoomServiceOptions {
 export interface RoomService {
   create(user: User, name: string): Promise<Game>;
   get(gameId: string): Promise<Game>;
+  /** The `waiting` games, newest first, at most `OPEN_GAMES_LIMIT`. Full games stay in. */
+  listOpen(): Promise<LobbyGame[]>;
+  /** The `waiting` and `active` games where the user has a seat or controls a hot-seat seat. */
+  listMine(user: User): Promise<LobbyGame[]>;
   join(gameId: string, user: User): Promise<Game>;
   leave(gameId: string, user: User): Promise<Game>;
   addSeat(gameId: string, user: User, name: string): Promise<Game>;
@@ -59,6 +64,23 @@ export interface RoomService {
 }
 
 type Trx = Transaction<Database>;
+
+/** The most games the open list returns. */
+export const OPEN_GAMES_LIMIT = 50;
+
+/** One lobby row. `seats` are the seats of this game only. */
+export function toLobbyGame(game: GameRow & { owner_name: string }, seats: SeatRow[]): LobbyGame {
+  const ordered = [...seats].sort((a, b) => a.seat_order - b.seat_order);
+  return {
+    id: game.id,
+    name: game.name,
+    ownerName: game.owner_name,
+    status: game.status,
+    seatCount: ordered.length,
+    tokens: ordered.map((seat) => seat.token),
+    createdAt: game.created_at,
+  };
+}
 
 export function toApiGame(game: GameRow, seats: SeatRow[]): Game {
   return {
@@ -183,6 +205,40 @@ export function createRoomService(options: RoomServiceOptions): RoomService {
       .execute();
 
   /** Runs `change` in a transaction and returns the room as it is after the change. */
+  /** Lobby rows, newest first. The caller adds the filters. */
+  const lobbyQuery = () =>
+    db
+      .selectFrom("games")
+      .innerJoin("users", "users.id", "games.owner_id")
+      .selectAll("games")
+      .select("users.name as owner_name");
+
+  async function lobbyList(
+    filter: (query: ReturnType<typeof lobbyQuery>) => ReturnType<typeof lobbyQuery>,
+  ): Promise<LobbyGame[]> {
+    const games = await filter(lobbyQuery())
+      // `id` breaks a tie of equal times, so the order never changes between two reads.
+      .orderBy("games.created_at", "desc")
+      .orderBy("games.id", "desc")
+      .execute();
+    if (games.length === 0) return [];
+    const seats = await db
+      .selectFrom("seats")
+      .selectAll()
+      .where(
+        "game_id",
+        "in",
+        games.map((game) => game.id),
+      )
+      .execute();
+    return games.map((game) =>
+      toLobbyGame(
+        game,
+        seats.filter((seat) => seat.game_id === game.id),
+      ),
+    );
+  }
+
   async function changeRoom(
     gameId: string,
     change: (trx: Trx, game: GameRow, seats: SeatRow[]) => Promise<void>,
@@ -235,6 +291,20 @@ export function createRoomService(options: RoomServiceOptions): RoomService {
         .execute();
       return toApiGame(game, seats);
     },
+
+    listOpen: () =>
+      lobbyList((q) => q.where("games.status", "=", "waiting").limit(OPEN_GAMES_LIMIT)),
+
+    listMine: (user) =>
+      lobbyList((q) =>
+        q
+          .where("games.status", "in", ["waiting", "active"])
+          .where(
+            "games.id",
+            "in",
+            db.selectFrom("seats").select("game_id").where("controller_user_id", "=", user.id),
+          ),
+      ),
 
     join: (gameId, user) =>
       changeRoom(gameId, async (trx, game, seats) => {

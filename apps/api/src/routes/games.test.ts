@@ -6,6 +6,7 @@ import {
   TOKENS,
   apiErrorSchema,
   gameResponseSchema,
+  lobbyGamesResponseSchema,
   redactedGameStateSchema,
   startGameResponseSchema,
 } from "@monopoly/shared";
@@ -742,6 +743,141 @@ describe("game room routes", () => {
         { game_id: other.id },
       ]);
       expect(await db.selectFrom("games").select("id").execute()).toEqual([{ id: other.id }]);
+    });
+  });
+
+  describe("lobby lists", () => {
+    let clock = START;
+    const tick = (ms = 1000) => {
+      clock = new Date(clock.getTime() + ms);
+    };
+
+    beforeEach(async () => {
+      await db.destroy();
+      clock = START;
+      ({ app, db } = await createTestApp({ now: () => clock, onRoomEvent: (e) => events.push(e) }));
+    });
+
+    const listOf = async (res: Response) => {
+      expect(res.status).toBe(200);
+      return lobbyGamesResponseSchema.parse(await res.json()).games;
+    };
+    const openGames = async (who: Player) =>
+      listOf(await sendAs(app, "GET", "/api/games?status=waiting", who.cookie));
+    const myGames = async (who: Player) =>
+      listOf(await sendAs(app, "GET", "/api/me/games", who.cookie));
+
+    test("a row has the owner name, the seat count and the tokens in seat order", async () => {
+      const { owner, room } = await seated(2);
+      await addSeat(room, owner, "Guest");
+      const viewer = await signIn(app, "Viewer");
+      expect(await openGames(viewer)).toEqual([
+        {
+          id: room.id,
+          name: "Harbor",
+          ownerName: "Ann",
+          status: "waiting",
+          seatCount: 3,
+          tokens: ["dog", "cat", "penguin"],
+          createdAt: START.toISOString(),
+        },
+      ]);
+    });
+
+    test("the open list is newest first and has at most 50 games", async () => {
+      const owner = await signIn(app, "Ann");
+      const ids: string[] = [];
+      for (let i = 0; i < 51; i++) {
+        tick();
+        ids.push((await createRoom(owner, `Game ${i}`)).id);
+      }
+      const list = await openGames(owner);
+      expect(list).toHaveLength(50);
+      expect(list.map((g) => g.id)).toEqual(ids.slice(1).reverse());
+    });
+
+    test("games with the same time keep one order between reads", async () => {
+      const owner = await signIn(app, "Ann");
+      for (let i = 0; i < 4; i++) await createRoom(owner, `Game ${i}`);
+      const first = (await openGames(owner)).map((g) => g.id);
+      expect(first).toHaveLength(4);
+      expect((await openGames(owner)).map((g) => g.id)).toEqual(first);
+    });
+
+    test("full games stay in the open list, shown as 6 of 6", async () => {
+      const { room } = await seated(MAX_SEATS);
+      const [row] = await openGames(await signIn(app, "Viewer"));
+      expect(row).toMatchObject({ id: room.id, seatCount: MAX_SEATS });
+      expect(row!.tokens).toEqual([...TOKENS]);
+    });
+
+    test("a started game leaves the open list; a cancelled game too", async () => {
+      const { owner, room } = await seated(2);
+      tick();
+      const other = await createRoom(owner, "Second");
+      const viewer = await signIn(app, "Viewer");
+      expect((await openGames(viewer)).map((g) => g.id)).toEqual([other.id, room.id]);
+
+      await start(room, owner);
+      expect((await openGames(viewer)).map((g) => g.id)).toEqual([other.id]);
+      await sendAs(app, "DELETE", `/api/games/${other.id}`, owner.cookie);
+      expect(await openGames(viewer)).toEqual([]);
+    });
+
+    test("the open list needs a session and status=waiting", async () => {
+      const user = await signIn(app, "Ann");
+      expect((await sendAs(app, "GET", "/api/games?status=waiting")).status).toBe(401);
+      expect((await sendAs(app, "GET", "/api/me/games")).status).toBe(401);
+      for (const query of ["", "?status=active", "?status=waiting&x=1"]) {
+        const res = await sendAs(app, "GET", `/api/games${query}`, user.cookie);
+        expect(res.status).toBe(400);
+        expect(await errorCode(res)).toBe("validation_error");
+      }
+    });
+
+    test("My games has the waiting and active games of the user, newest first", async () => {
+      const ann = await signIn(app, "Ann");
+      const bo = await signIn(app, "Bo");
+      const first = await createRoom(ann, "First");
+      await join(first, bo);
+      tick();
+      const second = await createRoom(ann, "Second");
+      tick();
+      const third = await createRoom(bo, "Third");
+      tick();
+      await createRoom(ann, "Not Bo's");
+      await addSeat(second, ann, "Hot");
+      await start(second, ann);
+
+      const mine = await myGames(bo);
+      expect(mine.map((g) => [g.id, g.status])).toEqual([
+        [third.id, "waiting"],
+        [first.id, "waiting"],
+      ]);
+      expect((await myGames(ann)).map((g) => g.status)).toEqual(["waiting", "active", "waiting"]);
+    });
+
+    test("a finished game is not in My games", async () => {
+      const { owner, room } = await seated(2);
+      await start(room, owner);
+      expect(await myGames(owner)).toHaveLength(1);
+      await db.updateTable("games").set({ status: "finished" }).execute();
+      expect(await myGames(owner)).toEqual([]);
+    });
+
+    test("My games has a game where the user only controls a hot-seat seat", async () => {
+      const { owner, others, room } = await seated(2);
+      // Today the API cannot leave a user with a hot-seat seat and no seat of their own. The
+      // list reads `controller_user_id`, so it holds when a later task allows it.
+      await db
+        .updateTable("seats")
+        .set({ kind: "hotseat", user_id: null })
+        .where("game_id", "=", room.id)
+        .where("controller_user_id", "=", others[0]!.user.id)
+        .execute();
+      expect((await myGames(others[0]!)).map((g) => g.id)).toEqual([room.id]);
+      expect((await myGames(owner)).map((g) => g.id)).toEqual([room.id]);
+      expect(await myGames(await signIn(app, "Stranger"))).toEqual([]);
     });
   });
 

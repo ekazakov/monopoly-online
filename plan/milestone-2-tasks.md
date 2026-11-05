@@ -88,9 +88,9 @@ Files: `apps/api/src/rooms/service.ts`, `routes/games.ts`.
 
 ### D. Lobby lists API
 
-- [ ] **Open games list endpoint (D1).** `GET /api/games?status=waiting` returns `{ games: lobbyGame[] }`.
-- [ ] **My games endpoint (D2).** `GET /api/me/games` returns `{ games: lobbyGame[] }`.
-- [ ] **Lobby list tests (D3).** Order and limit; full games stay in the list; started games leave the list; My games has the games where the user only controls a hot-seat seat.
+- [x] **Open games list endpoint (D1).** `GET /api/games?status=waiting` returns `{ games: lobbyGame[] }`.
+- [x] **My games endpoint (D2).** `GET /api/me/games` returns `{ games: lobbyGame[] }`.
+- [x] **Lobby list tests (D3).** Order and limit; full games stay in the list; started games leave the list; My games has the games where the user only controls a hot-seat seat.
 
 ### E. Invites API
 
