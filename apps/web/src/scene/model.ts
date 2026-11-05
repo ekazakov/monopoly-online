@@ -1,18 +1,20 @@
-import type { RedactedGameState } from "@monopoly/shared";
-import { UNKNOWN_OWNER_COLOR, playerLook } from "./colors.ts";
+import { TOKENS } from "@monopoly/shared";
+import type { RedactedGameState, Token } from "@monopoly/shared";
+import { UNKNOWN_OWNER_COLOR, tokenLook } from "./colors.ts";
 import type { AvatarKind } from "./sculpt.ts";
 
 export interface ScenePlayer {
   id: string;
   name: string;
-  colorIndex: number;
+  /** The token of the seat. It decides the colour and the figure. */
+  token: Token;
 }
 
 export interface TokenModel {
   id: string;
   square: number;
   inJail: boolean;
-  colorIndex: number;
+  token: Token;
   avatar: AvatarKind;
   metal: number;
   name: string;
@@ -41,19 +43,23 @@ export function buildSceneModel(
 ): SceneModel {
   if (!state) return { tokens: [], deeds: [] };
   const given = new Map(players?.map((p) => [p.id, p]));
-  const colorOf = new Map<string, number>();
-  state.players.forEach((p, i) => colorOf.set(p.id, given.get(p.id)?.colorIndex ?? i));
+  const tokenOf = new Map<string, Token>();
+  // Without a seat for a player, the token follows the place in the state. This is for a state
+  // that is shown before the room is known.
+  state.players.forEach((p, i) =>
+    tokenOf.set(p.id, given.get(p.id)?.token ?? TOKENS[i % TOKENS.length]!),
+  );
 
   const tokens = state.players
     .filter((p) => p.active)
     .map((p): TokenModel => {
-      const colorIndex = colorOf.get(p.id)!;
-      const look = playerLook(colorIndex);
+      const token = tokenOf.get(p.id)!;
+      const look = tokenLook(token);
       return {
         id: p.id,
         square: p.position,
         inJail: p.inJail,
-        colorIndex,
+        token,
         avatar: look.avatar,
         metal: look.metal,
         name: given.get(p.id)?.name ?? p.name,
@@ -62,11 +68,11 @@ export function buildSceneModel(
 
   const deeds = Object.entries(state.ownership)
     .map(([key, deed]): DeedModel => {
-      const colorIndex = colorOf.get(deed.ownerId);
+      const token = tokenOf.get(deed.ownerId);
       return {
         square: Number(key),
         ownerId: deed.ownerId,
-        ownerColor: colorIndex === undefined ? UNKNOWN_OWNER_COLOR : playerLook(colorIndex).color,
+        ownerColor: token === undefined ? UNKNOWN_OWNER_COLOR : tokenLook(token).hex,
         houses: deed.houses,
         mortgaged: deed.mortgaged,
       };

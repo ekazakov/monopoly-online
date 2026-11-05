@@ -1,6 +1,6 @@
 import type { RedactedGameState } from "@monopoly/shared";
 import { describe, expect, test } from "vite-plus/test";
-import { PLAYER_LOOKS, UNKNOWN_OWNER_COLOR } from "./colors.ts";
+import { UNKNOWN_OWNER_COLOR, tokenLook } from "./colors.ts";
 import { buildSceneModel } from "./model.ts";
 
 const player = (
@@ -35,7 +35,7 @@ const state = (
 describe("buildSceneModel", () => {
   test("draws nothing without a state", () => {
     expect(buildSceneModel(null)).toEqual({ tokens: [], deeds: [] });
-    expect(buildSceneModel(null, [{ id: "a", name: "A", colorIndex: 1 }])).toEqual({
+    expect(buildSceneModel(null, [{ id: "a", name: "A", token: "cat" }])).toEqual({
       tokens: [],
       deeds: [],
     });
@@ -51,13 +51,28 @@ describe("buildSceneModel", () => {
     ]);
   });
 
-  test("takes the colour from `players`, else from the place in the state", () => {
+  test("takes the token from `players`, else from the place in the state", () => {
     const model = buildSceneModel(state([player("a", 0), player("b", 1), player("c", 2)]), [
-      { id: "b", name: "Bea", colorIndex: 3 },
+      { id: "b", name: "Bea", token: "car" },
     ]);
-    expect(model.tokens.map((t) => t.colorIndex)).toEqual([0, 3, 2]);
-    expect(model.tokens[1]).toMatchObject({ avatar: PLAYER_LOOKS[3]!.avatar, name: "Bea" });
+    expect(model.tokens.map((t) => t.token)).toEqual(["dog", "car", "penguin"]);
+    expect(model.tokens[1]).toMatchObject({
+      avatar: "car",
+      metal: tokenLook("car").metal,
+      name: "Bea",
+    });
     expect(model.tokens[0]!.name).toBe("A");
+  });
+
+  test("the token decides the figure, not the seat order: a duck and a horse", () => {
+    const model = buildSceneModel(state([player("a", 0), player("b", 1)]), [
+      { id: "a", name: "A", token: "duck" },
+      { id: "b", name: "B", token: "horse" },
+    ]);
+    expect(model.tokens.map((t) => [t.avatar, t.metal])).toEqual([
+      ["duck", tokenLook("duck").metal],
+      ["horse", tokenLook("horse").metal],
+    ]);
   });
 
   test("colours a deed with its owner's colour", () => {
@@ -66,11 +81,17 @@ describe("buildSceneModel", () => {
         "9": { ownerId: "b", houses: 2, mortgaged: false },
         "1": { ownerId: "a", houses: 0, mortgaged: true },
       }),
-      [{ id: "b", name: "B", colorIndex: 2 }],
+      [{ id: "b", name: "B", token: "penguin" }],
     );
     expect(model.deeds).toEqual([
-      { square: 1, ownerId: "a", ownerColor: PLAYER_LOOKS[0]!.color, houses: 0, mortgaged: true },
-      { square: 9, ownerId: "b", ownerColor: PLAYER_LOOKS[2]!.color, houses: 2, mortgaged: false },
+      { square: 1, ownerId: "a", ownerColor: tokenLook("dog").hex, houses: 0, mortgaged: true },
+      {
+        square: 9,
+        ownerId: "b",
+        ownerColor: tokenLook("penguin").hex,
+        houses: 2,
+        mortgaged: false,
+      },
     ]);
   });
 

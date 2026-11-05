@@ -3,7 +3,7 @@ import type { CSSProperties } from "react";
 import type { Seat } from "@monopoly/shared";
 import { useHotSeatHandoff } from "../../../game/index.ts";
 import { AvatarIcon } from "../rail/avatars.tsx";
-import { railLook } from "../rail/looks.ts";
+import { tokenLook } from "../../../scene/colors.ts";
 import "./HandoffPrompt.css";
 
 /**
@@ -20,7 +20,7 @@ export function HandoffPrompt({ userId }: { userId: string }) {
 function Handoff({ seat, onConfirm }: { seat: Seat; onConfirm: () => void }) {
   const root = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
-  const look = railLook(seat.order);
+  const look = tokenLook(seat.token);
 
   // Mounted for the whole handoff: a newer handoff only changes the seat, so the element that
   // had focus before the first prompt is kept.
@@ -57,7 +57,7 @@ function Handoff({ seat, onConfirm }: { seat: Seat; onConfirm: () => void }) {
       aria-modal="true"
       aria-labelledby="handoff-title"
       aria-describedby="handoff-text"
-      style={{ "--handoff-colour": look.color } as CSSProperties}
+      style={{ "--handoff-colour": look.cssColor } as CSSProperties}
     >
       <div className="handoff__avatar">
         <AvatarIcon kind={look.avatar} size={110} />

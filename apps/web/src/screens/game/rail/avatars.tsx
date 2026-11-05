@@ -1,7 +1,9 @@
+import type { Token } from "@monopoly/shared";
 import type { ReactNode } from "react";
 
-// Outline avatar icons on a 48 x 48 grid (spec 4.3), ported from the prototype icons.
-export type AvatarKind = "dog" | "cat" | "penguin" | "car";
+// Outline avatar icons on a 48 x 48 grid (spec 4.3), ported from the prototype icons. The figure
+// of a token has the key of the token.
+export type AvatarKind = Token;
 
 const dot = { fill: "currentColor", stroke: "none" } as const;
 
@@ -54,6 +56,24 @@ const ICONS: Record<AvatarKind, ReactNode> = {
       <circle cx="15" cy="34" r="1.2" {...dot} />
       <circle cx="33" cy="34" r="1.2" {...dot} />
     </g>
+  ),
+  horse: (
+    <>
+      <path d="M5.5 24.5L4 21.5C4 19.5 5.5 18 7 16.5L11.5 11L12.5 4.5L17 9.5C20 9 24 10 28 12H36C40 12 43 15 43 19V30H38V41H33.5V30H21V41H16.5V30L14 20.5L9.5 26.5C8 27.5 6.5 26.5 5.5 24.5Z" />
+      <path d="M43 17C46.5 19.5 46.5 28 44 35" />
+      <path d="M14 12.5L16.5 17.5M18 10.5L20.5 15.5" strokeWidth="1.8" />
+      <circle cx="9.8" cy="17.6" r="1.1" {...dot} />
+      <circle cx="5.6" cy="22.2" r="1" {...dot} />
+    </>
+  ),
+  duck: (
+    <>
+      <circle cx="14" cy="12" r="6.5" />
+      <path d="M8 12.5L2.5 14.5L8.5 17" />
+      <path d="M11.5 17.8C10 22 8 25 8 29C8 37 15 42 25 42C36 42 41 36.5 42 30L45 22L38 25.5C34 25.5 31 22.5 27 22C22 21.5 19 21 17.5 17.8" />
+      <path d="M20 31C24 28 31 29 34 33C31 37 24 37 20 31Z" />
+      <circle cx="12" cy="10.8" r="1.1" {...dot} />
+    </>
   ),
 };
 

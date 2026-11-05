@@ -20,7 +20,7 @@ describe("BoardScene without WebGL", () => {
     render(
       <BoardScene
         state={null}
-        players={[{ id: "a", name: "Ines", colorIndex: 1 }]}
+        players={[{ id: "a", name: "Ines", token: "cat" }]}
         highlightSquare={7}
         onSquareClick={() => {}}
         reducedMotion

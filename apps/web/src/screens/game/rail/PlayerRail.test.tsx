@@ -1,4 +1,4 @@
-import { act, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import type { RedactedGameState } from "@monopoly/shared";
 import { afterEach, describe, expect, test, vi } from "vite-plus/test";
 import { GameStoreProvider } from "../../../game/GameStoreProvider.tsx";
@@ -272,6 +272,22 @@ describe("PlayerRail", () => {
     });
   });
 
+  test("the host at seat order 1 with the dog token is red, not blue", () => {
+    // Regression: the server numbers seats from 1 and the look tables started at 0, so the
+    // host showed the second colour.
+    setup(fx.ownerId);
+    expect(fx.game.seats[0]).toMatchObject({ order: 1, token: "dog" });
+    // The rail groups the seats by device, so find a row by the name on it.
+    const colorOf = (name: string) =>
+      screen
+        .getAllByRole("listitem")
+        .find((row) => within(row).queryByText(name))!
+        .style.getPropertyValue("--player-color");
+    expect(colorOf("Ann")).toBe("var(--hf-pawn-red)");
+    expect(colorOf("Bo")).toBe("var(--hf-pawn-blue)");
+    expect(colorOf("Cy")).toBe("var(--hf-pawn-green)");
+  });
+
   test("keeps the rail when the room changes", () => {
     const store = setup(fx.ownerId);
     act(() => store.applyStreamMessage(roomMessage({ ...fx.game, version: 0 })));
@@ -282,7 +298,7 @@ describe("PlayerRail", () => {
 describe("PlayerRow", () => {
   const base: PlayerRowProps = {
     name: "Mira",
-    colorIndex: 1,
+    token: "cat",
     cash: 1500,
     device: "other",
     active: false,
@@ -308,17 +324,22 @@ describe("PlayerRow", () => {
     expect(row).not.toHaveAttribute("aria-current");
   });
 
-  test("takes the pawn colour from the colour index", () => {
-    renderRow({ colorIndex: 2 });
+  test("takes the pawn colour from the token", () => {
+    renderRow({ token: "penguin" });
     expect(screen.getByRole("listitem").style.getPropertyValue("--player-color")).toBe(
       "var(--hf-pawn-green)",
     );
   });
 
-  test("falls back to a pawn colour for a sixth seat and wraps after it", () => {
-    renderRow({ colorIndex: 5 });
+  test("the duck is teal and the horse is purple, with a fallback value", () => {
+    renderRow({ token: "duck" });
     expect(screen.getByRole("listitem").style.getPropertyValue("--player-color")).toContain(
       "--hf-pawn-teal",
+    );
+    cleanup();
+    renderRow({ token: "horse" });
+    expect(screen.getByRole("listitem").style.getPropertyValue("--player-color")).toContain(
+      "--hf-pawn-purple",
     );
   });
 

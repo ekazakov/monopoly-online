@@ -3,13 +3,14 @@ import { join } from "node:path";
 import { SQUARES } from "@monopoly/game-engine";
 import type { SquareGroup } from "@monopoly/game-engine";
 import { describe, expect, test } from "vite-plus/test";
+import { TOKENS } from "@monopoly/shared";
 import {
   GROUP_COLORS,
-  PLAYER_LOOKS,
   SURFACE,
+  TOKEN_LOOKS,
   UNKNOWN_OWNER_COLOR,
   groupColor,
-  playerLook,
+  tokenLook,
 } from "./colors.ts";
 
 const css = readFileSync(join(import.meta.dirname, "../styles/tokens.css"), "utf8");
@@ -31,27 +32,33 @@ describe("groupColor", () => {
   });
 });
 
-describe("playerLook", () => {
-  test("starts with the --hf-pawn-* tokens, in token order", () => {
-    expect(PLAYER_LOOKS.slice(0, 4).map((l) => l.color)).toEqual(
+describe("tokenLook", () => {
+  test("has a look for each token, in the free-token order", () => {
+    expect(Object.keys(TOKEN_LOOKS)).toEqual([...TOKENS]);
+  });
+
+  test("the first four colours equal the --hf-pawn-* design tokens", () => {
+    expect(TOKENS.slice(0, 4).map((t) => tokenLook(t).hex)).toEqual(
       ["red", "blue", "green", "gold"].map((n) => token(`pawn-${n}`)),
+    );
+    expect(TOKENS.slice(0, 4).map((t) => tokenLook(t).cssColor)).toEqual(
+      ["red", "blue", "green", "gold"].map((n) => `var(--hf-pawn-${n})`),
     );
   });
 
-  test("pairs each pawn colour with its avatar from the design", () => {
-    expect(playerLook(0).avatar).toBe("dog");
-    expect(playerLook(1).avatar).toBe("cat");
-    expect(playerLook(2).avatar).toBe("penguin");
-    expect(playerLook(3).avatar).toBe("car");
+  test("the purple and teal colours carry their value as the CSS fallback", () => {
+    expect(tokenLook("horse").cssColor).toBe(`var(--hf-pawn-purple, ${tokenLook("horse").hex})`);
+    expect(tokenLook("duck").cssColor).toBe(`var(--hf-pawn-teal, ${tokenLook("duck").hex})`);
   });
 
-  test("gives six players six different colours", () => {
-    expect(new Set(PLAYER_LOOKS.map((l) => l.color)).size).toBe(6);
+  test("pairs each token with the figure of the same key", () => {
+    for (const t of TOKENS) expect(tokenLook(t).avatar).toBe(t);
   });
 
-  test("wraps an index past the end and a negative index", () => {
-    expect(playerLook(6)).toBe(playerLook(0));
-    expect(playerLook(-1)).toBe(playerLook(5));
+  test("gives six tokens six different colours, metals and labels", () => {
+    for (const field of ["hex", "metal", "label"] as const) {
+      expect(new Set(TOKENS.map((t) => tokenLook(t)[field])).size).toBe(6);
+    }
   });
 });
 

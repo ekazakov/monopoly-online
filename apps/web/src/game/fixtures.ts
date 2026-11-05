@@ -54,12 +54,13 @@ export function roomOf(fields: Partial<Game> = {}) {
     kind,
     userId,
     controllerUserId: userId ?? ownerId,
-    token: TOKENS[order]!,
+    // The server numbers seats from 1, and the first free token goes to the first seat.
+    token: TOKENS[order - 1]!,
   });
   const seats = {
-    a: seat(0, "Ann", "user", ownerId),
-    b: seat(1, "Bo", "user", guestId),
-    c: seat(2, "Cy", "hotseat", null),
+    a: seat(1, "Ann", "user", ownerId),
+    b: seat(2, "Bo", "user", guestId),
+    c: seat(3, "Cy", "hotseat", null),
   };
   const game = gameSchema.parse({
     id: uuid(),

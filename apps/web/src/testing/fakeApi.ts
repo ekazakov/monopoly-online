@@ -27,7 +27,8 @@ export function gameFixture(overrides: Partial<Game> = {}): Game {
     seats: [
       {
         id: "5b0f7a3e-3a53-4c2e-9a53-2f0d5f6f9d21",
-        order: 0,
+        // The server numbers seats from 1.
+        order: 1,
         name: "Marlow",
         kind: "user",
         userId: userFixture.id,

@@ -155,14 +155,13 @@ function useReducedMotion(): boolean {
   );
 }
 
-// Colour index = seat order, the same index the rail uses.
+// The token of the seat decides the colour and the figure, the same as in the rail.
 function Board({ userId }: { userId: string }) {
   const { game, state } = useGame(userId);
   const reducedMotion = useReducedMotion();
   const motion = useMotionPlayback();
   const players = useMemo<ScenePlayer[]>(
-    () =>
-      (game?.seats ?? []).map((seat) => ({ id: seat.id, name: seat.name, colorIndex: seat.order })),
+    () => (game?.seats ?? []).map((seat) => ({ id: seat.id, name: seat.name, token: seat.token })),
     [game],
   );
   return (

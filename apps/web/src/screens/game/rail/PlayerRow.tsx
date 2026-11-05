@@ -1,7 +1,8 @@
+import type { Token } from "@monopoly/shared";
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
+import { tokenLook } from "../../../scene/colors.ts";
 import { AvatarIcon } from "./avatars.tsx";
-import { railLook } from "./looks.ts";
 import "./PlayerRail.css";
 
 /** Whose seat it is for the signed-in user: their own, a hot-seat seat on this device, or another device. */
@@ -9,8 +10,8 @@ export type SeatDevice = "you" | "device" | "other";
 
 export interface PlayerRowProps {
   name: string;
-  /** The seat order: it picks the pawn colour and the avatar. */
-  colorIndex: number;
+  /** The token of the seat: it picks the pawn colour and the avatar. */
+  token: Token;
   cash: number;
   device: SeatDevice;
   /** The player on turn. */
@@ -52,7 +53,7 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
 
 export function PlayerRow({
   name,
-  colorIndex,
+  token,
   cash,
   device,
   active,
@@ -62,7 +63,7 @@ export function PlayerRow({
   properties,
   debt,
 }: PlayerRowProps) {
-  const look = railLook(colorIndex);
+  const look = tokenLook(token);
   const change = useCashChange(cash);
   const onTurn = active && !eliminated;
 
@@ -72,7 +73,7 @@ export function PlayerRow({
       aria-current={onTurn ? "true" : undefined}
       data-active={onTurn || undefined}
       data-eliminated={eliminated || undefined}
-      style={{ "--player-color": look.color } as CSSProperties}
+      style={{ "--player-color": look.cssColor } as CSSProperties}
     >
       <div className="player-row__avatar" aria-hidden="true">
         <AvatarIcon kind={look.avatar} />

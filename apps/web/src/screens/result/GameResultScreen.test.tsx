@@ -85,14 +85,15 @@ async function setup({
 }
 
 const seatsOf = (count: number, controller: string): Seat[] =>
-  Array.from({ length: count }, (_, order) => ({
+  Array.from({ length: count }, (_, index) => ({
     id: crypto.randomUUID(),
-    order,
-    name: `Seat${order + 1}`,
+    // The server numbers seats from 1.
+    order: index + 1,
+    name: `Seat${index + 1}`,
     kind: "hotseat" as const,
     userId: null,
     controllerUserId: controller,
-    token: TOKENS[order]!,
+    token: TOKENS[index]!,
   }));
 
 const rowsOf = () => within(screen.getByRole("table")).getAllByRole("row").slice(1);
@@ -140,10 +141,10 @@ describe("GameResultScreen: the finished game", () => {
 
     expect(within(resigned).getByRole("rowheader")).toHaveTextContent("2");
     expect(within(resigned).getByText("Resigned · round 18")).toBeInTheDocument();
-    expect(within(resigned).getByRole("img", { name: "Bo, cat" })).toBeInTheDocument();
+    expect(within(resigned).getByRole("img", { name: "Bo, Cat" })).toBeInTheDocument();
     expect(resigned).not.toHaveAttribute("data-winner");
     expect(within(bankrupt).getByText("Bankrupt · round 16")).toBeInTheDocument();
-    expect(within(bankrupt).getByRole("img", { name: "Cy, penguin" })).toBeInTheDocument();
+    expect(within(bankrupt).getByRole("img", { name: "Cy, Penguin" })).toBeInTheDocument();
 
     // An out player shows a dash with the hidden word "none" in cash, properties and net worth.
     expect(within(resigned).getAllByText("—")).toHaveLength(3);
@@ -189,14 +190,14 @@ describe("GameResultScreen: the finished game", () => {
     expect(rows.map((row) => within(row).getByRole("img").getAttribute("aria-label"))).toEqual(
       [
         "Seat1, Scottish terrier",
-        "Seat2, cat",
-        "Seat3, penguin",
-        "Seat4, racing car",
-        "Seat5, cat",
-        "Seat6, Scottish terrier",
+        "Seat2, Cat",
+        "Seat3, Penguin",
+        "Seat4, Racing car",
+        "Seat5, Horse",
+        "Seat6, Duck",
       ].slice(0, count),
     );
-    // The pawn colour is the avatar ring, taken from the seat order.
+    // The pawn colour is the avatar ring, taken from the token of the seat.
     const rings = rows.map((row) => within(row).getByRole("img").style.borderColor);
     expect(new Set(rings).size).toBe(count);
   });

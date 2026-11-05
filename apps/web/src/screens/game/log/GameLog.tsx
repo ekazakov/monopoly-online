@@ -1,13 +1,21 @@
 import { useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import { mySeats, useGameSelector } from "../../../game/index.ts";
-import { playerLook } from "../../../scene/colors.ts";
+import type { Token } from "@monopoly/shared";
+import { tokenLook } from "../../../scene/colors.ts";
 import { describeEvent, playerName } from "./describe.ts";
 import { LogIcon } from "./LogIcon.tsx";
 import "./GameLog.css";
 
-// Player colours lifted for text on the log bar (4.5:1 or better), in the order of PLAYER_LOOKS.
-const NAME_COLORS = ["#ff958b", "#8cb8ff", "#72d69e", "#f5c95c", "#c4a5f2", "#6fd9d3"] as const;
+// Token colours lifted for text on the log bar (4.5:1 or better).
+const NAME_COLORS: Record<Token, string> = {
+  dog: "#ff958b",
+  cat: "#8cb8ff",
+  penguin: "#72d69e",
+  car: "#f5c95c",
+  horse: "#c4a5f2",
+  duck: "#6fd9d3",
+};
 
 // How far from the end still counts as "at the end", for fractional scroll positions.
 const END_SLACK = 8;
@@ -39,7 +47,7 @@ export function GameLog({ userId }: GameLogProps) {
   const lines = useMemo(() => {
     return events.map(({ event }, i) => ({ key: dropped + i, line: describeEvent(event, ctx) }));
   }, [events, dropped, ctx]);
-  const orderOf = useMemo(() => new Map(seats?.map((s) => [s.id, s.order])), [seats]);
+  const tokenOf = useMemo(() => new Map(seats?.map((s) => [s.id, s.token])), [seats]);
   const mine = useMemo(() => new Set(mySeats(game, userId).map((s) => s.id)), [game, userId]);
 
   const scrollToEnd = () => {
@@ -85,8 +93,8 @@ export function GameLog({ userId }: GameLogProps) {
   };
 
   const colorOf = (playerId: string) => {
-    const order = orderOf.get(playerId);
-    return order === undefined ? undefined : NAME_COLORS[order % NAME_COLORS.length];
+    const token = tokenOf.get(playerId);
+    return token === undefined ? undefined : NAME_COLORS[token];
   };
 
   return (
@@ -120,8 +128,8 @@ export function GameLog({ userId }: GameLogProps) {
                   className="game-log__dot"
                   aria-hidden="true"
                   style={
-                    line.playerId !== null && orderOf.has(line.playerId)
-                      ? { background: playerLook(orderOf.get(line.playerId)!).color }
+                    line.playerId !== null && tokenOf.has(line.playerId)
+                      ? { background: tokenLook(tokenOf.get(line.playerId)!).cssColor }
                       : undefined
                   }
                 />

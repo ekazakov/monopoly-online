@@ -124,12 +124,12 @@ Files: `apps/api/src/rooms/service.ts`, `routes/games.ts`.
 
 ### G. Web
 
-- [ ] **One token look table (G1).** Can start at once: it fixes a defect that exists now (the server numbers seats from 1, the look tables start at 0, so the host is blue).
+- [x] **One token look table (G1).** Can start at once: it fixes a defect that exists now (the server numbers seats from 1, the look tables start at 0, so the host is blue).
   - Merge `screens/game/rail/looks.ts` and `scene/colors.ts` (`PLAYER_LOOKS`) into one map from token to look: `{ label, cssColor, hex, metal, avatar }`.
   - Replace `colorIndex = seat.order` with a lookup by `seat.token` in `GameScreen.tsx`, `PlayerRail.tsx`, `GameLog.tsx`, `AuctionView.tsx`, `HandoffPrompt.tsx`, `LeaveGameMenu.tsx`, `GameResultScreen.tsx` and `buildSceneModel` (`scene/model.ts`).
   - Fixtures (`testing/fakeApi.ts`): `order` starts at 1, and seats have `token`.
   - Regression test: the host at order 1 with the `dog` token shows red.
-- [ ] **Horse and duck in the web app (G2).** `AvatarIcon` paths in `avatars.tsx`, SDF makers in `scene/sculpt.ts`, and `AvatarKind` with 6 kinds. Depends on Horse and duck figures (A1).
+- [x] **Horse and duck in the web app (G2).** `AvatarIcon` paths in `avatars.tsx`, SDF makers in `scene/sculpt.ts`, and `AvatarKind` with 6 kinds. Depends on Horse and duck figures (A1).
 - [ ] **Lobby screen (G3).** Replaces `HomeScreen`. Depends on Lobby board with inbox and My games (A2).
   - Invites inbox with Accept and Decline. Accept goes to the room. On `game_full` or `game_not_waiting`, show the "This game is full" notice.
   - Open games: live list with Join, or Full.

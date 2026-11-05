@@ -38,7 +38,7 @@ export function PlayerRail({ userId }: { userId: string }) {
       local,
       row: {
         name: player.name,
-        colorIndex: seat.order,
+        token: seat.token,
         cash: player.cash,
         device,
         active: currentPlayer?.id === player.id,

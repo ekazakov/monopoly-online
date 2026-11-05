@@ -8,7 +8,7 @@ import {
   useGame,
   useGameActions,
 } from "../../../../game/index.ts";
-import { railLook } from "../../rail/looks.ts";
+import { tokenLook } from "../../../../scene/colors.ts";
 import { consequenceText } from "./consequence.ts";
 import "./LeaveGameMenu.css";
 
@@ -182,7 +182,7 @@ export function LeaveGameMenu({ userId, onLeft }: LeaveGameMenuProps) {
                           <span
                             className="leave-menu__disc"
                             aria-hidden="true"
-                            style={{ background: railLook(seat.order).color }}
+                            style={{ background: tokenLook(seat.token).cssColor }}
                           />
                           <span className="leave-menu__seat-name">{nameOf(seat)}</span>
                           <span className="leave-menu__tick" aria-hidden="true">

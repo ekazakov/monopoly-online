@@ -1,5 +1,6 @@
 // Avatar sculpting, ported from the Harborfront Avatars page: parts are signed distance functions merged
 // with smooth unions, carved with smooth subtractions, then meshed once with surface nets.
+import type { Token } from "@monopoly/shared";
 import * as THREE from "three";
 
 type Vec3 = [number, number, number];
@@ -17,7 +18,8 @@ interface Item {
   sub?: boolean;
 }
 
-export type AvatarKind = "cat" | "dog" | "penguin" | "car";
+/** The figure of a token has the key of the token. */
+export type AvatarKind = Token;
 
 const sides = [-1, 1];
 
@@ -471,6 +473,149 @@ function penguin() {
   return sGroup(p);
 }
 
+// A horse standing in profile along x, head at -x.
+function horse() {
+  const h: Item[] = [
+    add(sCone([-0.3, 0.92, 0], [0.3, 0.94, 0], 0.21, 0.2)),
+    add(sEll(-0.36, 0.88, 0, 0.2, 0.24, 0.18), 0.1),
+    add(sEll(0.36, 0.94, 0, 0.22, 0.22, 0.19), 0.1),
+    add(sEll(0, 0.82, 0, 0.32, 0.18, 0.18), 0.1),
+    add(sCone([-0.42, 1.0, 0], [-0.6, 1.38, 0.02], 0.17, 0.1), 0.08),
+    add(sCone([-0.62, 1.44, 0.03], [-0.84, 1.2, 0.05], 0.1, 0.065), 0.05),
+    add(sEll(-0.66, 1.33, 0.03, 0.08, 0.1, 0.075), 0.05),
+    add(sEll(-0.83, 1.19, 0.05, 0.07, 0.065, 0.07), 0.03),
+    carve(sEll(-0.85, 1.145, 0.05, 0.07, 0.006, 0.08), 0.003),
+    add(
+      sRidge(
+        sSquash(
+          sTube(
+            [
+              [-0.52, 1.46, 0.02],
+              [-0.43, 1.3, 0.01],
+              [-0.33, 1.15, 0],
+              [-0.26, 1.06, 0],
+            ],
+            0.055,
+            0.065,
+          ),
+          1,
+          1,
+          0.7,
+        ),
+        0.0035,
+        140,
+      ),
+      0.04,
+    ),
+    add(sRidge(sEll(-0.66, 1.48, 0.03, 0.04, 0.035, 0.05), 0.005, 110), 0.02),
+    add(
+      sRidge(
+        sTube(
+          [
+            [0.54, 1.0, 0],
+            [0.66, 0.96, 0],
+            [0.72, 0.72, 0],
+            [0.7, 0.42, 0.02],
+          ],
+          0.05,
+          0.075,
+        ),
+        0.008,
+        90,
+      ),
+      0.04,
+    ),
+  ];
+  const lowerLeg = (x: number, y: number, z: number): Item[] => [
+    add(sCone([x, y, z], [x - 0.01, 0.14, z], 0.045, 0.04), 0.02),
+    add(sEll(x - 0.005, 0.12, z, 0.05, 0.045, 0.045), 0.02),
+    add(sCone([x - 0.015, 0.1, z], [x - 0.025, 0.04, z], 0.045, 0.058), 0.01),
+  ];
+  for (const s of sides) {
+    h.push(carve(sEll(-0.875, 1.2, 0.05 + s * 0.04, 0.02, 0.012, 0.012), 0.006));
+    h.push(...eye(-0.68, 1.38, 0.03 + s * 0.085, 0.022, -0.2, 0.2, s));
+    h.push(
+      add(
+        place(
+          sSquash(sCone([0, 0, 0], [0, 0.12, 0], 0.035, 0.008), 0.55, 1, 1),
+          -0.6,
+          1.5,
+          0.03 + s * 0.05,
+          s * 0.15,
+          0,
+          -0.2,
+        ),
+        0.02,
+      ),
+    );
+    const fx = s > 0 ? -0.42 : -0.36;
+    const z = s * 0.1;
+    h.push(
+      add(sCone([fx, 0.8, z], [fx, 0.48, z], 0.08, 0.055), 0.05),
+      add(sEll(fx, 0.46, z, 0.055, 0.06, 0.05), 0.03),
+      ...lowerLeg(fx, 0.46, z),
+    );
+    const hx = s > 0 ? 0.34 : 0.4;
+    const hz = s * 0.11;
+    h.push(
+      add(sEll(hx, 0.8, hz, 0.17, 0.22, 0.1), 0.07),
+      add(sCone([hx + 0.03, 0.68, hz], [hx + 0.1, 0.42, hz], 0.08, 0.05), 0.04),
+    );
+    h.push(
+      add(sEll(hx + 0.1, 0.42, hz, 0.05, 0.055, 0.045), 0.02),
+      ...lowerLeg(hx + 0.1, 0.42, hz),
+    );
+  }
+  return sGroup(h);
+}
+
+// A sitting duck: profile along x, head at -x turned toward the viewer, upturned tail, feathered
+// wings.
+function duck() {
+  const k: Item[] = [
+    add(sEll(0.05, 0.32, 0, 0.42, 0.28, 0.3)),
+    add(sEll(-0.22, 0.34, 0, 0.24, 0.25, 0.27), 0.1),
+    add(sCone([0.35, 0.4, 0], [0.56, 0.62, 0], 0.16, 0.03), 0.1),
+    add(sCone([-0.2, 0.5, 0], [-0.26, 0.72, 0.03], 0.15, 0.13), 0.08),
+    carve(sBox(0, -0.2, 0, 1, 0.22, 1, 0)),
+  ];
+  for (const s of sides) {
+    k.push(add(sEll(0.12, 0.38, s * 0.25, 0.26, 0.15, 0.07), 0.03));
+    const zAt = (x: number, y: number) =>
+      0.25 + 0.07 * Math.sqrt(Math.max(0, 1 - ((x - 0.12) / 0.26) ** 2 - ((y - 0.38) / 0.15) ** 2));
+    for (let f = 0; f < 3; f++) {
+      const a: [number, number] = [0.16 + f * 0.07, 0.48];
+      const b: [number, number] = [0.26 + f * 0.05, 0.3];
+      const mid: [number, number] = [(a[0] + b[0]) / 2 + 0.02, 0.39];
+      const feather = [a, mid, b].map(([x, y]): [number, number, number] => [x, y, s * zAt(x, y)]);
+      k.push(carve(sTube(feather, 0.011, 0.008, 12), 0.005));
+    }
+  }
+  const head: Item[] = [
+    add(sEll(0, 0, 0, 0.16, 0.155, 0.16)),
+    add(sEll(0, -0.04, 0.2, 0.095, 0.038, 0.14), 0.03),
+    carve(sEll(0, -0.05, 0.22, 0.1, 0.006, 0.15), 0.003),
+    add(
+      sTube(
+        [
+          [0, 0.15, -0.02],
+          [0, 0.2, -0.08],
+          [0, 0.17, -0.13],
+        ],
+        0.03,
+        0.012,
+      ),
+      0.02,
+    ),
+  ];
+  for (const s of sides) {
+    head.push(...eye(s * 0.1, 0.03, 0.12, 0.025, s * 0.6, 0.1, 0.8));
+    head.push(carve(sEll(s * 0.028, -0.01, 0.27, 0.011, 0.007, 0.014), 0.003));
+  }
+  k.push(add(place(sGroup(head), -0.28, 0.85, 0.04, 0, -Math.PI / 2 + 0.6, 0), 0.06));
+  return sGroup(k);
+}
+
 function car() {
   const shell = sSquash(
     sGroup([
@@ -534,13 +679,15 @@ function car() {
   return sGroup(c);
 }
 
-const MAKERS: Record<AvatarKind, () => Sdf> = { cat, dog, penguin, car };
+const MAKERS: Record<AvatarKind, () => Sdf> = { cat, dog, penguin, car, horse, duck };
 // relative heights from the avatars page, so the set reads as one family
 export const AVATAR_HEIGHT: Record<AvatarKind, number> = {
   cat: 1.6,
   dog: 1.15,
   penguin: 1.43,
   car: 0.62,
+  horse: 1.7,
+  duck: 1.05,
 };
 
 // Kept for the whole session on purpose: meshing is slow and the figures are small. Any renderer can upload them again.

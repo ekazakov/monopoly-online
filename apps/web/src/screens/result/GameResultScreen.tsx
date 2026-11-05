@@ -1,21 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import type { GameResult, Seat, Standing } from "@monopoly/shared";
+import type { GameResult, Seat, Standing, Token } from "@monopoly/shared";
 import { useEffect, useRef } from "react";
 import type { RefObject } from "react";
 import { gameResultQuery } from "../../game/index.ts";
 import { AvatarIcon } from "../game/rail/avatars.tsx";
-import type { AvatarKind } from "../game/rail/avatars.tsx";
-import { railLook } from "../game/rail/looks.ts";
+import { tokenLook } from "../../scene/colors.ts";
 import { formatMoney } from "../game/rail/PlayerRow.tsx";
 import "./GameResultScreen.css";
-
-const AVATAR_NAMES: Record<AvatarKind, string> = {
-  dog: "Scottish terrier",
-  cat: "cat",
-  penguin: "penguin",
-  car: "racing car",
-};
 
 export interface GameResultScreenProps {
   gameId: string;
@@ -118,7 +110,7 @@ function Standings({
   seats: readonly Seat[];
   userId: string;
 }) {
-  const orderOf = (seatId: string) => seats.find((seat) => seat.id === seatId)?.order ?? 0;
+  const tokenOf = (seatId: string) => seats.find((seat) => seat.id === seatId)?.token ?? "dog";
   return (
     <div className="result__scroll">
       <table className="result__table">
@@ -144,7 +136,7 @@ function Standings({
             <Row
               key={standing.seatId}
               standing={standing}
-              order={orderOf(standing.seatId)}
+              token={tokenOf(standing.seatId)}
               onDevice={standing.controllerUserId === userId}
             />
           ))}
@@ -156,14 +148,14 @@ function Standings({
 
 function Row({
   standing,
-  order,
+  token,
   onDevice,
 }: {
   standing: Standing;
-  order: number;
+  token: Token;
   onDevice: boolean;
 }) {
-  const look = railLook(order);
+  const look = tokenLook(token);
   const out = standing.status !== "winner";
   const figures = [standing.cash, standing.properties, standing.netWorth];
   return (
@@ -176,8 +168,8 @@ function Row({
           <span
             className="result__avatar"
             role="img"
-            aria-label={`${standing.name}, ${AVATAR_NAMES[look.avatar]}`}
-            style={{ borderColor: look.color }}
+            aria-label={`${standing.name}, ${look.label}`}
+            style={{ borderColor: look.cssColor }}
           >
             <AvatarIcon kind={look.avatar} size={26} />
           </span>

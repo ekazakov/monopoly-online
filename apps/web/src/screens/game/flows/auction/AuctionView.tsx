@@ -6,7 +6,7 @@ import { formatMoney } from "../../turn/format.ts";
 import { PropertyCard } from "../../turn/PropertyCard.tsx";
 import { Status } from "../../turn/Status.tsx";
 import type { Turn } from "../../turn/useTurn.ts";
-import { railLook } from "../../rail/looks.ts";
+import { tokenLook } from "../../../../scene/colors.ts";
 import { checkBid, minimumBid, raiseList, raiseTargets } from "./bid.ts";
 import "./Auction.css";
 
@@ -28,7 +28,7 @@ export function AuctionView({ turn }: { turn: Turn }) {
   }
 
   const name = (id: string) => state.players.find((p) => p.id === id)?.name ?? "";
-  const seatOrder = (id: string) => game?.seats.find((seat) => seat.id === id)?.order ?? 0;
+  const seatToken = (id: string) => game?.seats.find((seat) => seat.id === id)?.token ?? "dog";
   const mine = new Set(turn.view.mySeats.map((seat) => seat.id));
   const actorCash = state.players.find((p) => p.id === auction.actorId)?.cash ?? 0;
 
@@ -60,7 +60,7 @@ export function AuctionView({ turn }: { turn: Turn }) {
             >
               <span
                 className="auction__dot"
-                style={{ background: railLook(seatOrder(id)).color }}
+                style={{ background: tokenLook(seatToken(id)).cssColor }}
                 aria-hidden="true"
               />
               <span className="auction__name">
