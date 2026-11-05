@@ -55,6 +55,10 @@ describe("stream lifecycle", () => {
     expect(latest().url).toBe(`/api/stream?topics=${topic},${otherTopic}`);
     expect(latest().listenerTypes().sort()).toEqual([
       "game.actions",
+      "invites.updated",
+      "lobby.removed",
+      "lobby.snapshot",
+      "lobby.updated",
       "room.cancelled",
       "room.updated",
       "snapshot",

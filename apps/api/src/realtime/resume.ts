@@ -15,14 +15,14 @@
 //   topic gets a `snapshot`.
 import { applyAction } from "@monopoly/game-engine";
 import type { Action } from "@monopoly/game-engine";
-import { RESUME_MAX_GAP } from "@monopoly/shared";
-import type { Game, GameEvent, RedactedGameState } from "@monopoly/shared";
+import { LOBBY_TOPIC, RESUME_MAX_GAP } from "@monopoly/shared";
+import type { Game, GameEvent, Invite, LobbyGame, RedactedGameState } from "@monopoly/shared";
 import type { Kysely } from "kysely";
 import type { Database } from "../db/schema.ts";
 import { deserializeState } from "../game/loader.ts";
 import type { GameStateLoader } from "../game/loader.ts";
 import { redactState } from "../game/redact.ts";
-import { gameTopic } from "./messages.ts";
+import { gameTopic, userTopic } from "./messages.ts";
 import type { StreamEnvelope } from "./messages.ts";
 
 export type ResumePlan = { kind: "snapshot" } | { kind: "none" } | { kind: "replay" };
@@ -154,5 +154,27 @@ export function createTopicReader(options: TopicReaderOptions) {
       }
     }
     return { messages: [snapshotMessage(game, redactState(full))], covered: current };
+  };
+}
+
+// The `lobby` and `user:<id>` topics have no engine version, so there is nothing to resume.
+// Each connect gets the full list, and `Last-Event-ID` does not matter. Their live messages are
+// not versioned either: nothing is covered.
+
+/** What a new connect to `lobby` sends first. */
+export function lobbyStart(games: LobbyGame[]): TopicStart {
+  return {
+    messages: [{ topic: LOBBY_TOPIC, type: "lobby.snapshot", version: 0, payload: { games } }],
+    covered: -1,
+  };
+}
+
+/** What a new connect to `user:<id>` sends first: the pending invites of that user. */
+export function userStart(userId: string, invites: Invite[]): TopicStart {
+  return {
+    messages: [
+      { topic: userTopic(userId), type: "invites.updated", version: 0, payload: { invites } },
+    ],
+    covered: -1,
   };
 }

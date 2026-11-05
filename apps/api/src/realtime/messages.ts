@@ -1,4 +1,5 @@
-import type { StreamMessage } from "@monopoly/shared";
+import { LOBBY_TOPIC } from "@monopoly/shared";
+import type { LobbyGame, StreamMessage } from "@monopoly/shared";
 import type { CommittedAction } from "../game/service.ts";
 import type { RoomEvent } from "../rooms/service.ts";
 import type { Bus } from "./bus.ts";
@@ -11,6 +12,28 @@ export const TOPIC_PREFIX = "game:";
 export const gameTopic = (gameId: string): `game:${string}` => `${TOPIC_PREFIX}${gameId}`;
 
 export const gameIdOf = (topic: string): string => topic.slice(TOPIC_PREFIX.length);
+
+const USER_PREFIX = "user:";
+
+export const lobbyTopic = LOBBY_TOPIC;
+
+export const userTopic = (userId: string): `user:${string}` => `${USER_PREFIX}${userId}`;
+
+export const userIdOf = (topic: string): string => topic.slice(USER_PREFIX.length);
+
+export type TopicKind = "game" | "lobby" | "user";
+
+/** The kind of a topic that passed `parseStreamTopics`. */
+export function topicKind(topic: string): TopicKind {
+  if (topic === LOBBY_TOPIC) return "lobby";
+  return topic.startsWith(USER_PREFIX) ? "user" : "game";
+}
+
+/** The messages of the `lobby` topic. */
+type LobbyMessage = Extract<
+  StreamEnvelope,
+  { type: "lobby.snapshot" | "lobby.updated" | "lobby.removed" }
+>;
 
 /**
  * The SSE `id` of a message: the engine version, set only on a `snapshot` of a started game and
@@ -27,6 +50,20 @@ export function sseEventId(message: StreamEnvelope): string | undefined {
 
 /** The two callbacks that turn committed changes into bus messages. */
 export function createPublishers(bus: Bus<StreamEnvelope>) {
+  const publishLobby = (message: LobbyMessage) => bus.publish(lobbyTopic, message);
+  const lobbyUpdated = (game: LobbyGame): LobbyMessage => ({
+    topic: lobbyTopic,
+    type: "lobby.updated",
+    version: 0,
+    payload: { game },
+  });
+  const lobbyRemoved = (gameId: string): LobbyMessage => ({
+    topic: lobbyTopic,
+    type: "lobby.removed",
+    version: 0,
+    payload: { gameId },
+  });
+
   return {
     onCommitted({ gameId, events, state, version }: CommittedAction) {
       bus.publish(gameTopic(gameId), {
@@ -37,34 +74,55 @@ export function createPublishers(bus: Bus<StreamEnvelope>) {
       });
     },
     onRoomEvent(event: RoomEvent) {
-      if (event.type === "room.cancelled") {
-        // Version 0 and no SSE id: the topic is gone, so the client drops it.
-        const topic = gameTopic(event.gameId);
-        bus.publish(topic, {
-          topic,
-          type: "room.cancelled",
-          version: 0,
-          payload: { gameId: event.gameId },
-        });
-        return;
-      }
-      // The `user:<id>` topic and `invites.updated` come with the realtime tasks (F1, F2).
-      if (event.type === "invites.updated") return;
-      const topic = gameTopic(event.game.id);
-      if (event.type === "room.updated") {
-        bus.publish(topic, {
-          topic,
-          type: "room.updated",
-          version: event.game.version,
-          payload: { game: event.game },
-        });
-      } else {
-        bus.publish(topic, {
-          topic,
-          type: "snapshot",
-          version: event.state.version,
-          payload: { game: event.game, state: event.state },
-        });
+      switch (event.type) {
+        case "room.created":
+          publishLobby(lobbyUpdated(event.lobby));
+          return;
+        case "room.updated": {
+          const topic = gameTopic(event.game.id);
+          bus.publish(topic, {
+            topic,
+            type: "room.updated",
+            version: event.game.version,
+            payload: { game: event.game },
+          });
+          publishLobby(lobbyUpdated(event.lobby));
+          return;
+        }
+        case "started": {
+          const topic = gameTopic(event.game.id);
+          bus.publish(topic, {
+            topic,
+            type: "snapshot",
+            version: event.state.version,
+            payload: { game: event.game, state: event.state },
+          });
+          // A started game is no longer open.
+          publishLobby(lobbyRemoved(event.game.id));
+          return;
+        }
+        case "room.cancelled": {
+          // Version 0 and no SSE id: the topic is gone, so the client drops it.
+          const topic = gameTopic(event.gameId);
+          bus.publish(topic, {
+            topic,
+            type: "room.cancelled",
+            version: 0,
+            payload: { gameId: event.gameId },
+          });
+          publishLobby(lobbyRemoved(event.gameId));
+          return;
+        }
+        case "invites.updated": {
+          const topic = userTopic(event.userId);
+          bus.publish(topic, {
+            topic,
+            type: "invites.updated",
+            version: 0,
+            payload: { invites: event.invites },
+          });
+          return;
+        }
       }
     },
   };

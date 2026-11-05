@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { idSchema } from "./common.ts";
 import { gameEventSchema } from "./events.ts";
-import { gameSchema } from "./games.ts";
+import { gameSchema, inviteSchema, lobbyGameSchema } from "./games.ts";
 import { redactedGameStateSchema } from "./state.ts";
 
 export const MAX_STREAM_TOPICS = 5;
@@ -11,10 +11,25 @@ export const streamMessageTypes = [
   "room.updated",
   "room.cancelled",
   "game.actions",
+  "lobby.snapshot",
+  "lobby.updated",
+  "lobby.removed",
+  "invites.updated",
 ] as const;
 
-/** `game:<uuid>` */
-export const streamTopicSchema = z.templateLiteral(["game:", idSchema]);
+/** `game:<uuid>`: one room. Its messages carry the engine version. */
+export const gameTopicSchema = z.templateLiteral(["game:", idSchema]);
+/** `user:<uuid>`: the private messages of one user. Only that user can open it. */
+export const userTopicSchema = z.templateLiteral(["user:", idSchema]);
+/** `lobby`: the open games. Any signed-in user can open it. */
+export const LOBBY_TOPIC = "lobby";
+
+/** `game:<uuid>`, `lobby` or `user:<uuid>` */
+export const streamTopicSchema = z.union([
+  gameTopicSchema,
+  z.literal(LOBBY_TOPIC),
+  userTopicSchema,
+]);
 
 /** Query of `GET /api/stream`: a comma list of topics. */
 export const streamQuerySchema = z.strictObject({ topics: z.string().min(1) });
@@ -70,11 +85,39 @@ export const gameActionsMessageSchema = message(
   z.strictObject({ events: z.array(gameEventSchema), state: redactedGameStateSchema }),
 );
 
+/** The full list of open games. Sent on each connect to `lobby`. Version 0, no SSE id. */
+export const lobbySnapshotMessageSchema = message(
+  "lobby.snapshot",
+  z.strictObject({ games: z.array(lobbyGameSchema) }),
+);
+
+/** A game was created or changed: join, leave, seat or token change, invite accepted. */
+export const lobbyUpdatedMessageSchema = message(
+  "lobby.updated",
+  z.strictObject({ game: lobbyGameSchema }),
+);
+
+/** A game left the open list: start or cancel. */
+export const lobbyRemovedMessageSchema = message(
+  "lobby.removed",
+  z.strictObject({ gameId: idSchema }),
+);
+
+/** The full list of the pending invites of the user. Sent on connect and on each change. */
+export const invitesUpdatedMessageSchema = message(
+  "invites.updated",
+  z.strictObject({ invites: z.array(inviteSchema) }),
+);
+
 export const streamMessageSchema = z.discriminatedUnion("type", [
   snapshotMessageSchema,
   roomUpdatedMessageSchema,
   roomCancelledMessageSchema,
   gameActionsMessageSchema,
+  lobbySnapshotMessageSchema,
+  lobbyUpdatedMessageSchema,
+  lobbyRemovedMessageSchema,
+  invitesUpdatedMessageSchema,
 ]);
 
 export type StreamMessage = z.infer<typeof streamMessageSchema>;

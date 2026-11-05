@@ -21,10 +21,12 @@ import { redactState } from "../game/redact.ts";
 
 /** What the room service reports after a change has been committed. */
 export type RoomEvent =
-  | { type: "room.updated"; game: Game }
+  /** A game was created. Nobody watches its room yet, so only the lobby hears of it. */
+  | { type: "room.created"; lobby: LobbyGame }
+  | { type: "room.updated"; game: Game; lobby: LobbyGame }
   | { type: "room.cancelled"; gameId: string }
-  /** The pending invites of these users changed. The lobby messages of F2 will carry it. */
-  | { type: "invites.updated"; userIds: string[] }
+  /** The pending invites of one user changed. `invites` is the full list after the change. */
+  | { type: "invites.updated"; userId: string; invites: Invite[] }
   | { type: "started"; game: Game; state: RedactedGameState };
 
 /** A domain error with the shared API error code. The route maps it to the error body. */
@@ -249,6 +251,50 @@ export function createRoomService(options: RoomServiceOptions): RoomService {
     );
   }
 
+  /** The pending invites of one user, newest first. */
+  const invitesOf = async (userId: string): Promise<Invite[]> => {
+    const rows = await db
+      .selectFrom("invites")
+      .innerJoin("games", "games.id", "invites.game_id")
+      .innerJoin("users as host", "host.id", "invites.invited_by_user_id")
+      .select([
+        "invites.id",
+        "invites.game_id",
+        "invites.state",
+        "invites.created_at",
+        "games.name as game_name",
+        "host.name as host_name",
+      ])
+      .where("invites.invited_user_id", "=", userId)
+      .where("invites.state", "=", "pending")
+      .orderBy("invites.created_at", "desc")
+      .orderBy("invites.id", "desc")
+      .execute();
+    return rows.map((row) => ({
+      id: row.id,
+      gameId: row.game_id,
+      gameName: row.game_name,
+      hostName: row.host_name,
+      state: row.state,
+      createdAt: row.created_at,
+    }));
+  };
+
+  /** Tells each user the full list of their pending invites, after a commit. */
+  const announceInvites = async (userIds: string[]) => {
+    for (const userId of new Set(userIds)) {
+      let invites: Invite[];
+      try {
+        invites = await invitesOf(userId);
+      } catch (error) {
+        // The change is committed. A failed read must not turn it into an error response.
+        console.error("Invite list read failed", error);
+        continue;
+      }
+      emit({ type: "invites.updated", userId, invites });
+    }
+  };
+
   /** The pending invites of a game, oldest first, with the display name of the invited user. */
   const loadInvites = async (exec: Kysely<Database>, gameId: string): Promise<RoomInvite[]> => {
     const rows = await exec
@@ -326,22 +372,31 @@ export function createRoomService(options: RoomServiceOptions): RoomService {
     // after the commit.
     change: (trx: Trx, game: GameRow, seats: SeatRow[]) => Promise<string[] | void>,
   ): Promise<Game> {
-    const { game, invitees } = await withConflictRetry(() =>
+    const { game, lobby, invitees } = await withConflictRetry(() =>
       db.transaction().execute(async (trx) => {
         const row = await loadGame(trx, gameId);
         const invitees = (await change(trx, row, await loadSeats(trx, gameId))) ?? [];
-        const game = toApiGame(row, await loadSeats(trx, gameId), await loadInvites(trx, gameId));
-        return { game, invitees };
+        const seats = await loadSeats(trx, gameId);
+        const owner = await trx
+          .selectFrom("users")
+          .select("name")
+          .where("id", "=", row.owner_id)
+          .executeTakeFirstOrThrow();
+        return {
+          game: toApiGame(row, seats, await loadInvites(trx, gameId)),
+          lobby: toLobbyGame({ ...row, owner_name: owner.name }, seats),
+          invitees,
+        };
       }),
     );
-    emit({ type: "room.updated", game });
-    if (invitees.length > 0) emit({ type: "invites.updated", userIds: invitees });
+    emit({ type: "room.updated", game, lobby });
+    await announceInvites(invitees);
     return game;
   }
 
   return {
     async create(user, name) {
-      return db.transaction().execute(async (trx) => {
+      const { game, seats } = await db.transaction().execute(async (trx) => {
         const time = now().toISOString();
         const game: GameRow = {
           id: randomUUID(),
@@ -358,8 +413,10 @@ export function createRoomService(options: RoomServiceOptions): RoomService {
           userId: user.id,
           controllerId: user.id,
         });
-        return toApiGame(game, await loadSeats(trx, game.id));
+        return { game, seats: await loadSeats(trx, game.id) };
       });
+      emit({ type: "room.created", lobby: toLobbyGame({ ...game, owner_name: user.name }, seats) });
+      return toApiGame(game, seats);
     },
 
     async get(gameId) {
@@ -479,9 +536,8 @@ export function createRoomService(options: RoomServiceOptions): RoomService {
         }
         return invitees;
       });
-      // TODO(F2): also publish `lobby.removed` once that message exists.
       emit({ type: "room.cancelled", gameId });
-      if (invitees.length > 0) emit({ type: "invites.updated", userIds: invitees });
+      await announceInvites(invitees);
     },
 
     invite: (gameId, user, name) =>
@@ -541,33 +597,7 @@ export function createRoomService(options: RoomServiceOptions): RoomService {
         return [target.id];
       }),
 
-    async listInvites(user) {
-      const rows = await db
-        .selectFrom("invites")
-        .innerJoin("games", "games.id", "invites.game_id")
-        .innerJoin("users as host", "host.id", "invites.invited_by_user_id")
-        .select([
-          "invites.id",
-          "invites.game_id",
-          "invites.state",
-          "invites.created_at",
-          "games.name as game_name",
-          "host.name as host_name",
-        ])
-        .where("invites.invited_user_id", "=", user.id)
-        .where("invites.state", "=", "pending")
-        .orderBy("invites.created_at", "desc")
-        .orderBy("invites.id", "desc")
-        .execute();
-      return rows.map((row) => ({
-        id: row.id,
-        gameId: row.game_id,
-        gameName: row.game_name,
-        hostName: row.host_name,
-        state: row.state,
-        createdAt: row.created_at,
-      }));
-    },
+    listInvites: (user) => invitesOf(user.id),
 
     async acceptInvite(inviteId, user) {
       const { game_id: gameId } = await findInvite(db, inviteId, user.id);
@@ -650,7 +680,7 @@ export function createRoomService(options: RoomServiceOptions): RoomService {
       loader?.put(gameId, result.state);
       const redacted = redactState(result.state);
       emit({ type: "started", game: result.game, state: redacted });
-      if (result.invitees.length > 0) emit({ type: "invites.updated", userIds: result.invitees });
+      await announceInvites(result.invitees);
       return { game: result.game, state: redacted };
     },
   };

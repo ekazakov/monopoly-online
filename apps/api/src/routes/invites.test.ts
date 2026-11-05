@@ -87,7 +87,11 @@ describe("invite routes", () => {
       ]);
       expect(game.seats).toHaveLength(1);
       expect(events.map((e) => e.type)).toEqual(["room.updated", "invites.updated"]);
-      expect(events[1]).toEqual({ type: "invites.updated", userIds: [bo.user.id] });
+      expect(events[1]).toMatchObject({
+        type: "invites.updated",
+        userId: bo.user.id,
+        invites: [{ gameId: room.id, hostName: "Ann", state: "pending" }],
+      });
 
       const read = await sendAs(app, "GET", `/api/games/${room.id}`, bo.cookie);
       expect((await gameOf(read)).invites).toHaveLength(1);
@@ -365,9 +369,10 @@ describe("invite routes", () => {
       expect(await stateOf(declinedInvite.id)).toBe("declined");
       expect(await myInvites(bo)).toEqual([]);
       expect(await myInvites(cy)).toEqual([]);
-      const announced = events.find((e) => e.type === "invites.updated");
-      if (announced?.type !== "invites.updated") throw new Error("unreachable");
-      expect(announced.userIds.sort()).toEqual([bo.user.id, cy.user.id].sort());
+      const announced = events.flatMap((e) => (e.type === "invites.updated" ? [e] : []));
+      expect(announced.map((e) => e.userId).sort()).toEqual([bo.user.id, cy.user.id].sort());
+      // The full list after the change: the expired invites are gone.
+      expect(announced.every((e) => e.invites.length === 0)).toBe(true);
     });
 
     test("a start without invites announces nothing about invites", async () => {
@@ -387,7 +392,7 @@ describe("invite routes", () => {
       expect(await myInvites(bo)).toEqual([]);
       expect(events).toEqual([
         { type: "room.cancelled", gameId: room.id },
-        { type: "invites.updated", userIds: [bo.user.id] },
+        { type: "invites.updated", userId: bo.user.id, invites: [] },
       ]);
     });
   });

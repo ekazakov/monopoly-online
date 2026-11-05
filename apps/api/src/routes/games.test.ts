@@ -627,7 +627,8 @@ describe("game room routes", () => {
       expect(res.status).toBe(409);
       expect(await errorCode(res)).toBe("token_taken");
       expect(await tokenOf(room.seats[0]!.id)).toBe("dog");
-      expect(events).toHaveLength(1);
+      // The create and the join only: the refused change is not announced.
+      expect(events.map((e) => e.type)).toEqual(["room.created", "room.updated"]);
     });
 
     test("two seats take the same free token at once: one wins, one is token_taken", async () => {
@@ -886,8 +887,9 @@ describe("game room routes", () => {
       const ann = await signIn(app, "Ann");
       const bo = await signIn(app, "Bo");
       const room = await createRoom(ann);
-      // Creating a room is not announced: nobody can watch a game that does not exist yet.
-      expect(events).toEqual([]);
+      // Creating a room is announced to the lobby only: nobody watches a new room yet.
+      expect(events.map((e) => e.type)).toEqual(["room.created"]);
+      events.length = 0;
 
       await join(room, bo);
       const added = await gameOf(await addSeat(room, ann, "Guest"));
@@ -916,7 +918,7 @@ describe("game room routes", () => {
       await leave(room, ann);
       await addSeat(room, ann, "Ann");
       await start(room, ann);
-      expect(events).toEqual([]);
+      expect(events.map((e) => e.type)).toEqual(["room.created"]);
     });
 
     test("a failing listener does not fail the request", async () => {

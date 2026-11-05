@@ -10,9 +10,9 @@ import { errorBody } from "../errors.ts";
 import type { GameStateLoader } from "../game/loader.ts";
 import type { Bus } from "../realtime/bus.ts";
 import { openConnection } from "../realtime/connection.ts";
-import { gameIdOf, sseEventId } from "../realtime/messages.ts";
+import { gameIdOf, sseEventId, topicKind, userIdOf } from "../realtime/messages.ts";
 import type { StreamEnvelope } from "../realtime/messages.ts";
-import { createTopicReader, parseLastEventId } from "../realtime/resume.ts";
+import { createTopicReader, lobbyStart, parseLastEventId, userStart } from "../realtime/resume.ts";
 import { RoomError } from "../rooms/service.ts";
 import type { RoomService } from "../rooms/service.ts";
 import { errorResponses, sessionSecurity, type AppDeps, type AppEnv } from "./common.ts";
@@ -25,9 +25,9 @@ const streamRoute = createRoute({
   method: "get",
   path: "/stream",
   tags: ["realtime"],
-  summary: "Open the event stream of one or more games",
+  summary: "Open the event stream of games, the lobby and the invites of the user",
   description:
-    "Server-sent events. Each message has `event:` set to its type (`snapshot`, `room.updated`, `game.actions`) and `data:` set to the JSON envelope `{ topic, type, version, payload }`. `id:` is the engine version and is set only on `snapshot` of a started game and on `game.actions`. A comment line every 15 seconds keeps the stream open. After a reconnect with `Last-Event-ID`, the missed `game.actions` are replayed when the gap is 1 to 100 versions, and a `snapshot` is sent when the gap is larger, the id is not a valid version, or the game is not `active`.",
+    "Server-sent events. Topics: `game:<id>` (seated users only), `lobby` (any signed-in user) and `user:<id>` (only that user, else 403 `forbidden_topic`). Each message has `event:` set to its type (`snapshot`, `room.updated`, `room.cancelled`, `game.actions`, `lobby.snapshot`, `lobby.updated`, `lobby.removed`, `invites.updated`) and `data:` set to the JSON envelope `{ topic, type, version, payload }`. `id:` is the engine version and is set only on `snapshot` of a started game and on `game.actions`; the lobby and user messages have no id. A comment line every 15 seconds keeps the stream open. After a reconnect with `Last-Event-ID` and exactly one game topic, the missed `game.actions` are replayed when the gap is 1 to 100 versions, and a `snapshot` is sent when the gap is larger, the id is not a valid version, or the game is not `active`. Each connect to `lobby` or `user:<id>` gets the full list.",
   request: { query: streamQuerySchema },
   responses: {
     200: {
@@ -69,15 +69,28 @@ export function streamRoutes(deps: StreamRoutesDeps) {
     if (!topics) {
       return c.json(
         errorBody("validation_error", "Invalid topics", [
-          { path: ["topics"], message: "Use 1 to 5 topics of the form game:<uuid>" },
+          {
+            path: ["topics"],
+            message: "Use 1 to 5 topics: game:<uuid>, lobby or user:<uuid>",
+          },
         ]),
         400,
       );
     }
     const unique = [...new Set(topics)];
+    const user = c.get("user");
 
     // Every topic is checked before the stream opens.
     for (const topic of unique) {
+      const kind = topicKind(topic);
+      // Any signed-in user can read the open games.
+      if (kind === "lobby") continue;
+      if (kind === "user") {
+        if (userIdOf(topic) !== user.id) {
+          return c.json(errorBody("forbidden_topic", "This topic belongs to another user"), 403);
+        }
+        continue;
+      }
       let game: Game;
       try {
         game = await rooms.get(gameIdOf(topic));
@@ -87,17 +100,29 @@ export function streamRoutes(deps: StreamRoutesDeps) {
         }
         throw error;
       }
-      if (!isSeated(game, c.get("user").id)) {
+      if (!isSeated(game, user.id)) {
         return c.json(errorBody("not_a_member", "You are not seated in this game"), 403);
       }
     }
 
+    // The browser sends one `Last-Event-ID` for the whole stream, and it is an engine version.
+    // So it is used only with exactly one game topic; `lobby` and `user:` have no ids.
+    const gameTopics = unique.filter((topic) => topicKind(topic) === "game");
     const lastEventId =
-      unique.length === 1 ? parseLastEventId(c.req.header("last-event-id")) : null;
+      gameTopics.length === 1 ? parseLastEventId(c.req.header("last-event-id")) : null;
     const connection = await openConnection({
       bus,
       topics: unique,
-      readTopic: (gameId) => readTopic(gameId, lastEventId),
+      readTopic: async (topic) => {
+        switch (topicKind(topic)) {
+          case "lobby":
+            return lobbyStart(await rooms.listOpen());
+          case "user":
+            return userStart(user.id, await rooms.listInvites(user));
+          default:
+            return readTopic(gameIdOf(topic), lastEventId);
+        }
+      },
     });
 
     c.header("X-Accel-Buffering", "no");

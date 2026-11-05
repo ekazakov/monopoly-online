@@ -127,6 +127,8 @@ export function applyStreamMessage(prev: GameStoreState, message: StreamMessage)
   }
   // The game is gone. The screen handles it in the Cancel game flow (milestone 2, G6).
   if (message.type === "room.cancelled") return prev;
+  // The lobby and user topics are not part of a game. Another store reads them (G3).
+  if (message.type !== "game.actions") return prev;
   const { state, events } = message.payload;
   return applyNewerState(prev, state, state.version, events);
 }

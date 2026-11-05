@@ -111,16 +111,16 @@ Files: `apps/api/src/rooms/service.ts`, `routes/games.ts`.
 
 ### F. Realtime
 
-- [ ] **Lobby and user stream topics (F1).**
+- [x] **Lobby and user stream topics (F1).**
   - `streamTopicSchema` accepts `game:<uuid>`, `lobby` and `user:<uuid>`.
   - Stream route: any signed-in user can open `lobby`. `user:<id>` must be the user of the session, else 403 `forbidden_topic`. `game:` keeps the seated check.
   - Make `gameIdOf`, the topic reader (`realtime/connection.ts`, `resume.ts`) and `sseEventId` work with the 3 kinds of topic.
-- [ ] **Lobby and invite stream messages (F2).**
+- [x] **Lobby and invite stream messages (F2).**
   - `lobby.snapshot`, `lobby.updated`, `lobby.removed` on `lobby`; `invites.updated` on `user:<id>`; `room.cancelled` on `game:<id>`. Payloads in [api-schema.md](api-schema.md).
   - Lobby and user messages have **no SSE id**. Thus `Last-Event-ID` stays the engine version of the game topics on the shared EventSource.
   - Each connect to `lobby` or `user:<id>` gets the full list.
   - Publish lobby changes from create, join, leave, seat add and remove, token change, start and cancel, through the room events in `realtime/messages.ts`.
-- [ ] **Realtime lobby tests (F3).** A lobby connect gets a snapshot; room changes reach the lobby; a `user:` topic of another user gets 403; a game resume with `lobby` in the same stream; cancel sends `room.cancelled`.
+- [x] **Realtime lobby tests (F3).** A lobby connect gets a snapshot; room changes reach the lobby; a `user:` topic of another user gets 403; a game resume with `lobby` in the same stream; cancel sends `room.cancelled`.
 
 ### G. Web
 
