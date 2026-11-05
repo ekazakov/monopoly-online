@@ -74,7 +74,7 @@ language_backend:
 # The interface through which the agent (LLM) accesses Serena's functionality (overrides the global setting).
 # Valid values: tools, REPL (see the global configuration for details); leave empty to use the global setting.
 # Note: the interface is fixed at startup. If a project is activated post-init, its setting is not applied.
-agent_interface:
+agent_interface: tools
 
 # whether to use project's .gitignore files to ignore files
 ignore_all_files_in_gitignore: true
@@ -106,7 +106,9 @@ ls_workspace_folders:
 #   additional_workspace_folders:
 #     - ../sibling-package
 #     - ../shared-lib
-ls_additional_workspace_folders: []
+ls_additional_workspace_folders:
+  - "apps/web"
+  - "apps/api"
 
 # list of additional paths to ignore in this project.
 # Same syntax as gitignore, so you can use * and **.
