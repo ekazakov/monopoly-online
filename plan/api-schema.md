@@ -3,7 +3,7 @@
 |                |                                                                                                   |
 | -------------- | ------------------------------------------------------------------------------------------------- |
 | Companion docs | [implementation-roadmap.md](implementation-roadmap.md), [milestone-1-tasks.md](milestone-1-tasks.md), [milestone-2-tasks.md](milestone-2-tasks.md) |
-| Status         | Milestone 2 built. Last updated 2026-11-05                                                        |
+| Status         | Milestones 1 and 2 done. Last updated 2026-11-05                                                        |
 
 This document fixes the request and response schema of each API method in milestone 1. The section "Milestone 2" adds the lobby methods. The zod schemas live in `packages/shared`.
 

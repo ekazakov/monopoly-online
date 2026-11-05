@@ -3,7 +3,7 @@
 |                |                                                                                                    |
 | -------------- | -------------------------------------------------------------------------------------------------- |
 | Companion docs | [implementation-roadmap.md](implementation-roadmap.md), [api-schema.md](api-schema.md) (section "Milestone 2"), [milestone-1-tasks.md](milestone-1-tasks.md), [game-screen-2-spec.md](game-screen-2-spec.md) |
-| Status         | Built. The manual run (I1) is open. H4 stays deferred. Last updated 2026-11-05                                                                     |
+| Status         | Done. The manual run (I1) passed. H4 stays deferred. Last updated 2026-11-05                                                                     |
 
 **Goal.** A player finds a game in a public list, or gets an invite by name, and joins it. Each seat has its own player token (game piece). The host can cancel a game before it starts. The dice and the tokens move with an animation.
 
@@ -162,7 +162,7 @@ Files: `apps/api/src/rooms/service.ts`, `routes/games.ts`.
 
 ### I. Verification
 
-- [ ] **Manual lobby run (I1).** Two browser profiles and one hot-seat seat on `localhost`. Fix the defects that you find.
+- [x] **Manual lobby run (I1).** Two browser profiles and one hot-seat seat on `localhost`. Fix the defects that you find.
   - Profile A creates a game. The game shows live in the open games list of profile B.
   - A invites B by name. The invite shows live in the inbox of B. Accept seats B.
   - Two seats try to take the same token. One of them gets `token_taken`.
