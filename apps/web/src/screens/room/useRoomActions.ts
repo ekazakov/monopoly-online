@@ -3,6 +3,7 @@ import type { Game, Token } from "@monopoly/shared";
 import {
   addHotSeat,
   changeToken,
+  inviteByName,
   joinGame,
   leaveGame,
   removeSeat,
@@ -27,6 +28,10 @@ export function useRoomActions(gameId: string) {
     }),
     remove: useMutation({
       mutationFn: (seatId: string) => removeSeat(gameId, seatId),
+      onSuccess: replace,
+    }),
+    invite: useMutation({
+      mutationFn: (name: string) => inviteByName(gameId, name),
       onSuccess: replace,
     }),
     pickToken: useMutation({

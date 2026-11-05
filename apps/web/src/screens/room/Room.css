@@ -377,3 +377,12 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* A pending invite is a row without a seat: a plain disc and a dashed edge. */
+.room__seat--invite {
+  border-style: dashed;
+}
+
+.room__avatar--invite {
+  font: var(--hf-type-display-s);
+}

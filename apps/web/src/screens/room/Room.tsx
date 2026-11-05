@@ -6,8 +6,9 @@ import { isApiError } from "../../api/index.ts";
 import { useRealtimeStatus, useTopic } from "../../realtime/index.ts";
 import { AddSeatForm } from "./AddSeatForm.tsx";
 import { InviteLink } from "./InviteLink.tsx";
+import { InvitePanel } from "./InvitePanel.tsx";
 import { roomKey } from "./queries.ts";
-import { errorText, roomCopy, roomView, type RoomAction } from "./roomModel.ts";
+import { errorText, roomCopy, roomView, waitingForInvitees, type RoomAction } from "./roomModel.ts";
 import { SeatList } from "./SeatList.tsx";
 import { TokenPicker } from "./TokenPicker.tsx";
 import { useRoomActions } from "./useRoomActions.ts";
@@ -142,6 +143,7 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
               }
               onPick={pickToken}
             />
+            {view.isOwner && !view.full && <InvitePanel invite={actions.invite} />}
             <InviteLink gameId={gameId} />
             {view.full ? (
               <p className="room__text">All 6 seats are taken.</p>
@@ -177,7 +179,12 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
                 {busy ? "Starting" : "Start game"}
               </button>
               <p id="room-start-hint" className="room__hint">
-                {view.canStart ? `${game.seats.length} players ready.` : roomCopy.notEnough}
+                {[
+                  view.canStart ? `${game.seats.length} players ready.` : roomCopy.notEnough,
+                  waitingForInvitees(game.invites),
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
               </p>
             </>
           )}

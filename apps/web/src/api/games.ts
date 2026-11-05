@@ -29,6 +29,13 @@ export async function removeSeat(id: string, seatId: string): Promise<Game> {
   ).game;
 }
 
+/** `POST /api/games/:id/invites`: the host invites a user by name. The room shows the invite. */
+export async function inviteByName(id: string, name: string): Promise<Game> {
+  return (
+    await unwrap(await client.api.games[":id"].invites.$post({ param: { id }, json: { name } }))
+  ).game;
+}
+
 /** `PUT /api/games/:id/seats/:seatId/token`: the controller of the seat picks another figure. */
 export async function changeToken(id: string, seatId: string, token: Token): Promise<Game> {
   return (

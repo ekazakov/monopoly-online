@@ -59,7 +59,19 @@ export const roomCopy = {
   failed: "That did not work. Check the connection and try again.",
 } as const;
 
-export type RoomAction = "join" | "leave" | "start" | "remove" | "add" | "token";
+export type RoomAction = "join" | "leave" | "start" | "remove" | "add" | "token" | "invite";
+
+/**
+ * "Waiting for Ravi to accept." for the invites that are still pending, or "" for none. The start
+ * hint adds it, so the host knows who has not answered when they decide to start.
+ */
+export function waitingForInvitees(invites: readonly { name: string }[]): string {
+  const names = invites.map((invite) => invite.name);
+  if (names.length === 0) return "";
+  const list =
+    names.length === 1 ? names[0]! : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
+  return `Waiting for ${list} to accept.`;
+}
 
 export function errorText(action: RoomAction, error: unknown): string {
   if (isApiError(error)) {
@@ -72,6 +84,12 @@ export function errorText(action: RoomAction, error: unknown): string {
         return roomCopy.started;
       case "not_enough_players":
         return roomCopy.notEnough;
+      case "already_joined":
+        return "Already in this game.";
+      case "already_invited":
+        return "Already invited. They have not answered yet.";
+      case "cannot_invite_self":
+        return "You are already in this game.";
       case "token_taken":
         return "Another player just took that figure. Pick a different one.";
       case "owner_cannot_leave":

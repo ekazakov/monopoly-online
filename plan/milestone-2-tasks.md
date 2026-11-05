@@ -142,7 +142,7 @@ Files: `apps/api/src/rooms/service.ts`, `routes/games.ts`.
   - Taken tokens are disabled, with the label "<figure>, taken by <name>". Use `aria-pressed`.
   - Seat rows show the avatar with its colour ring.
   - On `token_taken`, show the error and keep the old token.
-- [ ] **Invite by name panel (G5).** Host view.
+- [x] **Invite by name panel (G5).** Host view.
   - Name field and Invite button, with the `LobbyStates` states: no player, already seated, invite sent.
   - Pending invites show as seat rows: "Invited · waiting to accept".
   - The start hint names the invitees who are not seated yet.

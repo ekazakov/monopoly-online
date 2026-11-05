@@ -33,7 +33,11 @@ interface Props {
 
 export function SeatList({ game, userId, removingId, onRemove, headingRef }: Props) {
   const announcement = useSeatAnnouncement(game.seats);
-  const empty = Array.from({ length: Math.max(0, MAX_SEATS - game.seats.length) });
+  // An invite does not hold a seat, but an invited player will take one. The row of the invite
+  // stands in for an open seat, so the list keeps its length of six rows.
+  const empty = Array.from({
+    length: Math.max(0, MAX_SEATS - game.seats.length - game.invites.length),
+  });
   return (
     <section className="room__panel" aria-labelledby="room-players">
       <div className="room__panel-head">
@@ -76,6 +80,19 @@ export function SeatList({ game, userId, removingId, onRemove, headingRef }: Pro
             </li>
           );
         })}
+        {game.invites.map((invite) => (
+          <li key={invite.id} className="room__seat room__seat--invite">
+            {/* An invite has no token yet: a plain disc with the initial of the name. */}
+            <span className="room__avatar room__avatar--invite" aria-hidden="true">
+              {invite.name.slice(0, 1).toUpperCase()}
+            </span>
+            <span className="room__seat-main">
+              <span className="room__seat-name">{invite.name}</span>
+              <span className="room__tag">Invited</span>
+              <span className="room__seat-note">Invited · waiting to accept</span>
+            </span>
+          </li>
+        ))}
         {empty.map((_, index) => (
           <li key={`open-${index}`} className="room__seat room__seat--open">
             Open seat
