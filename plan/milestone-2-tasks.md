@@ -60,7 +60,7 @@ Ask before you add or change a board. Sync the artifacts.
   - `lobbyGameSchema` and `inviteSchema` (see [api-schema.md](api-schema.md), section "Milestone 2").
   - New error codes in the code list **and** in the status map: `token_taken`, `user_not_found`, `already_invited`, `cannot_invite_self`, `forbidden_topic`.
   - Update the drift test if it is necessary.
-- [ ] **Seat token migration (B2).** Migration `0005_seat_tokens`, with the steps in this order (if the index comes first, it can fail on rows that exist):
+- [x] **Seat token migration (B2).** Migration `0005_seat_tokens`, with the steps in this order (if the index comes first, it can fail on rows that exist):
   1. Add `seats.token` as a nullable column.
   2. Backfill it from `seat_order` with a portable `CASE` (1 → `dog`, 2 → `cat`, … 6 → `duck`).
   3. Create the unique index `(game_id, token)`.

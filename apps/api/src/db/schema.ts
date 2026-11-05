@@ -3,6 +3,7 @@ import type { Generated, Insertable, Selectable, Updateable } from "kysely";
 // Same values as `gameStatusSchema` in `@monopoly/shared`.
 export type GameStatus = "waiting" | "active" | "saved" | "finished";
 export type SeatKind = "user" | "hotseat";
+export type SeatToken = "dog" | "cat" | "penguin" | "car" | "horse" | "duck";
 
 export interface UsersTable {
   id: string;
@@ -41,6 +42,9 @@ export interface SeatsTable {
   // Null for a hot-seat seat.
   user_id: string | null;
   controller_user_id: string;
+  // Same values as `tokenSchema` in `@monopoly/shared`. Unique per game. Nullable only because
+  // SQLite adds the column with `ALTER TABLE`; the migration fills it for every old row.
+  token: SeatToken | null;
   created_at: Generated<string>;
 }
 

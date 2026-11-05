@@ -148,13 +148,50 @@ const migrations: Record<string, Migration> = {
       await db.schema.dropTable("seats").execute();
     },
   },
+  "0005_seat_tokens": {
+    // The order matters. A unique index created before the backfill would see only NULLs,
+    // and one created on rows that repeat a value would fail.
+    async up(db: Kysely<unknown>) {
+      // Nullable: SQLite cannot add a NOT NULL column without a default.
+      await db.schema.alterTable("seats").addColumn("token", "text").execute();
+      // Seats before this migration took their token from the seat order. `seat_order`
+      // is gapless from 1, so each seat of a game gets a different token.
+      await sql`
+        update seats set token = case seat_order
+          when 1 then 'dog'
+          when 2 then 'cat'
+          when 3 then 'penguin'
+          when 4 then 'car'
+          when 5 then 'horse'
+          when 6 then 'duck'
+        end
+      `.execute(db);
+      await db.schema
+        .createIndex("seats_game_id_token_unique")
+        .unique()
+        .on("seats")
+        .columns(["game_id", "token"])
+        .execute();
+    },
+    async down(db: Kysely<unknown>) {
+      await db.schema.dropIndex("seats_game_id_token_unique").execute();
+      await db.schema.alterTable("seats").dropColumn("token").execute();
+    },
+  },
 };
 
+function createMigrator(db: Kysely<Database>): Migrator {
+  return new Migrator({ db, provider: { getMigrations: async () => migrations } });
+}
+
+/** Runs the migrations up to `name`, and no further. For tests of a migration on old rows. */
+export async function migrateTo(db: Kysely<Database>, name: string): Promise<void> {
+  const { error } = await createMigrator(db).migrateTo(name);
+  if (error) throw error;
+}
+
 export async function migrateToLatest(db: Kysely<Database>): Promise<void> {
-  const migrator = new Migrator({
-    db,
-    provider: { getMigrations: async () => migrations },
-  });
+  const migrator = createMigrator(db);
   const { error, results } = await migrator.migrateToLatest();
   for (const result of results ?? []) {
     if (result.status === "Error") {

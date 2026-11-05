@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "vite-plus/test";
 import type { Kysely } from "kysely";
 import { sql } from "kysely";
 import { createDb } from "./client.ts";
-import { migrateToLatest } from "./migrations.ts";
+import { migrateTo, migrateToLatest } from "./migrations.ts";
 import type { Database } from "./schema.ts";
 
 const U1 = "00000000-0000-4000-8000-000000000001";
@@ -207,6 +207,79 @@ describe("migrations", () => {
       await expect(
         db.insertInto("game_snapshots").values({ game_id: G1, version: 0, state: "{}" }).execute(),
       ).rejects.toThrow(/UNIQUE|PRIMARY/);
+    });
+  });
+
+  describe("0005_seat_tokens", () => {
+    const G2 = "10000000-0000-4000-8000-000000000002";
+    const NAMES = ["a", "b", "c", "d", "e", "f"];
+
+    test("fills the token of seats that exist before the migration", async () => {
+      const old = createDb(":memory:");
+      try {
+        await migrateTo(old, "0004_seats_events_snapshots");
+        await old.insertInto("users").values({ id: U1, name: "Ann", name_key: "ann" }).execute();
+        for (const id of [G1, G2]) {
+          await old.insertInto("games").values({ id, name: "Game", owner_id: U1 }).execute();
+        }
+        // Two games with 6 and 2 seats. Rows from before the migration have no token column.
+        const rows = [
+          ...NAMES.map((name, i) => ({ game: G1, order: i + 1, name })),
+          ...NAMES.slice(0, 2).map((name, i) => ({ game: G2, order: i + 1, name })),
+        ];
+        await old
+          .insertInto("seats")
+          .values(
+            rows.map((r) => ({
+              id: crypto.randomUUID(),
+              game_id: r.game,
+              seat_order: r.order,
+              name: r.name,
+              name_key: r.name,
+              kind: "user" as const,
+              user_id: U1,
+              controller_user_id: U1,
+            })) as never,
+          )
+          .execute();
+
+        await migrateToLatest(old);
+
+        const seats = await old
+          .selectFrom("seats")
+          .select(["game_id", "seat_order", "token"])
+          .orderBy("game_id")
+          .orderBy("seat_order")
+          .execute();
+        const tokens = ["dog", "cat", "penguin", "car", "horse", "duck"];
+        expect(seats.filter((s) => s.game_id === G1).map((s) => s.token)).toEqual(tokens);
+        expect(seats.filter((s) => s.game_id === G2).map((s) => s.token)).toEqual(
+          tokens.slice(0, 2),
+        );
+      } finally {
+        await old.destroy();
+      }
+    });
+
+    test("a token is unique per game and may repeat in another game", async () => {
+      await addGame();
+      const g2 = crypto.randomUUID();
+      await db.insertInto("games").values({ id: g2, name: "Two", owner_id: U1 }).execute();
+      await db
+        .insertInto("seats")
+        .values({ ...seat(S1, 1, "ann"), token: "dog" })
+        .execute();
+      await expect(
+        db
+          .insertInto("seats")
+          .values({ ...seat(S2, 2, "bob"), token: "dog" })
+          .execute(),
+      ).rejects.toThrow(/UNIQUE/);
+      await db
+        .insertInto("seats")
+        .values({ ...seat(S2, 1, "ann"), game_id: g2, token: "dog" })
+        .execute();
+      expect(await count("seats")).toBe(2);
     });
   });
 

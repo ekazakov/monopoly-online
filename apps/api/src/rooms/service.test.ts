@@ -63,6 +63,7 @@ describe("toApiGame", () => {
       kind: "hotseat" as const,
       user_id: null,
       controller_user_id: "u",
+      token: null,
       created_at: "2026-01-01T00:00:00.000Z",
     });
     const game = toApiGame(
