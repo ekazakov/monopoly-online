@@ -146,7 +146,7 @@ Files: `apps/api/src/rooms/service.ts`, `routes/games.ts`.
   - Name field and Invite button, with the `LobbyStates` states: no player, already seated, invite sent.
   - Pending invites show as seat rows: "Invited · waiting to accept".
   - The start hint names the invitees who are not seated yet.
-- [ ] **Cancel game flow (G6).**
+- [x] **Cancel game flow (G6).**
   - The host has a Cancel game button with a confirm step (Cancel game confirm (A4)).
   - On `room.cancelled`, each client drops its `game:<id>` subscription and shows "Game cancelled" with Back to lobby. Without the drop, the EventSource connects to the deleted game again and again.
   - A later visit to the link shows the 404 view that exists.

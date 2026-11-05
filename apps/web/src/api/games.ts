@@ -29,6 +29,12 @@ export async function removeSeat(id: string, seatId: string): Promise<Game> {
   ).game;
 }
 
+/** `DELETE /api/games/:id`: the host cancels a waiting game. Answers 204 with no body. */
+export async function cancelGame(id: string): Promise<void> {
+  const res = await client.api.games[":id"].$delete({ param: { id } });
+  if (!res.ok) await unwrap(res);
+}
+
 /** `POST /api/games/:id/invites`: the host invites a user by name. The room shows the invite. */
 export async function inviteByName(id: string, name: string): Promise<Game> {
   return (

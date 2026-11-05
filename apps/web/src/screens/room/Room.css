@@ -386,3 +386,28 @@
 .room__avatar--invite {
   font: var(--hf-type-display-s);
 }
+
+/* Cancel game: the confirm step and the danger button. */
+.room__confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hf-space-8);
+  padding: var(--hf-space-12) var(--hf-space-16);
+  border: 1px solid var(--hf-danger);
+  border-radius: var(--hf-radius-control);
+}
+
+.room__button--danger {
+  background: transparent;
+  border-color: var(--hf-danger);
+  color: var(--hf-danger-ink);
+  text-transform: uppercase;
+}
+
+.room__button--danger:hover {
+  background: var(--hf-hover);
+}
+
+a.room__button {
+  text-decoration: none;
+}

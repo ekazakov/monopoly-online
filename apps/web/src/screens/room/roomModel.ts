@@ -59,7 +59,15 @@ export const roomCopy = {
   failed: "That did not work. Check the connection and try again.",
 } as const;
 
-export type RoomAction = "join" | "leave" | "start" | "remove" | "add" | "token" | "invite";
+export type RoomAction =
+  | "join"
+  | "leave"
+  | "start"
+  | "remove"
+  | "add"
+  | "token"
+  | "invite"
+  | "cancel";
 
 /**
  * "Waiting for Ravi to accept." for the invites that are still pending, or "" for none. The start
@@ -97,8 +105,12 @@ export function errorText(action: RoomAction, error: unknown): string {
       case "not_a_member":
       case "not_your_seat":
         return "You can only change the seats on your own device.";
+      case "not_game_owner":
+        return "Only the host can do that.";
       case "not_found":
-        return "This seat is already gone.";
+        return action === "join" || action === "cancel"
+          ? "This game no longer exists. The host may have cancelled it."
+          : "This seat is already gone.";
     }
   }
   return roomCopy.failed;

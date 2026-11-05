@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { isApiError } from "../../api/index.ts";
 import { useRealtimeStatus, useTopic } from "../../realtime/index.ts";
 import { AddSeatForm } from "./AddSeatForm.tsx";
+import { CancelGame } from "./CancelGame.tsx";
+import { GameCancelled } from "./GameCancelled.tsx";
 import { InviteLink } from "./InviteLink.tsx";
 import { InvitePanel } from "./InvitePanel.tsx";
 import { roomKey } from "./queries.ts";
@@ -23,6 +25,7 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
   const realtime = useRealtimeStatus();
   const [notice, setNotice] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [cancelled, setCancelled] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
@@ -35,9 +38,26 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
       void navigate({ to: "/games/$gameId/play", params: { gameId }, replace: true });
   }, [started, view.seated, navigate, gameId]);
 
+  // The game was deleted. Its cached room must not show again, so it is dropped when the screen
+  // goes: a later visit to the link asks the server and gets the 404 view.
+  const gone = useRef(false);
+  useEffect(
+    () => () => {
+      if (gone.current) queryClient.removeQueries({ queryKey: roomKey(gameId) });
+    },
+    [queryClient, gameId],
+  );
+
   // A visitor has no seat, so the stream would refuse them: they follow the room only after joining.
-  useTopic(view.seated ? `game:${gameId}` : null, (message) => {
-    if (message.type === "room.updated" || message.type === "snapshot") {
+  // After a cancel the topic is null, which drops the subscription. Without that the EventSource
+  // would connect to the deleted game again and again.
+  useTopic(view.seated && !cancelled ? `game:${gameId}` : null, (message) => {
+    if (message.type === "room.cancelled") {
+      // The host's own request answers the host: the stream copy would only flash the notice.
+      if (actions.cancel.isPending || actions.cancel.isSuccess) return;
+      gone.current = true;
+      setCancelled(true);
+    } else if (message.type === "room.updated" || message.type === "snapshot") {
       queryClient.setQueryData(roomKey(gameId), message.payload.game);
     }
   });
@@ -72,6 +92,18 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
     });
   }
 
+  function cancel() {
+    if (actions.cancel.isPending) return;
+    setNotice(null);
+    actions.cancel.mutate(undefined, {
+      onSuccess: () => {
+        gone.current = true;
+        void navigate({ to: "/" });
+      },
+      onError: (error) => fail("cancel", error),
+    });
+  }
+
   function pickToken(seat: Seat, token: Token) {
     if (actions.pickToken.isPending) return;
     setNotice(null);
@@ -94,6 +126,8 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
 
   const hostName = view.host?.name ?? "the host";
   const busy = actions.start.isPending;
+
+  if (cancelled) return <GameCancelled hostName={view.host?.name ?? "The host"} />;
 
   return (
     <div className="room">
@@ -186,6 +220,7 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
                   .filter(Boolean)
                   .join(" ")}
               </p>
+              <CancelGame pending={actions.cancel.isPending} onCancel={cancel} />
             </>
           )}
           {view.seated && !view.isOwner && game.status === "waiting" && (

@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Game, Token } from "@monopoly/shared";
 import {
   addHotSeat,
+  cancelGame,
   changeToken,
   inviteByName,
   joinGame,
@@ -30,6 +31,8 @@ export function useRoomActions(gameId: string) {
       mutationFn: (seatId: string) => removeSeat(gameId, seatId),
       onSuccess: replace,
     }),
+    // No cache write: the game is gone, and the screen leaves or shows the cancelled notice.
+    cancel: useMutation({ mutationFn: () => cancelGame(gameId) }),
     invite: useMutation({
       mutationFn: (name: string) => inviteByName(gameId, name),
       onSuccess: replace,
