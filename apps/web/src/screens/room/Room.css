@@ -297,3 +297,83 @@
     flex: 1 1 100%;
   }
 }
+
+/* Seat avatar with the colour ring of the token, and the token picker. */
+.room__avatar {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--hf-panel-line);
+  border-radius: 50%;
+  background: var(--hf-panel);
+  color: var(--hf-ink-soft);
+}
+
+.room__seat > .room__seat-main {
+  flex: 1 1 auto;
+}
+
+.room__token-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hf-space-8);
+}
+
+.room__h3 {
+  font: var(--hf-type-display-s);
+  letter-spacing: var(--hf-track-display-s);
+  text-transform: uppercase;
+}
+
+.room__tokens {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: var(--hf-space-8);
+}
+
+.room__token {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--hf-space-4);
+  min-height: 72px;
+  padding: var(--hf-space-8);
+  background: var(--hf-ground);
+  border: 2px solid var(--hf-panel-line);
+  border-radius: var(--hf-radius-control);
+  color: var(--hf-ink-soft);
+  font: var(--hf-type-caption);
+  cursor: pointer;
+  transition: background var(--hf-dur-fast) var(--hf-ease-out);
+}
+
+.room__token:hover:not(:disabled) {
+  background: var(--hf-hover);
+}
+
+.room__token:focus-visible {
+  outline: 2px solid var(--hf-focus);
+  outline-offset: 2px;
+}
+
+/* The figure of the seat: the ring takes the colour of the token. */
+.room__token[aria-pressed="true"] {
+  border-color: var(--token-color);
+  color: var(--hf-ink);
+}
+
+.room__token:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.room__token-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -1,6 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Game } from "@monopoly/shared";
-import { addHotSeat, joinGame, leaveGame, removeSeat, startGame } from "../../api/index.ts";
+import type { Game, Token } from "@monopoly/shared";
+import {
+  addHotSeat,
+  changeToken,
+  joinGame,
+  leaveGame,
+  removeSeat,
+  startGame,
+} from "../../api/index.ts";
 import { roomKey } from "./queries.ts";
 
 // Each room change answers with the new room, which replaces the cached one.
@@ -20,6 +27,11 @@ export function useRoomActions(gameId: string) {
     }),
     remove: useMutation({
       mutationFn: (seatId: string) => removeSeat(gameId, seatId),
+      onSuccess: replace,
+    }),
+    pickToken: useMutation({
+      mutationFn: ({ seatId, token }: { seatId: string; token: Token }) =>
+        changeToken(gameId, seatId, token),
       onSuccess: replace,
     }),
     start: useMutation({

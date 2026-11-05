@@ -137,7 +137,7 @@ Files: `apps/api/src/rooms/service.ts`, `routes/games.ts`.
   - Create form and join-by-link field. Keep `gameIdFromInvite`.
   - Subscribe to `lobby` and `user:<me>` with `useTopic`.
   - Empty state "No open games".
-- [ ] **Token picker in the room (G4).** Depends on Token picker boards (A3) and Horse and duck in the web app (G2).
+- [x] **Token picker in the room (G4).** Depends on Token picker boards (A3) and Horse and duck in the web app (G2).
   - One picker for each seat that the device controls, in the host view and in the guest view.
   - Taken tokens are disabled, with the label "<figure>, taken by <name>". Use `aria-pressed`.
   - Seat rows show the avatar with its colour ring.

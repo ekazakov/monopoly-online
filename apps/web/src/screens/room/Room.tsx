@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
-import type { Game, Seat } from "@monopoly/shared";
+import type { Game, Seat, Token } from "@monopoly/shared";
 import { useEffect, useRef, useState } from "react";
 import { isApiError } from "../../api/index.ts";
 import { useRealtimeStatus, useTopic } from "../../realtime/index.ts";
@@ -9,6 +9,7 @@ import { InviteLink } from "./InviteLink.tsx";
 import { roomKey } from "./queries.ts";
 import { errorText, roomCopy, roomView, type RoomAction } from "./roomModel.ts";
 import { SeatList } from "./SeatList.tsx";
+import { TokenPicker } from "./TokenPicker.tsx";
 import { useRoomActions } from "./useRoomActions.ts";
 import "./Room.css";
 
@@ -70,6 +71,15 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
     });
   }
 
+  function pickToken(seat: Seat, token: Token) {
+    if (actions.pickToken.isPending) return;
+    setNotice(null);
+    actions.pickToken.mutate(
+      { seatId: seat.id, token },
+      { onError: (error) => fail("token", error) },
+    );
+  }
+
   function remove(seat: Seat) {
     if (actions.remove.isPending) return;
     setNotice(null);
@@ -124,6 +134,14 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
 
         {view.seated && game.status === "waiting" && (
           <>
+            <TokenPicker
+              game={game}
+              userId={userId}
+              pendingSeatId={
+                actions.pickToken.isPending ? actions.pickToken.variables.seatId : null
+              }
+              onPick={pickToken}
+            />
             <InviteLink gameId={gameId} />
             {view.full ? (
               <p className="room__text">All 6 seats are taken.</p>

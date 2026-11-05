@@ -1,5 +1,7 @@
 import { MAX_SEATS, type Game, type Seat } from "@monopoly/shared";
 import { useState } from "react";
+import { tokenLook } from "../../scene/colors.ts";
+import { AvatarIcon } from "../game/rail/avatars.tsx";
 import { seatLabels } from "./roomModel.ts";
 
 // Names who joined or left since the last room, for the polite live region.
@@ -45,6 +47,14 @@ export function SeatList({ game, userId, removingId, onRemove, headingRef }: Pro
           const labels = seatLabels(game, seat, userId);
           return (
             <li key={seat.id} className="room__seat">
+              <span
+                role="img"
+                className="room__avatar"
+                aria-label={`${seat.name}, ${tokenLook(seat.token).label}`}
+                style={{ borderColor: tokenLook(seat.token).cssColor }}
+              >
+                <AvatarIcon kind={seat.token} size={26} />
+              </span>
               <span className="room__seat-main">
                 <span className="room__seat-name">{seat.name}</span>
                 {labels.host && <span className="room__tag room__tag--host">Host</span>}

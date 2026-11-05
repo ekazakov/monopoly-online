@@ -1,4 +1,4 @@
-import { gameStateResponseSchema, type Game, type GameResult } from "@monopoly/shared";
+import { gameStateResponseSchema, type Game, type GameResult, type Token } from "@monopoly/shared";
 import { apiFetch, client, unwrap } from "../api.ts";
 
 export async function createGame(name: string): Promise<Game> {
@@ -26,6 +26,18 @@ export async function addHotSeat(id: string, name: string): Promise<Game> {
 export async function removeSeat(id: string, seatId: string): Promise<Game> {
   return (
     await unwrap(await client.api.games[":id"].seats[":seatId"].$delete({ param: { id, seatId } }))
+  ).game;
+}
+
+/** `PUT /api/games/:id/seats/:seatId/token`: the controller of the seat picks another figure. */
+export async function changeToken(id: string, seatId: string, token: Token): Promise<Game> {
+  return (
+    await unwrap(
+      await client.api.games[":id"].seats[":seatId"].token.$put({
+        param: { id, seatId },
+        json: { token },
+      }),
+    )
   ).game;
 }
 

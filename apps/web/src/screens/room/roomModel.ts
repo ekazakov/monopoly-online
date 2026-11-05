@@ -59,7 +59,7 @@ export const roomCopy = {
   failed: "That did not work. Check the connection and try again.",
 } as const;
 
-export type RoomAction = "join" | "leave" | "start" | "remove" | "add";
+export type RoomAction = "join" | "leave" | "start" | "remove" | "add" | "token";
 
 export function errorText(action: RoomAction, error: unknown): string {
   if (isApiError(error)) {
@@ -72,6 +72,8 @@ export function errorText(action: RoomAction, error: unknown): string {
         return roomCopy.started;
       case "not_enough_players":
         return roomCopy.notEnough;
+      case "token_taken":
+        return "Another player just took that figure. Pick a different one.";
       case "owner_cannot_leave":
         return "The host cannot leave the game.";
       case "not_a_member":
