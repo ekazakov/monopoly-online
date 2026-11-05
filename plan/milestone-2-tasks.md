@@ -66,7 +66,7 @@ Ask before you add or change a board. Sync the artifacts.
   3. Create the unique index `(game_id, token)`.
 
   Update `db/schema.ts`. Test the migration on in-memory SQLite with seat rows from before the migration.
-- [ ] **Invites table migration (B3).** Migration `0006_invites`:
+- [x] **Invites table migration (B3).** Migration `0006_invites`:
   - Columns: `id`, `game_id` (foreign key, cascade on delete), `invited_user_id`, `invited_by_user_id`, `state` (check: `pending`, `accepted`, `declined`, `expired`), `created_at`, `updated_at`.
   - Unique `(game_id, invited_user_id)`. Index on `(invited_user_id, state)`.
 

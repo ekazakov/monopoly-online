@@ -178,6 +178,42 @@ const migrations: Record<string, Migration> = {
       await db.schema.alterTable("seats").dropColumn("token").execute();
     },
   },
+  "0006_invites": {
+    async up(db: Kysely<unknown>) {
+      await db.schema
+        .createTable("invites")
+        .addColumn("id", "text", (col) => col.primaryKey())
+        // An invite goes with its game: cancel deletes the game and the invites by cascade.
+        .addColumn("game_id", "text", (col) =>
+          col.notNull().references("games.id").onDelete("cascade"),
+        )
+        .addColumn("invited_user_id", "text", (col) => col.notNull().references("users.id"))
+        .addColumn("invited_by_user_id", "text", (col) => col.notNull().references("users.id"))
+        .addColumn("state", "text", (col) => col.notNull().defaultTo("pending"))
+        .addColumn("created_at", "text", (col) => col.notNull().defaultTo(nowIso))
+        .addColumn("updated_at", "text", (col) => col.notNull().defaultTo(nowIso))
+        // One row for each invited user in a game. A new invite after a decline or an
+        // expiry sets the same row back to pending.
+        .addUniqueConstraint("invites_game_id_invited_user_id_unique", [
+          "game_id",
+          "invited_user_id",
+        ])
+        .addCheckConstraint(
+          "invites_state_check",
+          sql`state in ('pending', 'accepted', 'declined', 'expired')`,
+        )
+        .execute();
+      // For the inbox of a user: the pending invites of one invitee.
+      await db.schema
+        .createIndex("invites_invited_user_id_state_idx")
+        .on("invites")
+        .columns(["invited_user_id", "state"])
+        .execute();
+    },
+    async down(db: Kysely<unknown>) {
+      await db.schema.dropTable("invites").execute();
+    },
+  },
 };
 
 function createMigrator(db: Kysely<Database>): Migrator {

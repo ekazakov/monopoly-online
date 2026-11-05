@@ -3,6 +3,8 @@ import type { Generated, Insertable, Selectable, Updateable } from "kysely";
 // Same values as `gameStatusSchema` in `@monopoly/shared`.
 export type GameStatus = "waiting" | "active" | "saved" | "finished";
 export type SeatKind = "user" | "hotseat";
+// Same values as `inviteStateSchema` in `@monopoly/shared`.
+export type InviteState = "pending" | "accepted" | "declined" | "expired";
 export type SeatToken = "dog" | "cat" | "penguin" | "car" | "horse" | "duck";
 
 export interface UsersTable {
@@ -48,6 +50,16 @@ export interface SeatsTable {
   created_at: Generated<string>;
 }
 
+export interface InvitesTable {
+  id: string;
+  game_id: string;
+  invited_user_id: string;
+  invited_by_user_id: string;
+  state: Generated<InviteState>;
+  created_at: Generated<string>;
+  updated_at: Generated<string>;
+}
+
 export interface GameEventsTable {
   game_id: string;
   // Version 1 is the first action after start.
@@ -77,6 +89,7 @@ export interface Database {
   sessions: SessionsTable;
   games: GamesTable;
   seats: SeatsTable;
+  invites: InvitesTable;
   game_events: GameEventsTable;
   game_snapshots: GameSnapshotsTable;
 }
@@ -96,6 +109,10 @@ export type GameUpdate = Updateable<GamesTable>;
 export type Seat = Selectable<SeatsTable>;
 export type NewSeat = Insertable<SeatsTable>;
 export type SeatUpdate = Updateable<SeatsTable>;
+
+export type Invite = Selectable<InvitesTable>;
+export type NewInvite = Insertable<InvitesTable>;
+export type InviteUpdate = Updateable<InvitesTable>;
 
 export type GameEventRow = Selectable<GameEventsTable>;
 export type NewGameEventRow = Insertable<GameEventsTable>;

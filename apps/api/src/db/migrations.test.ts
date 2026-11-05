@@ -75,7 +75,15 @@ describe("migrations", () => {
       select name from sqlite_master where type = 'table' and name not like 'sqlite_%'
     `.execute(db);
     const names = rows.rows.map((r) => r.name);
-    for (const table of ["users", "sessions", "games", "seats", "game_events", "game_snapshots"]) {
+    for (const table of [
+      "users",
+      "sessions",
+      "games",
+      "seats",
+      "invites",
+      "game_events",
+      "game_snapshots",
+    ]) {
       expect(names).toContain(table);
     }
   });
@@ -280,6 +288,78 @@ describe("migrations", () => {
         .values({ ...seat(S2, 1, "ann"), game_id: g2, token: "dog" })
         .execute();
       expect(await count("seats")).toBe(2);
+    });
+  });
+
+  describe("0006_invites", () => {
+    function invite(id: string, invitee = U2) {
+      return { id, game_id: G1, invited_user_id: invitee, invited_by_user_id: U1 };
+    }
+
+    test("defaults: pending, with both times set", async () => {
+      await addGame();
+      await db.insertInto("invites").values(invite("i1")).execute();
+      const row = await db.selectFrom("invites").selectAll().executeTakeFirstOrThrow();
+      expect(row.state).toBe("pending");
+      expect(row.created_at).toMatch(/^\d{4}-\d{2}-\d{2}T.*Z$/);
+      expect(row.updated_at).toMatch(/^\d{4}-\d{2}-\d{2}T.*Z$/);
+    });
+
+    test("rejects an unknown state", async () => {
+      await addGame();
+      await expect(
+        db
+          .insertInto("invites")
+          .values({ ...invite("i1"), state: "bogus" as never })
+          .execute(),
+      ).rejects.toThrow(/CHECK/);
+    });
+
+    test("one invite for each user in a game", async () => {
+      await addGame();
+      await db.insertInto("invites").values(invite("i1")).execute();
+      await expect(db.insertInto("invites").values(invite("i2")).execute()).rejects.toThrow(
+        /UNIQUE/,
+      );
+    });
+
+    test("the same user can be invited to another game", async () => {
+      await addGame();
+      const g2 = crypto.randomUUID();
+      await db.insertInto("games").values({ id: g2, name: "Two", owner_id: U1 }).execute();
+      await db.insertInto("invites").values(invite("i1")).execute();
+      await db
+        .insertInto("invites")
+        .values({ ...invite("i2"), game_id: g2 })
+        .execute();
+      expect(await db.selectFrom("invites").selectAll().execute()).toHaveLength(2);
+    });
+
+    test("an invite with a missing game or user fails", async () => {
+      await addGame();
+      await expect(
+        db
+          .insertInto("invites")
+          .values({ ...invite("i1"), game_id: crypto.randomUUID() })
+          .execute(),
+      ).rejects.toThrow(/FOREIGN KEY/);
+      await expect(
+        db.insertInto("invites").values(invite("i2", crypto.randomUUID())).execute(),
+      ).rejects.toThrow(/FOREIGN KEY/);
+    });
+
+    test("deleting a game removes its invites", async () => {
+      await addGame();
+      await db.insertInto("invites").values(invite("i1")).execute();
+      await db.deleteFrom("games").where("id", "=", G1).execute();
+      expect(await db.selectFrom("invites").selectAll().execute()).toHaveLength(0);
+    });
+
+    test("has an index for the inbox query", async () => {
+      const rows = await sql<{ name: string }>`
+        select name from sqlite_master where type = 'index' and tbl_name = 'invites'
+      `.execute(db);
+      expect(rows.rows.map((r) => r.name)).toContain("invites_invited_user_id_state_idx");
     });
   });
 
