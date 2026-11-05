@@ -3,7 +3,7 @@
 |                |                                                                                                   |
 | -------------- | ------------------------------------------------------------------------------------------------- |
 | Companion docs | [implementation-roadmap.md](implementation-roadmap.md), [milestone-1-tasks.md](milestone-1-tasks.md), [milestone-2-tasks.md](milestone-2-tasks.md) |
-| Status         | Draft. Last updated 2026-11-03                                                                    |
+| Status         | Milestone 2 built. Last updated 2026-11-05                                                        |
 
 This document fixes the request and response schema of each API method in milestone 1. The section "Milestone 2" adds the lobby methods. The zod schemas live in `packages/shared`.
 
@@ -67,7 +67,7 @@ The engine code `not_owner` means "does not own the property". Owner-only API ro
 | 11 | `POST /api/games/:id/start` | – | 200 `{ game, state }` (status `active`, version 0) | 403 `not_game_owner`, 409 `not_enough_players` / `game_not_waiting` |
 | 12 | `POST /api/games/:id/actions` | body `{ seatId, action: actionInput, expectedVersion: int ≥ 0, clientActionId: uuid }` | 200 `{ version, events, state }`. A repeat of the same `clientActionId` returns the stored `version` and `events` with the current `state`, so `state.version` can be greater than `version` | 403 `not_a_member` / `not_your_seat`, 404 seat, 409 `game_not_active` (`waiting` or `finished`) / `version_conflict`, 422 engine code |
 | 13 | `GET /api/games/:id/state` | – | 200 `{ version, state }` for `active` and `finished` games | 403 `not_a_member`, 409 `game_not_active` (only while `waiting`) |
-| 14 | `GET /api/stream?topics=game:<id>` | query `topics` (comma list, only `game:<uuid>`, max 5) | `text/event-stream` | 400 bad topic, 403 `not_a_member` |
+| 14 | `GET /api/stream?topics=game:<id>` | query `topics` (comma list of `game:<uuid>`, and from M2 also `lobby` and `user:<uuid>`, max 5) | `text/event-stream` | 400 bad topic, 403 `not_a_member`, 403 `forbidden_topic` (M2) |
 | 15 | `GET /api/games/:id/result` | – | 200 `{ result }` for `finished` games: `{ gameId, rounds, winner: { seatId, name }, standings: [{ rank, seatId, name, controllerUserId, status: "winner" \| "bankrupt" \| "resigned", outRound, cash, properties, netWorth }] }` in rank order. Round = 1 + floor(`TurnEnded` events so far / seats at start). Net worth = cash + property prices (half when mortgaged) + build cost of houses (hotel = 5). Players who are out show 0 | 400, 401, 403 `not_a_member`, 404, 409 `game_not_finished` |
 
 Rules for rows 8–10: the owner's own seat cannot be removed and the owner cannot leave in M1 (no owner transfer; owner rights never move, gameplay 3.1). Seat names are unique within a game, case-insensitive. When a join fails with `seat_name_taken`, the controller of the hot-seat seat removes it and adds it again with another name.
@@ -103,7 +103,7 @@ Task list: [milestone-2-tasks.md](milestone-2-tasks.md). The conventions and the
 | `seatSchema` | adds `token: tokenSchema` |
 | `inviteStateSchema` | `"pending" \| "accepted" \| "declined" \| "expired"` |
 | `roomInviteSchema` | `{ id, userId, name, state }`: one pending invite in the host's seat list |
-| `gameSchema` (room) | adds `invites: roomInvite[]` with the pending invites only. Until the Invites API (milestone 2, section E) exists, the server sends `[]` |
+| `gameSchema` (room) | adds `invites: roomInvite[]` with the pending invites only. Every `Game` that the API returns has it, for anyone who can read the game |
 | `lobbyGameSchema` | `{ id, name, ownerName, status, seatCount, tokens: token[], createdAt }` |
 | `inviteSchema` | `{ id, gameId, gameName, hostName, state, createdAt }` |
 | `streamTopicSchema` | `game:<uuid>`, `lobby` or `user:<uuid>` |
@@ -142,6 +142,17 @@ Changed methods:
 | `game:<id>` | `room.cancelled` | `{ gameId }` | Cancel. The client drops the topic. No SSE id |
 
 None of these messages has an SSE id. The `version` field of the envelope is 0 for `lobby` and `user:` messages.
+
+### As built (added 2026-11-05)
+Rules that the first design did not fix, as the code does them:
+- **Accept and decline.** The invitee is checked first: another user, or an unknown id, gets 404 `not_found`. Then `game_not_waiting` (start expires the invite, so an expired invite means a started game). An invite that is `declined` or `accepted` gets 404 `not_found`. Accept then runs a normal join, with `game_full`, `seat_name_taken` and `already_joined`.
+- **Join and invite.** A join by the link also sets the pending invite of that user in the game to `accepted`. A new invite after a decline or an expiry uses the same row: the state goes back to `pending`, and `invited_by` and `created_at` are set again, so the inbox shows the time of the new invite.
+- **`game.invites`.** The pending invites of the game, oldest first, with the display name of the invited user. They are in every `Game` that the API returns and in `room.updated` and `snapshot`, so a guest sees them too.
+- **Open games.** `GET /api/games` needs `status=waiting`. A missing or other value, or an extra key, is 400 `validation_error`. A row's `ownerName` is the account name of the host. The order is `createdAt` newest first, then `id`, so equal times keep one order. My games has no limit.
+- **Lobby messages.** `lobby.updated` also goes out when a game is created. `lobby.removed` goes out at start and at cancel. Each `invites.updated` has the full list of that user after the change, and goes to every user whose invites changed: invite, accept, decline, a join by the link, start (expired) and cancel (deleted).
+- **Resume.** `Last-Event-ID` is one header for the whole stream, and it is an engine version. It is used only when the stream has exactly one `game:` topic. With two or more game topics every game gets a `snapshot`. `lobby` and `user:` ignore it: each connect gets the full list.
+- **Connect.** A lobby or user message that was published before the first read of its topic is dropped, because the full list already covers it. `room.cancelled` is never dropped.
+- **Status codes.** Decline and cancel answer 204 with no body.
 
 ## Debug edit (added 2026-11-03, not in a milestone)
 

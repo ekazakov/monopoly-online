@@ -3,7 +3,7 @@
 |                |                                                                                                    |
 | -------------- | -------------------------------------------------------------------------------------------------- |
 | Companion docs | [implementation-roadmap.md](implementation-roadmap.md), [api-schema.md](api-schema.md) (section "Milestone 2"), [milestone-1-tasks.md](milestone-1-tasks.md), [game-screen-2-spec.md](game-screen-2-spec.md) |
-| Status         | Draft. Last updated 2026-11-03                                                                     |
+| Status         | Built. The manual run (I1) is open. H4 stays deferred. Last updated 2026-11-05                                                                     |
 
 **Goal.** A player finds a game in a public list, or gets an invite by name, and joins it. Each seat has its own player token (game piece). The host can cancel a game before it starts. The dice and the tokens move with an animation.
 
@@ -170,7 +170,7 @@ Files: `apps/api/src/rooms/service.ts`, `routes/games.ts`.
   - Cancel shows "Game cancelled" to B. The network panel shows no reconnect loop.
   - Start removes the game from the open games list and expires a pending invite.
   - The dice and the token movement have an animation. (The check with reduced motion on is out of M2: see Reduced motion fallback (H4).)
-- [ ] **Milestone 2 docs (I2).** Roadmap status, README (if commands changed), [api-schema.md](api-schema.md), and sync `artifacts/` if the port changed them.
+- [x] **Milestone 2 docs (I2).** Roadmap status, README (if commands changed), [api-schema.md](api-schema.md), and sync `artifacts/` if the port changed them.
 
 ### J. Debug panel (unplanned, added 2026-11-03)
 
@@ -183,6 +183,18 @@ A tool to test the game logic. The player on turn edits the game state. Always o
 - [x] **Debug panel docs (J5).** This section, the API schema, the engine plan and README, the UI spec (4.7, R-D1 to R-D5), the gameplay doc (Q23, Q24).
 - [x] **Debug deed multi-select (J7).** The Deeds list is a multi-select in three groups (Streets, Stations, Utilities). One Apply sends one batch for all chosen deeds.
 - [x] **Debug panel in the prototype (J6).** Sync `artifacts/game-screen` with a mock of the panel (CLAUDE.md).
+
+## As built: where the web app differs from the boards
+
+The boards stay as the design. These are the differences that the data or the scope made, found while building:
+
+- **Invite rows.** An invite in the inbox, and a pending invite in the player list, show the initial of the name in a disc. The `Invite` and `RoomInvite` schemas have the name but not the token, so there is no figure to draw.
+- **Open games and My games text.** A row says "Hosted by <name> · created 2 min ago". The boards also say "classic rules · auctions on" and "Round 12 · your turn". The lobby rows have no rules text, round or turn, so they are left out.
+- **Menu.** The lobby has a Sign out button where the boards have Menu.
+- **Invite by name.** No list of matching players: the match is exact on the server, and a search would let anyone list the users. The answer to a submit uses the states of the board (invite sent, no player, already seated, already invited).
+- **Notices.** "This game is full" and the other join answers show as a notice above the lists, with Dismiss, since the user is in the lobby already. The boards show them as a page with Back to lobby. "Game cancelled" is a page, as in the boards.
+- **Open seat rows.** A pending invite row stands in for one open seat row, so the list keeps six rows.
+- **Not built, as planned.** The host removes a joined player, and the host cancels an invite (see "Not in M2").
 
 ## API decisions
 
@@ -211,5 +223,5 @@ New endpoints: `GET /api/games?status=waiting`, `GET /api/me/games`, `PUT /api/g
 - `plan/implementation-roadmap.md`, `plan/api-schema.md`, `plan/game-screen-2-spec.md`
 - `apps/api/src/db/migrations.ts`, `db/schema.ts`, `rooms/service.ts` (`changeRoom`, `withConflictRetry`, `toApiGame`, `start`), `routes/games.ts`, `routes/stream.ts`, `realtime/messages.ts`, `realtime/connection.ts`, `realtime/resume.ts`, `auth/sessions.ts` (`nameKey`), `auth/test-helpers.ts`
 - `packages/shared/src/games.ts`, `stream.ts`, `errors.ts`
-- `apps/web/src/screens/HomeScreen.tsx`, `screens/room/*`, `screens/game/rail/looks.ts`, `avatars.tsx`, `scene/colors.ts`, `scene/sculpt.ts`, `scene/model.ts`, `scene/Tokens.tsx`, `realtime/types.ts`, `realtime/hooks.ts`, `testing/fakeApi.ts`
+- `apps/web/src/screens/lobby/*` (was `HomeScreen.tsx`), `screens/room/*`, `screens/game/rail/avatars.tsx`, `scene/colors.ts`, `scene/sculpt.ts`, `scene/model.ts`, `scene/Tokens.tsx`, `realtime/types.ts`, `realtime/hooks.ts`, `testing/fakeApi.ts`
 - `artifacts/design-system/project/Lobby*.dc.html`, `GameParts.dc.html`, `artifacts/game-screen/js/icons.js`, `sculpt.js`, `board3d.js`, `data.js`
