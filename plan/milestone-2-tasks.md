@@ -150,7 +150,7 @@ Files: `apps/api/src/rooms/service.ts`, `routes/games.ts`.
   - The host has a Cancel game button with a confirm step (Cancel game confirm (A4)).
   - On `room.cancelled`, each client drops its `game:<id>` subscription and shows "Game cancelled" with Back to lobby. Without the drop, the EventSource connects to the deleted game again and again.
   - A later visit to the link shows the 404 view that exists.
-- [ ] **Lobby web tests (G7).** The lobby list changes from fake realtime messages; Accept and Decline; the picker shows taken tokens as disabled; the invite states; the cancel notice and the dropped subscription.
+- [x] **Lobby web tests (G7).** The lobby list changes from fake realtime messages; Accept and Decline; the picker shows taken tokens as disabled; the invite states; the cancel notice and the dropped subscription.
 
 ### H. Dice and token animation (moved from M1 H9)
 
