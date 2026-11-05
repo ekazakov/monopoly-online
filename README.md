@@ -44,6 +44,14 @@ The web dev server sends `/api` requests to the API.
 
 The API keeps its database in `apps/api/data/monopoly.db`. To change the path, set `DB_PATH`. To change the port, set `PORT`. The API applies the migrations when it starts.
 
+To delete all data and start again, stop the API and run:
+
+```bash
+pnpm db:purge
+```
+
+This command deletes the database file and its `-shm` and `-wal` files. It uses the same path as the API, so it follows `DB_PATH`. The next start makes a new, empty database. All users, sessions and games are gone, so every browser must sign in again.
+
 ## Check, test and build
 
 ```bash
