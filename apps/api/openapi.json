@@ -1988,6 +1988,230 @@
         }
       }
     },
+    "/api/games/{id}/invites": {
+      "post": {
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["games"],
+        "summary": "Invite a user by name",
+        "description": "Owner only, while the game is `waiting`. The name must match a user exactly, ignoring case. An invite does not hold a seat. A declined or expired invite goes back to `pending`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 16
+                  }
+                },
+                "required": ["name"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The game with the new invite in `invites`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "game": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 60
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["waiting", "active", "saved", "finished"]
+                        },
+                        "ownerId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "seats": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "order": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 2,
+                                "maxLength": 16
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": ["user", "hotseat"]
+                              },
+                              "userId": {
+                                "type": ["string", "null"],
+                                "format": "uuid"
+                              },
+                              "controllerUserId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "token": {
+                                "type": "string",
+                                "enum": ["dog", "cat", "penguin", "car", "horse", "duck"]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "order",
+                              "name",
+                              "kind",
+                              "userId",
+                              "controllerUserId",
+                              "token"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "maxItems": 6
+                        },
+                        "invites": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "userId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 2,
+                                "maxLength": 16
+                              },
+                              "state": {
+                                "type": "string",
+                                "enum": ["pending", "accepted", "declined", "expired"]
+                              }
+                            },
+                            "required": ["id", "userId", "name", "state"],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "status",
+                        "ownerId",
+                        "version",
+                        "createdAt",
+                        "seats",
+                        "invites"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["game"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/games/{id}/start": {
       "post": {
         "security": [
@@ -2497,6 +2721,323 @@
           },
           "403": {
             "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/invites": {
+      "get": {
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["invites"],
+        "summary": "List my invites",
+        "description": "The pending invites of the user, newest first.",
+        "responses": {
+          "200": {
+            "description": "The pending invites",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "invites": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "gameId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "gameName": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 60
+                          },
+                          "hostName": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 16
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": ["pending", "accepted", "declined", "expired"]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": ["id", "gameId", "gameName", "hostName", "state", "createdAt"],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": ["invites"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/invites/{id}/accept": {
+      "post": {
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["invites"],
+        "summary": "Accept an invite",
+        "description": "Only the invitee. A normal join with the same errors, and the invite becomes `accepted` in the same transaction.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The game with the new seat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "game": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 60
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["waiting", "active", "saved", "finished"]
+                        },
+                        "ownerId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "seats": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "order": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 2,
+                                "maxLength": 16
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": ["user", "hotseat"]
+                              },
+                              "userId": {
+                                "type": ["string", "null"],
+                                "format": "uuid"
+                              },
+                              "controllerUserId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "token": {
+                                "type": "string",
+                                "enum": ["dog", "cat", "penguin", "car", "horse", "duck"]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "order",
+                              "name",
+                              "kind",
+                              "userId",
+                              "controllerUserId",
+                              "token"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "maxItems": 6
+                        },
+                        "invites": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "userId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 2,
+                                "maxLength": 16
+                              },
+                              "state": {
+                                "type": "string",
+                                "enum": ["pending", "accepted", "declined", "expired"]
+                              }
+                            },
+                            "required": ["id", "userId", "name", "state"],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "status",
+                        "ownerId",
+                        "version",
+                        "createdAt",
+                        "seats",
+                        "invites"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["game"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/invites/{id}/decline": {
+      "post": {
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["invites"],
+        "summary": "Decline an invite",
+        "description": "Only the invitee. The host can invite the same user again.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The invite is declined"
+          },
+          "401": {
+            "description": "Not signed in",
             "content": {
               "application/json": {
                 "schema": {

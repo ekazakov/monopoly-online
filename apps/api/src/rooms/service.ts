@@ -5,7 +5,9 @@ import type {
   ErrorCode,
   ErrorStatus,
   Game,
+  Invite,
   LobbyGame,
+  RoomInvite,
   RedactedGameState,
   Token,
   User,
@@ -21,6 +23,8 @@ import { redactState } from "../game/redact.ts";
 export type RoomEvent =
   | { type: "room.updated"; game: Game }
   | { type: "room.cancelled"; gameId: string }
+  /** The pending invites of these users changed. The lobby messages of F2 will carry it. */
+  | { type: "invites.updated"; userIds: string[] }
   | { type: "started"; game: Game; state: RedactedGameState };
 
 /** A domain error with the shared API error code. The route maps it to the error body. */
@@ -60,6 +64,13 @@ export interface RoomService {
   removeSeat(gameId: string, user: User, seatId: string): Promise<Game>;
   changeToken(gameId: string, user: User, seatId: string, token: Token): Promise<Game>;
   cancel(gameId: string, user: User): Promise<void>;
+  /** The host invites a user by name. The invite does not hold a seat. */
+  invite(gameId: string, user: User, name: string): Promise<Game>;
+  /** The pending invites of the user, newest first. */
+  listInvites(user: User): Promise<Invite[]>;
+  /** Joins the game and sets the invite to `accepted` in one transaction. */
+  acceptInvite(inviteId: string, user: User): Promise<Game>;
+  declineInvite(inviteId: string, user: User): Promise<void>;
   start(gameId: string, user: User): Promise<{ game: Game; state: RedactedGameState }>;
 }
 
@@ -82,7 +93,7 @@ export function toLobbyGame(game: GameRow & { owner_name: string }, seats: SeatR
   };
 }
 
-export function toApiGame(game: GameRow, seats: SeatRow[]): Game {
+export function toApiGame(game: GameRow, seats: SeatRow[], invites: RoomInvite[] = []): Game {
   return {
     id: game.id,
     name: game.name,
@@ -101,8 +112,7 @@ export function toApiGame(game: GameRow, seats: SeatRow[]): Game {
         controllerUserId: seat.controller_user_id,
         token: seat.token,
       })),
-    // Invites arrive with the Invites API (E). Until then no game has any.
-    invites: [],
+    invites,
   };
 }
 
@@ -239,18 +249,93 @@ export function createRoomService(options: RoomServiceOptions): RoomService {
     );
   }
 
+  /** The pending invites of a game, oldest first, with the display name of the invited user. */
+  const loadInvites = async (exec: Kysely<Database>, gameId: string): Promise<RoomInvite[]> => {
+    const rows = await exec
+      .selectFrom("invites")
+      .innerJoin("users", "users.id", "invites.invited_user_id")
+      .select(["invites.id", "invites.invited_user_id", "invites.state", "users.name"])
+      .where("invites.game_id", "=", gameId)
+      .where("invites.state", "=", "pending")
+      .orderBy("invites.created_at", "asc")
+      .orderBy("invites.id", "asc")
+      .execute();
+    return rows.map((row) => ({
+      id: row.id,
+      userId: row.invited_user_id,
+      name: row.name,
+      state: row.state,
+    }));
+  };
+
+  /** Adds the user seat for `user`, with the checks of a join. */
+  const joinSeat = async (
+    trx: Trx,
+    game: GameRow,
+    seats: SeatRow[],
+    user: User,
+  ): Promise<string[]> => {
+    requireWaiting(game);
+    if (seats.some((seat) => seat.kind === "user" && seat.user_id === user.id)) {
+      throw new RoomError("already_joined", "You are already in this game");
+    }
+    requireRoom(seats, nameKey(user.name));
+    await insertSeat(trx, game.id, seats, {
+      name: user.name,
+      kind: "user",
+      userId: user.id,
+      controllerId: user.id,
+    });
+    // A user who joins, by the link or by an invite, no longer waits for an answer.
+    const accepted = await trx
+      .updateTable("invites")
+      .set({ state: "accepted", updated_at: now().toISOString() })
+      .where("game_id", "=", game.id)
+      .where("invited_user_id", "=", user.id)
+      .where("state", "=", "pending")
+      .executeTakeFirst();
+    return accepted.numUpdatedRows > 0n ? [user.id] : [];
+  };
+
+  /** The users with a pending invite to the game. */
+  const pendingInvitees = async (trx: Trx, gameId: string) =>
+    (
+      await trx
+        .selectFrom("invites")
+        .select("invited_user_id")
+        .where("game_id", "=", gameId)
+        .where("state", "=", "pending")
+        .execute()
+    ).map((row) => row.invited_user_id);
+
+  /** The invite as its invitee sees it. Another user, or an unknown id, gets `not_found`. */
+  const findInvite = async (exec: Kysely<Database>, inviteId: string, userId: string) => {
+    const invite = await exec
+      .selectFrom("invites")
+      .selectAll()
+      .where("id", "=", inviteId)
+      .where("invited_user_id", "=", userId)
+      .executeTakeFirst();
+    if (!invite) throw new RoomError("not_found", "Invite not found");
+    return invite;
+  };
+
   async function changeRoom(
     gameId: string,
-    change: (trx: Trx, game: GameRow, seats: SeatRow[]) => Promise<void>,
+    // The ids that `change` returns are the users whose invites it changed. They are announced
+    // after the commit.
+    change: (trx: Trx, game: GameRow, seats: SeatRow[]) => Promise<string[] | void>,
   ): Promise<Game> {
-    const game = await withConflictRetry(() =>
+    const { game, invitees } = await withConflictRetry(() =>
       db.transaction().execute(async (trx) => {
         const row = await loadGame(trx, gameId);
-        await change(trx, row, await loadSeats(trx, gameId));
-        return toApiGame(row, await loadSeats(trx, gameId));
+        const invitees = (await change(trx, row, await loadSeats(trx, gameId))) ?? [];
+        const game = toApiGame(row, await loadSeats(trx, gameId), await loadInvites(trx, gameId));
+        return { game, invitees };
       }),
     );
     emit({ type: "room.updated", game });
+    if (invitees.length > 0) emit({ type: "invites.updated", userIds: invitees });
     return game;
   }
 
@@ -289,7 +374,7 @@ export function createRoomService(options: RoomServiceOptions): RoomService {
         .selectAll()
         .where("game_id", "=", gameId)
         .execute();
-      return toApiGame(game, seats);
+      return toApiGame(game, seats, await loadInvites(db, gameId));
     },
 
     listOpen: () =>
@@ -307,19 +392,7 @@ export function createRoomService(options: RoomServiceOptions): RoomService {
       ),
 
     join: (gameId, user) =>
-      changeRoom(gameId, async (trx, game, seats) => {
-        requireWaiting(game);
-        if (seats.some((seat) => seat.kind === "user" && seat.user_id === user.id)) {
-          throw new RoomError("already_joined", "You are already in this game");
-        }
-        requireRoom(seats, nameKey(user.name));
-        await insertSeat(trx, gameId, seats, {
-          name: user.name,
-          kind: "user",
-          userId: user.id,
-          controllerId: user.id,
-        });
-      }),
+      changeRoom(gameId, (trx, game, seats) => joinSeat(trx, game, seats, user)),
 
     leave: (gameId, user) =>
       changeRoom(gameId, async (trx, game, seats) => {
@@ -387,12 +460,14 @@ export function createRoomService(options: RoomServiceOptions): RoomService {
       }),
 
     async cancel(gameId, user) {
-      await db.transaction().execute(async (trx) => {
+      const invitees = await db.transaction().execute(async (trx) => {
         const game = await loadGame(trx, gameId);
         if (game.owner_id !== user.id) {
           throw new RoomError("not_game_owner", "Only the owner can cancel the game");
         }
         requireWaiting(game);
+        // Read before the delete: the cascade removes the invites with the game.
+        const invitees = await pendingInvitees(trx, gameId);
         // Seats and invites go by cascade. The status guard keeps out a start that races us.
         const deleted = await trx
           .deleteFrom("games")
@@ -402,10 +477,123 @@ export function createRoomService(options: RoomServiceOptions): RoomService {
         if (deleted.numDeletedRows === 0n) {
           throw new RoomError("game_not_waiting", "The game has started");
         }
+        return invitees;
       });
-      // TODO(E, F2): also read the pending invitees before the delete and publish
-      // `lobby.removed` and `invites.updated` once those messages exist.
+      // TODO(F2): also publish `lobby.removed` once that message exists.
       emit({ type: "room.cancelled", gameId });
+      if (invitees.length > 0) emit({ type: "invites.updated", userIds: invitees });
+    },
+
+    invite: (gameId, user, name) =>
+      changeRoom(gameId, async (trx, game, seats) => {
+        if (game.owner_id !== user.id) {
+          throw new RoomError("not_game_owner", "Only the owner can invite");
+        }
+        requireWaiting(game);
+        const target = await trx
+          .selectFrom("users")
+          .select("id")
+          .where("name_key", "=", nameKey(name))
+          .executeTakeFirst();
+        if (!target) throw new RoomError("user_not_found", "No user has this name");
+        if (target.id === user.id) {
+          throw new RoomError("cannot_invite_self", "You cannot invite yourself");
+        }
+        if (seats.some((seat) => seat.kind === "user" && seat.user_id === target.id)) {
+          throw new RoomError("already_joined", "This user is already in the game");
+        }
+        const existing = await trx
+          .selectFrom("invites")
+          .select(["id", "state"])
+          .where("game_id", "=", gameId)
+          .where("invited_user_id", "=", target.id)
+          .executeTakeFirst();
+        const time = now().toISOString();
+        if (!existing) {
+          await trx
+            .insertInto("invites")
+            .values({
+              id: randomUUID(),
+              game_id: gameId,
+              invited_user_id: target.id,
+              invited_by_user_id: user.id,
+              state: "pending",
+              created_at: time,
+              updated_at: time,
+            })
+            .execute();
+        } else if (existing.state === "pending") {
+          throw new RoomError("already_invited", "This user is already invited");
+        } else {
+          // One row for each invited user: a new invite sets a declined or expired one back to
+          // `pending`. `created_at` moves too, so the inbox shows the time of the new invite.
+          await trx
+            .updateTable("invites")
+            .set({
+              state: "pending",
+              invited_by_user_id: user.id,
+              created_at: time,
+              updated_at: time,
+            })
+            .where("id", "=", existing.id)
+            .execute();
+        }
+        return [target.id];
+      }),
+
+    async listInvites(user) {
+      const rows = await db
+        .selectFrom("invites")
+        .innerJoin("games", "games.id", "invites.game_id")
+        .innerJoin("users as host", "host.id", "invites.invited_by_user_id")
+        .select([
+          "invites.id",
+          "invites.game_id",
+          "invites.state",
+          "invites.created_at",
+          "games.name as game_name",
+          "host.name as host_name",
+        ])
+        .where("invites.invited_user_id", "=", user.id)
+        .where("invites.state", "=", "pending")
+        .orderBy("invites.created_at", "desc")
+        .orderBy("invites.id", "desc")
+        .execute();
+      return rows.map((row) => ({
+        id: row.id,
+        gameId: row.game_id,
+        gameName: row.game_name,
+        hostName: row.host_name,
+        state: row.state,
+        createdAt: row.created_at,
+      }));
+    },
+
+    async acceptInvite(inviteId, user) {
+      const { game_id: gameId } = await findInvite(db, inviteId, user.id);
+      return changeRoom(gameId, async (trx, game, seats) => {
+        const invite = await findInvite(trx, inviteId, user.id);
+        // Start expires the invites, so an expired one means a game that has started.
+        requireWaiting(game);
+        if (invite.state !== "pending") throw new RoomError("not_found", "Invite not found");
+        // A normal join, with the same errors. It also sets the invite to `accepted`.
+        return joinSeat(trx, game, seats, user);
+      });
+    },
+
+    async declineInvite(inviteId, user) {
+      const { game_id: gameId } = await findInvite(db, inviteId, user.id);
+      await changeRoom(gameId, async (trx, game) => {
+        const invite = await findInvite(trx, inviteId, user.id);
+        requireWaiting(game);
+        if (invite.state !== "pending") throw new RoomError("not_found", "Invite not found");
+        await trx
+          .updateTable("invites")
+          .set({ state: "declined", updated_at: now().toISOString() })
+          .where("id", "=", inviteId)
+          .execute();
+        return [user.id];
+      });
     },
 
     async start(gameId, user) {
@@ -434,6 +622,14 @@ export function createRoomService(options: RoomServiceOptions): RoomService {
           if (updated.numUpdatedRows === 0n) {
             throw new RoomError("game_not_waiting", "The game has started");
           }
+          // Start ends the invites: they do not hold a seat, and the game is closed to joins.
+          const invitees = await pendingInvitees(trx, gameId);
+          await trx
+            .updateTable("invites")
+            .set({ state: "expired", updated_at: now().toISOString() })
+            .where("game_id", "=", gameId)
+            .where("state", "=", "pending")
+            .execute();
           await trx
             .insertInto("game_snapshots")
             .values({
@@ -446,6 +642,7 @@ export function createRoomService(options: RoomServiceOptions): RoomService {
             .execute();
           return {
             state,
+            invitees,
             game: toApiGame({ ...game, status: "active", version: state.version }, seats),
           };
         }),
@@ -453,6 +650,7 @@ export function createRoomService(options: RoomServiceOptions): RoomService {
       loader?.put(gameId, result.state);
       const redacted = redactState(result.state);
       emit({ type: "started", game: result.game, state: redacted });
+      if (result.invitees.length > 0) emit({ type: "invites.updated", userIds: result.invitees });
       return { game: result.game, state: redacted };
     },
   };

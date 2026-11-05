@@ -94,20 +94,20 @@ Files: `apps/api/src/rooms/service.ts`, `routes/games.ts`.
 
 ### E. Invites API
 
-- [ ] **Invite by name endpoint (E1).** `POST /api/games/:id/invites`, body `{ name }`, response 201 `{ game }`.
+- [x] **Invite by name endpoint (E1).** `POST /api/games/:id/invites`, body `{ name }`, response 201 `{ game }`.
   - Host only: 403 `not_game_owner`. Only while `waiting`: 409 `game_not_waiting`.
   - Find the user with `nameKey()`. No match: 404 `user_not_found`.
   - The host invites themself: 409 `cannot_invite_self`. The user has a seat: 409 `already_joined`. A pending invite exists: 409 `already_invited`.
   - A declined or expired invite goes back to `pending`.
   - Publish `room.updated` and `invites.updated` to the invitee.
-- [ ] **My invites endpoint (E2).** `GET /api/me/invites` returns `{ invites }`, the pending invites of the user.
-- [ ] **Accept invite endpoint (E3).** `POST /api/invites/:id/accept` returns `{ game }`.
+- [x] **My invites endpoint (E2).** `GET /api/me/invites` returns `{ invites }`, the pending invites of the user.
+- [x] **Accept invite endpoint (E3).** `POST /api/invites/:id/accept` returns `{ game }`.
   - Only the invitee, else 404 `not_found`.
   - The join and the change to `accepted` are in one transaction.
   - The join errors stay the same: `game_full`, `game_not_waiting`, `seat_name_taken`.
-- [ ] **Decline invite endpoint (E4).** `POST /api/invites/:id/decline`, response 204. Only the invitee. Set the state to `declined`, then publish `room.updated` and `invites.updated`.
-- [ ] **Expire invites at start (E5).** In the start transaction, set the pending invites to `expired`. After the commit, publish `invites.updated` to each invitee.
-- [ ] **Invite tests (E6).** All refusals of Invite by name endpoint (E1); accept on a full game; accept after start; accept and decline by a user who is not the invitee; a new invite after a decline; start expires the invites.
+- [x] **Decline invite endpoint (E4).** `POST /api/invites/:id/decline`, response 204. Only the invitee. Set the state to `declined`, then publish `room.updated` and `invites.updated`.
+- [x] **Expire invites at start (E5).** In the start transaction, set the pending invites to `expired`. After the commit, publish `invites.updated` to each invitee.
+- [x] **Invite tests (E6).** All refusals of Invite by name endpoint (E1); accept on a full game; accept after start; accept and decline by a user who is not the invitee; a new invite after a decline; start expires the invites.
 
 ### F. Realtime
 

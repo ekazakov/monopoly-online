@@ -48,6 +48,8 @@ export function createPublishers(bus: Bus<StreamEnvelope>) {
         });
         return;
       }
+      // The `user:<id>` topic and `invites.updated` come with the realtime tasks (F1, F2).
+      if (event.type === "invites.updated") return;
       const topic = gameTopic(event.game.id);
       if (event.type === "room.updated") {
         bus.publish(topic, {

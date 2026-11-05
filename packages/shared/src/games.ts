@@ -84,6 +84,10 @@ export const inviteSchema = z.strictObject({
 export const createGameSchema = z.strictObject({ name: gameNameSchema });
 export const createSeatSchema = z.strictObject({ name: seatNameSchema });
 export const changeTokenSchema = z.strictObject({ token: tokenSchema });
+/** The host invites a user by the exact display name. The match ignores case. */
+export const createInviteSchema = z.strictObject({ name: displayNameSchema });
+export const inviteParamsSchema = z.strictObject({ id: idSchema });
+export const invitesResponseSchema = z.strictObject({ invites: z.array(inviteSchema) });
 
 export const gameParamsSchema = z.strictObject({ id: idSchema });
 export const seatParamsSchema = z.strictObject({ id: idSchema, seatId: idSchema });
@@ -123,6 +127,7 @@ export const gameStateResponseSchema = z.strictObject({
 export type CreateGameInput = z.infer<typeof createGameSchema>;
 export type CreateSeatInput = z.infer<typeof createSeatSchema>;
 export type ChangeTokenInput = z.infer<typeof changeTokenSchema>;
+export type CreateInviteInput = z.infer<typeof createInviteSchema>;
 export type Token = z.infer<typeof tokenSchema>;
 export type Seat = z.infer<typeof seatSchema>;
 export type InviteState = z.infer<typeof inviteStateSchema>;

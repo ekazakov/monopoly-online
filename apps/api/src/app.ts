@@ -17,6 +17,7 @@ import { createRoomService, type RoomEvent } from "./rooms/service.ts";
 import { gameRoutes } from "./routes/games.ts";
 import { gameplayRoutes } from "./routes/gameplay.ts";
 import { healthRoutes } from "./routes/health.ts";
+import { inviteRoutes } from "./routes/invites.ts";
 import { resultRoutes } from "./routes/result.ts";
 import { sessionRoutes } from "./routes/session.ts";
 import { streamRoutes } from "./routes/stream.ts";
@@ -71,6 +72,7 @@ export function createApp(db: Kysely<Database>, options?: AppOptions) {
     .route("/", healthRoutes(deps))
     .route("/", sessionRoutes(deps))
     .route("/", gameRoutes({ ...deps, rooms }))
+    .route("/", inviteRoutes({ ...deps, rooms }))
     // After `gameRoutes`: its `/games/*` session middleware also covers these routes, and the
     // handlers read `c.get("user")`.
     .route("/", gameplayRoutes({ ...deps, service }))

@@ -4,6 +4,7 @@ import { OpenAPIHono, createRoute } from "@hono/zod-openapi";
 import {
   changeTokenSchema,
   createGameSchema,
+  createInviteSchema,
   createSeatSchema,
   gameParamsSchema,
   gameResponseSchema,
@@ -172,6 +173,21 @@ const cancelGameRoute = createRoute({
   },
 });
 
+const inviteRoute = createRoute({
+  ...sessionSecurity,
+  method: "post",
+  path: "/games/{id}/invites",
+  tags: ["games"],
+  summary: "Invite a user by name",
+  description:
+    "Owner only, while the game is `waiting`. The name must match a user exactly, ignoring case. An invite does not hold a seat. A declined or expired invite goes back to `pending`.",
+  request: { params: gameParamsSchema, body: jsonBody(createInviteSchema) },
+  responses: {
+    201: jsonResponse("The game with the new invite in `invites`", gameResponseSchema),
+    ...errorResponses(400, 401, 403, 404, 409),
+  },
+});
+
 const startRoute = createRoute({
   ...sessionSecurity,
   method: "post",
@@ -200,7 +216,7 @@ const roomHook = (
 
 // One literal status set per route keeps the response types exact. The caller names the
 // statuses the route declares; the service decides which one happens.
-function fail<S extends 403 | 404 | 409>(c: Context, error: unknown) {
+export function fail<S extends 403 | 404 | 409>(c: Context, error: unknown) {
   if (!(error instanceof RoomError)) throw error;
   return c.json(
     errorBody(error.code, error.message),
@@ -283,6 +299,18 @@ export function gameRoutes(deps: AppDeps & { rooms: RoomService }) {
         return fail<403 | 404 | 409>(c, error) as unknown as Response;
       }
       return c.body(null, 204);
+    })
+    .openapi(inviteRoute, async (c) => {
+      try {
+        const game = await rooms.invite(
+          c.req.valid("param").id,
+          c.get("user"),
+          c.req.valid("json").name,
+        );
+        return c.json({ game }, 201);
+      } catch (error) {
+        return fail<403 | 404 | 409>(c, error);
+      }
     })
     .openapi(startRoute, async (c) => {
       try {
