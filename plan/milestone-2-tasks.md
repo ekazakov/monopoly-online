@@ -74,17 +74,17 @@ Ask before you add or change a board. Sync the artifacts.
 
 Files: `apps/api/src/rooms/service.ts`, `routes/games.ts`.
 
-- [ ] **Token on create, join and add-seat (C1).** Give the first free token in `TOKENS` order. Use `withConflictRetry` for races. 6 tokens = `MAX_SEATS`, so a free token always exists. `toApiGame` maps `token`.
-- [ ] **Change seat token endpoint (C2).** `PUT /api/games/:id/seats/:seatId/token`, body `{ token }`.
+- [x] **Token on create, join and add-seat (C1).** Give the first free token in `TOKENS` order. Use `withConflictRetry` for races. 6 tokens = `MAX_SEATS`, so a free token always exists. `toApiGame` maps `token`.
+- [x] **Change seat token endpoint (C2).** `PUT /api/games/:id/seats/:seatId/token`, body `{ token }`.
   - Only the controller of the seat: 403 `not_your_seat`.
   - Only while `waiting`: 409 `game_not_waiting`.
   - A token that another seat has: 409 `token_taken`. The unique index is the last guard.
   - Publish `room.updated`.
-- [ ] **Cancel game endpoint (C3).** `DELETE /api/games/:id`, response 204.
+- [x] **Cancel game endpoint (C3).** `DELETE /api/games/:id`, response 204.
   - Owner only: 403 `not_game_owner`. Only while `waiting`: 409 `game_not_waiting`.
   - In one transaction: read the users with pending invites, then delete the game.
   - After the commit: publish `room.cancelled` on `game:<id>`, `lobby.removed` on `lobby`, and `invites.updated` to each invitee.
-- [ ] **Token and cancel tests (C4).** 6 seats get 6 different tokens; a token change by a user who does not control the seat; `token_taken`; a token change after start; cancel by a guest; cancel after start; the cascade removes seats and invites. Regenerate `apps/api/openapi.json` in each route task.
+- [x] **Token and cancel tests (C4).** 6 seats get 6 different tokens; a token change by a user who does not control the seat; `token_taken`; a token change after start; cancel by a guest; cancel after start; the cascade removes seats and invites. Regenerate `apps/api/openapi.json` in each route task.
 
 ### D. Lobby lists API
 

@@ -37,6 +37,17 @@ export function createPublishers(bus: Bus<StreamEnvelope>) {
       });
     },
     onRoomEvent(event: RoomEvent) {
+      if (event.type === "room.cancelled") {
+        // Version 0 and no SSE id: the topic is gone, so the client drops it.
+        const topic = gameTopic(event.gameId);
+        bus.publish(topic, {
+          topic,
+          type: "room.cancelled",
+          version: 0,
+          payload: { gameId: event.gameId },
+        });
+        return;
+      }
       const topic = gameTopic(event.game.id);
       if (event.type === "room.updated") {
         bus.publish(topic, {

@@ -6,7 +6,12 @@ import { redactedGameStateSchema } from "./state.ts";
 
 export const MAX_STREAM_TOPICS = 5;
 
-export const streamMessageTypes = ["snapshot", "room.updated", "game.actions"] as const;
+export const streamMessageTypes = [
+  "snapshot",
+  "room.updated",
+  "room.cancelled",
+  "game.actions",
+] as const;
 
 /** `game:<uuid>` */
 export const streamTopicSchema = z.templateLiteral(["game:", idSchema]);
@@ -53,6 +58,12 @@ export const roomUpdatedMessageSchema = message(
   z.strictObject({ game: gameSchema }),
 );
 
+/** The host deleted the game. The client drops the topic. No SSE id. */
+export const roomCancelledMessageSchema = message(
+  "room.cancelled",
+  z.strictObject({ gameId: idSchema }),
+);
+
 /** One message per accepted action. */
 export const gameActionsMessageSchema = message(
   "game.actions",
@@ -62,6 +73,7 @@ export const gameActionsMessageSchema = message(
 export const streamMessageSchema = z.discriminatedUnion("type", [
   snapshotMessageSchema,
   roomUpdatedMessageSchema,
+  roomCancelledMessageSchema,
   gameActionsMessageSchema,
 ]);
 

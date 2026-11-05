@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vite-plus/tes
 import { createTestApp, postJson, sendAs, signIn } from "../auth/test-helpers.ts";
 import {
   MAX_SEATS,
+  TOKENS,
   apiErrorSchema,
   gameResponseSchema,
   redactedGameStateSchema,
@@ -536,6 +537,214 @@ describe("game room routes", () => {
     });
   });
 
+  /** `fullRoom`, with `room` read again so that it holds the seats that joined. */
+  async function seated(count: number) {
+    const full = await fullRoom(count);
+    const res = await sendAs(app, "GET", `/api/games/${full.room.id}`, full.owner.cookie);
+    return { ...full, room: await gameOf(res) };
+  }
+
+  describe("seat tokens", () => {
+    const setToken = (game: Game, who: Player, seatId: string, token: unknown) =>
+      app.request(`/api/games/${game.id}/seats/${seatId}/token`, {
+        method: "PUT",
+        headers: { "content-type": "application/json", cookie: who.cookie },
+        body: JSON.stringify({ token }),
+      });
+    const tokenOf = async (seatId: string) =>
+      (
+        await db
+          .selectFrom("seats")
+          .select("token")
+          .where("id", "=", seatId)
+          .executeTakeFirstOrThrow()
+      ).token;
+
+    test("6 seats get 6 different tokens, user seats and hot-seat seats alike", async () => {
+      const { owner, room } = await seated(4);
+      await addSeat(room, owner, "Guest1");
+      const full = await gameOf(await addSeat(room, owner, "Guest2"));
+      expect(full.seats).toHaveLength(MAX_SEATS);
+      expect(new Set(full.seats.map((s) => s.token)).size).toBe(MAX_SEATS);
+      expect(full.seats.map((s) => s.token)).toEqual([...TOKENS]);
+    });
+
+    test("a freed token is the next one given", async () => {
+      const { owner, others, room } = await seated(3);
+      await leave(room, others[0]!);
+      const next = await gameOf(await addSeat(room, owner, "Guest"));
+      expect(next.seats.map((s) => s.token)).toEqual([TOKENS[0], TOKENS[2], TOKENS[1]]);
+    });
+
+    test("the controller changes the token of a seat; the room is announced", async () => {
+      const { owner, room } = await seated(2);
+      events.length = 0;
+      const res = await setToken(room, owner, room.seats[0]!.id, "duck");
+      expect(res.status).toBe(200);
+      const game = await gameOf(res);
+      expect(game.seats[0]!.token).toBe("duck");
+      expect(game.seats[1]!.token).toBe("cat");
+      expect(events.map((e) => e.type)).toEqual(["room.updated"]);
+    });
+
+    test("the controller of a hot-seat seat changes its token", async () => {
+      const { owner, room } = await seated(1);
+      const withHot = await gameOf(await addSeat(room, owner, "Guest"));
+      const hot = withHot.seats[1]!;
+      const res = await setToken(room, owner, hot.id, "horse");
+      expect(res.status).toBe(200);
+      expect(await tokenOf(hot.id)).toBe("horse");
+    });
+
+    test("the token the seat has is accepted again", async () => {
+      const { owner, room } = await seated(1);
+      expect((await setToken(room, owner, room.seats[0]!.id, "dog")).status).toBe(200);
+    });
+
+    test("a user who does not control the seat gets not_your_seat; a stranger not_a_member", async () => {
+      const { owner, others, room } = await seated(2);
+      const stranger = await signIn(app, "Stranger");
+      const ownerSeat = room.seats[0]!.id;
+
+      const guest = await setToken(room, others[0]!, ownerSeat, "duck");
+      expect(guest.status).toBe(403);
+      expect(await errorCode(guest)).toBe("not_your_seat");
+
+      const outsider = await setToken(room, stranger, ownerSeat, "duck");
+      expect(outsider.status).toBe(403);
+      expect(await errorCode(outsider)).toBe("not_a_member");
+
+      expect(await tokenOf(ownerSeat)).toBe("dog");
+      // The owner of the game does not control the seat of another user either.
+      const other = await setToken(room, owner, room.seats[1]!.id, "duck");
+      expect(await errorCode(other)).toBe("not_your_seat");
+    });
+
+    test("a token that another seat has is token_taken and the old token stays", async () => {
+      const { owner, room } = await seated(2);
+      const res = await setToken(room, owner, room.seats[0]!.id, "cat");
+      expect(res.status).toBe(409);
+      expect(await errorCode(res)).toBe("token_taken");
+      expect(await tokenOf(room.seats[0]!.id)).toBe("dog");
+      expect(events).toHaveLength(1);
+    });
+
+    test("two seats take the same free token at once: one wins, one is token_taken", async () => {
+      const { owner, others, room } = await seated(2);
+      const [a, b] = await Promise.all([
+        setToken(room, owner, room.seats[0]!.id, "duck"),
+        setToken(room, others[0]!, room.seats[1]!.id, "duck"),
+      ]);
+      expect([a.status, b.status].sort((x, y) => x - y)).toEqual([200, 409]);
+      expect(await errorCode(a.status === 409 ? a : b)).toBe("token_taken");
+    });
+
+    test("the unique index refuses a duplicate token that gets past the service", async () => {
+      const { room } = await seated(2);
+      await expect(
+        db.updateTable("seats").set({ token: "dog" }).where("id", "=", room.seats[1]!.id).execute(),
+      ).rejects.toThrow(/UNIQUE/i);
+    });
+
+    test("after start the token is game_not_waiting", async () => {
+      const { owner, room } = await seated(2);
+      await start(room, owner);
+      const res = await setToken(room, owner, room.seats[0]!.id, "duck");
+      expect(res.status).toBe(409);
+      expect(await errorCode(res)).toBe("game_not_waiting");
+    });
+
+    test("unknown seat and unknown game are 404; a bad token is 400", async () => {
+      const { owner, room } = await seated(1);
+      expect((await setToken(room, owner, MISSING_ID, "duck")).status).toBe(404);
+      const noGame = await app.request(`/api/games/${MISSING_ID}/seats/${MISSING_ID}/token`, {
+        method: "PUT",
+        headers: { "content-type": "application/json", cookie: owner.cookie },
+        body: JSON.stringify({ token: "duck" }),
+      });
+      expect(noGame.status).toBe(404);
+      const bad = await setToken(room, owner, room.seats[0]!.id, "hat");
+      expect(bad.status).toBe(400);
+      expect(await errorCode(bad)).toBe("validation_error");
+    });
+  });
+
+  describe("cancel", () => {
+    const cancel = (game: Game, who: Player) =>
+      sendAs(app, "DELETE", `/api/games/${game.id}`, who.cookie);
+
+    test("the owner cancels a waiting game: 204, then the link is 404", async () => {
+      const { owner, room } = await seated(2);
+      events.length = 0;
+      const res = await cancel(room, owner);
+      expect(res.status).toBe(204);
+      expect(await res.text()).toBe("");
+      expect(events).toEqual([{ type: "room.cancelled", gameId: room.id }]);
+      const after = await sendAs(app, "GET", `/api/games/${room.id}`, owner.cookie);
+      expect(after.status).toBe(404);
+    });
+
+    test("a guest cannot cancel: not_game_owner, and the game stays", async () => {
+      const { others, room } = await seated(2);
+      events.length = 0;
+      const res = await cancel(room, others[0]!);
+      expect(res.status).toBe(403);
+      expect(await errorCode(res)).toBe("not_game_owner");
+      expect(events).toEqual([]);
+      expect((await sendAs(app, "GET", `/api/games/${room.id}`, others[0]!.cookie)).status).toBe(
+        200,
+      );
+    });
+
+    test("after start the cancel is game_not_waiting", async () => {
+      const { owner, room } = await seated(2);
+      await start(room, owner);
+      events.length = 0;
+      const res = await cancel(room, owner);
+      expect(res.status).toBe(409);
+      expect(await errorCode(res)).toBe("game_not_waiting");
+      expect(events).toEqual([]);
+      expect(await db.selectFrom("games").select("id").execute()).toHaveLength(1);
+    });
+
+    test("an unknown game is 404", async () => {
+      const owner = await signIn(app, "Ann");
+      const res = await sendAs(app, "DELETE", `/api/games/${MISSING_ID}`, owner.cookie);
+      expect(res.status).toBe(404);
+    });
+
+    test("the delete cascades to the seats and the invites of the game only", async () => {
+      const { owner, others, room } = await seated(2);
+      const other = await createRoom(others[0]!, "Other");
+      const invite = (gameId: string, userId: string, by: string) =>
+        db
+          .insertInto("invites")
+          .values({
+            id: crypto.randomUUID(),
+            game_id: gameId,
+            invited_user_id: userId,
+            invited_by_user_id: by,
+            state: "pending",
+            created_at: START.toISOString(),
+            updated_at: START.toISOString(),
+          })
+          .execute();
+      const guest = await signIn(app, "Invitee");
+      await invite(room.id, guest.user.id, owner.user.id);
+      await invite(other.id, guest.user.id, others[0]!.user.id);
+
+      expect((await cancel(room, owner)).status).toBe(204);
+
+      expect(await db.selectFrom("seats").select("game_id").execute()).toEqual([
+        { game_id: other.id },
+      ]);
+      expect(await db.selectFrom("invites").select("game_id").execute()).toEqual([
+        { game_id: other.id },
+      ]);
+      expect(await db.selectFrom("games").select("id").execute()).toEqual([{ id: other.id }]);
+    });
+  });
+
   describe("onRoomEvent", () => {
     test("is called after join, add, remove, leave and start, with the committed game", async () => {
       const ann = await signIn(app, "Ann");
@@ -550,8 +759,9 @@ describe("game room routes", () => {
       await leave(room, bo);
       await join(room, bo);
       expect(events.map((e) => e.type)).toEqual(Array(5).fill("room.updated"));
-      expect(events.map((e) => e.game.seats.length)).toEqual([2, 3, 2, 1, 2]);
-      expect(events[0]!.game.id).toBe(room.id);
+      const updates = events.flatMap((e) => (e.type === "room.updated" ? [e.game] : []));
+      expect(updates.map((g) => g.seats.length)).toEqual([2, 3, 2, 1, 2]);
+      expect(updates[0]!.id).toBe(room.id);
 
       events.length = 0;
       await start(room, ann);

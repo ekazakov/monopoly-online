@@ -125,6 +125,8 @@ export function applyStreamMessage(prev: GameStoreState, message: StreamMessage)
   if (message.type === "room.updated") {
     return { ...prev, game: message.payload.game, status: "ready" };
   }
+  // The game is gone. The screen handles it in the Cancel game flow (milestone 2, G6).
+  if (message.type === "room.cancelled") return prev;
   const { state, events } = message.payload;
   return applyNewerState(prev, state, state.version, events);
 }

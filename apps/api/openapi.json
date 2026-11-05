@@ -679,6 +679,72 @@
             }
           }
         }
+      },
+      "delete": {
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["games"],
+        "summary": "Cancel a waiting game",
+        "description": "Owner only, only while the game is `waiting`. Deletes the game; seats and invites go by cascade. The clients learn it from `room.cancelled`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The game is deleted"
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/games/{id}/join": {
@@ -1442,6 +1508,238 @@
                   },
                   "required": ["game"],
                   "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/games/{id}/seats/{seatId}/token": {
+      "put": {
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["games"],
+        "summary": "Change the token of a seat",
+        "description": "Only the controller of the seat, only while the game is `waiting`. `token_taken` means another seat has the token.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "seatId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "enum": ["dog", "cat", "penguin", "car", "horse", "duck"]
+                  }
+                },
+                "required": ["token"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The game with the new token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "game": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 60
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["waiting", "active", "saved", "finished"]
+                        },
+                        "ownerId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "seats": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "order": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 2,
+                                "maxLength": 16
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": ["user", "hotseat"]
+                              },
+                              "userId": {
+                                "type": ["string", "null"],
+                                "format": "uuid"
+                              },
+                              "controllerUserId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "token": {
+                                "type": "string",
+                                "enum": ["dog", "cat", "penguin", "car", "horse", "duck"]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "order",
+                              "name",
+                              "kind",
+                              "userId",
+                              "controllerUserId",
+                              "token"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "maxItems": 6
+                        },
+                        "invites": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "userId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 2,
+                                "maxLength": 16
+                              },
+                              "state": {
+                                "type": "string",
+                                "enum": ["pending", "accepted", "declined", "expired"]
+                              }
+                            },
+                            "required": ["id", "userId", "name", "state"],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "status",
+                        "ownerId",
+                        "version",
+                        "createdAt",
+                        "seats",
+                        "invites"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["game"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }

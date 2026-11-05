@@ -2,6 +2,7 @@
 // `rooms/service.ts`; the handlers map its `RoomError` to the shared error body.
 import { OpenAPIHono, createRoute } from "@hono/zod-openapi";
 import {
+  changeTokenSchema,
   createGameSchema,
   createSeatSchema,
   gameParamsSchema,
@@ -110,6 +111,36 @@ const removeSeatRoute = createRoute({
   },
 });
 
+const changeTokenRoute = createRoute({
+  ...sessionSecurity,
+  method: "put",
+  path: "/games/{id}/seats/{seatId}/token",
+  tags: ["games"],
+  summary: "Change the token of a seat",
+  description:
+    "Only the controller of the seat, only while the game is `waiting`. `token_taken` means another seat has the token.",
+  request: { params: seatParamsSchema, body: jsonBody(changeTokenSchema) },
+  responses: {
+    200: jsonResponse("The game with the new token", gameResponseSchema),
+    ...errorResponses(400, 401, 403, 404, 409),
+  },
+});
+
+const cancelGameRoute = createRoute({
+  ...sessionSecurity,
+  method: "delete",
+  path: "/games/{id}",
+  tags: ["games"],
+  summary: "Cancel a waiting game",
+  description:
+    "Owner only, only while the game is `waiting`. Deletes the game; seats and invites go by cascade. The clients learn it from `room.cancelled`.",
+  request: { params: gameParamsSchema },
+  responses: {
+    204: { description: "The game is deleted" },
+    ...errorResponses(401, 403, 404, 409),
+  },
+});
+
 const startRoute = createRoute({
   ...sessionSecurity,
   method: "post",
@@ -197,6 +228,24 @@ export function gameRoutes(deps: AppDeps & { rooms: RoomService }) {
       } catch (error) {
         return fail<403 | 404 | 409>(c, error);
       }
+    })
+    .openapi(changeTokenRoute, async (c) => {
+      const { id, seatId } = c.req.valid("param");
+      try {
+        const { token } = c.req.valid("json");
+        return c.json({ game: await rooms.changeToken(id, c.get("user"), seatId, token) }, 200);
+      } catch (error) {
+        return fail<403 | 404 | 409>(c, error);
+      }
+    })
+    .openapi(cancelGameRoute, async (c) => {
+      try {
+        await rooms.cancel(c.req.valid("param").id, c.get("user"));
+      } catch (error) {
+        // A route with a 204 and no body types its handler as a plain `Response`.
+        return fail<403 | 404 | 409>(c, error) as unknown as Response;
+      }
+      return c.body(null, 204);
     })
     .openapi(startRoute, async (c) => {
       try {

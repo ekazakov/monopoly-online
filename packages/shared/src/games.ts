@@ -83,6 +83,7 @@ export const inviteSchema = z.strictObject({
 
 export const createGameSchema = z.strictObject({ name: gameNameSchema });
 export const createSeatSchema = z.strictObject({ name: seatNameSchema });
+export const changeTokenSchema = z.strictObject({ token: tokenSchema });
 
 export const gameParamsSchema = z.strictObject({ id: idSchema });
 export const seatParamsSchema = z.strictObject({ id: idSchema, seatId: idSchema });
@@ -117,6 +118,7 @@ export const gameStateResponseSchema = z.strictObject({
 
 export type CreateGameInput = z.infer<typeof createGameSchema>;
 export type CreateSeatInput = z.infer<typeof createSeatSchema>;
+export type ChangeTokenInput = z.infer<typeof changeTokenSchema>;
 export type Token = z.infer<typeof tokenSchema>;
 export type Seat = z.infer<typeof seatSchema>;
 export type InviteState = z.infer<typeof inviteStateSchema>;

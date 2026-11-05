@@ -46,14 +46,19 @@ describe("stream lifecycle", () => {
     expect(sources).toHaveLength(0);
   });
 
-  test("opens one stream for all topics, sorted, and registers the three event names", async () => {
+  test("opens one stream for all topics, sorted, and registers the event names", async () => {
     const { client, sources, latest } = setup();
     client.subscribe(otherTopic, () => {});
     client.subscribe(topic, () => {});
     await flush();
     expect(sources).toHaveLength(1);
     expect(latest().url).toBe(`/api/stream?topics=${topic},${otherTopic}`);
-    expect(latest().listenerTypes().sort()).toEqual(["game.actions", "room.updated", "snapshot"]);
+    expect(latest().listenerTypes().sort()).toEqual([
+      "game.actions",
+      "room.cancelled",
+      "room.updated",
+      "snapshot",
+    ]);
     expect(client.getStatus()).toBe("connecting");
   });
 

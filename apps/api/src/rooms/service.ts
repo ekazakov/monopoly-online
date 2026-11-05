@@ -1,7 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { createGame } from "@monopoly/game-engine";
 import { MAX_SEATS, TOKENS, errorStatus } from "@monopoly/shared";
-import type { ErrorCode, ErrorStatus, Game, RedactedGameState, User } from "@monopoly/shared";
+import type {
+  ErrorCode,
+  ErrorStatus,
+  Game,
+  RedactedGameState,
+  Token,
+  User,
+} from "@monopoly/shared";
 import type { Kysely, Transaction } from "kysely";
 import { nameKey } from "../auth/sessions.ts";
 import type { Database, Game as GameRow, Seat as SeatRow } from "../db/schema.ts";
@@ -12,6 +19,7 @@ import { redactState } from "../game/redact.ts";
 /** What the room service reports after a change has been committed. */
 export type RoomEvent =
   | { type: "room.updated"; game: Game }
+  | { type: "room.cancelled"; gameId: string }
   | { type: "started"; game: Game; state: RedactedGameState };
 
 /** A domain error with the shared API error code. The route maps it to the error body. */
@@ -45,6 +53,8 @@ export interface RoomService {
   leave(gameId: string, user: User): Promise<Game>;
   addSeat(gameId: string, user: User, name: string): Promise<Game>;
   removeSeat(gameId: string, user: User, seatId: string): Promise<Game>;
+  changeToken(gameId: string, user: User, seatId: string, token: Token): Promise<Game>;
+  cancel(gameId: string, user: User): Promise<void>;
   start(gameId: string, user: User): Promise<{ game: Game; state: RedactedGameState }>;
 }
 
@@ -287,6 +297,46 @@ export function createRoomService(options: RoomServiceOptions): RoomService {
         }
         await removeSeats(trx, seats, [seat.id]);
       }),
+
+    changeToken: (gameId, user, seatId, token) =>
+      changeRoom(gameId, async (trx, game, seats) => {
+        const seat = seats.find((s) => s.id === seatId);
+        if (!seat) throw new RoomError("not_found", "Seat not found");
+        if (!seats.some((s) => s.controller_user_id === user.id)) {
+          throw new RoomError("not_a_member", "You are not in this game");
+        }
+        if (seat.controller_user_id !== user.id) {
+          throw new RoomError("not_your_seat", "You do not control this seat");
+        }
+        requireWaiting(game);
+        if (seats.some((s) => s.id !== seat.id && s.token === token)) {
+          throw new RoomError("token_taken", "Another seat has this token");
+        }
+        // The unique `(game_id, token)` index is the last guard against a race.
+        await trx.updateTable("seats").set({ token }).where("id", "=", seat.id).execute();
+      }),
+
+    async cancel(gameId, user) {
+      await db.transaction().execute(async (trx) => {
+        const game = await loadGame(trx, gameId);
+        if (game.owner_id !== user.id) {
+          throw new RoomError("not_game_owner", "Only the owner can cancel the game");
+        }
+        requireWaiting(game);
+        // Seats and invites go by cascade. The status guard keeps out a start that races us.
+        const deleted = await trx
+          .deleteFrom("games")
+          .where("id", "=", gameId)
+          .where("status", "=", "waiting")
+          .executeTakeFirst();
+        if (deleted.numDeletedRows === 0n) {
+          throw new RoomError("game_not_waiting", "The game has started");
+        }
+      });
+      // TODO(E, F2): also read the pending invitees before the delete and publish
+      // `lobby.removed` and `invites.updated` once those messages exist.
+      emit({ type: "room.cancelled", gameId });
+    },
 
     async start(gameId, user) {
       const result = await withConflictRetry(() =>
