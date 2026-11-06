@@ -141,7 +141,7 @@ The request and response schemas are zod schemas in `packages/shared`.
 | API        | Vitest with `app.request` (as in `apps/api/src/app.test.ts`), SQLite in memory |
 | Realtime   | Tests open an SSE stream, apply actions, reconnect with `Last-Event-ID`, and check the events that the server sends again                           |
 | Web        | Vitest and Testing Library for components and for the game store                                                                                      |
-| End to end | Playwright. Two browser contexts and one hot-seat seat play a short seeded game: a handoff and a trade (M1). A disconnect and a reconnect are added with M3. Runs locally against `pnpm dev` from M1 |
+| End to end | Playwright, in M3. Plan: [e2e-test-plan.md](e2e-test-plan.md). Two browser contexts and one hot-seat seat play a short seeded game, and other scripts cover the lobby, the session and disconnects. Runs on its own seeded servers, with `pnpm test:e2e` |
 | CI         | From M5: GitHub Actions runs `pnpm check`, `pnpm test`, `pnpm build`, and Playwright on `main` |
 
 - **Seeded.** The engine takes its dice and decks from a seed (`createGame({ seed })`). A test-only environment flag, never on in production, lets the test set the seed. Then the dice give the same numbers on each run, and the test knows where each token lands.
@@ -224,3 +224,4 @@ Only persons on an allow list can open the game. Cloudflare Access (Zero Trust, 
 | 2026-11-03 | Project glossary in [GLOSSARY.md](../GLOSSARY.md): terms, preferred words, and known inconsistencies |
 | 2026-11-05 | Milestone 2 done: token and cancel API, lobby lists, invites, the `lobby` and `user:<id>` topics, and the lobby, token picker, invite panel and cancel flow in the web app. "As built" rules in [api-schema.md](api-schema.md). The manual run (I1) passed on two browser profiles |
 | 2026-11-06 | Task list for milestone 3 in [milestone-3-tasks.md](milestone-3-tasks.md), and the M3 section in [api-schema.md](api-schema.md). The autopilot is postponed. The game waits for an away player, and it saves itself when nobody is online. No `GET /api/me/saved-games`. Playwright moved from M1 to M3 |
+| 2026-11-06 | E2E test plan in [e2e-test-plan.md](e2e-test-plan.md). The tests use dedicated seeded servers and reduced motion, so Reduced motion fallback (H4) moved from M2 to M3 |

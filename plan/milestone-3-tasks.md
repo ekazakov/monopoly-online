@@ -101,9 +101,12 @@ Ask before you add or change a board. Sync the artifacts.
 
 ### F. Browser tests
 
+The scenarios, the server stacks and the seed are in [e2e-test-plan.md](e2e-test-plan.md).
+
 - [x] **Playwright setup (F1).** Moved from M1 I1. Use the `GAME_SEED` flag. Add a test-only `PRESENCE_GRACE_MS`, ignored when `NODE_ENV` is `production`, the same as `GAME_SEED`. Close M1 I1 and I2 with a link to here.
 - [x] **Core game script (F2).** Moved from M1 I2. Two contexts, one hot-seat seat: roll, buy, rent, handoff, trade, end turn.
 - [x] **Session and disconnect script (F3).** Close a context: reconnecting, away, and the other player waits. Open it again: back online, and play continues. Save, claim, restore, same dice. Finish: standings with no winner. Close all contexts: the game saves itself, and the owner restores it.
+- [ ] **Lobby, room and game flows (F4).** Scenarios T02 to T19 in [e2e-test-plan.md](e2e-test-plan.md).
 
 ### G. Close
 
