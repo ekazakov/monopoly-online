@@ -179,6 +179,16 @@ describe("presence tracker", () => {
     });
   });
 
+  test("subscribe gets the changes until it is stopped", () => {
+    const heard: string[] = [];
+    const stop = tracker.subscribe((c) => heard.push(`${c.userId}:${c.status}`));
+    tracker.connect(GAME, ANN);
+    stop();
+    tracker.connect(GAME, BOB);
+    expect(heard).toEqual([`${ANN}:online`]);
+    expect(statuses()).toEqual([`${ANN}:online`, `${BOB}:online`]);
+  });
+
   test("injected timers replace the global ones", () => {
     const callbacks: (() => void)[] = [];
     const cleared: unknown[] = [];

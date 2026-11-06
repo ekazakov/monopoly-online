@@ -21,6 +21,8 @@ import { createGameService } from "../game/service.ts";
 import { playGame } from "../game/test-helpers.ts";
 import type { Step } from "../game/test-helpers.ts";
 import { createBus } from "../realtime/bus.ts";
+import { createPresenceTracker } from "../realtime/presence.ts";
+import type { PresenceTracker } from "../realtime/presence.ts";
 import { gameTopic } from "../realtime/messages.ts";
 import type { StreamEnvelope } from "../realtime/messages.ts";
 import { readSse, startedGame, submitStep } from "../realtime/test-helpers.ts";
@@ -259,6 +261,144 @@ describe("GET /api/stream", () => {
       expect(frame.event).toBe("snapshot");
       expect(frame.id).toBeUndefined();
       expect(frame.message.payload).toMatchObject({ state: null });
+    });
+  });
+
+  describe("presence", () => {
+    let started: StartedGame;
+    let tracker: PresenceTracker;
+    // The grace timers, run by hand.
+    let timers: (() => void)[];
+    let seat: Record<string, string>;
+
+    beforeEach(async () => {
+      await db.destroy();
+      timers = [];
+      tracker = createPresenceTracker({
+        graceMs: 60_000,
+        timers: {
+          set: (callback) => timers.push(callback),
+          clear: () => {},
+        },
+      });
+      await build({ presence: tracker });
+      started = await startedGame(app, SEED);
+      seat = Object.fromEntries(started.game.seats.map((s) => [s.name, s.id]));
+    });
+
+    afterEach(() => tracker.close());
+
+    const seatsOf = (frame: SseFrame) =>
+      (frame.message as { payload: { seats: Record<string, string> } }).payload.seats;
+    /** Read presence frames until the seat has the status. Every stream also gets its own connect. */
+    async function untilSeat(reader: SseReader, seatId: string, status: string) {
+      for (let i = 0; i < 10; i++) {
+        const seats = seatsOf(await reader.nextPresence());
+        if (seats[seatId] === status) return seats;
+      }
+      throw new Error(`Seat ${seatId} never became ${status}`);
+    }
+    const runGrace = async () => {
+      for (const fire of timers.splice(0)) fire();
+      // The publish reads the seats from the database first.
+      await new Promise((resolve) => setTimeout(resolve, 30));
+    };
+
+    test("a connect gets the seat map of the controllers it knows, after the snapshot", async () => {
+      const reader = await connect(started.owner.cookie, started.game.id);
+      expect((await reader.next()).event).toBe("snapshot");
+      const frame = await reader.nextPresence();
+      expect(frame).toMatchObject({
+        event: "presence.updated",
+        id: undefined,
+        message: { topic: `game:${started.game.id}`, version: 0 },
+      });
+      // Alice controls her own seat and the hot-seat Carol. Bobby has not connected.
+      expect(seatsOf(frame)).toEqual({ [seat.Alice!]: "online", [seat.Carol!]: "online" });
+    });
+
+    test("another player connecting is sent to the first one, and a close is too", async () => {
+      const owner = await connect(started.owner.cookie, started.game.id);
+      await owner.nextPresence();
+
+      const guest = await connect(started.guest.cookie, started.game.id);
+      expect(seatsOf(await guest.nextPresence())).toEqual({
+        [seat.Alice!]: "online",
+        [seat.Bobby!]: "online",
+        [seat.Carol!]: "online",
+      });
+      await untilSeat(owner, seat.Bobby!, "online");
+
+      await guest.close();
+      await untilSeat(owner, seat.Bobby!, "reconnecting");
+      await runGrace();
+      await untilSeat(owner, seat.Bobby!, "away");
+    });
+
+    test("a return within the grace time is online again", async () => {
+      const owner = await connect(started.owner.cookie, started.game.id);
+      await owner.nextPresence();
+      const guest = await connect(started.guest.cookie, started.game.id);
+      await untilSeat(owner, seat.Bobby!, "online");
+      await guest.close();
+      await untilSeat(owner, seat.Bobby!, "reconnecting");
+
+      await connect(started.guest.cookie, started.game.id);
+      await untilSeat(owner, seat.Bobby!, "online");
+      await runGrace();
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      // The timer fired late and found a stream: nobody is told that Bobby is away.
+      expect(owner.presence.every((f) => seatsOf(f)[seat.Bobby!] === "online")).toBe(true);
+      expect(tracker.status(started.game.id, started.guest.user.id)).toBe("online");
+    });
+
+    test("two tabs: the first one closing changes nothing", async () => {
+      const owner = await connect(started.owner.cookie, started.game.id);
+      await owner.nextPresence();
+      const tabOne = await connect(started.guest.cookie, started.game.id);
+      await connect(started.guest.cookie, started.game.id);
+      await untilSeat(owner, seat.Bobby!, "online");
+
+      await tabOne.close();
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      // Bobby never leaves online, so no frame can show another status for him.
+      expect(owner.presence.every((f) => seatsOf(f)[seat.Bobby!] === "online")).toBe(true);
+      expect(tracker.status(started.game.id, started.guest.user.id)).toBe("online");
+    });
+
+    test("a resume with nothing to send still gets the seat map", async () => {
+      await play(started, script(started, 3));
+      const reader = await connect(started.owner.cookie, started.game.id, {
+        "last-event-id": "3",
+      });
+      expect(seatsOf(await reader.nextPresence())[seat.Alice!]).toBe("online");
+      await reader.expectQuiet(150);
+    });
+
+    test("a waiting game, a saved game and a finished game track nobody", async () => {
+      const room = await createRoom(started.owner);
+      const waiting = await connect(started.owner.cookie, room.id);
+      await waiting.next();
+      await waiting.expectQuiet();
+      expect(waiting.presence).toHaveLength(0);
+
+      await sendAs(app, "POST", `/api/games/${started.game.id}/save`, started.owner.cookie);
+      const saved = await connect(started.owner.cookie, started.game.id);
+      await saved.next();
+      await saved.expectQuiet();
+      expect(saved.presence).toHaveLength(0);
+      expect(tracker.statuses(started.game.id)).toEqual({});
+      expect(tracker.statuses(room.id)).toEqual({});
+    });
+
+    test("a closed stream disconnects the user", async () => {
+      const reader = await connect(started.owner.cookie, started.game.id);
+      await reader.nextPresence();
+      expect(tracker.status(started.game.id, started.owner.user.id)).toBe("online");
+      await reader.close();
+      await waitUntil(
+        () => tracker.status(started.game.id, started.owner.user.id) === "reconnecting",
+      );
     });
   });
 

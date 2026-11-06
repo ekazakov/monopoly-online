@@ -1,5 +1,11 @@
 import { LOBBY_TOPIC } from "@monopoly/shared";
-import type { Game, LobbyGame, RedactedGameState, StreamMessage } from "@monopoly/shared";
+import type {
+  Game,
+  LobbyGame,
+  PresenceStatus,
+  RedactedGameState,
+  StreamMessage,
+} from "@monopoly/shared";
 import type { CommittedAction } from "../game/service.ts";
 import type { RoomEvent } from "../rooms/service.ts";
 import type { Bus } from "./bus.ts";
@@ -28,6 +34,17 @@ export function topicKind(topic: string): TopicKind {
   if (topic === LOBBY_TOPIC) return "lobby";
   return topic.startsWith(USER_PREFIX) ? "user" : "game";
 }
+
+/** The presence of every seat of a game. Version 0 and no SSE id: the next one replaces it. */
+export const presenceMessage = (
+  gameId: string,
+  seats: Record<string, PresenceStatus>,
+): StreamEnvelope => ({
+  topic: gameTopic(gameId),
+  type: "presence.updated",
+  version: 0,
+  payload: { seats },
+});
 
 /** The messages of the `lobby` topic. */
 type LobbyMessage = Extract<
@@ -72,6 +89,10 @@ export function createPublishers(bus: Bus<StreamEnvelope>) {
         version,
         payload: { events, state },
       });
+    },
+    /** A presence change: every device of the game gets the full seat map. */
+    onPresence(gameId: string, seats: Record<string, PresenceStatus>) {
+      bus.publish(gameTopic(gameId), presenceMessage(gameId, seats));
     },
     /** A claim: only the room of the game hears of it. */
     onRoomUpdated(game: Game) {

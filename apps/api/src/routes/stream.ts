@@ -9,9 +9,18 @@ import { requireSession } from "../auth/index.ts";
 import { errorBody } from "../errors.ts";
 import type { GameStateLoader } from "../game/loader.ts";
 import type { Bus } from "../realtime/bus.ts";
+import { writeChecked } from "../realtime/checked-write.ts";
 import { openConnection } from "../realtime/connection.ts";
-import { gameIdOf, sseEventId, topicKind, userIdOf } from "../realtime/messages.ts";
+import {
+  gameIdOf,
+  presenceMessage,
+  sseEventId,
+  topicKind,
+  userIdOf,
+} from "../realtime/messages.ts";
 import type { StreamEnvelope } from "../realtime/messages.ts";
+import { readSeatPresence } from "../realtime/presence.ts";
+import type { PresenceTracker } from "../realtime/presence.ts";
 import { createTopicReader, lobbyStart, parseLastEventId, userStart } from "../realtime/resume.ts";
 import { RoomError } from "../rooms/service.ts";
 import type { RoomService } from "../rooms/service.ts";
@@ -27,7 +36,7 @@ const streamRoute = createRoute({
   tags: ["realtime"],
   summary: "Open the event stream of games, the lobby and the invites of the user",
   description:
-    "Server-sent events. Topics: `game:<id>` (seated users only), `lobby` (any signed-in user) and `user:<id>` (only that user, else 403 `forbidden_topic`). Each message has `event:` set to its type (`snapshot`, `room.updated`, `room.cancelled`, `game.actions`, `lobby.snapshot`, `lobby.updated`, `lobby.removed`, `invites.updated`) and `data:` set to the JSON envelope `{ topic, type, version, payload }`. `id:` is the engine version and is set only on `snapshot` of a started game and on `game.actions`; the lobby and user messages have no id. A comment line every 15 seconds keeps the stream open. After a reconnect with `Last-Event-ID` and exactly one game topic, the missed `game.actions` are replayed when the gap is 1 to 100 versions, and a `snapshot` is sent when the gap is larger, the id is not a valid version, or the game is not `active`. Each connect to `lobby` or `user:<id>` gets the full list.",
+    "Server-sent events. Topics: `game:<id>` (seated users only), `lobby` (any signed-in user) and `user:<id>` (only that user, else 403 `forbidden_topic`). Each message has `event:` set to its type (`snapshot`, `room.updated`, `room.cancelled`, `game.actions`, `lobby.snapshot`, `lobby.updated`, `lobby.removed`, `invites.updated`, `presence.updated`) and `data:` set to the JSON envelope `{ topic, type, version, payload }`. `id:` is the engine version and is set only on `snapshot` of a started game and on `game.actions`; the lobby and user messages have no id. A comment line every 15 seconds keeps the stream open. After a reconnect with `Last-Event-ID` and exactly one game topic, the missed `game.actions` are replayed when the gap is 1 to 100 versions, and a `snapshot` is sent when the gap is larger, the id is not a valid version, or the game is not `active`. Each connect to `lobby` or `user:<id>` gets the full list. Each connect to an `active` game also gets `presence.updated` (version 0, no id): the status of every seat whose controller the server knows, `online`, `reconnecting` or `away`. It is sent again on each change. A user with a stream open in any tab is `online`; the status is `reconnecting` when the last stream closes, and `away` 60 seconds later.",
   request: { query: streamQuerySchema },
   responses: {
     200: {
@@ -42,6 +51,8 @@ export interface StreamRoutesDeps extends AppDeps {
   rooms: RoomService;
   loader: GameStateLoader;
   bus: Bus<StreamEnvelope>;
+  /** Counts the open streams of each controller of an `active` game. */
+  presence: PresenceTracker;
   /** Interval of the heartbeat comment. Defaults to `HEARTBEAT_MS`. */
   heartbeatMs?: number;
   /** Largest version gap that is replayed. Defaults to `RESUME_MAX_GAP`. */
@@ -52,7 +63,7 @@ const isSeated = (game: Game, userId: string) =>
   game.seats.some((seat) => seat.userId === userId || seat.controllerUserId === userId);
 
 export function streamRoutes(deps: StreamRoutesDeps) {
-  const { rooms, loader, bus, db } = deps;
+  const { rooms, loader, bus, db, presence } = deps;
   const heartbeatMs = deps.heartbeatMs ?? HEARTBEAT_MS;
   const readTopic = createTopicReader({
     db,
@@ -80,7 +91,8 @@ export function streamRoutes(deps: StreamRoutesDeps) {
     const unique = [...new Set(topics)];
     const user = c.get("user");
 
-    // Every topic is checked before the stream opens.
+    // Every topic is checked before the stream opens. Only `active` games count for presence.
+    const activeGameIds: string[] = [];
     for (const topic of unique) {
       const kind = topicKind(topic);
       // Any signed-in user can read the open games.
@@ -103,6 +115,7 @@ export function streamRoutes(deps: StreamRoutesDeps) {
       if (!isSeated(game, user.id)) {
         return c.json(errorBody("not_a_member", "You are not seated in this game"), 403);
       }
+      if (game.status === "active") activeGameIds.push(game.id);
     }
 
     // The browser sends one `Last-Event-ID` for the whole stream, and it is an engine version.
@@ -125,6 +138,24 @@ export function streamRoutes(deps: StreamRoutesDeps) {
       },
     });
 
+    // The user is online in each active game from now on. The seat map of the connect goes after
+    // the other first messages, also when a resume has nothing to send.
+    const disconnects: (() => void)[] = [];
+    const disconnect = () => {
+      for (const close of disconnects.splice(0)) close();
+    };
+    const initial = [...connection.initial];
+    try {
+      for (const gameId of activeGameIds) {
+        disconnects.push(presence.connect(gameId, user.id));
+        initial.push(presenceMessage(gameId, await readSeatPresence(db, presence, gameId)));
+      }
+    } catch (error) {
+      disconnect();
+      connection.close();
+      throw error;
+    }
+
     c.header("X-Accel-Buffering", "no");
     c.header("Cache-Control", "no-cache");
     const response = streamSSE(c, async (stream) => {
@@ -144,13 +175,22 @@ export function streamRoutes(deps: StreamRoutesDeps) {
 
       // A first comment makes the response start now, also when nothing else is due.
       enqueue(() => stream.write(": open\n\n"));
-      for (const message of connection.initial) send(message);
+      for (const message of initial) send(message);
       connection.start(send);
-      const timer = setInterval(() => enqueue(() => stream.write(": heartbeat\n\n")), heartbeatMs);
+      // A failed heartbeat write means the client is gone: close the stream, so the presence of
+      // the user does not stay `online` for a stream that nobody reads.
+      const timer = setInterval(
+        () =>
+          enqueue(async () => {
+            if (!(await writeChecked(stream, ": heartbeat\n\n"))) stream.abort();
+          }),
+        heartbeatMs,
+      );
 
       await new Promise<void>((resolve) => stream.onAbort(resolve));
       clearInterval(timer);
       connection.close();
+      disconnect();
     });
     // The library types only JSON bodies. The 200 response is declared for the document only.
     return response as never;

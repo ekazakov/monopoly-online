@@ -20,6 +20,10 @@ export interface SseFrame {
 export interface SseReader {
   /** Frames that were read and not taken yet. */
   readonly pending: readonly SseFrame[];
+  /** `presence.updated` frames read and not taken yet. `next` and `pending` never hold them. */
+  readonly presence: readonly SseFrame[];
+  /** The next `presence.updated` frame, or an error after `timeoutMs`. */
+  nextPresence(timeoutMs?: number): Promise<SseFrame>;
   /** Comment lines read so far, without the leading colon. */
   readonly comments: readonly string[];
   /** The next message frame, or an error after `timeoutMs`. */
@@ -40,6 +44,7 @@ export function readSse(res: Response): SseReader {
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   const frames: SseFrame[] = [];
+  const presenceFrames: SseFrame[] = [];
   const comments: string[] = [];
   let buffer = "";
   let ended = false;
@@ -60,7 +65,9 @@ export function readSse(res: Response): SseReader {
       else if (line.startsWith("data:")) data.push(line.slice(5).replace(/^ /, ""));
     }
     if (data.length === 0) return;
-    frames.push({ event, id, message: streamMessageSchema.parse(JSON.parse(data.join("\n"))) });
+    const frame = { event, id, message: streamMessageSchema.parse(JSON.parse(data.join("\n"))) };
+    // Presence frames have their own queue, so the tests of the other messages stay as they are.
+    (frame.message.type === "presence.updated" ? presenceFrames : frames).push(frame);
   }
 
   void (async () => {
@@ -100,6 +107,13 @@ export function readSse(res: Response): SseReader {
   const api: SseReader = {
     get pending() {
       return frames;
+    },
+    get presence() {
+      return presenceFrames;
+    },
+    async nextPresence(timeoutMs = 2000) {
+      await waitFor(() => presenceFrames.length > 0, timeoutMs, "a presence frame");
+      return presenceFrames.shift()!;
     },
     get comments() {
       return comments;

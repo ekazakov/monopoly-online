@@ -1,4 +1,6 @@
 import type { PresenceStatus } from "@monopoly/shared";
+import type { Kysely } from "kysely";
+import type { Database } from "../db/schema.ts";
 
 /** How long a controller without a game stream stays `reconnecting` before they are `away`. */
 export const DEFAULT_GRACE_MS = 60_000;
@@ -38,6 +40,8 @@ export interface PresenceTracker {
   status(gameId: string, userId: string): PresenceStatus | undefined;
   /** The status of every known user of a game, keyed by user id. */
   statuses(gameId: string): Record<string, PresenceStatus>;
+  /** Listen to the changes, as `onChange` does. Returns the function that stops listening. */
+  subscribe(listener: (change: PresenceChange) => void): () => void;
   /** Drop a game and its timers: it left `active`. */
   forget(gameId: string): void;
   /** Drop every game and timer. For shutdown and tests. */
@@ -62,6 +66,7 @@ export function createPresenceTracker(options: PresenceTrackerOptions = {}): Pre
     clear: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
   };
   const games = new Map<string, Map<string, Entry>>();
+  const listeners = new Set<(change: PresenceChange) => void>();
 
   function entryOf(gameId: string, userId: string): Entry | undefined {
     return games.get(gameId)?.get(userId);
@@ -90,7 +95,9 @@ export function createPresenceTracker(options: PresenceTrackerOptions = {}): Pre
   function setStatus(gameId: string, userId: string, entry: Entry, status: PresenceStatus) {
     if (entry.status === status) return;
     entry.status = status;
-    options.onChange?.({ gameId, userId, status });
+    const change = { gameId, userId, status };
+    options.onChange?.(change);
+    for (const listener of [...listeners]) listener(change);
   }
 
   function startGrace(gameId: string, userId: string, entry: Entry) {
@@ -148,10 +155,38 @@ export function createPresenceTracker(options: PresenceTrackerOptions = {}): Pre
       return result;
     },
 
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+
     forget,
 
     close() {
       for (const gameId of [...games.keys()]) forget(gameId);
     },
   };
+}
+
+/**
+ * The presence of every seat of a game, keyed by seat id. A seat has the status of its controller.
+ * A seat whose controller the tracker does not know is left out.
+ */
+export async function readSeatPresence(
+  db: Kysely<Database>,
+  presence: PresenceTracker,
+  gameId: string,
+): Promise<Record<string, PresenceStatus>> {
+  const seats = await db
+    .selectFrom("seats")
+    .select(["id", "controller_user_id"])
+    .where("game_id", "=", gameId)
+    .orderBy("seat_order")
+    .execute();
+  const result: Record<string, PresenceStatus> = {};
+  for (const seat of seats) {
+    const status = presence.status(gameId, seat.controller_user_id);
+    if (status) result[seat.id] = status;
+  }
+  return result;
 }
