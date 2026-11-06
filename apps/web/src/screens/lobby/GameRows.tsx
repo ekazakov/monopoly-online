@@ -1,3 +1,4 @@
+import { useId, useState } from "react";
 import { MAX_SEATS } from "@monopoly/shared";
 import type { LobbyGame, Token } from "@monopoly/shared";
 import { tokenLook } from "../../scene/colors.ts";
@@ -76,7 +77,85 @@ export function OpenGameRow({ game, now, mine, busy, onJoin, onOpen }: OpenGameR
   );
 }
 
-/** One row of My games: Open for a waiting room, Resume for a game in progress. */
+/** One row of Saved games, for the owner (board SavedGames): Continue, or Finish with a confirm. */
+export function SavedGameRow({
+  game,
+  busy,
+  onContinue,
+  onFinish,
+}: {
+  game: LobbyGame;
+  /** A Continue or a Finish is on its way for some game. */
+  busy: boolean;
+  onContinue: (game: LobbyGame) => void;
+  onFinish: (game: LobbyGame) => void;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const questionId = useId();
+  return (
+    <li className="lobby__row">
+      <div className="lobby__row-main">
+        <span className="lobby__row-name">
+          {game.name}
+          <span className="lobby__status" data-status="saved">
+            Saved
+          </span>
+        </span>
+        <span className="lobby__row-note">
+          You are the host · {game.seatCount} {game.seatCount === 1 ? "seat" : "seats"}
+        </span>
+      </div>
+      <TokenStack tokens={game.tokens} />
+      <SeatCount count={game.seatCount} />
+      {confirming ? (
+        <div className="lobby__confirm" role="group" aria-labelledby={questionId}>
+          <p id={questionId} className="lobby__text">
+            Finish this game with no winner? You cannot undo this.
+          </p>
+          <button
+            type="button"
+            className="lobby__button"
+            disabled={busy}
+            onClick={() => setConfirming(false)}
+          >
+            Keep game
+          </button>
+          <button
+            type="button"
+            className="lobby__button lobby__button--danger"
+            disabled={busy}
+            onClick={() => onFinish(game)}
+          >
+            Finish game
+          </button>
+        </div>
+      ) : (
+        <>
+          <button
+            type="button"
+            className="lobby__button"
+            disabled={busy}
+            aria-label={`Finish ${game.name}`}
+            onClick={() => setConfirming(true)}
+          >
+            Finish
+          </button>
+          <button
+            type="button"
+            className="lobby__button lobby__button--primary"
+            disabled={busy}
+            aria-label={`Continue ${game.name}`}
+            onClick={() => onContinue(game)}
+          >
+            Continue
+          </button>
+        </>
+      )}
+    </li>
+  );
+}
+
+/** One row of My games: Open for a waiting room or a saved game, Resume for a game in progress. */
 export function MyGameRow({
   game,
   userName,
@@ -87,6 +166,7 @@ export function MyGameRow({
   onOpen: (game: LobbyGame) => void;
 }) {
   const waiting = game.status === "waiting";
+  const saved = game.status === "saved";
   const host = game.ownerName === userName ? "You are the host" : `Hosted by ${game.ownerName}`;
   return (
     <li className="lobby__row">
@@ -94,7 +174,7 @@ export function MyGameRow({
         <span className="lobby__row-name">
           {game.name}
           <span className="lobby__status" data-status={game.status}>
-            {waiting ? "Waiting" : "In progress"}
+            {waiting ? "Waiting" : saved ? "Saved" : "In progress"}
           </span>
         </span>
         <span className="lobby__row-note">
@@ -106,10 +186,10 @@ export function MyGameRow({
       <button
         type="button"
         className="lobby__button"
-        aria-label={`${waiting ? "Open" : "Resume"} ${game.name}`}
+        aria-label={`${waiting || saved ? "Open" : "Resume"} ${game.name}`}
         onClick={() => onOpen(game)}
       >
-        {waiting ? "Open" : "Resume"}
+        {waiting || saved ? "Open" : "Resume"}
       </button>
     </li>
   );

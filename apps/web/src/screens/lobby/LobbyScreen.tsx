@@ -1,17 +1,17 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import type { Invite, LobbyGame } from "@monopoly/shared";
 import { useId, useState } from "react";
-import { joinGame } from "../../api/index.ts";
+import { claimSeats, finishGame, joinGame } from "../../api/games.ts";
 import { acceptInvite, declineInvite } from "../../api/lobby.ts";
 import { ApiError } from "../../api.ts";
 import { useSession, useSignOut } from "../../session/index.ts";
-import { OpenGameRow, MyGameRow } from "./GameRows.tsx";
+import { OpenGameRow, MyGameRow, SavedGameRow } from "./GameRows.tsx";
 import { InviteInbox } from "./InviteInbox.tsx";
 import { NewGamePanel } from "./NewGamePanel.tsx";
 import { noticeFor, type LobbyNotice } from "./notices.ts";
 import { useNow } from "./time.ts";
-import { useLobby } from "./useLobby.ts";
+import { myGamesQuery, useLobby } from "./useLobby.ts";
 import "./Lobby.css";
 
 /**
@@ -32,6 +32,8 @@ function Lobby({ userId, userName }: { userId: string; userName: string }) {
   const [notice, setNotice] = useState<LobbyNotice | null>(null);
   const openId = useId();
   const mineId = useId();
+  const savedId = useId();
+  const queryClient = useQueryClient();
 
   const openRoom = (gameId: string) => void navigate({ to: "/games/$gameId", params: { gameId } });
   const openGame = (game: LobbyGame) =>
@@ -58,6 +60,23 @@ function Lobby({ userId, userName }: { userId: string; userName: string }) {
     onError: (error) => setNotice(noticeFor(error, "decline")),
   });
 
+  // Continue takes the seats of the owner and opens the restore room, where the owner presses Start.
+  const resume = useMutation({
+    mutationFn: (game: LobbyGame) => claimSeats(game.id),
+    onSuccess: (game) => openRoom(game.id),
+    onError: (error) => setNotice(noticeFor(error, "continue")),
+  });
+  const finish = useMutation({
+    mutationFn: (game: LobbyGame) => finishGame(game.id),
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: myGamesQuery.queryKey }),
+    onError: (error) => setNotice(noticeFor(error, "finish")),
+  });
+  const savedBusy = resume.isPending || finish.isPending;
+
+  // Saved games that the user owns have their own group. The others are in My games with "Saved".
+  const mine = myGames.data ?? [];
+  const savedOwn = mine.filter((game) => game.status === "saved" && game.ownerId === userId);
+  const others = mine.filter((game) => !savedOwn.includes(game));
   const myIds = new Set(myGames.data?.map((game) => game.id));
   const busyInvite = accept.isPending
     ? accept.variables.id
@@ -139,6 +158,26 @@ function Lobby({ userId, userName }: { userId: string; userName: string }) {
         <NewGamePanel userName={userName} />
       </div>
 
+      {savedOwn.length > 0 && (
+        <section className="lobby__panel" aria-labelledby={savedId}>
+          <h2 id={savedId}>Saved games</h2>
+          <p className="lobby__text">
+            Games you saved. Continue opens the room, where each player claims their seats.
+          </p>
+          <ul className="lobby__list" aria-label="Saved games">
+            {savedOwn.map((game) => (
+              <SavedGameRow
+                key={game.id}
+                game={game}
+                busy={savedBusy}
+                onContinue={(saved) => resume.mutate(saved)}
+                onFinish={(saved) => finish.mutate(saved)}
+              />
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section className="lobby__panel" aria-labelledby={mineId}>
         <h2 id={mineId}>My games</h2>
         <p className="lobby__text">Games you play in, on this device or another</p>
@@ -151,11 +190,13 @@ function Lobby({ userId, userName }: { userId: string; userName: string }) {
               Try again
             </button>
           </div>
-        ) : myGames.data.length === 0 ? (
-          <p className="lobby__text">You are not in a game yet.</p>
+        ) : others.length === 0 ? (
+          <p className="lobby__text">
+            {savedOwn.length === 0 ? "You are not in a game yet." : "No other games."}
+          </p>
         ) : (
           <ul className="lobby__list" aria-label="My games">
-            {myGames.data.map((game) => (
+            {others.map((game) => (
               <MyGameRow key={game.id} game={game} userName={userName} onOpen={openGame} />
             ))}
           </ul>

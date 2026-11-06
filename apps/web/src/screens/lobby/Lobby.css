@@ -157,6 +157,22 @@
   color: var(--hf-ink-soft);
 }
 
+.lobby__confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hf-space-8);
+}
+
+.lobby__confirm > .lobby__text {
+  margin: 0;
+}
+
+.lobby__button--danger {
+  border-color: var(--hf-danger);
+  color: var(--hf-danger-ink);
+}
+
 .lobby__status[data-status="active"] {
   border-color: var(--hf-ok);
   color: var(--hf-ok);
