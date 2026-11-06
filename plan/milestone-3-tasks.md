@@ -78,7 +78,7 @@ Ask before you add or change a board. Sync the artifacts.
 - [x] **Claim seats endpoint (C4).** `POST /api/games/:id/claim`. Sets `claimed_at` on the seats that the caller controls. Only while `saved`: 409 `game_not_saved`. Publishes `room.updated`.
 - [x] **Restore game endpoint (C5).** `POST /api/games/:id/restore`. Owner only, `saved` only. Sets `active`, claims the owner's seats, and publishes a `snapshot`. The state does not change, so the version stays.
 - [x] **No-winner result (C6).** `buildGameResult` accepts a game with no `GameEnded`: players still in the game rank by net worth, then the players who are out, as today. `finishedBy` is the owner's name.
-- [ ] **Saved games in lists (C7).** `listMine` adds `saved`. The lobby groups My games by status and `ownerId`, so no `GET /api/me/saved-games` is necessary.
+- [x] **Saved games in lists (C7).** `listMine` adds `saved`. The lobby groups My games by status and `ownerId`, so no `GET /api/me/saved-games` is necessary.
 - [ ] **Session API tests (C8).** Same rolls after restore: save, restore, roll, and compare with the roll of a copy of the state before the save. Save, restore and save again. The refusals. SSE: a `snapshot` reaches a live stream; a reconnect with an old `Last-Event-ID` gets a snapshot.
 
 ### D. Presence API

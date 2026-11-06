@@ -7,6 +7,7 @@ import {
   apiErrorSchema,
   gameResponseSchema,
   gameResultResponseSchema,
+  lobbyGamesResponseSchema,
   streamMessageSchema,
 } from "@monopoly/shared";
 import type { StreamMessage } from "@monopoly/shared";
@@ -444,6 +445,51 @@ describe("game lifecycle routes", () => {
       );
       expect(res.status).toBe(409);
       expect(await errorCode(res)).toBe("game_not_finished");
+    });
+  });
+
+  describe("my games", () => {
+    const mine = async (cookie: string) =>
+      lobbyGamesResponseSchema.parse(
+        await (await sendAs(app, "GET", "/api/me/games", cookie)).json(),
+      ).games;
+
+    test("a saved game is listed for the owner and the guest, with its status and owner", async () => {
+      expect((await save(started.owner.cookie)).status).toBe(200);
+      for (const cookie of [started.owner.cookie, started.guest.cookie]) {
+        const rows = await mine(cookie);
+        expect(rows).toHaveLength(1);
+        expect(rows[0]).toMatchObject({
+          id: started.game.id,
+          status: "saved",
+          ownerId: started.owner.user.id,
+          ownerName: "Alice",
+          seatCount: 3,
+        });
+      }
+    });
+
+    test("it is active again after Restore and gone after Finish", async () => {
+      expect((await save(started.owner.cookie)).status).toBe(200);
+      expect(
+        (await sendAs(app, "POST", `/api/games/${started.game.id}/restore`, started.owner.cookie))
+          .status,
+      ).toBe(200);
+      expect((await mine(started.guest.cookie)).map((g) => g.status)).toEqual(["active"]);
+      expect((await finish(started.owner.cookie)).status).toBe(200);
+      expect(await mine(started.owner.cookie)).toEqual([]);
+    });
+
+    test("a saved game is not in the open list", async () => {
+      expect((await save(started.owner.cookie)).status).toBe(200);
+      const res = await sendAs(app, "GET", "/api/games?status=waiting", started.guest.cookie);
+      expect(lobbyGamesResponseSchema.parse(await res.json()).games).toEqual([]);
+    });
+
+    test("a user with no seat does not see it", async () => {
+      expect((await save(started.owner.cookie)).status).toBe(200);
+      const stranger = await signIn(app, "Zed");
+      expect(await mine(stranger.cookie)).toEqual([]);
     });
   });
 });

@@ -442,7 +442,7 @@ export function createRoomService(options: RoomServiceOptions): RoomService {
     listMine: (user) =>
       lobbyList((q) =>
         q
-          .where("games.status", "in", ["waiting", "active"])
+          .where("games.status", "in", ["waiting", "active", "saved"])
           .where(
             "games.id",
             "in",

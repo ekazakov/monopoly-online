@@ -64,7 +64,7 @@ const listMyGamesRoute = createRoute({
   tags: ["games"],
   summary: "List my games",
   description:
-    "The `waiting` and `active` games where the user has a seat or controls a hot-seat seat, newest first. Finished games are not listed.",
+    "The `waiting`, `active` and `saved` games where the user has a seat or controls a hot-seat seat, newest first. Each row has `ownerId` and `status`, so the lobby can group saved games and show Continue to the owner. Finished games are not listed.",
   responses: {
     200: jsonResponse("My games", lobbyGamesResponseSchema),
     ...errorResponses(401),
