@@ -1,4 +1,4 @@
-import { useGame } from "../../../game/index.ts";
+import { useGame, useGameSelector } from "../../../game/index.ts";
 import { PlayerRow } from "./PlayerRow.tsx";
 import type { PlayerRowProps, SeatDevice } from "./PlayerRow.tsx";
 import "./PlayerRail.css";
@@ -17,6 +17,7 @@ const GROUPS: { device: "local" | "other"; label: string }[] = [
 // device. The group headings show only when both groups exist, since one group needs no label.
 export function PlayerRail({ userId }: { userId: string }) {
   const { game, state, mySeats, currentPlayer } = useGame(userId);
+  const presence = useGameSelector((s) => s.presence);
   if (!game || !state) return <div className="player-rail" />;
 
   const mine = new Set(mySeats.map((seat) => seat.id));
@@ -48,6 +49,7 @@ export function PlayerRail({ userId }: { userId: string }) {
         properties: Object.values(state.ownership).filter((deed) => deed.ownerId === player.id)
           .length,
         debt: owed > 0 ? owed : null,
+        presence: local ? undefined : presence[seat.id],
       },
     });
   }

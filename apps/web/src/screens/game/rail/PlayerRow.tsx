@@ -1,4 +1,4 @@
-import type { Token } from "@monopoly/shared";
+import type { PresenceStatus, Token } from "@monopoly/shared";
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { tokenLook } from "../../../scene/colors.ts";
@@ -25,7 +25,18 @@ export interface PlayerRowProps {
   properties: number;
   /** Debt the player owes now, or null. */
   debt: number | null;
+  /**
+   * Whether the controller of a seat on another device is online. Left out for a seat of this
+   * device, and while the server has not said (spec 4.3, gameplay 3.1).
+   */
+  presence?: PresenceStatus;
 }
+
+const PRESENCE_LABELS: Record<PresenceStatus, string> = {
+  online: "Online",
+  reconnecting: "Reconnecting…",
+  away: "Away",
+};
 
 const money = new Intl.NumberFormat("en-US");
 export const formatMoney = (n: number) => `${n < 0 ? "−" : ""}$${money.format(Math.abs(n))}`;
@@ -62,6 +73,7 @@ export function PlayerRow({
   eliminated,
   properties,
   debt,
+  presence,
 }: PlayerRowProps) {
   const look = tokenLook(token);
   const change = useCashChange(cash);
@@ -108,6 +120,12 @@ export function PlayerRow({
         </span>
         <span className="player-row__meta">
           {device === "device" && <span>This device</span>}
+          {device === "other" && presence && !eliminated && (
+            <span className="player-row__presence" data-presence={presence}>
+              <span className="player-row__dot" aria-hidden="true" />
+              {PRESENCE_LABELS[presence]}
+            </span>
+          )}
           {eliminated && <span>Bankrupt</span>}
           {!eliminated && inJail && <span>In jail</span>}
           {!eliminated && jailCards > 0 && (

@@ -190,3 +190,43 @@
     display: none;
   }
 }
+
+/* Whether a player on another device is there (design board "Away and connection"). The words
+   come with the dot, so the colour is never the only signal. */
+.player-row__presence {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hf-space-4);
+}
+
+.player-row__dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.player-row__presence[data-presence="online"] .player-row__dot {
+  background: var(--hf-ok);
+}
+
+.player-row__presence[data-presence="reconnecting"] .player-row__dot {
+  background: var(--hf-coin);
+  animation: player-row-pulse 1.2s ease-in-out infinite;
+}
+
+.player-row__presence[data-presence="away"] .player-row__dot {
+  border: 1.5px solid var(--hf-ink-soft);
+}
+
+@keyframes player-row-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .player-row__presence[data-presence="reconnecting"] .player-row__dot {
+    animation: none;
+  }
+}

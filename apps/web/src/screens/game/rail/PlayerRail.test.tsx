@@ -4,6 +4,7 @@ import { afterEach, describe, expect, test, vi } from "vite-plus/test";
 import { GameStoreProvider } from "../../../game/GameStoreProvider.tsx";
 import {
   actionsMessage,
+  presenceMessage,
   recordFixture,
   redact,
   roomMessage,
@@ -358,5 +359,111 @@ describe("PlayerRow", () => {
       </ul>,
     );
     expect(screen.getByText("−$200")).toBeInTheDocument();
+  });
+});
+
+describe("PlayerRail: presence of the players on other devices", () => {
+  const bo = playerNamed("Bo");
+  const ann = playerNamed("Ann");
+  const cy = playerNamed("Cy");
+  const presenceOf = (name: string) =>
+    rowOf(name).querySelector<HTMLElement>(".player-row__presence");
+
+  test("shows no dot until the server says, and none for a seat of this device", () => {
+    setup(fx.ownerId);
+    expect(presenceOf("Bo")).toBeNull();
+    expect(document.querySelector(".player-row__dot")).toBeNull();
+  });
+
+  test.each([
+    ["online", "Online"],
+    ["reconnecting", "Reconnecting…"],
+    ["away", "Away"],
+  ] as const)("a remote seat that is %s shows the dot and the word %s", (status, word) => {
+    const store = setup(fx.ownerId);
+    act(() => store.applyStreamMessage(presenceMessage(fx.game, { [bo.id]: status })));
+    const presence = presenceOf("Bo")!;
+    expect(presence).toHaveTextContent(word);
+    expect(presence).toHaveAttribute("data-presence", status);
+    expect(presence.querySelector(".player-row__dot")).toHaveAttribute("aria-hidden", "true");
+  });
+
+  test("a seat of this device shows none, even when the server sends one", () => {
+    const store = setup(fx.ownerId);
+    act(() =>
+      store.applyStreamMessage(
+        presenceMessage(fx.game, { [ann.id]: "online", [cy.id]: "away", [bo.id]: "online" }),
+      ),
+    );
+    expect(presenceOf("Ann")).toBeNull();
+    expect(presenceOf("Cy")).toBeNull();
+    expect(presenceOf("Bo")).toHaveTextContent("Online");
+  });
+
+  test("follows the live changes of the player", () => {
+    const store = setup(fx.ownerId);
+    act(() => store.applyStreamMessage(presenceMessage(fx.game, { [bo.id]: "online" })));
+    expect(presenceOf("Bo")).toHaveTextContent("Online");
+    act(() => store.applyStreamMessage(presenceMessage(fx.game, { [bo.id]: "reconnecting" })));
+    expect(presenceOf("Bo")).toHaveTextContent("Reconnecting…");
+    act(() => store.applyStreamMessage(presenceMessage(fx.game, { [bo.id]: "away" })));
+    expect(presenceOf("Bo")).toHaveTextContent("Away");
+  });
+
+  test("the guest's device sees the owner's seats as remote", () => {
+    const store = setup(fx.guestId);
+    act(() =>
+      store.applyStreamMessage(
+        presenceMessage(fx.game, { [ann.id]: "online", [cy.id]: "online", [bo.id]: "away" }),
+      ),
+    );
+    expect(presenceOf("Ann")).toHaveTextContent("Online");
+    expect(presenceOf("Cy")).toHaveTextContent("Online");
+    expect(presenceOf("Bo")).toBeNull();
+  });
+
+  test("a player who is out has none", () => {
+    const store = setup(fx.ownerId, withPlayer(start, bo.id, { active: false }));
+    act(() => store.applyStreamMessage(presenceMessage(fx.game, { [bo.id]: "away" })));
+    expect(presenceOf("Bo")).toBeNull();
+  });
+});
+
+describe("PlayerRow: presence", () => {
+  const row: PlayerRowProps = {
+    name: "Ravi",
+    token: "horse",
+    cash: 1200,
+    device: "other",
+    active: false,
+    inJail: false,
+    jailCards: 0,
+    eliminated: false,
+    properties: 0,
+    debt: null,
+  };
+  const renderRow = (props: Partial<PlayerRowProps>) => {
+    render(
+      <ul>
+        <PlayerRow {...row} {...props} />
+      </ul>,
+    );
+    return screen.getByRole("listitem");
+  };
+
+  test("is part of the meta line of a remote seat", () => {
+    const li = renderRow({ presence: "away" });
+    expect(li.querySelector(".player-row__meta")).toHaveTextContent("Away");
+  });
+
+  test("is ignored for a seat of this device", () => {
+    const li = renderRow({ device: "device", presence: "away" });
+    expect(li).not.toHaveTextContent("Away");
+    expect(li).toHaveTextContent("This device");
+  });
+
+  test("is left out when it is not given", () => {
+    const li = renderRow({});
+    expect(li.querySelector(".player-row__presence")).toBeNull();
   });
 });
