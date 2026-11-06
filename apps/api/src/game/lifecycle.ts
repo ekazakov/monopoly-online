@@ -21,17 +21,23 @@ export interface LifecycleServiceOptions {
   readGame: (gameId: string) => Promise<Game>;
   /** Called after the change has been committed. A failing subscriber does not fail the call. */
   onSnapshot?: (snapshot: LifecycleSnapshot) => void;
+  /** Called after a claim. Only the room of the game hears of it: a saved game is not in the lobby. */
+  onRoomUpdated?: (game: Game) => void;
+  now?: () => Date;
 }
 
 /** Owner actions that end or pause a started game: Finish now, Save, Claim and Restore later. */
 export interface LifecycleService {
   finish(input: { gameId: string; userId: string }): Promise<{ game: Game }>;
+  /** A member claims the seats that they control. Only while the game is `saved`. */
+  claim(input: { gameId: string; userId: string }): Promise<{ game: Game }>;
   /** Owner only, `active` only. Rolls back to the start of the turn and clears all claims. */
   save(input: { gameId: string; userId: string }): Promise<{ game: Game }>;
 }
 
 export function createLifecycleService(options: LifecycleServiceOptions): LifecycleService {
-  const { db, games, loader, readGame, onSnapshot } = options;
+  const { db, games, loader, readGame, onSnapshot, onRoomUpdated } = options;
+  const now = options.now ?? (() => new Date());
 
   async function requireOwned(gameId: string, userId: string) {
     const game = await db
@@ -61,6 +67,53 @@ export function createLifecycleService(options: LifecycleServiceOptions): Lifecy
   }
 
   return {
+    async claim({ gameId, userId }) {
+      const game = await db
+        .selectFrom("games")
+        .select("status")
+        .where("id", "=", gameId)
+        .executeTakeFirst();
+      if (!game) throw new GameServiceError("not_found", "Game not found");
+      const seat = await db
+        .selectFrom("seats")
+        .select("id")
+        .where("game_id", "=", gameId)
+        .where("controller_user_id", "=", userId)
+        .limit(1)
+        .executeTakeFirst();
+      if (!seat) throw new GameServiceError("not_a_member", "You do not control a seat here");
+      if (game.status !== "saved") {
+        throw new GameServiceError("game_not_saved", "The game is not saved");
+      }
+      // The status guard in the same statement keeps a claim out of a game that was restored.
+      await db
+        .updateTable("seats")
+        .set({ claimed_at: now().toISOString() })
+        .where("game_id", "=", gameId)
+        .where("controller_user_id", "=", userId)
+        .where("claimed_at", "is", null)
+        .where((eb) =>
+          eb.exists(
+            eb
+              .selectFrom("games")
+              .select("games.id")
+              .where("games.id", "=", gameId)
+              .where("games.status", "=", "saved"),
+          ),
+        )
+        .execute();
+      const current = await readGame(gameId);
+      if (current.status !== "saved") {
+        throw new GameServiceError("game_not_saved", "The game is not saved");
+      }
+      try {
+        onRoomUpdated?.(current);
+      } catch (error) {
+        console.error(error);
+      }
+      return { game: current };
+    },
+
     async save({ gameId, userId }) {
       const { status } = await requireOwned(gameId, userId);
       if (status !== "active") {

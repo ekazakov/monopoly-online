@@ -73,6 +73,16 @@ export function createPublishers(bus: Bus<StreamEnvelope>) {
         payload: { events, state },
       });
     },
+    /** A claim: only the room of the game hears of it. */
+    onRoomUpdated(game: Game) {
+      const topic = gameTopic(game.id);
+      bus.publish(topic, {
+        topic,
+        type: "room.updated",
+        version: game.version,
+        payload: { game },
+      });
+    },
     /** Finish, Save and Restore: every device of the game gets the new game and state. */
     onSnapshot({ game, state }: { game: Game; state: RedactedGameState }) {
       const topic = gameTopic(game.id);

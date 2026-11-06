@@ -70,6 +70,8 @@ export function createApp(db: Kysely<Database>, options?: AppOptions) {
     loader,
     readGame: (gameId) => rooms.get(gameId),
     onSnapshot: (snapshot) => publish.onSnapshot(snapshot),
+    onRoomUpdated: (game) => publish.onRoomUpdated(game),
+    now: deps.now,
   });
   const api = new OpenAPIHono<AppEnv>({ defaultHook: validationHook }).basePath("/api");
   // Registered before every route, so later routes are covered too. `.use` returns a plain

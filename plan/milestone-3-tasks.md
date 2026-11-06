@@ -75,7 +75,7 @@ Ask before you add or change a board. Sync the artifacts.
   Tests: discards an auction, a trade and a debt; a pending debt from an earlier turn stays; the deleted rows do not come back through the loader after `loader.clear()`; a late retry of a discarded `clientActionId` gets `version_conflict`; a rollback at a turn-start snapshot in `awaiting_bid` (a bankruptcy auction queue) stays valid.
 - [x] **Finish game endpoint (C2).** `POST /api/games/:id/finish`. Owner only: 403 `not_game_owner`. From `active`: rollback. From `saved`: status change and a `snapshot`, with no rollback. Any other status: 409 `game_not_active`.
 - [x] **Save game endpoint (C3).** `POST /api/games/:id/save`. Owner only, `active` only. Clears `claimed_at` on all seats, in the same transaction.
-- [ ] **Claim seats endpoint (C4).** `POST /api/games/:id/claim`. Sets `claimed_at` on the seats that the caller controls. Only while `saved`: 409 `game_not_saved`. Publishes `room.updated`.
+- [x] **Claim seats endpoint (C4).** `POST /api/games/:id/claim`. Sets `claimed_at` on the seats that the caller controls. Only while `saved`: 409 `game_not_saved`. Publishes `room.updated`.
 - [ ] **Restore game endpoint (C5).** `POST /api/games/:id/restore`. Owner only, `saved` only. Sets `active`, claims the owner's seats, and publishes a `snapshot`. The state does not change, so the version stays.
 - [ ] **No-winner result (C6).** `buildGameResult` accepts a game with no `GameEnded`: players still in the game rank by net worth, then the players who are out, as today. `finishedBy` is the owner's name.
 - [ ] **Saved games in lists (C7).** `listMine` adds `saved`. The lobby groups My games by status and `ownerId`, so no `GET /api/me/saved-games` is necessary.

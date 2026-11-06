@@ -232,4 +232,81 @@ describe("game lifecycle routes", () => {
       expect(await errorCode(res)).toBe("game_not_active");
     });
   });
+
+  describe("claim", () => {
+    const claim = (cookie: string, id = started.game.id) =>
+      sendAs(app, "POST", `/api/games/${id}/claim`, cookie);
+    const claimed = async () => {
+      const { game } = gameResponseSchema.parse(
+        await (
+          await sendAs(app, "GET", `/api/games/${started.game.id}`, started.owner.cookie)
+        ).json(),
+      );
+      return Object.fromEntries(game.seats.map((seat) => [seat.name, seat.claimed]));
+    };
+
+    test("claims the seats that the caller controls, and tells the room", async () => {
+      await play(4);
+      expect((await save(started.owner.cookie)).status).toBe(200);
+      seen.length = 0;
+
+      const res = await claim(started.guest.cookie);
+
+      expect(res.status).toBe(200);
+      const { game } = gameResponseSchema.parse(await res.json());
+      // Alice (owner) and Carol (hot-seat, owner's) are not claimed; Bobby is.
+      expect(await claimed()).toEqual({ Alice: false, Bobby: true, Carol: false });
+      expect(game.status).toBe("saved");
+      expect(seen).toEqual([
+        {
+          topic: gameTopic(started.game.id),
+          type: "room.updated",
+          version: game.version,
+          payload: { game },
+        },
+      ]);
+    });
+
+    test("the owner claims every seat that they control, hot-seat seats too", async () => {
+      expect((await save(started.owner.cookie)).status).toBe(200);
+      expect((await claim(started.owner.cookie)).status).toBe(200);
+      expect(await claimed()).toEqual({ Alice: true, Bobby: false, Carol: true });
+    });
+
+    test("a second claim changes nothing", async () => {
+      expect((await save(started.owner.cookie)).status).toBe(200);
+      await claim(started.guest.cookie);
+      const first = await db.selectFrom("seats").select(["name", "claimed_at"]).execute();
+      expect((await claim(started.guest.cookie)).status).toBe(200);
+      expect(await db.selectFrom("seats").select(["name", "claimed_at"]).execute()).toEqual(first);
+    });
+
+    test("a game that is not saved is 409 game_not_saved", async () => {
+      const res = await claim(started.guest.cookie);
+      expect(res.status).toBe(409);
+      expect(await errorCode(res)).toBe("game_not_saved");
+    });
+
+    test("a user with no seat is 403 not_a_member, an unknown game is 404", async () => {
+      expect((await save(started.owner.cookie)).status).toBe(200);
+      const stranger = await signIn(app, "Zed");
+      const res = await claim(stranger.cookie);
+      expect(res.status).toBe(403);
+      expect(await errorCode(res)).toBe("not_a_member");
+      const missing = await claim(started.owner.cookie, "00000000-0000-4000-8000-0000000000aa");
+      expect(missing.status).toBe(404);
+    });
+
+    test("a save clears the claims again", async () => {
+      expect((await save(started.owner.cookie)).status).toBe(200);
+      await claim(started.guest.cookie);
+      await db
+        .updateTable("games")
+        .set({ status: "active" })
+        .where("id", "=", started.game.id)
+        .execute();
+      expect((await save(started.owner.cookie)).status).toBe(200);
+      expect(await claimed()).toEqual({ Alice: false, Bobby: false, Carol: false });
+    });
+  });
 });
