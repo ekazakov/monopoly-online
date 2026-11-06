@@ -39,9 +39,9 @@ apps/e2e/
   src/seed.ts           pinned seed, dice and expected cash
   src/seed.test.ts      Vitest guard: the pinned dice still come from the engine
   support/players.ts    fixture: one browser context per device, unique names
-  support/flows.ts      signIn, createGame, join, addHotSeat, start
+  support/flows.ts      in the UI: signIn, createGame, join, addHotSeat, start
   support/game.ts       roll, buy, endTurn, confirmHandoff, expectLog, expectCash
-  support/api.ts        debugEdit, readState and playRolls through context.request
+  support/api.ts        startGame, debugEdit, readState and playRolls through context.request
   tests/*.spec.ts       the scenarios
 ```
 
@@ -71,7 +71,7 @@ Settings for the two stacks:
 
 - `apps/web/vite.config.ts`: the proxy target reads `API_PROXY_TARGET`, default `http://localhost:8787`.
 - `apps/api/src/index.ts`: read the test-only `PRESENCE_GRACE_MS`. Ignore it when `NODE_ENV` is `production`, the same as `GAME_SEED`.
-- Reduced motion fallback (H4): see section 5.
+- Reduced motion fallback (H4): see section 6.
 - `.gitignore`: `test-results/`, `playwright-report/`.
 - `pnpm-workspace.yaml`: `@playwright/test` in the catalog, at a version that meets the release-age policy.
 - Root `package.json`: `test:e2e`, `test:e2e:ui`, `test:e2e:report`.
@@ -138,7 +138,41 @@ The first roll with 2 seats is 8 for the guest:
 - The first roll of each game test checks the log line, for example "rolled 6 and 2". A drift then shows a clear failure and not a timeout.
 - `scripts/find-seed.ts` finds a new seed when necessary.
 
-## 5. Test design rules
+## 5. Test setup
+
+**Rule.** Each test makes its own game at version 0 with a real `start`. No test writes to the database, and no test loads a state. All setup uses real API actions, so the server applies its normal rules and writes its normal events.
+
+**Three steps:**
+
+1. Once per run: the stacks start with an empty database and seed 49.
+2. Once per test: the test makes the contexts, the players and the game.
+3. When necessary: `DebugEdit` or `playRolls` moves the game to the state that the test checks.
+
+| Scenarios | Room setup | Reaching the state |
+| --- | --- | --- |
+| T01 | UI | Plays from the first roll in the UI |
+| T02–T09 | UI | Not needed |
+| T12, T13, T15, T16, T17 | API | `DebugEdit`, before the first roll |
+| T19 | API | Not needed. The test uses the debug panel in the UI |
+| T14 | API | `playRolls` for rolls 1 to 14 |
+| T10, T11, T18 | API | Real actions, in the UI or the API |
+| T20–T26 | API | A few real actions |
+
+T01 and T02–T09 prove sign-in, join and start in the UI. Thus the other tests can do these steps through the API, and a defect on the join screen fails only the tests that are about joining.
+
+**Helpers.** `support/flows.ts` holds the UI helpers. `startGame` in `support/api.ts` signs in, creates, joins, adds seats and starts through `context.request`. The context keeps the session cookie, so its page is signed in.
+
+**Limits:**
+
+- `DebugEdit` works only for the player on turn, in `awaiting_roll`, `awaiting_jail_choice`, `awaiting_end_turn` and `awaiting_debt`. It cannot make an open auction or trade offer.
+- Each debug change adds a log line. Tests look for a specific line and do not count lines.
+
+**Rejected options:**
+
+- UI from the very beginning: slower, and needs long scripts for states such as debt.
+- A test-only state endpoint: adds a route that production must block, and can load a state that real play cannot reach.
+
+## 6. Test design rules
 
 - **Devices.** One browser context is one device (own cookies). Context A holds the host and the hot-seat seat. Context B holds the guest. Context C, when a test uses it, holds a stranger.
 - **Names.** Guest names are unique in the database and have 2 to 16 characters. The fixture makes names such as `Ann-3f9a1c`.
@@ -151,7 +185,7 @@ The first roll with 2 seats is 8 for the guest:
 
 **Reduced motion fallback (H4) is a prerequisite.** It is not built now: the dice faces change every 80 ms, the 700 ms roll wait stays, and the tokens hop. The motion player must skip the steps (zero duration) when `prefers-reduced-motion` is on. The timeouts above are correct only after this change.
 
-## 6. Scenario catalogue
+## 7. Scenario catalogue
 
 There are 26 scenarios: 21 at P0 or P1, and 5 at P2. P0 runs first and blocks the others. All M3 web tasks (E1 to E8) are done, so each scenario can run after Playwright setup (F1).
 
@@ -159,7 +193,7 @@ There are 26 scenarios: 21 at P0 or P1, and 5 at P2. P0 runs first and blocks th
 
 | Scenario | Steps and checks | Priority |
 | --- | --- | --- |
-| Core game script (T01) | Sign in on A and B. Create, join by link, add the hot-seat seat, start. Host rolls 6,2, buys Cobble Street, Next turn. A shows "Pass to", B shows Waiting. Hot-seat seat rolls, buys, Next turn: no handoff, because the guest is on another device. Guest rolls and pays $6 rent: log and rail agree on A and B. Host proposes a trade, guest accepts on B: deed and cash change on A and B. The board check of section 5 passes | P0 |
+| Core game script (T01) | Sign in on A and B. Create, join by link, add the hot-seat seat, start. Host rolls 6,2, buys Cobble Street, Next turn. A shows "Pass to", B shows Waiting. Hot-seat seat rolls, buys, Next turn: no handoff, because the guest is on another device. Guest rolls and pays $6 rent: log and rail agree on A and B. Host proposes a trade, guest accepts on B: deed and cash change on A and B. The board check of section 6 passes | P0 |
 
 ### Lobby and room (`tests/lobby.spec.ts`, `tests/room.spec.ts`)
 
@@ -216,7 +250,7 @@ There are 26 scenarios: 21 at P0 or P1, and 5 at P2. P0 runs first and blocks th
 | Presence after restart (D4), rollback edge cases | API tests |
 | Engine rules, full games to a winner | Engine tests and the seeded bot |
 
-## 7. Coverage of the milestone goals
+## 8. Coverage of the milestone goals
 
 | Goal | Scenario |
 | --- | --- |
@@ -231,9 +265,9 @@ There are 26 scenarios: 21 at P0 or P1, and 5 at P2. P0 runs first and blocks th
 | M2 manual run (I1): 6 figures, host is red | Tokens (T06). The rail only, because tests do not read the canvas |
 | M2 manual run (I1): cancel, no reconnect loop | Cancel game (T08) |
 | M2 manual run (I1): start removes the row and expires an invite | Live open games (T03), Start expires an invite (T05) |
-| M2 manual run (I1): dice and token animation | Not in E2E. See section 6 |
+| M2 manual run (I1): dice and token animation | Not in E2E. See section 7 |
 
-## 8. How to run
+## 9. How to run
 
 Install the browser one time:
 
@@ -269,7 +303,7 @@ pnpm test:e2e --project=presence
 - `pnpm test` and `pnpm check` do not start browsers.
 - **CI (M5).** GitHub Actions runs `pnpm check`, `pnpm test`, `pnpm build`, then installs Chromium with a cache and runs `pnpm test:e2e`. On a failure, it uploads the report and the traces.
 
-## 9. Tasks and order
+## 10. Tasks and order
 
 1. **Reduced motion fallback (H4).** Build it first, with its Vitest tests. It also meets spec R-T6.
 2. **Playwright setup (F1).** Package, config, stacks, the env flags and the support helpers. Do a short spike first, and record the answers here:
@@ -284,7 +318,7 @@ pnpm test:e2e --project=presence
 
 Each task: own commit, `pnpm check` and `pnpm test` green. A defect that a test finds gets its own `fix` commit.
 
-## 10. Risks
+## 11. Risks
 
 | Risk | Action |
 | --- | --- |
