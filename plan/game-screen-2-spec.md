@@ -180,7 +180,7 @@ Fonts load from Google Fonts: Barlow 500/600 and Barlow Condensed 600/700.
 
 - **Size:** at least 44px tall, `padding: 0 18px`.
 - **Style:** `#121f2a` fill, `#2c4254` border, 14/600 uppercase label "Menu".
-- **Opens:** settings, rules, sound, leave game. The session owner also gets save and exit, and finish game (gameplay doc 3.1). These aren't designed yet (R-G9).
+- **Opens:** settings, rules, sound, leave game. The session owner also gets save and exit, and finish game (gameplay doc 3.1, R-G9). Design: the "Owner controls" board.
 
 ### 4.3 Player rail
 

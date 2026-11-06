@@ -5,7 +5,7 @@
 | Companion doc | [game-screen-2-spec.md](game-screen-2-spec.md): the UI and visual design of the same screen |
 | Canvas        | Harborfront Design System: https://claude.ai/artifact/RtcjA9YX1Sq77osCjy58PK                |
 | Artboard      | `project/Wireframe2.dc.html`, titled "Game screen 2"                                        |
-| Status        | Draft. Last updated 2026-11-03                                                              |
+| Status        | Draft. Last updated 2026-11-06                                                              |
 
 This document covers the game rules and turn logic that Game screen 2 has to present. How each item looks, its layout, tokens and components, is in the design spec.
 
@@ -82,7 +82,7 @@ The rules are in [game-rules-reference.md](game-rules-reference.md). Decisions t
 - **Trades between devices.** A trade proposed from one device needs confirmation from the other player on their own device. A trade between two hot-seat players on one device needs a "Pass to <name>" handoff before the receiver answers.
 - **Connection state.** Each remote player is online, reconnecting or away. See 3.2.
 - **Server.** The server runs the game engine and decides all dice rolls and deck shuffles. Devices send actions only. The state sent to devices does not include the random state or the deck order.
-- **No bots.** There are no bot players in v1. Only the autopilot (3.2) plays for away players.
+- **No bots.** There are no bot players in v1. The autopilot is postponed, so nothing plays for away players (3.2).
 
 ### 3.2 Disconnects
 
@@ -91,10 +91,10 @@ The rules are in [game-rules-reference.md](game-rules-reference.md). Decisions t
 | Unit              | A disconnect applies to a device. All players seated on it become "reconnecting" together                                        |
 | Grace time        | 60 seconds. If the device comes back, play continues with no change                                                              |
 | Away              | After the grace time the players are "away"                                                                                      |
-| Off-turn actions  | An away player passes in an auction when it is their bid, and declines a trade offer                                             |
-| Own turn          | An autopilot plays it: roll, do not buy, pay or raise cash for debts, end the turn                                               |
-| Return            | An away player can claim their seat again from any device, and play continues for them from the next decision                    |
-| Pause             | There is no pause. The owner can use Save and exit (3.1)                                                                         |
+| Waiting           | In all cases the game waits for an away player: their own turn, a debt, an auction bid and a trade answer. All players wait until the player returns, or the owner uses Save or Finish (3.1) |
+| Return            | Automatic. When the original browser opens the game again, its players are online and play continues for them from the next decision (Q25) |
+| Nobody online     | When no seated user has the game open, spectators included, and all grace times ended, the game saves itself. It is a normal Save (3.1), and the owner can restore it |
+| Autopilot         | Postponed. Nothing plays for an away player                                                                                       |
 
 ### 3.1 Session owner
 
@@ -125,9 +125,9 @@ The owner has two controls in the Menu (design spec R-G9). Only the owner's devi
 **Restore**
 
 - Only the owner restores a game. The owner's saved-games list shows **Continue** and **Finish** for each saved game. Finish from the list ends the game with no winner, as above.
-- Seating is free. Each player claims their seat from any device, so hot-seat groups can change.
-- Only the original player can claim a seat. A new person can't take the seat of a player who does not come back.
-- The game continues when the owner starts it. Players who are not back are away (3.2).
+- The saved game has a room. Each player opens the game link and claims their seats, so the owner can see who is back.
+- Only the original controller can claim a seat, also a hot-seat seat. So hot-seat groups do not change on restore (Q25).
+- The game continues when the owner starts it. The owner can start at any time. Players who are not back are away, and the game waits for them (3.2).
 
 ---
 
@@ -144,14 +144,14 @@ Every state below comes from the rules. The design spec defines how each one loo
 | Pending debt                 | Player          | A debt arises on another player's turn, for example a "collect from every player" card | It is settled at the start of their next turn                       |
 | Bankrupt (spectator) | Player | The game finds that their assets can't cover a debt (automatic), or they resign | Never. They are out of the game but keep watching the board and log |
 | Reconnecting | Player (remote) | Their device loses connection | It reconnects, or 60 seconds pass (then Away) |
-| Away | Player (remote) | Their device stays disconnected for 60 seconds (3.2) | They claim their seat again from any device |
+| Away | Player (remote) | Their device stays disconnected for 60 seconds (3.2) | Their original browser opens the game again |
 | Owned                        | Property        | Bought or won at auction                                                               | Traded, or returned on bankruptcy                                   |
 | Set complete                 | Colour group    | One player owns every property in the group                                            | Any property in the group changes owner                             |
 | Houses 1–4 / hotel           | Property        | Built during Manage                                                                    | Sold back                                                           |
 | Mortgaged                    | Property        | Mortgaged during Manage or Raise cash                                                  | Unmortgaged                                                         |
 | Round number                 | Game            | Every player has had one turn                                                          | Never; it only counts up                                            |
 | Session owner                | Player          | They create the game                                                                   | Never                                                               |
-| Saved                        | Game            | The owner saves the game (3.1)                                                         | The owner continues or finishes it                                  |
+| Saved                        | Game            | The owner saves the game (3.1), or nobody is online (3.2)                              | The owner continues or finishes it                                  |
 | Finished, no winner          | Game            | The owner finishes the game (3.1)                                                      | Never                                                               |
 
 ---
@@ -172,14 +172,14 @@ The design spec lists these as screens (R-G4 to R-G8). **For now none of them is
 
 ## 6. Questions and decisions
 
-Questions 1 to 23 are closed. The decision for each one is below. Question 24 is open.
+Questions 1 to 23 are closed. The decision for each one is below. Questions 24 and 25 are open.
 
 1. [x] Players: 2 to 6 in total, with any number on one device.
-2. [x] A disconnected player's turn: a 60-second grace time, then the autopilot plays it (3.2).
+2. [x] A disconnected player's turn: a 60-second grace time, then the player is away and the game waits for them (3.2). The autopilot is postponed.
 3. [x] Trades: a remote receiver confirms on their own device. On a shared device the receiver answers after a "Pass to <name>" handoff.
 4. [x] House rules: no Free Parking pot. Jail stays capped at three attempts.
 5. [x] No turn timer in v1. The only timer is the 60-second grace time on a disconnect.
-6. [x] No bot players in v1. Only the autopilot plays for away players.
+6. [x] No bot players in v1. The autopilot is postponed, so nothing plays for away players.
 7. [x] Opening roll: the server puts the players in a random order.
 8. [x] A mortgaged property that changes hands stays mortgaged. No interest is paid on the transfer, only the 10% when the mortgage is lifted (rules section 8).
 9. [x] Rent stays automatic, on purpose. The owner does not need to ask for it.
@@ -193,11 +193,12 @@ Questions 1 to 23 are closed. The decision for each one is below. Question 24 is
 17. [x] A pending debt whose creditor is eliminated before it falls due is cancelled.
 18. [x] GO is renamed **Start**. Chance, Jail and Free Parking keep their names.
 19. [x] The server decides dice rolls and deck shuffles. Devices do not get the random state or the deck order.
-20. [x] On restore, only the original player can claim a seat. A player who does not come back is away (3.2).
+20. [x] On restore, only the original controller can claim a seat. A player who does not come back is away, and the game waits for them (3.2). See Q25.
 21. [x] The owner saves or finishes during a remote turn: the device of the player on turn shows the same notice as all other devices.
-22. [x] A device disconnects: all its players are handled together, with a 60-second grace time, then the away rules (3.2). They can claim their seats again from any device.
+22. [x] A device disconnects: all its players are handled together, with a 60-second grace time, then the away rules (3.2). They return when their original browser opens the game again. See Q25.
 23. [x] Debug panel: the player on turn can edit the cash of any player, the deeds and buildings, and the token squares, to test the game logic. It is always on for now, in every game. Edits ignore the rules: a token move has no landing, and buildings need not be even. Each edit is a game action and a log line. UI: [game-screen-2-spec.md](game-screen-2-spec.md) 4.7.
 24. [ ] Before release: hide the debug panel behind a server flag, make it a per-game option for the owner, or remove it?
+25. [ ] Claim from any device: guest sign-in refuses a name that exists, so a second browser cannot be the same user. For now only the original controller can claim a seat, from the browser with that user's session, and hot-seat groups do not change on restore. Review after all milestones: should a seat be claimable from another browser, and should hot-seat seats move to another user?
 
 ---
 
@@ -212,3 +213,4 @@ Questions 1 to 23 are closed. The decision for each one is below. Question 24 is
 | 2026-10-30 | All open questions decided (section 6). Disconnect rules (3.2), server-side dice and decks, no bots or timers in v1, hot-seat trade handoff, resigning as a bankruptcy, jail cards always back to their decks, 2 to 6 players, GO renamed Start |
 | 2026-10-31 | Turn flow (section 2): rent and tax are paid automatically and have no Pay button; the card OK only closes the card on this device |
 | 2026-11-03 | Debug panel for the player on turn (Q23), always on for now. Open question 24: how to gate it before release |
+| 2026-11-06 | Milestone 3 decisions. The autopilot is postponed: the game waits for an away player in all cases, and there is now a wait with no time limit. Return is automatic. When nobody is online, the game saves itself. Only the original controller can claim a seat. Open question 25: claim from any device |

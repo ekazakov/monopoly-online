@@ -1,11 +1,11 @@
-# Harborfront: API schema for milestones 1 and 2
+# Harborfront: API schema for milestones 1 to 3
 
 |                |                                                                                                   |
 | -------------- | ------------------------------------------------------------------------------------------------- |
-| Companion docs | [implementation-roadmap.md](implementation-roadmap.md), [milestone-1-tasks.md](milestone-1-tasks.md), [milestone-2-tasks.md](milestone-2-tasks.md) |
-| Status         | Milestones 1 and 2 done. Last updated 2026-11-05                                                        |
+| Companion docs | [implementation-roadmap.md](implementation-roadmap.md), [milestone-1-tasks.md](milestone-1-tasks.md), [milestone-2-tasks.md](milestone-2-tasks.md), [milestone-3-tasks.md](milestone-3-tasks.md) |
+| Status         | Milestones 1 and 2 done. Milestone 3 is a plan. Last updated 2026-11-06                                                        |
 
-This document fixes the request and response schema of each API method in milestone 1. The section "Milestone 2" adds the lobby methods. The zod schemas live in `packages/shared`.
+This document fixes the request and response schema of each API method in milestone 1. The section "Milestone 2" adds the lobby methods. The section "Milestone 3" adds Finish, Save, Restore and presence. The zod schemas live in `packages/shared`.
 
 ## Decisions (user answers)
 - **State and events:** zod mirror of redacted state, events and the action union in `packages/shared`, plus a drift test against the engine.
@@ -153,6 +153,51 @@ Rules that the first design did not fix, as the code does them:
 - **Resume.** `Last-Event-ID` is one header for the whole stream, and it is an engine version. It is used only when the stream has exactly one `game:` topic. With two or more game topics every game gets a `snapshot`. `lobby` and `user:` ignore it: each connect gets the full list.
 - **Connect.** A lobby or user message that was published before the first read of its topic is dropped, because the full list already covers it. `room.cancelled` is never dropped.
 - **Status codes.** Decline and cancel answer 204 with no body.
+
+## Milestone 3
+
+The plan for [milestone-3-tasks.md](milestone-3-tasks.md). The code does not have these methods yet.
+
+### Decisions (user answers)
+- **Away players.** The game waits for them in all cases. The server sends no action for an away player. The autopilot is postponed.
+- **Return.** Automatic when the original browser opens the game stream.
+- **Nobody online.** The game saves itself, with the same work as `POST /save`. No route starts it.
+- **Claim.** Only the original controller. Claim is the "I am back" signal for the owner. Presence decides who is online.
+
+### New and changed schemas
+| Schema | Change |
+| --- | --- |
+| `seatSchema` | Adds `claimed: boolean`. True when `seats.claimed_at` is set |
+| `lobbyGameSchema` | Adds `ownerId`. `GET /api/me/games` also has `saved` games |
+| `gameResultSchema` | `winner` can be null. Adds `finishedBy: string \| null`: the owner's name when the owner finished the game |
+| `standingStatusSchema` | Adds `in_game`: the player was still in the game when the owner finished it. These players rank first, by net worth. The players who are out follow, as before |
+| `seats` table | Migration `0007_seat_claims`: nullable `claimed_at` |
+
+### New error codes
+| Status | Codes |
+| --- | --- |
+| 409 | `game_not_saved` |
+
+### New methods
+All need the session cookie and check `Origin`.
+
+| # | Method and path | Request | Success | Errors |
+| --- | --- | --- | --- | --- |
+| 24 | `POST /api/games/:id/finish` | – | 200 `{ game }`, status `finished`. From `active` the game rolls back to the start of the turn. From `saved` the state does not change | 403 `not_game_owner`, 404, 409 `game_not_active` (`waiting` or `finished`) |
+| 25 | `POST /api/games/:id/save` | – | 200 `{ game }`, status `saved`. The game rolls back to the start of the turn. All claims are cleared | 403 `not_game_owner`, 404, 409 `game_not_active` |
+| 26 | `POST /api/games/:id/claim` | – | 200 `{ game }`. Claims the seats that the caller controls | 403 `not_a_member`, 404, 409 `game_not_saved` |
+| 27 | `POST /api/games/:id/restore` | – | 200 `{ game, state }`, status `active`. Claims the owner's seats. The state and the version do not change | 403 `not_game_owner`, 404, 409 `game_not_saved` |
+
+### Rollback
+- Let W be the current version and T the latest snapshot with `turn_start = 1`. In one transaction: delete the event and snapshot rows above T, write T's state as a new snapshot at W+1 with `turn_start = 1`, and set the games row to W+1 and the new status.
+- The version goes up, not back. A device can then use version order in all cases.
+- The state keeps `rng` and `decks`, so a restored turn gives the same rolls and cards.
+- One save slot and no expiry need no extra data: the save is the latest snapshot.
+
+### Stream messages
+- **Finish, Save and Restore** send a `snapshot` with the new game and state. No new message type.
+- **`presence.updated`** (new): `{ seats: { [seatId]: "online" | "reconnecting" | "away" } }` on `game:<id>`. No SSE id. Sent on each change and in each connect, also when a resume has nothing to send.
+- **Resume.** A `Last-Event-ID` before a rollback finds a hole in the log and gets a `snapshot`. This is a normal path.
 
 ## Debug edit (added 2026-11-03, not in a milestone)
 

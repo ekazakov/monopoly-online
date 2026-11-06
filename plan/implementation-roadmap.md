@@ -4,7 +4,7 @@
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Companion docs | [game-rules-reference.md](game-rules-reference.md) (rules), [game-screen-2-gameplay.md](game-screen-2-gameplay.md) (turn flow, devices, session owner), [game-screen-2-spec.md](game-screen-2-spec.md) (UI), [GLOSSARY.md](../GLOSSARY.md) (terms) |
 | Engine         | [packages/game-engine](../packages/game-engine/README.md): complete                                                                                                                                              |
-| Status         | M1 and M2 done. Last updated 2026-11-05                                                                                                                                                                                    |
+| Status         | M1 and M2 done. M3 planned. Last updated 2026-11-06                                                                                                                                                                                    |
 
 This document is the plan from the current scaffold to a fully working online game. It covers the API, the realtime layer, auth, the UI, testing, telemetry, and hosting.
 
@@ -42,9 +42,10 @@ Milestones M1 to M4 run on the local machine with `pnpm dev`. Deployment comes l
 | ----------------------------- | ----- |
 | **M1 Local playable game** ([tasks](milestone-1-tasks.md)) | Guest sessions (one per browser or browser profile), create a game, join by invite link, hot-seat seats, start. The engine on the server, the SSE game channel, the game screen in React with all turn actions, resign, and the result screen. Done when two browser profiles and one hot-seat player finish a game on `localhost` |
 | **M2 Lobby** ([tasks](milestone-2-tasks.md)) | Public game list, My games, the full game room (host and guest views), invite by name, player tokens (game pieces), Cancel game, and the dice and token animation (moved from M1). **Done** on 2026-11-05, with the manual run on two browser profiles (I1) |
-| **M3 Session and resilience** | Owner Finish, Save and Restore (gameplay 3.1), disconnect and away rules with the autopilot (3.2) |
+| **M3 Session and resilience** ([tasks](milestone-3-tasks.md)) | Owner Finish, Save and Restore (gameplay 3.1), disconnect and away rules (3.2): the game waits for an away player, and it saves itself when nobody is online. The Playwright setup and script from M1, with a disconnect script |
 | **M4 Polish**                 | Accessibility pass, rematch, WebSocket transport, Google OAuth |
 | **M5 Deployment**             | CI, Docker image, the droplet with Cloudflare Tunnel and Access, OpenTelemetry export to Grafana Cloud |
+| **Later (no milestone)**      | The autopilot for away players (postponed 2026-11-06). Claim from another browser (gameplay Q25) |
 
 Tests are written with each milestone (section 7). CI runs them from M5. Until M5, the API writes plain pino logs to the console.
 
@@ -74,7 +75,7 @@ The request and response schemas are zod schemas in `packages/shared`.
 | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Session  | `POST /api/session` (guest name), `GET /api/me`, `PATCH /api/me`, `DELETE /api/session`                                                                                                                                        |
 | Lobby    | `GET /api/games?status=waiting`, `GET /api/me/games`, `POST /api/games`, `GET /api/games/:id`, `DELETE /api/games/:id` (cancel), join, leave, add and remove a hot-seat seat, `PUT /api/games/:id/seats/:seatId/token`, invite by name (`POST /api/games/:id/invites`, `GET /api/me/invites`, accept, decline), start. The game link (`/games/<id>`) is the invite |
-| Game     | `POST /api/games/:id/actions` with `{ seatId, action, expectedVersion, clientActionId }`, `GET /api/games/:id/state`, owner `POST /api/games/:id/finish`, `/save`, `/restore`, `GET /api/me/saved-games`                     |
+| Game     | `POST /api/games/:id/actions` with `{ seatId, action, expectedVersion, clientActionId }`, `GET /api/games/:id/state`, owner `POST /api/games/:id/finish`, `/save`, `/restore`, and `POST /api/games/:id/claim`. Saved games are in `GET /api/me/games` |
 | Realtime | `GET /api/stream?topics=lobby,user:<id>,game:<id>` (SSE)                                                                                                                                                                                  |
 
 ### 3.3 Game service
@@ -100,7 +101,7 @@ The request and response schemas are zod schemas in `packages/shared`.
 - **`Transport`**: connects one device. SSE now, WebSocket later.
 - **Envelope**: `{ topic, type, version, payload }`.
 - **SSE.** Hono `streamSSE`. The event id is the engine version; room, lobby and user messages have no id. A heartbeat every 15 seconds. On reconnect the browser sends `Last-Event-ID`: the server sends the events after that version, or a new snapshot when the gap is more than 100 versions (see [api-schema.md](api-schema.md)).
-- **Presence.** A device is online while it has an open stream (or WebSocket). When the stream closes, its players are "reconnecting". After 60 seconds they are "away" (gameplay 3.2). The timers run in the API process. At start, the API makes them again from the database.
+- **Presence.** A device is online while it has an open stream (or WebSocket). When the stream closes, its players are "reconnecting". After 60 seconds they are "away" (gameplay 3.2). When all seated users are away, the game saves itself. The timers run in the API process. At start, each controller in an active game gets a new grace timer. Presence is not stored in the database.
 
 ### 4.2 Client (`apps/web`)
 
@@ -128,7 +129,7 @@ The request and response schemas are zod schemas in `packages/shared`.
 - **Game screen.** Port `artifacts/game-screen` to React components, following [game-screen-2-spec.md](game-screen-2-spec.md): player rail, log, board, board-centre turn area, hand, and the dialogs (auction, trade, manage, card, bankruptcy, leave and resign, owner finish and save). Move the board logic of `board3d.js` into React Three Fiber in `apps/web/src/scene/`.
 - **State.** TanStack Query for REST data. A game store keeps the latest redacted state from the stream (no client reducer). The events in each message fill the log and start the animations. The static board and card data come from `packages/game-engine` (`board.ts`, `cards.ts`).
 - **Design tokens.** Colours, type and spacing from the design system, as CSS variables.
-- **Designs that are still missing.** Game result screen, saved-games list, away and reconnecting seat states in the rail, connection banner. Ask before new artboards are added to the canvas.
+- **Designs for M3.** The boards "Owner controls", "Saved games and restore" and "Away and connection". Ask before new artboards are added to the canvas.
 
 ---
 
@@ -171,7 +172,7 @@ The request and response schemas are zod schemas in `packages/shared`.
 
 - **One origin.** The web app and the API share one hostname, for example `play.<domain>`, with the API under `/api`. Then one Access application covers both, and the session cookie needs no cross-site settings.
 - **Why a droplet and not App Platform.** On a droplet, `cloudflared` runs next to the API and opens an outbound tunnel. The droplet then needs no public HTTP port, so nobody can go around Cloudflare Access. App Platform is still possible, but then only the JWT check in the API (section 10) protects the origin.
-- **Why the API is not on Vercel.** Serverless functions run for a short time only. They cannot keep SSE streams open or run the grace and autopilot timers.
+- **Why the API is not on Vercel.** Serverless functions run for a short time only. They cannot keep SSE streams open or run the grace timers.
 - **Pipeline.** GitHub Actions builds a Docker image and deploys on each push to `main`. The API applies the migrations at start. Secrets are platform environment variables. The health check is `/api/health`.
 - **One instance.** The game is not built for scale. One API process holds the bus, the game cache and the timers.
 
@@ -204,6 +205,8 @@ Only persons on an allow list can open the game. Cloudflare Access (Zero Trust, 
 | The origin is reached without Cloudflare                 | Cloudflare Tunnel with no open HTTP port, and the JWT check in the API     |
 | The SQLite file is lost with the droplet                 | Daily backup of the file                                                   |
 | Timers in the API process are lost on a restart          | Make them again from the database at start                                 |
+| A silent network drop (a laptop sleeps) closes no stream, so the server can see the device as online for minutes | Check this through Cloudflare in M5. If it is a problem, add a client ping |
+| One absent player stops the game, because the game waits for them (gameplay 3.2) | The owner can use Save or Finish. When all players leave, the game saves itself |
 
 ---
 
@@ -220,3 +223,4 @@ Only persons on an allow list can open the game. Cloudflare Access (Zero Trust, 
 | 2026-11-03 | Task list for milestone 2 in [milestone-2-tasks.md](milestone-2-tasks.md), and the M2 section in [api-schema.md](api-schema.md). Dice and token animation moved from M1 to M2 |
 | 2026-11-03 | Project glossary in [GLOSSARY.md](../GLOSSARY.md): terms, preferred words, and known inconsistencies |
 | 2026-11-05 | Milestone 2 done: token and cancel API, lobby lists, invites, the `lobby` and `user:<id>` topics, and the lobby, token picker, invite panel and cancel flow in the web app. "As built" rules in [api-schema.md](api-schema.md). The manual run (I1) passed on two browser profiles |
+| 2026-11-06 | Task list for milestone 3 in [milestone-3-tasks.md](milestone-3-tasks.md), and the M3 section in [api-schema.md](api-schema.md). The autopilot is postponed. The game waits for an away player, and it saves itself when nobody is online. No `GET /api/me/saved-games`. Playwright moved from M1 to M3 |

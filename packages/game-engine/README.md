@@ -92,7 +92,7 @@ Every action has a `playerId`. Use `actorFor(state)` to get the player who must 
 ## Not built
 
 - **Saving to the database.** The plan is an event log with a snapshot, written in one transaction. The engine only gives plain JSON state and events.
-- **The autopilot for away players** (Q2 and Q22 in `plan/game-screen-2-gameplay.md`). It belongs to the server: it sends normal actions for an away player. The engine waits for the player who must act.
+- **The autopilot for away players** (Q2 and Q22 in `plan/game-screen-2-gameplay.md`). It is postponed. The engine waits for the player who must act, and the game waits for an away player. An autopilot would belong to the server and send normal actions.
 - **Hiding the random state.** The server must not send `rng` or the deck order to devices (Q19).
 
 The engine accepts 2 to 6 players (`MIN_PLAYERS`, `MAX_PLAYERS`, Q1). All rule questions are decided in [plan/game-rules-reference.md](../../plan/game-rules-reference.md).
