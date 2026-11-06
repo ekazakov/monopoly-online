@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { afterEach, beforeEach, describe, expect, test } from "vite-plus/test";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vite-plus/test";
 // The app (and with it `@hono/zod-openapi`) loads before `@monopoly/shared`, as the zod extension needs.
 import { createApp } from "../app.ts";
 import { postJson, sendAs, signIn } from "../auth/test-helpers.ts";
@@ -17,6 +17,7 @@ import type { Database } from "../db/schema.ts";
 import { createGameStateLoader } from "../game/loader.ts";
 import type { GameStateLoader } from "../game/loader.ts";
 import { redactState } from "../game/redact.ts";
+import { createGameService } from "../game/service.ts";
 import { playGame } from "../game/test-helpers.ts";
 import type { Step } from "../game/test-helpers.ts";
 import { createBus } from "../realtime/bus.ts";
@@ -378,6 +379,40 @@ describe("GET /api/stream", () => {
 
         await play(started, steps.slice(20, 22));
         expect((await reader.take(2)).map((frame) => frame.id)).toEqual(["21", "22"]);
+      });
+
+      test("a Last-Event-ID from before a rollback gets a snapshot and no error log", async () => {
+        const log = vi.spyOn(console, "error").mockImplementation(() => {});
+        try {
+          await play(started, script(started, 8));
+          const turnStart = await db
+            .selectFrom("game_snapshots")
+            .select("version")
+            .where("turn_start", "=", 1)
+            .orderBy("version", "desc")
+            .executeTakeFirstOrThrow();
+          expect(turnStart.version).toBeLessThan(8);
+          // Save, then Restore (C5): the discarded turn leaves a hole in the log.
+          await createGameService({ db, loader }).rollbackToTurnStart({
+            gameId: started.game.id,
+            status: "saved",
+          });
+          await db
+            .updateTable("games")
+            .set({ status: "active" })
+            .where("id", "=", started.game.id)
+            .execute();
+
+          const reader = await connect(started.owner.cookie, started.game.id, {
+            "last-event-id": "8",
+          });
+          const frame = await reader.next();
+          expect(frame.event).toBe("snapshot");
+          expect(frame.id).toBe("9");
+          expect(log).not.toHaveBeenCalled();
+        } finally {
+          log.mockRestore();
+        }
       });
 
       test("sends nothing for a gap of 0", async () => {

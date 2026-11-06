@@ -64,6 +64,12 @@ export function snapshotMessage(game: Game, state: RedactedGameState | null): St
  * keeping the messages after `fromVersion`. The cost is at most one snapshot interval plus the gap.
  * Throws when the log has a hole or does not replay, so the caller can send a `snapshot` instead.
  */
+/**
+ * The log has no rows between the two versions. A rollback (Save or Finish) deletes the rows of
+ * the discarded turn, so this is the normal way to a snapshot and is not logged.
+ */
+export class LogHoleError extends Error {}
+
 export async function replayActions(
   db: Kysely<Database>,
   gameId: string,
@@ -107,7 +113,7 @@ export async function replayActions(
     });
   }
   if (messages.length !== toVersion - fromVersion) {
-    throw new Error(`Game ${gameId} log has a hole between ${fromVersion} and ${toVersion}`);
+    throw new LogHoleError(`Game ${gameId} log has a hole between ${fromVersion} and ${toVersion}`);
   }
   return messages;
 }
@@ -150,7 +156,9 @@ export function createTopicReader(options: TopicReaderOptions) {
           covered: current,
         };
       } catch (error) {
-        console.error("Stream resume failed, sending a snapshot", error);
+        if (!(error instanceof LogHoleError)) {
+          console.error("Stream resume failed, sending a snapshot", error);
+        }
       }
     }
     return { messages: [snapshotMessage(game, redactState(full))], covered: current };

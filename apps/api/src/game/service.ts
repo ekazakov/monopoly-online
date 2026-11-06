@@ -8,9 +8,9 @@ import type {
   GameEvent as ApiGameEvent,
   RedactedGameState,
 } from "@monopoly/shared";
-import type { Kysely } from "kysely";
+import type { Kysely, Transaction } from "kysely";
 import type { Database } from "../db/schema.ts";
-import { serializeState, shouldSnapshot } from "./loader.ts";
+import { deserializeState, serializeState, shouldSnapshot } from "./loader.ts";
 import type { GameStateLoader, SnapshotOptions } from "./loader.ts";
 import { redactState } from "./redact.ts";
 
@@ -67,9 +67,30 @@ export interface StateResult {
   state: RedactedGameState;
 }
 
+export interface RollbackInput {
+  gameId: string;
+  /** The status the game takes: Save writes `saved`, Finish writes `finished`. */
+  status: "saved" | "finished";
+  /** Runs in the rollback transaction, for work that must commit with it (Save clears claims). */
+  inTransaction?: (trx: Transaction<Database>) => Promise<void>;
+}
+
+export interface RollbackResult {
+  /** W+1: the version goes up, never back. */
+  version: number;
+  /** The full engine state of the start of the turn, with `version` set to W+1. */
+  state: GameState;
+}
+
 export interface GameService {
   submitAction(input: SubmitActionInput): Promise<ActionResult>;
   getState(input: { gameId: string; userId: string }): Promise<StateResult>;
+  /**
+   * Discard the current turn of an `active` game and move it to `saved` or `finished`. The caller
+   * checks who may do this, and publishes the `snapshot` with the new game (it has the seats and
+   * invites). Throws `game_not_active` for any other status.
+   */
+  rollbackToTurnStart(input: RollbackInput): Promise<RollbackResult>;
 }
 
 /** The compare-and-swap on `games.version` matched no row: another writer committed first. */
@@ -266,8 +287,78 @@ export function createGameService(options: GameServiceOptions): GameService {
     return { version: next.version, events, state };
   }
 
+  async function rollback(input: RollbackInput): Promise<RollbackResult> {
+    const { gameId } = input;
+    const game = await requireGame(gameId);
+    if (game.status !== "active") {
+      throw new GameServiceError("game_not_active", "The game is not active");
+    }
+    const w = game.version;
+    const createdAt = now().toISOString();
+    let next: GameState;
+    try {
+      next = await db.transaction().execute(async (trx) => {
+        const turnStart = await trx
+          .selectFrom("game_snapshots")
+          .select(["version", "state"])
+          .where("game_id", "=", gameId)
+          .where("turn_start", "=", 1)
+          .orderBy("version", "desc")
+          .limit(1)
+          .executeTakeFirst();
+        if (!turnStart) throw new Error(`Game ${gameId} has no turn-start snapshot`);
+
+        const restored = { ...deserializeState(turnStart.state), version: w + 1 };
+        await trx
+          .deleteFrom("game_events")
+          .where("game_id", "=", gameId)
+          .where("version", ">", turnStart.version)
+          .execute();
+        await trx
+          .deleteFrom("game_snapshots")
+          .where("game_id", "=", gameId)
+          .where("version", ">", turnStart.version)
+          .execute();
+        await trx
+          .insertInto("game_snapshots")
+          .values({
+            game_id: gameId,
+            version: w + 1,
+            state: serializeState(restored),
+            turn_start: 1,
+            created_at: createdAt,
+          })
+          .execute();
+        const updated = await trx
+          .updateTable("games")
+          .set({ version: w + 1, status: input.status })
+          .where("id", "=", gameId)
+          .where("version", "=", w)
+          .where("status", "=", "active")
+          .executeTakeFirst();
+        if (Number(updated.numUpdatedRows) !== 1) throw new LostRace();
+        await input.inTransaction?.(trx);
+        return restored;
+      });
+    } catch (error) {
+      loader.evict(gameId);
+      if (error instanceof LostRace) {
+        const current = await requireGame(gameId);
+        if (current.status !== "active") {
+          throw new GameServiceError("game_not_active", "The game is not active");
+        }
+        throw new GameServiceError("version_conflict", "The game has changed", current.version);
+      }
+      throw error;
+    }
+    loader.put(gameId, next);
+    return { version: next.version, state: next };
+  }
+
   return {
     submitAction: (input) => serialise(input.gameId, () => submit(input)),
+
+    rollbackToTurnStart: (input) => serialise(input.gameId, () => rollback(input)),
 
     async getState({ gameId, userId }) {
       const game = await requireGame(gameId);

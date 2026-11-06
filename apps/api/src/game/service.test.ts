@@ -6,7 +6,12 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vite-plus/tes
 import { createDb } from "../db/client.ts";
 import { migrateToLatest } from "../db/migrations.ts";
 import type { Database } from "../db/schema.ts";
-import { createGameStateLoader, deserializeState, shouldSnapshot } from "./loader.ts";
+import {
+  createGameStateLoader,
+  deserializeState,
+  serializeState,
+  shouldSnapshot,
+} from "./loader.ts";
 import type { GameStateLoader } from "./loader.ts";
 import { redactState } from "./redact.ts";
 import { GameServiceError, createGameService } from "./service.ts";
@@ -594,5 +599,202 @@ describe("getState", () => {
       status: 409,
       code: "game_not_active",
     });
+  });
+});
+
+describe("rollbackToTurnStart", () => {
+  const rollback = (status: "saved" | "finished" = "saved") =>
+    service.rollbackToTurnStart({ gameId: GAME_ID, status });
+
+  const latestTurnStart = async () => {
+    const row = await db
+      .selectFrom("game_snapshots")
+      .select(["version", "state"])
+      .where("turn_start", "=", 1)
+      .orderBy("version", "desc")
+      .executeTakeFirstOrThrow();
+    return { version: row.version, state: deserializeState(row.state) };
+  };
+
+  /** Play the script up to and with step `index` (0-based). */
+  async function playUpTo(played: ReturnType<typeof playGame>, index: number) {
+    for (const step of played.steps.slice(0, index + 1)) {
+      await act(step.action.playerId, toInput(step.action));
+    }
+  }
+
+  /** Put the game back to `active`, as Restore will do (C5). */
+  const reopen = () =>
+    db.updateTable("games").set({ status: "active" }).where("id", "=", GAME_ID).execute();
+
+  test("discards an auction: the state is the start of the turn at version W+1", async () => {
+    const played = playGame(SEED, 120, initial);
+    const auctionAt = played.steps.findIndex((step) => step.state.auction !== null);
+    expect(auctionAt).toBeGreaterThan(0);
+    await playUpTo(played, auctionAt);
+    const w = version;
+    const turnStart = await latestTurnStart();
+    expect(turnStart.version).toBeLessThan(w);
+
+    const result = await rollback();
+
+    expect(result.version).toBe(w + 1);
+    expect(result.state).toEqual({ ...turnStart.state, version: w + 1 });
+    expect(result.state.auction).toBeNull();
+    const after = await counts();
+    expect(after.game).toEqual({ version: w + 1, status: "saved" });
+    const events = await db.selectFrom("game_events").select("version").execute();
+    expect(Math.max(...events.map((e) => e.version))).toBe(turnStart.version);
+    const snapshots = await db.selectFrom("game_snapshots").select("version").execute();
+    expect(Math.max(...snapshots.map((r) => r.version))).toBe(w + 1);
+    expect(snapshots.some((r) => r.version > turnStart.version && r.version < w + 1)).toBe(false);
+    const written = await latestTurnStart();
+    expect(written.version).toBe(w + 1);
+    expect(written.state.version).toBe(w + 1);
+  });
+
+  test("discards a trade", async () => {
+    const give = { cash: 10, squares: [], jailCards: [] };
+    const get = { cash: 0, squares: [], jailCards: [] };
+    await act(first, { type: "ProposeTrade", toPlayerId: second, give, get });
+    const proposed = await loader.load(GAME_ID);
+    expect(proposed?.trade).not.toBeNull();
+
+    const result = await rollback();
+
+    expect(result.state.trade).toBeNull();
+    expect(result.state.turn.phase).toBe("awaiting_roll");
+    expect(result.version).toBe(2);
+    expect((await loader.load(GAME_ID))?.trade).toBeNull();
+  });
+
+  test("discards a cash edit and the rows after the turn start", async () => {
+    await act(first, { type: "DebugEdit", changes: [{ kind: "cash", targetId: first, cash: 1 }] });
+    const result = await rollback("finished");
+    expect(result.state.players.find((p) => p.id === first)?.cash).toBe(
+      initial.players.find((p) => p.id === first)?.cash,
+    );
+    expect((await counts()).game).toEqual({ version: 2, status: "finished" });
+  });
+
+  test("a pending debt from an earlier turn stays", async () => {
+    const debt = {
+      debtorId: second,
+      creditor: { type: "bank" as const },
+      amount: 50,
+      reason: "tax" as const,
+      then: "due_at_turn_start" as const,
+    };
+    const crafted = { ...initial, debts: [debt] };
+    await db
+      .updateTable("game_snapshots")
+      .set({ state: serializeState(crafted), turn_start: 1 })
+      .where("version", "=", 0)
+      .execute();
+    loader.clear();
+    await act(first, { type: "DebugEdit", changes: [{ kind: "cash", targetId: first, cash: 1 }] });
+
+    const result = await rollback();
+
+    expect(result.state.debts).toEqual([debt]);
+  });
+
+  test("the deleted rows do not come back through the loader", async () => {
+    const played = playGame(SEED, 120, initial);
+    const auctionAt = played.steps.findIndex((step) => step.state.auction !== null);
+    await playUpTo(played, auctionAt);
+    const result = await rollback();
+
+    loader.clear();
+    expect(await loader.load(GAME_ID)).toEqual(result.state);
+    expect(await createGameStateLoader(db).load(GAME_ID)).toEqual(result.state);
+  });
+
+  test("a late retry of a discarded clientActionId gets version_conflict", async () => {
+    const discarded = crypto.randomUUID();
+    const first1 = await act(first, { type: "RollDice" }, discarded);
+    const oldVersion = first1.version;
+    await rollback();
+    await reopen();
+
+    const error = await failure(
+      service.submitAction({
+        gameId: GAME_ID,
+        userId: controllers[first] as string,
+        seatId: first,
+        action: { type: "RollDice" },
+        expectedVersion: oldVersion,
+        clientActionId: discarded,
+      }),
+    );
+    expect(error.code).toBe("version_conflict");
+    expect(error.currentVersion).toBe(oldVersion + 1);
+  });
+
+  test("a turn-start snapshot in awaiting_bid stays valid", async () => {
+    const played = playGame(SEED, 120, initial);
+    const auctionAt = played.steps.findIndex((step) => step.state.auction !== null);
+    await playUpTo(played, auctionAt);
+    const bidding = played.steps[auctionAt]?.state as GameState;
+    expect(bidding.turn.phase).toBe("awaiting_bid");
+    // A bankruptcy auction queue can start a turn in awaiting_bid: mark this snapshot as one.
+    await db
+      .insertInto("game_snapshots")
+      .values({
+        game_id: GAME_ID,
+        version: bidding.version,
+        state: serializeState(bidding),
+        turn_start: 1,
+      })
+      .onConflict((oc) => oc.columns(["game_id", "version"]).doUpdateSet({ turn_start: 1 }))
+      .execute();
+
+    const result = await rollback();
+    expect(result.state).toEqual({ ...bidding, version: bidding.version + 1 });
+
+    await reopen();
+    loader.clear();
+    const actor = actorFor(result.state);
+    const passed = await service.submitAction({
+      gameId: GAME_ID,
+      userId: controllers[actor] as string,
+      seatId: actor,
+      action: { type: "PassBid" },
+      expectedVersion: result.version,
+      clientActionId: crypto.randomUUID(),
+    });
+    expect(passed.version).toBe(result.version + 1);
+  });
+
+  test("refuses a game that is not active, and a failed write changes nothing", async () => {
+    await rollback();
+    expect((await failure(rollback())).code).toBe("game_not_active");
+    await reopen();
+    const before = await counts();
+    const failing: KyselyPlugin = {
+      transformQuery: (args) => {
+        if (args.node.kind === "UpdateQueryNode") throw new Error("disk full");
+        return args.node;
+      },
+      transformResult: async (args) => args.result,
+    };
+    const broken = createGameService({ db: db.withPlugin(failing), loader });
+    await expect(broken.rollbackToTurnStart({ gameId: GAME_ID, status: "saved" })).rejects.toThrow(
+      "disk full",
+    );
+    expect(await counts()).toEqual(before);
+  });
+
+  test("the in-transaction hook commits with the rollback or not at all", async () => {
+    await expect(
+      service.rollbackToTurnStart({
+        gameId: GAME_ID,
+        status: "saved",
+        inTransaction: async () => {
+          throw new Error("hook failed");
+        },
+      }),
+    ).rejects.toThrow("hook failed");
+    expect((await counts()).game).toEqual({ version: 0, status: "active" });
   });
 });

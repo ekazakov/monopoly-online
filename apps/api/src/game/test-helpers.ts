@@ -106,10 +106,16 @@ export async function insertSnapshot(
   db: Kysely<Database>,
   state: GameState,
   gameId = GAME_ID,
+  turnStart: 0 | 1 = 0,
 ): Promise<void> {
   await db
     .insertInto("game_snapshots")
-    .values({ game_id: gameId, version: state.version, state: serializeState(state) })
+    .values({
+      game_id: gameId,
+      version: state.version,
+      state: serializeState(state),
+      turn_start: turnStart,
+    })
     .execute();
 }
 
@@ -191,6 +197,7 @@ export async function insertActiveGame(
       }),
     )
     .execute();
-  await insertSnapshot(db, state, gameId);
+  // Like `start` in the room service: the first snapshot is a turn start.
+  await insertSnapshot(db, state, gameId, 1);
   return { seats: state.players.map((p) => p.id), controllers };
 }

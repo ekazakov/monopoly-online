@@ -64,7 +64,7 @@ Ask before you add or change a board. Sync the artifacts.
 
 ### C. Finish, Save and Restore API
 
-- [ ] **Rollback operation (C1).** `rollbackToTurnStart` in `game/service.ts`, inside the `serialise` queue. Let W be the current version and T the latest `turn_start = 1` snapshot. In one transaction:
+- [x] **Rollback operation (C1).** `rollbackToTurnStart` in `game/service.ts`, inside the `serialise` queue. Let W be the current version and T the latest `turn_start = 1` snapshot. In one transaction:
   1. Read T.
   2. Delete the event and snapshot rows above T.
   3. Insert T's state as a new snapshot at W+1, with `state.version = W+1` and `turn_start = 1`.
