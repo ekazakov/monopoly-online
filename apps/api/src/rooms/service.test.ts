@@ -64,6 +64,7 @@ describe("toApiGame", () => {
       user_id: null,
       controller_user_id: "u",
       token: "dog" as const,
+      claimed_at: null,
       created_at: "2026-01-01T00:00:00.000Z",
     });
     const game = toApiGame(

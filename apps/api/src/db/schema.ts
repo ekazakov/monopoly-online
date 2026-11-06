@@ -47,6 +47,8 @@ export interface SeatsTable {
   // Same values as `tokenSchema` in `@monopoly/shared`. Unique per game. The column is nullable
   // in SQLite only because it was added with `ALTER TABLE`; the migration filled every old row.
   token: SeatToken;
+  // Set when the controller claims the seat of a `saved` game. Null otherwise.
+  claimed_at: string | null;
   created_at: Generated<string>;
 }
 

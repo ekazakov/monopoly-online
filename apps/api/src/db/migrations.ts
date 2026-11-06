@@ -214,6 +214,16 @@ const migrations: Record<string, Migration> = {
       await db.schema.dropTable("invites").execute();
     },
   },
+  "0007_seat_claims": {
+    async up(db: Kysely<unknown>) {
+      // Nullable and with no default: a seat from before this migration is not claimed.
+      // Only a `saved` game uses the value, so no backfill is needed.
+      await db.schema.alterTable("seats").addColumn("claimed_at", "text").execute();
+    },
+    async down(db: Kysely<unknown>) {
+      await db.schema.alterTable("seats").dropColumn("claimed_at").execute();
+    },
+  },
 };
 
 function createMigrator(db: Kysely<Database>): Migrator {

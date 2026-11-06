@@ -73,6 +73,43 @@ describe("migrations", () => {
     return Number(row.n);
   }
 
+  describe("0007_seat_claims", () => {
+    test("seats from before the migration are not claimed", async () => {
+      const old = createDb(":memory:");
+      try {
+        await migrateTo(old, "0006_invites");
+        await old.insertInto("users").values({ id: U1, name: "Ann", name_key: "ann" }).execute();
+        await old.insertInto("games").values({ id: G1, name: "Game", owner_id: U1 }).execute();
+        await old
+          .insertInto("seats")
+          .values({
+            id: S1,
+            game_id: G1,
+            seat_order: 1,
+            name: "Ann",
+            name_key: "ann",
+            kind: "user" as const,
+            user_id: U1,
+            controller_user_id: U1,
+            token: "dog",
+          } as never)
+          .execute();
+
+        await migrateToLatest(old);
+
+        const seat = await old.selectFrom("seats").select("claimed_at").executeTakeFirstOrThrow();
+        expect(seat.claimed_at).toBeNull();
+        // The column takes a time and goes back to null.
+        await old.updateTable("seats").set({ claimed_at: "2026-11-06T10:00:00.000Z" }).execute();
+        await old.updateTable("seats").set({ claimed_at: null }).execute();
+        const again = await old.selectFrom("seats").select("claimed_at").executeTakeFirstOrThrow();
+        expect(again.claimed_at).toBeNull();
+      } finally {
+        await old.destroy();
+      }
+    });
+  });
+
   test("creates all tables", async () => {
     const rows = await sql<{ name: string }>`
       select name from sqlite_master where type = 'table' and name not like 'sqlite_%'
