@@ -1,5 +1,5 @@
 import type { Game, RedactedGameState } from "@monopoly/shared";
-import type { Kysely } from "kysely";
+import type { Kysely, Transaction } from "kysely";
 import type { Database } from "../db/schema.ts";
 import type { GameStateLoader } from "./loader.ts";
 import { redactState } from "./redact.ts";
@@ -31,6 +31,15 @@ export interface LifecycleService {
   finish(input: { gameId: string; userId: string }): Promise<{ game: Game }>;
   /** A member claims the seats that they control. Only while the game is `saved`. */
   claim(input: { gameId: string; userId: string }): Promise<{ game: Game }>;
+  /**
+   * The automatic save when nobody is online. Not an owner action and on no route: the presence
+   * tracker calls it. Does the work of `save` after it asks `stillUnattended` again, in the queue
+   * of the game. Returns the saved game, or null when there was nothing to do.
+   */
+  saveUnattended(input: {
+    gameId: string;
+    stillUnattended: () => boolean | Promise<boolean>;
+  }): Promise<{ game: Game } | null>;
   /** Owner only, `saved` only. Back to `active` with the same state, the owner's seats claimed. */
   restore(input: { gameId: string; userId: string }): Promise<{ game: Game }>;
   /** Owner only, `active` only. Rolls back to the start of the turn and clears all claims. */
@@ -68,7 +77,25 @@ export function createLifecycleService(options: LifecycleServiceOptions): Lifecy
     return game;
   }
 
+  const clearClaims = (gameId: string) => async (trx: Transaction<Database>) => {
+    await trx
+      .updateTable("seats")
+      .set({ claimed_at: null })
+      .where("game_id", "=", gameId)
+      .execute();
+  };
+
   return {
+    async saveUnattended({ gameId, stillUnattended }) {
+      const saved = await games.saveUnattended({
+        gameId,
+        stillUnattended,
+        // Same transaction: a saved game never shows a claim from before the save.
+        inTransaction: clearClaims(gameId),
+      });
+      return saved ? { game: await announce(gameId) } : null;
+    },
+
     async restore({ gameId, userId }) {
       const { status } = await requireOwned(gameId, userId);
       if (status !== "saved") {
@@ -151,14 +178,7 @@ export function createLifecycleService(options: LifecycleServiceOptions): Lifecy
       await games.rollbackToTurnStart({
         gameId,
         status: "saved",
-        // Same transaction: a saved game never shows a claim from before the save.
-        inTransaction: async (trx) => {
-          await trx
-            .updateTable("seats")
-            .set({ claimed_at: null })
-            .where("game_id", "=", gameId)
-            .execute();
-        },
+        inTransaction: clearClaims(gameId),
       });
       return { game: await announce(gameId) };
     },

@@ -91,6 +91,25 @@ export function createApp(db: Kysely<Database>, options?: AppOptions) {
     onRoomUpdated: (game) => publish.onRoomUpdated(game),
     now: deps.now,
   });
+  // Nobody online: when the last controller of an active game goes away, the game saves itself.
+  // Controllers the tracker does not know have no stream and no grace time, so they count as away.
+  const nobodyOnline = async (gameId: string) => {
+    const seats = await db
+      .selectFrom("seats")
+      .select("controller_user_id")
+      .where("game_id", "=", gameId)
+      .execute();
+    return seats.every((seat) => {
+      const status = presence.status(gameId, seat.controller_user_id);
+      return status === undefined || status === "away";
+    });
+  };
+  presence.subscribe(({ gameId, status }) => {
+    if (status !== "away") return;
+    lifecycle
+      .saveUnattended({ gameId, stillUnattended: () => nobodyOnline(gameId) })
+      .catch((error: unknown) => console.error("Automatic save failed", error));
+  });
   const api = new OpenAPIHono<AppEnv>({ defaultHook: validationHook }).basePath("/api");
   // Registered before every route, so later routes are covered too. `.use` returns a plain
   // Hono type, so it stays out of the chain that keeps the OpenAPI types.

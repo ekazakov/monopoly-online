@@ -82,6 +82,14 @@ export interface RollbackResult {
   state: GameState;
 }
 
+export interface UnattendedSaveInput {
+  gameId: string;
+  /** Asked inside the queue of the game, just before the rollback: is nobody online still true? */
+  stillUnattended: () => boolean | Promise<boolean>;
+  /** Runs in the rollback transaction, as for `rollbackToTurnStart`. */
+  inTransaction?: (trx: Transaction<Database>) => Promise<void>;
+}
+
 export interface GameService {
   submitAction(input: SubmitActionInput): Promise<ActionResult>;
   getState(input: { gameId: string; userId: string }): Promise<StateResult>;
@@ -91,6 +99,13 @@ export interface GameService {
    * invites). Throws `game_not_active` for any other status.
    */
   rollbackToTurnStart(input: RollbackInput): Promise<RollbackResult>;
+  /**
+   * The automatic save, for the presence tracker only: no route reaches it. In the queue of the
+   * game it checks the status and `stillUnattended` again, then saves as the owner's Save does.
+   * Returns null when there was nothing to do: the game is not `active` any more, or somebody is
+   * back.
+   */
+  saveUnattended(input: UnattendedSaveInput): Promise<RollbackResult | null>;
 }
 
 /** The compare-and-swap on `games.version` matched no row: another writer committed first. */
@@ -359,6 +374,22 @@ export function createGameService(options: GameServiceOptions): GameService {
     submitAction: (input) => serialise(input.gameId, () => submit(input)),
 
     rollbackToTurnStart: (input) => serialise(input.gameId, () => rollback(input)),
+
+    saveUnattended: (input) =>
+      serialise(input.gameId, async () => {
+        const game = await db
+          .selectFrom("games")
+          .select("status")
+          .where("id", "=", input.gameId)
+          .executeTakeFirst();
+        if (game?.status !== "active") return null;
+        if (!(await input.stillUnattended())) return null;
+        return rollback({
+          gameId: input.gameId,
+          status: "saved",
+          inTransaction: input.inTransaction,
+        });
+      }),
 
     async getState({ gameId, userId }) {
       const game = await requireGame(gameId);
