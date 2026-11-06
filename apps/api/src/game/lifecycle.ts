@@ -26,6 +26,8 @@ export interface LifecycleServiceOptions {
 /** Owner actions that end or pause a started game: Finish now, Save, Claim and Restore later. */
 export interface LifecycleService {
   finish(input: { gameId: string; userId: string }): Promise<{ game: Game }>;
+  /** Owner only, `active` only. Rolls back to the start of the turn and clears all claims. */
+  save(input: { gameId: string; userId: string }): Promise<{ game: Game }>;
 }
 
 export function createLifecycleService(options: LifecycleServiceOptions): LifecycleService {
@@ -59,6 +61,26 @@ export function createLifecycleService(options: LifecycleServiceOptions): Lifecy
   }
 
   return {
+    async save({ gameId, userId }) {
+      const { status } = await requireOwned(gameId, userId);
+      if (status !== "active") {
+        throw new GameServiceError("game_not_active", "The game is not active");
+      }
+      await games.rollbackToTurnStart({
+        gameId,
+        status: "saved",
+        // Same transaction: a saved game never shows a claim from before the save.
+        inTransaction: async (trx) => {
+          await trx
+            .updateTable("seats")
+            .set({ claimed_at: null })
+            .where("game_id", "=", gameId)
+            .execute();
+        },
+      });
+      return { game: await announce(gameId) };
+    },
+
     async finish({ gameId, userId }) {
       const { status } = await requireOwned(gameId, userId);
       if (status === "active") {

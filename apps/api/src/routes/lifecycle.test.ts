@@ -19,7 +19,7 @@ import type { StartedGame } from "../realtime/test-helpers.ts";
 
 const SEED = 2;
 
-describe("POST /api/games/:id/finish", () => {
+describe("game lifecycle routes", () => {
   let db: Kysely<Database>;
   let app: ReturnType<typeof createApp>;
   let started: StartedGame;
@@ -43,6 +43,8 @@ describe("POST /api/games/:id/finish", () => {
 
   const finish = (cookie: string, id = started.game.id) =>
     sendAs(app, "POST", `/api/games/${id}/finish`, cookie);
+  const save = (cookie: string, id = started.game.id) =>
+    sendAs(app, "POST", `/api/games/${id}/save`, cookie);
   const errorCode = async (res: Response) => apiErrorSchema.parse(await res.json()).error.code;
 
   async function play(count: number) {
@@ -157,5 +159,77 @@ describe("POST /api/games/:id/finish", () => {
     const res = await finish(stranger.cookie);
     expect(res.status).toBe(403);
     expect(await errorCode(res)).toBe("not_game_owner");
+  });
+
+  describe("save", () => {
+    const claimedSeats = () =>
+      db.selectFrom("seats").select("claimed_at").where("game_id", "=", started.game.id).execute();
+
+    test("rolls back to the start of the turn, saves, and clears all claims", async () => {
+      await play(8);
+      await db
+        .updateTable("seats")
+        .set({ claimed_at: "2026-11-06T10:00:00.000Z" })
+        .where("game_id", "=", started.game.id)
+        .execute();
+      const before = await gameRow();
+      const turnStart = await turnStartState();
+      expect(turnStart.version).toBeLessThan(before.version);
+      seen.length = 0;
+
+      const res = await save(started.owner.cookie);
+
+      expect(res.status).toBe(200);
+      const { game } = gameResponseSchema.parse(await res.json());
+      expect(game).toMatchObject({ status: "saved", version: before.version + 1 });
+      expect(game.seats.every((seat) => !seat.claimed)).toBe(true);
+      expect((await claimedSeats()).every((seat) => seat.claimed_at === null)).toBe(true);
+      expect(await gameRow()).toEqual({ status: "saved", version: before.version + 1 });
+      expect(seen).toEqual([
+        {
+          topic: gameTopic(started.game.id),
+          type: "snapshot",
+          version: game.version,
+          payload: { game, state: redactState({ ...turnStart, version: game.version }) },
+        },
+      ]);
+    });
+
+    test("only the owner can save", async () => {
+      const res = await save(started.guest.cookie);
+      expect(res.status).toBe(403);
+      expect(await errorCode(res)).toBe("not_game_owner");
+      expect((await gameRow()).status).toBe("active");
+      expect(seen).toHaveLength(0);
+    });
+
+    test.each(["saved", "finished"] as const)(
+      "a %s game is 409 game_not_active",
+      async (status) => {
+        await db.updateTable("games").set({ status }).where("id", "=", started.game.id).execute();
+        const res = await save(started.owner.cookie);
+        expect(res.status).toBe(409);
+        expect(await errorCode(res)).toBe("game_not_active");
+      },
+    );
+
+    test("a waiting game is 409 and an unknown game is 404", async () => {
+      const room = gameResponseSchema.parse(
+        await (await postJson(app, "/api/games", started.owner.cookie, { name: "Dock" })).json(),
+      ).game;
+      const waiting = await save(started.owner.cookie, room.id);
+      expect(waiting.status).toBe(409);
+      expect(await errorCode(waiting)).toBe("game_not_active");
+      const missing = await save(started.owner.cookie, "00000000-0000-4000-8000-0000000000aa");
+      expect(missing.status).toBe(404);
+    });
+
+    test("a saved game accepts no actions", async () => {
+      expect((await save(started.owner.cookie)).status).toBe(200);
+      const step = playGame(SEED, 1, started.initial).steps[0]!;
+      const res = await submitStep(app, started, step);
+      expect(res.status).toBe(409);
+      expect(await errorCode(res)).toBe("game_not_active");
+    });
   });
 });
