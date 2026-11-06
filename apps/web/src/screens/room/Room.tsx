@@ -7,10 +7,18 @@ import { useRealtimeStatus, useTopic } from "../../realtime/index.ts";
 import { AddSeatForm } from "./AddSeatForm.tsx";
 import { CancelGame } from "./CancelGame.tsx";
 import { GameCancelled } from "./GameCancelled.tsx";
+import { SavedGameFinished } from "./SavedGameFinished.tsx";
 import { InviteLink } from "./InviteLink.tsx";
 import { InvitePanel } from "./InvitePanel.tsx";
 import { roomKey } from "./queries.ts";
-import { errorText, roomCopy, roomView, waitingForInvitees, type RoomAction } from "./roomModel.ts";
+import {
+  errorText,
+  notBackHint,
+  roomCopy,
+  roomView,
+  waitingForInvitees,
+  type RoomAction,
+} from "./roomModel.ts";
 import { SeatList } from "./SeatList.tsx";
 import { TokenPicker } from "./TokenPicker.tsx";
 import { useRoomActions } from "./useRoomActions.ts";
@@ -30,13 +38,18 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   const started = game.status === "active" || game.status === "finished";
+  const saved = game.status === "saved";
+  // The host finished a saved game while this room was open: a notice first, then the result.
+  const [wasSaved, setWasSaved] = useState(false);
+  if (saved && !wasSaved) setWasSaved(true);
+  const finishedWhileSaved = wasSaved && game.status === "finished";
   const goToPlay = () =>
     void navigate({ to: "/games/$gameId/play", params: { gameId }, replace: true });
 
   useEffect(() => {
-    if (started && view.seated)
+    if (started && view.seated && !finishedWhileSaved)
       void navigate({ to: "/games/$gameId/play", params: { gameId }, replace: true });
-  }, [started, view.seated, navigate, gameId]);
+  }, [started, view.seated, finishedWhileSaved, navigate, gameId]);
 
   // The game was deleted. Its cached room must not show again, so it is dropped when the screen
   // goes: a later visit to the link asks the server and gets the 404 view.
@@ -104,6 +117,22 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
     });
   }
 
+  function claim() {
+    if (actions.claim.isPending) return;
+    setNotice(null);
+    actions.claim.mutate(undefined, { onError: (error) => fail("claim", error) });
+  }
+
+  // Start of a saved game is Restore: it is never blocked, even when players are not back.
+  function restore() {
+    if (actions.restore.isPending) return;
+    setNotice(null);
+    actions.restore.mutate(undefined, {
+      onSuccess: goToPlay,
+      onError: (error) => fail("restore", error),
+    });
+  }
+
   function pickToken(seat: Seat, token: Token) {
     if (actions.pickToken.isPending) return;
     setNotice(null);
@@ -128,6 +157,10 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
   const busy = actions.start.isPending;
 
   if (cancelled) return <GameCancelled hostName={view.host?.name ?? "The host"} />;
+  if (finishedWhileSaved && view.seated) {
+    return <SavedGameFinished hostName={view.host?.name ?? "The host"} onSeeResult={goToPlay} />;
+  }
+  const myUnclaimed = game.seats.some((seat) => seat.controllerUserId === userId && !seat.claimed);
 
   return (
     <div className="room">
@@ -140,7 +173,15 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
       <main className="room__main">
         <div className="room__intro">
           <p className="room__eyebrow">Game room</p>
-          <h1 className="room__title">{game.name}</h1>
+          <h1 className="room__title">
+            {game.name}
+            {saved && <span className="room__tag room__tag--status">Saved</span>}
+          </h1>
+          {saved && view.seated && (
+            <p className="room__text">
+              Open this game link and claim your seats. Then the host starts the game.
+            </p>
+          )}
         </div>
 
         {view.seated && realtime === "reconnecting" && (
@@ -151,6 +192,11 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
         {notice && (
           <p className="room__notice" data-tone="error" role="alert">
             {notice}
+          </p>
+        )}
+        {!view.seated && saved && (
+          <p className="room__notice" data-tone="error" role="status">
+            {roomCopy.savedVisitor}
           </p>
         )}
         {!view.seated && started && (
@@ -188,6 +234,45 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
         )}
 
         <section className="room__actions" aria-label="Game actions">
+          {view.seated && saved && (
+            <>
+              {myUnclaimed && (
+                <>
+                  <p className="room__hint">Claim your seats so the host sees that you are back.</p>
+                  <button
+                    type="button"
+                    className={`room__button${view.isOwner ? "" : " room__button--primary"}`}
+                    onClick={claim}
+                    aria-disabled={actions.claim.isPending || undefined}
+                  >
+                    {actions.claim.isPending ? "Claiming" : "Claim my seats"}
+                  </button>
+                </>
+              )}
+              {view.isOwner ? (
+                <>
+                  <button
+                    type="button"
+                    className="room__button room__button--primary"
+                    onClick={restore}
+                    aria-disabled={actions.restore.isPending || undefined}
+                    aria-describedby="room-restore-hint"
+                  >
+                    {actions.restore.isPending ? "Starting" : "Start game"}
+                  </button>
+                  <p id="room-restore-hint" className="room__hint">
+                    {notBackHint(game.seats)}
+                  </p>
+                </>
+              ) : (
+                !myUnclaimed && (
+                  <p className="room__text" role="status">
+                    Waiting for {hostName} to start the game.
+                  </p>
+                )
+              )}
+            </>
+          )}
           {!view.seated && game.status === "waiting" && (
             <>
               <button

@@ -411,3 +411,13 @@
 a.room__button {
   text-decoration: none;
 }
+
+/* The restore room (board SavedGames): the state of the game and of each seat. */
+.room__tag--status {
+  margin-left: var(--hf-space-8);
+  vertical-align: middle;
+}
+
+.room__seat-note[data-back] {
+  color: var(--hf-ok);
+}

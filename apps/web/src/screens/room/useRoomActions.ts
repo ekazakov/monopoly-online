@@ -10,6 +10,7 @@ import {
   removeSeat,
   startGame,
 } from "../../api/index.ts";
+import { claimSeats, restoreGame } from "../../api/games.ts";
 import { roomKey } from "./queries.ts";
 
 // Each room change answers with the new room, which replaces the cached one.
@@ -42,6 +43,10 @@ export function useRoomActions(gameId: string) {
         changeToken(gameId, seatId, token),
       onSuccess: replace,
     }),
+    // Claim and Restore return the game as it is after the change. Restore also changes the status,
+    // so the room moves on to the play screen.
+    claim: useMutation({ mutationFn: () => claimSeats(gameId), onSuccess: replace }),
+    restore: useMutation({ mutationFn: () => restoreGame(gameId), onSuccess: replace }),
     start: useMutation({
       mutationFn: () => startGame(gameId),
       onSuccess: (response) => replace(response.game),

@@ -33,10 +33,12 @@ interface Props {
 
 export function SeatList({ game, userId, removingId, onRemove, headingRef }: Props) {
   const announcement = useSeatAnnouncement(game.seats);
+  // A saved game is the restore room: each seat is back or not, and nobody joins or is invited.
+  const saved = game.status === "saved";
   // An invite does not hold a seat, but an invited player will take one. The row of the invite
   // stands in for an open seat, so the list keeps its length of six rows.
   const empty = Array.from({
-    length: Math.max(0, MAX_SEATS - game.seats.length - game.invites.length),
+    length: saved ? 0 : Math.max(0, MAX_SEATS - game.seats.length - game.invites.length),
   });
   return (
     <section className="room__panel" aria-labelledby="room-players">
@@ -64,7 +66,13 @@ export function SeatList({ game, userId, removingId, onRemove, headingRef }: Pro
                 {labels.host && <span className="room__tag room__tag--host">Host</span>}
                 {labels.you && <span className="room__tag">You</span>}
                 {labels.thisDevice && <span className="room__tag">This device</span>}
-                <span className="room__seat-note">{labels.note}</span>
+                {saved ? (
+                  <span className="room__seat-note" data-back={seat.claimed || undefined}>
+                    {seat.claimed ? "Back" : "Not back yet"}
+                  </span>
+                ) : (
+                  <span className="room__seat-note">{labels.note}</span>
+                )}
               </span>
               {labels.removable && (
                 <button
@@ -80,7 +88,7 @@ export function SeatList({ game, userId, removingId, onRemove, headingRef }: Pro
             </li>
           );
         })}
-        {game.invites.map((invite) => (
+        {(saved ? [] : game.invites).map((invite) => (
           <li key={invite.id} className="room__seat room__seat--invite">
             {/* An invite has no token yet: a plain disc with the initial of the name. */}
             <span className="room__avatar room__avatar--invite" aria-hidden="true">

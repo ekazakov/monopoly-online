@@ -49,7 +49,25 @@ export function seatLabels(game: Game, seat: Seat, userId: string): SeatLabels {
   };
 }
 
+/**
+ * What the host reads in the restore room about the seats that have not claimed yet. Start is
+ * never blocked: the game waits for the player whose turn it is (gameplay 3.2).
+ */
+export function notBackHint(seats: readonly Seat[]): string {
+  const names = seats.filter((seat) => !seat.claimed).map((seat) => seat.name);
+  if (names.length === 0) return "All players are back.";
+  const list =
+    names.length === 1 ? names[0]! : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
+  const verb = names.length === 1 ? "is" : "are";
+  const wait =
+    names.length === 1
+      ? `If you start now, the game waits for ${names[0]} on ${names[0]}'s turn.`
+      : "If you start now, the game waits for each of them on their turn.";
+  return `${list} ${verb} not back. ${wait}`;
+}
+
 export const roomCopy = {
+  savedVisitor: "This game is saved. Only the players of the game can continue it.",
   takenOnJoin:
     "A seat in this game already uses your name. Ask the person who controls that seat to change its name, then try again.",
   full: "This game is full.",
@@ -67,7 +85,9 @@ export type RoomAction =
   | "add"
   | "token"
   | "invite"
-  | "cancel";
+  | "cancel"
+  | "claim"
+  | "restore";
 
 /**
  * "Waiting for Ravi to accept." for the invites that are still pending, or "" for none. The start
@@ -90,6 +110,8 @@ export function errorText(action: RoomAction, error: unknown): string {
         return roomCopy.full;
       case "game_not_waiting":
         return roomCopy.started;
+      case "game_not_saved":
+        return "This game is not saved any more. It may have been continued or finished.";
       case "not_enough_players":
         return roomCopy.notEnough;
       case "already_joined":
