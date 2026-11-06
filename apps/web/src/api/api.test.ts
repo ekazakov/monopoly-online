@@ -1,11 +1,21 @@
 import { afterEach, describe, expect, test, vi } from "vite-plus/test";
 import { ApiError, setUnauthorizedHandler } from "../api.ts";
-import { errorReply, gameFixture, mockApi, noContent, userFixture } from "../testing/fakeApi.ts";
+import {
+  errorReply,
+  gameFixture,
+  gameInStatus,
+  mockApi,
+  noContent,
+  userFixture,
+  withClaims,
+} from "../testing/fakeApi.ts";
 import {
   addHotSeat,
+  claimSeats,
   createGame,
   createSession,
   deleteSession,
+  finishGame,
   getGame,
   getMe,
   getResult,
@@ -13,6 +23,8 @@ import {
   joinGame,
   leaveGame,
   removeSeat,
+  restoreGame,
+  saveGame,
   startGame,
 } from "./index.ts";
 
@@ -118,6 +130,34 @@ describe("game calls", () => {
   test("getState turns an error body into ApiError", async () => {
     mockApi({ [`GET /api/games/${id}/state`]: errorReply(409, "game_not_active") });
     await expect(getState(id)).rejects.toMatchObject({ status: 409, code: "game_not_active" });
+  });
+});
+
+describe("save, finish, claim and restore", () => {
+  const saved = gameInStatus("saved");
+  const finished = gameInStatus("finished");
+  const active = gameInStatus("active");
+
+  test.each([
+    ["saveGame", saveGame, "save", saved],
+    ["finishGame", finishGame, "finish", finished],
+    ["claimSeats", claimSeats, "claim", withClaims(saved, [saved.seats[0]!.id])],
+    ["restoreGame", restoreGame, "restore", active],
+  ])("%s posts to the game and returns the game", async (_name, call, path, reply) => {
+    const calls = mockApi({ [`POST /api/games/${id}/${path}`]: Response.json({ game: reply }) });
+    expect(await call(id)).toEqual(reply);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toMatchObject({ method: "POST", path: `/api/games/${id}/${path}` });
+  });
+
+  test.each([
+    ["saveGame", saveGame, "save", 403, "not_game_owner"],
+    ["finishGame", finishGame, "finish", 409, "game_not_active"],
+    ["claimSeats", claimSeats, "claim", 409, "game_not_saved"],
+    ["restoreGame", restoreGame, "restore", 409, "game_not_saved"],
+  ])("%s keeps the code of a refusal", async (_name, call, path, status, code) => {
+    mockApi({ [`POST /api/games/${id}/${path}`]: errorReply(status, code) });
+    await expect(call(id)).rejects.toMatchObject({ status, code });
   });
 });
 

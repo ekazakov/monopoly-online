@@ -2,23 +2,25 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { LobbyGame } from "@monopoly/shared";
 import { afterEach, describe, expect, test, vi } from "vite-plus/test";
-import { errorReply, gameFixture, mockApi, userFixture } from "../../testing/fakeApi.ts";
+import {
+  errorReply,
+  gameInStatus,
+  lobbyGameFixture,
+  mockApi,
+  userFixture,
+} from "../../testing/fakeApi.ts";
 import { renderRoute } from "../../testing/render.tsx";
 
 // Saved games in the lobby (board SavedGames): the owner continues or finishes them, the others
 // see "Saved" in My games and open the room.
 const OTHER_USER = "0b0f7a3e-3a53-4c2e-9a53-2f0d5f6f9d99";
-const saved = (fields: Partial<LobbyGame> = {}): LobbyGame => ({
-  id: "00000000-0000-4000-8000-000000000501",
-  name: "Marlow's game",
-  ownerId: userFixture.id,
-  ownerName: userFixture.name,
-  status: "saved",
-  seatCount: 4,
-  tokens: ["dog", "cat", "penguin", "car"],
-  createdAt: "2026-11-02T10:00:00.000Z",
-  ...fields,
-});
+const saved = (fields: Partial<LobbyGame> = {}): LobbyGame =>
+  lobbyGameFixture({
+    id: "00000000-0000-4000-8000-000000000501",
+    name: "Marlow's game",
+    status: "saved",
+    ...fields,
+  });
 const active = saved({
   id: "00000000-0000-4000-8000-000000000502",
   name: "Friday game",
@@ -73,10 +75,10 @@ describe("Saved games group (the owner)", () => {
     const game = saved();
     const { user, calls, router } = await openHome([game], {
       [`POST /api/games/${game.id}/claim`]: Response.json({
-        game: gameFixture({ id: game.id, status: "saved" }),
+        game: gameInStatus("saved", { id: game.id }),
       }),
       [`GET /api/games/${game.id}`]: Response.json({
-        game: gameFixture({ id: game.id, status: "saved" }),
+        game: gameInStatus("saved", { id: game.id }),
       }),
     });
     await user.click(await screen.findByRole("button", { name: "Continue Marlow's game" }));
@@ -120,7 +122,7 @@ describe("Saved games group (the owner)", () => {
     const { user, calls } = await openHome([game], {
       [`POST /api/games/${game.id}/finish`]: () => {
         finished = true;
-        return Response.json({ game: gameFixture({ id: game.id, status: "finished" }) });
+        return Response.json({ game: gameInStatus("finished", { id: game.id }) });
       },
       "GET /api/me/games": () => Response.json({ games: finished ? [] : [game] }),
     });
@@ -152,7 +154,7 @@ describe("Saved games of other hosts (My games)", () => {
   test("Open goes to the room, not to the game", async () => {
     const { user, router } = await openHome([theirs], {
       [`GET /api/games/${theirs.id}`]: Response.json({
-        game: gameFixture({ id: theirs.id, status: "saved" }),
+        game: gameInStatus("saved", { id: theirs.id }),
       }),
     });
     await user.click(await screen.findByRole("button", { name: "Open Marlow's game" }));

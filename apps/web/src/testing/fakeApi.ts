@@ -1,4 +1,4 @@
-import type { Game, User } from "@monopoly/shared";
+import type { Game, LobbyGame, Seat, User } from "@monopoly/shared";
 import { vi } from "vite-plus/test";
 
 export interface ApiCall {
@@ -38,6 +38,35 @@ export function gameFixture(overrides: Partial<Game> = {}): Game {
       },
     ],
     invites: [],
+    ...overrides,
+  };
+}
+
+/** A game of the owner in the given status, for the calls of Save, Finish, Claim and Restore. */
+export function gameInStatus(status: Game["status"], overrides: Partial<Game> = {}): Game {
+  return gameFixture({ status, version: status === "waiting" ? 0 : 7, ...overrides });
+}
+
+/** The same game with the given seats claimed, as `POST /claim` answers. */
+export function withClaims(game: Game, seatIds: readonly string[]): Game {
+  const ids = new Set(seatIds);
+  return {
+    ...game,
+    seats: game.seats.map((seat: Seat) => ({ ...seat, claimed: ids.has(seat.id) || seat.claimed })),
+  };
+}
+
+/** A row of the lobby: the game of the owner `userFixture`, with four seats. */
+export function lobbyGameFixture(overrides: Partial<LobbyGame> = {}): LobbyGame {
+  return {
+    id: "7b0f7a3e-3a53-4c2e-9a53-2f0d5f6f9d11",
+    name: "Friday game",
+    ownerId: userFixture.id,
+    ownerName: userFixture.name,
+    status: "waiting",
+    seatCount: 4,
+    tokens: ["dog", "cat", "penguin", "car"],
+    createdAt: "2026-11-02T10:00:00.000Z",
     ...overrides,
   };
 }

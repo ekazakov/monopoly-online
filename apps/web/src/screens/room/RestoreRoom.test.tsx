@@ -5,7 +5,13 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vite-plus/test";
 import { roomMessage, snapshotMessage, withStatus } from "../../game/fixtures.ts";
 import { sessionKey } from "../../session/index.ts";
-import { errorReply, gameFixture, mockApi, userFixture } from "../../testing/fakeApi.ts";
+import {
+  errorReply,
+  gameInStatus,
+  mockApi,
+  userFixture,
+  withClaims,
+} from "../../testing/fakeApi.ts";
 import { FakeRealtimeClient } from "../../testing/fakeRealtime.ts";
 import { createTestQueryClient, renderRoute } from "../../testing/render.tsx";
 import { notBackHint } from "./roomModel.ts";
@@ -32,9 +38,9 @@ const tove = seatOf(2, { name: "Tove", kind: "hotseat", userId: null });
 const inesSeat = seatOf(3, { name: "Ines", userId: ines, controllerUserId: ines });
 const raviSeat = seatOf(4, { name: "Ravi", userId: ravi, controllerUserId: ravi });
 
-const gameId = gameFixture().id;
+const gameId = gameInStatus("saved").id;
 const savedRoom = (seats: Seat[]): Game =>
-  gameFixture({ status: "saved", version: 7, ownerId: me, seats, name: "Marlow's game" });
+  gameInStatus("saved", { ownerId: me, seats, name: "Marlow's game" });
 
 async function setup(game: Game, userId = me, routes: Parameters<typeof mockApi>[0] = {}) {
   const calls = mockApi({ [`GET /api/games/${gameId}`]: Response.json({ game }), ...routes });
@@ -117,12 +123,10 @@ describe("restore room: a guest", () => {
   });
 
   test("Claim calls the claim route once and then waits for the host", async () => {
-    const claimed = {
-      ...room(),
-      seats: room().seats.map((s) => (s.id === inesSeat.id ? { ...s, claimed: true } : s)),
-    };
     const { user, calls } = await setup(room(), ines, {
-      [`POST /api/games/${gameId}/claim`]: Response.json({ game: claimed }),
+      [`POST /api/games/${gameId}/claim`]: Response.json({
+        game: withClaims(room(), [inesSeat.id]),
+      }),
     });
     await user.click(await screen.findByRole("button", { name: "Claim my seats" }));
 
@@ -134,14 +138,7 @@ describe("restore room: a guest", () => {
   });
 
   test("an already claimed guest only waits for the host", async () => {
-    const game = room();
-    await setup(
-      {
-        ...game,
-        seats: game.seats.map((s) => (s.id === inesSeat.id ? { ...s, claimed: true } : s)),
-      },
-      ines,
-    );
+    await setup(withClaims(room(), [inesSeat.id]), ines);
     expect(await screen.findByText("Waiting for Marlow to start the game.")).toBeVisible();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
@@ -159,15 +156,7 @@ describe("restore room: a guest", () => {
     await loaded();
     expect(seatRows()[3]).toHaveTextContent("Not back yet");
 
-    const game = room();
-    act(() =>
-      realtime.emit(
-        roomMessage({
-          ...game,
-          seats: game.seats.map((s) => (s.id === raviSeat.id ? { ...s, claimed: true } : s)),
-        }),
-      ),
-    );
+    act(() => realtime.emit(roomMessage(withClaims(room(), [raviSeat.id]))));
     await waitFor(() => expect(seatRows()[3]).toHaveTextContent("Back"));
     expect(seatRows()[3]).not.toHaveTextContent("Not back yet");
   });
@@ -182,9 +171,7 @@ describe("restore room: a guest", () => {
 
 describe("restore room: the host", () => {
   const room = (claimedIds: string[] = []) =>
-    savedRoom(
-      [marlow, tove, inesSeat, raviSeat].map((s) => ({ ...s, claimed: claimedIds.includes(s.id) })),
-    );
+    withClaims(savedRoom([marlow, tove, inesSeat, raviSeat]), claimedIds);
   const allBack = [marlow.id, tove.id, inesSeat.id, raviSeat.id];
 
   test("Start is there and enabled even when a player is not back, and the hint says who waits", async () => {
