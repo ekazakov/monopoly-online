@@ -378,3 +378,94 @@ describe("GameScreen: card notice", () => {
     expect(screen.queryByRole("group", { name: /card$/ })).not.toBeInTheDocument();
   });
 });
+
+describe("GameScreen: a saved game", () => {
+  const owner = fx.ownerId;
+  const savedGame = (game: Game = fx.game) => withStatus({ ...game, version: 5 }, "saved");
+  // The rolled-back state with the higher version, as the server sends it.
+  const rolledBack = { ...redact(fx.start), version: 5 };
+
+  test("a game saved while it is open shows the notice with OK, and OK goes home", async () => {
+    const { realtime, router } = await setup({ userId: fx.guestId });
+    await roll();
+
+    act(() => realtime.emit(snapshotMessage(savedGame(), rolledBack)));
+
+    expect(await screen.findByText("Game saved by Ann")).toBeInTheDocument();
+    expect(
+      screen.getByText("Ann can continue it later. You will find it in My games."),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Roll" })).not.toBeInTheDocument();
+    const ok = screen.getByRole("button", { name: "OK" });
+    expect(ok).toHaveFocus();
+    await userEvent.click(ok);
+    await waitFor(() => expect(router.state.location.pathname).toBe("/"));
+  });
+
+  test("the owner is told how to continue", async () => {
+    const { realtime } = await setup({ userId: owner });
+    await screen.findByRole("region", { name: "Turn actions" });
+
+    act(() => realtime.emit(snapshotMessage(savedGame(), rolledBack)));
+
+    expect(await screen.findByText("Game saved")).toBeInTheDocument();
+    expect(screen.getByText("You can continue it from your saved games.")).toBeInTheDocument();
+  });
+
+  test("the rest of the screen stays: the board and the rail", async () => {
+    const { realtime } = await setup({ userId: fx.guestId });
+    await roll();
+    act(() => realtime.emit(snapshotMessage(savedGame(), rolledBack)));
+    await screen.findByText("Game saved by Ann");
+    expect(screen.getByRole("complementary", { name: "Players" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Board" })).toBeInTheDocument();
+  });
+
+  test("a saved game that is opened later goes to the room and opens no stream", async () => {
+    const { router, realtime } = await setup({ game: savedGame(), state: rolledBack });
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/games/${gameId}`));
+    expect(realtime.subscribed(`game:${gameId}`)).toBe(false);
+    expect(screen.queryByText(/Game saved/)).not.toBeInTheDocument();
+  });
+});
+
+describe("GameScreen: a game finished by the owner", () => {
+  test("shows the result screen with the finished-by heading when the snapshot arrives", async () => {
+    const finished = withStatus({ ...fx.game, version: 5 }, "finished");
+    const result = {
+      gameId,
+      rounds: 3,
+      winner: null,
+      finishedBy: "Ann",
+      standings: fx.game.seats.map((seat, index) => ({
+        rank: index + 1,
+        seatId: seat.id,
+        name: seat.name,
+        controllerUserId: seat.controllerUserId,
+        status: "in_game" as const,
+        outRound: null,
+        cash: 1500 - index * 100,
+        properties: 0,
+        netWorth: 1500 - index * 100,
+      })),
+    };
+    const { realtime } = await setup({ userId: fx.guestId });
+    await roll();
+    // The result is read when the screen needs it.
+    mockApi({
+      [`GET /api/games/${gameId}`]: Response.json({ game: finished }),
+      [`GET /api/games/${gameId}/state`]: Response.json({
+        version: 5,
+        state: { ...redact(fx.start), version: 5 },
+      }),
+      [`GET /api/games/${gameId}/result`]: Response.json({ result }),
+    });
+
+    act(() => realtime.emit(snapshotMessage(finished, { ...redact(fx.start), version: 5 })));
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Game finished by Ann" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "OK" })).toBeInTheDocument();
+  });
+});

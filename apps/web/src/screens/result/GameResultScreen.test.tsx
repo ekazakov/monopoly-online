@@ -317,3 +317,58 @@ describe("GameScreen: the result replaces the game", () => {
     expect(calls.some((call) => call.path.endsWith("/result"))).toBe(true);
   });
 });
+
+describe("GameResultScreen: a game the owner finished", () => {
+  /** Ann (owner) finished the game. Ann and Bo were in the game, Cy was out. */
+  const noWinner = (): GameResult => {
+    const base = resultOf(finishedGame, [
+      { status: "in_game", outRound: null, cash: 900, properties: 2, netWorth: 1200 },
+      { status: "bankrupt", outRound: 7 },
+    ]);
+    const [first, ...rest] = base.standings;
+    return {
+      ...base,
+      rounds: 9,
+      winner: null,
+      finishedBy: "Ann",
+      standings: [
+        { ...first!, status: "in_game", outRound: null, cash: 1500, properties: 3, netWorth: 2100 },
+        ...rest,
+      ],
+    };
+  };
+
+  test("says who finished it, that nobody won, and has only OK", async () => {
+    await setup({ result: noWinner() });
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Game finished by Ann" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("No winner. The game ended in round 9. Standings for information only."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/wins/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "OK" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Back to home" })).not.toBeInTheDocument();
+  });
+
+  test("players in the game keep their figures and are not crowned", async () => {
+    await setup({ result: noWinner() });
+    await screen.findByRole("heading", { level: 1, name: "Game finished by Ann" });
+
+    const [first, second, third] = rowsOf() as [HTMLElement, HTMLElement, HTMLElement];
+    expect(first).not.toHaveAttribute("data-winner");
+    expect(first).toHaveTextContent("In the game");
+    expect(first).toHaveTextContent("3");
+    expect(within(first).queryByText("Winner")).not.toBeInTheDocument();
+    expect(second).toHaveTextContent("In the game");
+    expect(second).toHaveTextContent("900");
+    expect(third).toHaveTextContent("Bankrupt · round 7");
+  });
+
+  test("OK goes to the home screen", async () => {
+    const { router } = await setup({ result: noWinner() });
+    await userEvent.click(await screen.findByRole("button", { name: "OK" }));
+    await waitFor(() => expect(router.state.location.pathname).toBe("/"));
+  });
+});

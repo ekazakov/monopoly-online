@@ -92,7 +92,7 @@ Ask before you add or change a board. Sync the artifacts.
 
 - [x] **Stream and store changes (E1).** The store keeps `presence`. It handles a `snapshot` with status `saved` or `finished`.
 - [x] **Owner menu (E2).** Add Save and exit and Finish game with a confirm step, in `flows/leave/LeaveGameMenu.tsx`. Only for the owner. Depends on Owner menu and notice boards (A2).
-- [ ] **Finished and saved notices (E3).** Live change to `saved`: "Game saved by <owner>", OK, then home. `finished` with no winner: "Game finished by <owner>" on a `GameResultScreen` variant with OK. `GameRoute` already goes there for status `finished`. A later visit to a saved game goes to the room.
+- [x] **Finished and saved notices (E3).** Live change to `saved`: "Game saved by <owner>", OK, then home. `finished` with no winner: "Game finished by <owner>" on a `GameResultScreen` variant with OK. `GameRoute` already goes there for status `finished`. A later visit to a saved game goes to the room.
 - [ ] **Saved games in the lobby (E4).** Saved group for the owner: Continue claims the owner's seats and goes to the room, Finish has a confirm step. My games for the others: "Saved", Open goes to the room. Depends on Saved games and restore room boards (A3).
 - [ ] **Restore room (E5).** `Room.tsx` for status `saved`: seats with claimed or waiting, Claim for the user's seats, Start for the owner. `saved` must stay in the room: it is not in the `started` check. Depends on Saved games and restore room boards (A3).
 - [ ] **Rail presence (E6).** `PlayerRow`: dot and text for remote seats. No dot for the local device.

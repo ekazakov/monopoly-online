@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Navigate, getRouteApi, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
 import { isApiError } from "../api/index.ts";
 import {
@@ -22,6 +22,7 @@ import { GameLayout } from "./game/GameLayout.tsx";
 import { HandoffPrompt } from "./game/handoff/index.ts";
 import { CardNotice } from "./game/flows/card/index.ts";
 import { LeaveGameMenu } from "./game/flows/leave/index.ts";
+import { SavedNotice } from "./game/flows/saved/index.ts";
 import { DebugPanel } from "./game/debug/index.ts";
 import { GameLog } from "./game/log/index.ts";
 import { MotionProvider, useMotionPlayback } from "./game/motion/index.ts";
@@ -60,7 +61,12 @@ function GameRoute({ gameId }: { gameId: string }) {
 
   const room = useQuery(gameRoomQuery(store, gameId));
   const status = useGameSelector((s) => s.game?.status) ?? room.data?.status;
-  const live = room.isSuccess && status !== "waiting";
+  // A game that was running on this screen and is saved now: its notice shows on every device. A
+  // saved game that is opened later has no table, so it goes to the room (gameplay 3.1).
+  const [wasActive, setWasActive] = useState(false);
+  if (status === "active" && !wasActive) setWasActive(true);
+  const saved = status === "saved";
+  const live = room.isSuccess && status !== "waiting" && !(saved && !wasActive);
   const finished = useGameSelector((s) => isFinished(s.game, s.state));
   const roomGame = useGameSelector((s) => s.game) ?? room.data ?? null;
   const state = useQuery(gameStateQuery(store, gameId, live));
@@ -112,7 +118,7 @@ function GameRoute({ gameId }: { gameId: string }) {
       </Message>
     );
   }
-  if (status === "waiting") {
+  if (status === "waiting" || (saved && !wasActive)) {
     return <Navigate to="/games/$gameId" params={{ gameId }} replace />;
   }
   if (!userId) return null;
@@ -127,7 +133,14 @@ function GameRoute({ gameId }: { gameId: string }) {
           rail={<PlayerRail userId={userId} />}
           log={<GameLog userId={userId} />}
           board={<Board userId={userId} />}
-          centre={<Centre userId={userId} loadFailed={state.isError && state.data === undefined} />}
+          centre={
+            <Centre
+              userId={userId}
+              loadFailed={state.isError && state.data === undefined}
+              saved={saved}
+              onSavedOk={() => void navigate({ to: "/" })}
+            />
+          }
           hand={<PropertyHand userId={userId} />}
           menu={
             <>
@@ -173,7 +186,24 @@ function Board({ userId }: { userId: string }) {
 
 // The card reveal stays mounted from the first render, so it sees the version at mount. Over the
 // phase view it shows the card of the latest action.
-function Centre({ userId, loadFailed }: { userId: string; loadFailed: boolean }) {
+function Centre({
+  userId,
+  loadFailed,
+  saved,
+  onSavedOk,
+}: {
+  userId: string;
+  loadFailed: boolean;
+  saved: boolean;
+  onSavedOk: () => void;
+}) {
+  if (saved) {
+    return (
+      <div className="game-centre">
+        <SavedNotice userId={userId} onOk={onSavedOk} />
+      </div>
+    );
+  }
   return (
     <div className="game-centre">
       <CardNotice userId={userId} />

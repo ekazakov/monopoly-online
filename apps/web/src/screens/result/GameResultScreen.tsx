@@ -74,7 +74,7 @@ export function GameResultScreen({ gameId, seats, userId }: GameResultScreenProp
         <Standings result={result.data} seats={seats} userId={userId} />
         <div className="result__actions">
           <button type="button" className="result__button result__button--primary" onClick={home}>
-            Back to home
+            {result.data.winner ? "Back to home" : "OK"}
           </button>
         </div>
       </div>
@@ -94,12 +94,14 @@ function Summary({
     <header className="result__summary">
       <div className="result__eyebrow">Game over</div>
       <h1 id="result-title" className="result__title" ref={headingRef} tabIndex={-1}>
-        {result.winner ? `${result.winner.name} wins` : "Game finished"}
+        {result.winner
+          ? `${result.winner.name} wins`
+          : `Game finished by ${result.finishedBy ?? "the owner"}`}
       </h1>
       <p className="result__rounds">
         {result.winner
           ? `Last player left after ${rounds}.`
-          : `Finished by ${result.finishedBy ?? "the owner"} after ${rounds}.`}
+          : `No winner. The game ended in round ${result.rounds}. Standings for information only.`}
       </p>
     </header>
   );
@@ -160,10 +162,12 @@ function Row({
   onDevice: boolean;
 }) {
   const look = tokenLook(token);
-  const out = standing.status !== "winner";
+  // A player who is out has no figures. One who was still in the game when the owner finished it
+  // keeps them, but wins nothing.
+  const out = standing.status === "bankrupt" || standing.status === "resigned";
   const figures = [standing.cash, standing.properties, standing.netWorth];
   return (
-    <tr className="result__row" data-winner={!out || undefined}>
+    <tr className="result__row" data-winner={standing.status === "winner" || undefined}>
       <th scope="row" className="result__rank">
         {standing.rank}
       </th>
@@ -213,6 +217,9 @@ function StatusLabel({ standing }: { standing: Standing }) {
         Winner
       </span>
     );
+  }
+  if (status === "in_game") {
+    return <span className="result__status-label">In the game</span>;
   }
   const bankrupt = status === "bankrupt";
   return (
