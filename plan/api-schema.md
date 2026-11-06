@@ -197,6 +197,7 @@ All need the session cookie and check `Origin`.
 ### Stream messages
 - **Finish, Save and Restore** send a `snapshot` with the new game and state. No new message type.
 - **`presence.updated`** (new): `{ seats: { [seatId]: "online" | "reconnecting" | "away" } }` on `game:<id>`. No SSE id. Sent on each change and in each connect, also when a resume has nothing to send.
+- **Equal versions.** Restore keeps the version of the Save before it, so its `snapshot` repeats that version. A stream delivers a `snapshot` at the version it has already sent. Every other message must be newer. The client must also accept a `snapshot` at its own version.
 - **Resume.** A `Last-Event-ID` before a rollback finds a hole in the log and gets a `snapshot`. This is a normal path.
 
 ## Debug edit (added 2026-11-03, not in a milestone)

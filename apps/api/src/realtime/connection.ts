@@ -46,7 +46,11 @@ export async function openConnection(options: {
 
   function deliver(message: StreamEnvelope) {
     if (isVersioned(message)) {
-      if (message.version <= (covered.get(message.topic) ?? -1)) return;
+      const last = covered.get(message.topic) ?? -1;
+      // A snapshot may repeat the version: Restore changes the status, not the state, so it
+      // keeps the version of the Save before it. Every other message must be newer.
+      const stale = message.type === "snapshot" ? message.version < last : message.version <= last;
+      if (stale) return;
       covered.set(message.topic, message.version);
     }
     send?.(message);

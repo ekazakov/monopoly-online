@@ -415,6 +415,65 @@ describe("GET /api/stream", () => {
         }
       });
 
+      describe("Save, Restore and Finish", () => {
+        const post = (action: string) =>
+          sendAs(app, "POST", `/api/games/${started.game.id}/${action}`, started.owner.cookie);
+
+        test("a live stream gets a snapshot for each of them", async () => {
+          await play(started, script(started, 8));
+          const live = await connect(started.owner.cookie, started.game.id);
+          await live.next();
+
+          expect((await post("save")).status).toBe(200);
+          const saved = await live.next();
+          expect(saved).toMatchObject({ event: "snapshot", id: "9" });
+          expect(saved.message).toMatchObject({
+            payload: { game: { status: "saved", version: 9 } },
+          });
+
+          expect((await post("restore")).status).toBe(200);
+          const restored = await live.next();
+          expect(restored).toMatchObject({ event: "snapshot", id: "9" });
+          expect(restored.message).toMatchObject({
+            payload: { game: { status: "active", version: 9 } },
+          });
+
+          expect((await post("finish")).status).toBe(200);
+          const finished = await live.next();
+          expect(finished.event).toBe("snapshot");
+          expect(finished.message).toMatchObject({ payload: { game: { status: "finished" } } });
+          await live.expectQuiet();
+        });
+
+        test("a reconnect with an old Last-Event-ID gets a snapshot, with no error log", async () => {
+          const log = vi.spyOn(console, "error").mockImplementation(() => {});
+          try {
+            await play(started, script(started, 8));
+            expect((await post("save")).status).toBe(200);
+            expect((await post("restore")).status).toBe(200);
+            const reader = await connect(started.owner.cookie, started.game.id, {
+              "last-event-id": "8",
+            });
+            expect(await reader.next()).toMatchObject({ event: "snapshot", id: "9" });
+            await reader.expectQuiet();
+            expect(log).not.toHaveBeenCalled();
+          } finally {
+            log.mockRestore();
+          }
+        });
+
+        test("a reconnect to a saved game gets a snapshot with the saved status", async () => {
+          await play(started, script(started, 8));
+          expect((await post("save")).status).toBe(200);
+          const reader = await connect(started.guest.cookie, started.game.id, {
+            "last-event-id": "8",
+          });
+          const frame = await reader.next();
+          expect(frame).toMatchObject({ event: "snapshot", id: "9" });
+          expect(frame.message).toMatchObject({ payload: { game: { status: "saved" } } });
+        });
+      });
+
       test("sends nothing for a gap of 0", async () => {
         await play(started, script(started, 3));
         const reader = await connect(started.owner.cookie, started.game.id, {

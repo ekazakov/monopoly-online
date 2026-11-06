@@ -375,6 +375,36 @@ describe("game lifecycle routes", () => {
       expect(body.events).toEqual(JSON.parse(JSON.stringify(expected.events)));
     });
 
+    test("the discarded steps of the turn play again with the same events", async () => {
+      const steps = playGame(SEED, 8, started.initial).steps;
+      await play(8);
+      const turnStart = await turnStartState();
+      const discarded = steps.filter((step) => step.state.version > turnStart.version);
+      expect(discarded.length).toBeGreaterThan(0);
+      expect((await save(started.owner.cookie)).status).toBe(200);
+      expect((await restore(started.owner.cookie)).status).toBe(200);
+
+      let current = (await gameRow()).version;
+      for (const step of discarded) {
+        const { playerId, ...action } = step.action;
+        const res = await postJson(
+          app,
+          `/api/games/${started.game.id}/actions`,
+          started.cookieOfSeat(playerId),
+          {
+            seatId: playerId,
+            action,
+            expectedVersion: current,
+            clientActionId: crypto.randomUUID(),
+          },
+        );
+        expect(res.status).toBe(200);
+        const body = (await res.json()) as { version: number; events: unknown };
+        expect(body.events).toEqual(JSON.parse(JSON.stringify(step.events)));
+        current = body.version;
+      }
+    });
+
     test("only the owner can restore", async () => {
       expect((await save(started.owner.cookie)).status).toBe(200);
       const res = await restore(started.guest.cookie);
