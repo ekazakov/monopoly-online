@@ -10,6 +10,7 @@ import {
   type AppOptions as BaseAppOptions,
 } from "./routes/common.ts";
 import { createGameStateLoader, type GameStateLoader } from "./game/loader.ts";
+import { createLifecycleService } from "./game/lifecycle.ts";
 import { createGameService } from "./game/service.ts";
 import { createBus, type Bus } from "./realtime/bus.ts";
 import { createPublishers, type StreamEnvelope } from "./realtime/messages.ts";
@@ -18,6 +19,7 @@ import { gameRoutes } from "./routes/games.ts";
 import { gameplayRoutes } from "./routes/gameplay.ts";
 import { healthRoutes } from "./routes/health.ts";
 import { inviteRoutes } from "./routes/invites.ts";
+import { lifecycleRoutes } from "./routes/lifecycle.ts";
 import { resultRoutes } from "./routes/result.ts";
 import { sessionRoutes } from "./routes/session.ts";
 import { streamRoutes } from "./routes/stream.ts";
@@ -62,6 +64,13 @@ export function createApp(db: Kysely<Database>, options?: AppOptions) {
     now: deps.now,
     onCommitted: (committed) => publish.onCommitted(committed),
   });
+  const lifecycle = createLifecycleService({
+    db,
+    games: service,
+    loader,
+    readGame: (gameId) => rooms.get(gameId),
+    onSnapshot: (snapshot) => publish.onSnapshot(snapshot),
+  });
   const api = new OpenAPIHono<AppEnv>({ defaultHook: validationHook }).basePath("/api");
   // Registered before every route, so later routes are covered too. `.use` returns a plain
   // Hono type, so it stays out of the chain that keeps the OpenAPI types.
@@ -76,6 +85,7 @@ export function createApp(db: Kysely<Database>, options?: AppOptions) {
     // After `gameRoutes`: its `/games/*` session middleware also covers these routes, and the
     // handlers read `c.get("user")`.
     .route("/", gameplayRoutes({ ...deps, service }))
+    .route("/", lifecycleRoutes({ ...deps, lifecycle }))
     .route("/", resultRoutes({ ...deps, loader }))
     .route(
       "/",

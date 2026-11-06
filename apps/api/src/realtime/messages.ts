@@ -1,5 +1,5 @@
 import { LOBBY_TOPIC } from "@monopoly/shared";
-import type { LobbyGame, StreamMessage } from "@monopoly/shared";
+import type { Game, LobbyGame, RedactedGameState, StreamMessage } from "@monopoly/shared";
 import type { CommittedAction } from "../game/service.ts";
 import type { RoomEvent } from "../rooms/service.ts";
 import type { Bus } from "./bus.ts";
@@ -71,6 +71,16 @@ export function createPublishers(bus: Bus<StreamEnvelope>) {
         type: "game.actions",
         version,
         payload: { events, state },
+      });
+    },
+    /** Finish, Save and Restore: every device of the game gets the new game and state. */
+    onSnapshot({ game, state }: { game: Game; state: RedactedGameState }) {
+      const topic = gameTopic(game.id);
+      bus.publish(topic, {
+        topic,
+        type: "snapshot",
+        version: state.version,
+        payload: { game, state },
       });
     },
     onRoomEvent(event: RoomEvent) {
