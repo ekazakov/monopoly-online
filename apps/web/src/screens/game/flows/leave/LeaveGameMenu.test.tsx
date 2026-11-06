@@ -1,13 +1,14 @@
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { RedactedGameState } from "@monopoly/shared";
-import { describe, expect, test, vi } from "vite-plus/test";
+import { afterEach, describe, expect, test, vi } from "vite-plus/test";
 import { ApiError } from "../../../../api.ts";
 import { GameActionsContext } from "../../../../game/actions.ts";
 import type { GameActions } from "../../../../game/actions.ts";
-import { recordFixture, redact, snapshotMessage } from "../../../../game/fixtures.ts";
+import { recordFixture, redact, snapshotMessage, withStatus } from "../../../../game/fixtures.ts";
 import { GameStoreProvider } from "../../../../game/GameStoreProvider.tsx";
 import { createGameStore } from "../../../../game/store.ts";
+import { errorReply, mockApi } from "../../../../testing/fakeApi.ts";
 import { LeaveGameMenu, consequenceText } from "./index.ts";
 
 const fx = recordFixture(1);
@@ -344,5 +345,158 @@ describe("consequenceText", () => {
       "Ann resigns. Their properties go to the player they owe, or to the bank for auction. The game goes on for the other players.",
     );
     expect(consequenceText(null, 2)).toMatch(/^The chosen player resigns\..*the game ends\.$/);
+  });
+});
+
+describe("LeaveGameMenu: owner controls", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const savePath = `/api/games/${fx.game.id}/save`;
+  const finishPath = `/api/games/${fx.game.id}/finish`;
+  const reply = (status: "saved" | "finished") =>
+    Response.json({ game: withStatus(fx.game, status) });
+
+  const saveButton = () => screen.getByRole("button", { name: "Save and exit" });
+  const finishButton = () => screen.getByRole("button", { name: "Finish game" });
+
+  /** The game of the owner, in the given status. */
+  function setupGame(status: "active" | "saved" | "finished", userId = fx.ownerId) {
+    const game = withStatus(fx.game, status);
+    const store = createGameStore();
+    act(() => store.applyStreamMessage(snapshotMessage(game, start)));
+    const actions: GameActions = {
+      send: vi.fn<GameActions["send"]>(() => Promise.resolve()),
+      pending: false,
+      error: null,
+    };
+    return render(
+      <GameStoreProvider store={store}>
+        <GameActionsContext value={actions}>
+          <LeaveGameMenu userId={userId} />
+        </GameActionsContext>
+      </GameStoreProvider>,
+    );
+  }
+
+  test("the owner of a running game has Save and exit and Finish game above Leave game", async () => {
+    const user = userEvent.setup();
+    setup();
+    await user.click(menuButton());
+    const names = screen
+      .getAllByRole("button")
+      .map((b) => b.getAttribute("aria-label") ?? b.textContent);
+    expect(names).toEqual(["Menu", "Save and exit", "Finish game", "Leave game"]);
+  });
+
+  test("a guest has neither", async () => {
+    const user = userEvent.setup();
+    setup({ userId: fx.guestId });
+    await user.click(menuButton());
+    expect(screen.queryByRole("button", { name: "Save and exit" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Finish game" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Leave game" })).toBeInTheDocument();
+  });
+
+  test.each(["saved", "finished"] as const)("a %s game has neither", async (status) => {
+    const user = userEvent.setup();
+    setupGame(status);
+    await user.click(menuButton());
+    expect(screen.queryByRole("button", { name: "Save and exit" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Finish game" })).not.toBeInTheDocument();
+  });
+
+  test("Save asks first, names the player on turn, and calls nothing before the confirm", async () => {
+    const user = userEvent.setup();
+    const calls = mockApi({});
+    setup();
+    await user.click(menuButton());
+    await user.click(saveButton());
+
+    expect(screen.getByRole("heading", { name: "Save and exit?" })).toHaveFocus();
+    expect(screen.getByText("The game goes back to the start of Ann's turn.")).toBeInTheDocument();
+    expect(screen.getByText(/The dice and cards stay the same/)).toBeInTheDocument();
+    expect(calls).toEqual([]);
+
+    await user.click(screen.getByRole("button", { name: "Keep playing" }));
+    expect(screen.getByRole("button", { name: "Save and exit" })).toBeInTheDocument();
+    expect(calls).toEqual([]);
+  });
+
+  test("Save and exit calls the save route once and closes the panel", async () => {
+    const user = userEvent.setup();
+    const calls = mockApi({ [`POST ${savePath}`]: reply("saved") });
+    setup();
+    await user.click(menuButton());
+    await user.click(saveButton());
+    await user.click(screen.getByRole("button", { name: "Save and exit" }));
+
+    expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual([`POST ${savePath}`]);
+    expect(screen.queryByRole("heading", { name: "Save and exit?" })).not.toBeInTheDocument();
+    expect(menuButton()).toHaveAttribute("aria-expanded", "false");
+  });
+
+  test("Finish says there is no winner, and Finish game calls the finish route", async () => {
+    const user = userEvent.setup();
+    const calls = mockApi({ [`POST ${finishPath}`]: reply("finished") });
+    setup();
+    await user.click(menuButton());
+    await user.click(finishButton());
+
+    expect(screen.getByRole("heading", { name: "Finish this game?" })).toHaveFocus();
+    expect(screen.getByText(/^There is no winner\. The game goes back/)).toBeInTheDocument();
+    expect(screen.getByText(/You cannot undo this/)).toBeInTheDocument();
+    expect(calls).toEqual([]);
+
+    await user.click(screen.getByRole("button", { name: "Finish game" }));
+    expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual([`POST ${finishPath}`]);
+    expect(menuButton()).toHaveAttribute("aria-expanded", "false");
+  });
+
+  test("a refused save shows the message and keeps the confirm open", async () => {
+    const user = userEvent.setup();
+    mockApi({ [`POST ${savePath}`]: errorReply(409, "game_not_active", "The game is not active") });
+    setup();
+    await user.click(menuButton());
+    await user.click(saveButton());
+    await user.click(screen.getByRole("button", { name: "Save and exit" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("The game is not active");
+    expect(screen.getByRole("heading", { name: "Save and exit?" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save and exit" })).toBeEnabled();
+  });
+
+  test("while it waits for the server the buttons are off and the status says so", async () => {
+    const user = userEvent.setup();
+    let release: (value: Response) => void = () => {};
+    mockApi({
+      [`POST ${finishPath}`]: new Promise<Response>((resolve) => {
+        release = resolve;
+      }),
+    });
+    setup();
+    await user.click(menuButton());
+    await user.click(finishButton());
+    await user.click(screen.getByRole("button", { name: "Finish game" }));
+
+    expect(screen.getByRole("status")).toHaveTextContent("Finishing…");
+    expect(screen.getByRole("button", { name: "Keep playing" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Finish game" })).toBeDisabled();
+
+    await act(async () => release(reply("finished")));
+    expect(menuButton()).toHaveAttribute("aria-expanded", "false");
+  });
+
+  test("Escape closes the Save confirm and sends nothing", async () => {
+    const user = userEvent.setup();
+    const calls = mockApi({});
+    setup();
+    await user.click(menuButton());
+    await user.click(saveButton());
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("heading", { name: "Save and exit?" })).not.toBeInTheDocument();
+    expect(menuButton()).toHaveFocus();
+    expect(calls).toEqual([]);
   });
 });

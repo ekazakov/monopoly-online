@@ -58,6 +58,26 @@ export async function startGame(id: string) {
   return unwrap(await client.api.games[":id"].start.$post({ param: { id } }));
 }
 
+/** `POST /api/games/:id/save`: the owner saves an active game. It goes back to the turn start. */
+export async function saveGame(id: string): Promise<Game> {
+  return (await unwrap(await client.api.games[":id"].save.$post({ param: { id } }))).game;
+}
+
+/** `POST /api/games/:id/finish`: the owner ends a game with no winner. */
+export async function finishGame(id: string): Promise<Game> {
+  return (await unwrap(await client.api.games[":id"].finish.$post({ param: { id } }))).game;
+}
+
+/** `POST /api/games/:id/claim`: a member claims the seats that they control in a saved game. */
+export async function claimSeats(id: string): Promise<Game> {
+  return (await unwrap(await client.api.games[":id"].claim.$post({ param: { id } }))).game;
+}
+
+/** `POST /api/games/:id/restore`: the owner continues a saved game. */
+export async function restoreGame(id: string): Promise<Game> {
+  return (await unwrap(await client.api.games[":id"].restore.$post({ param: { id } }))).game;
+}
+
 // `app.ts` does not mount the gameplay routes yet, so `AppType` has no `/state` path. Until it
 // does, the call goes through `apiFetch` (same 401 handling) and the shared schema checks the body.
 // Then it can become `client.api.games[":id"].state.$get(...)` with no change for callers.
