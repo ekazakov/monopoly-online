@@ -1,6 +1,6 @@
 import type { ActionType } from "@monopoly/game-engine";
-import type { ActionInput, Seat } from "@monopoly/shared";
-import { seatThatMayAct, useGame, useGameActions } from "../../../game/index.ts";
+import type { ActionInput, PresenceStatus, Seat } from "@monopoly/shared";
+import { seatThatMayAct, useGame, useGameActions, useGameSelector } from "../../../game/index.ts";
 import type { GameView } from "../../../game/index.ts";
 
 export type DiceValues = readonly [number, number];
@@ -12,6 +12,13 @@ export interface Turn {
   actor: Seat | null;
   /** The name of the player who must act now, also when that player is on another device. */
   actorName: string;
+  /**
+   * Whether the player who must act is there, when that player is on another device. Null for a
+   * seat of this device, and while the server has not said.
+   */
+  actorPresence: PresenceStatus | null;
+  /** This user owns the game, so the Menu has Save and Finish for a game that waits. */
+  isOwner: boolean;
   /** An action is on its way: every button that sends one stays disabled. */
   pending: boolean;
   /** This device has a seat that may do the action now, and no action is pending. */
@@ -36,6 +43,7 @@ export function useTurn(userId: string): Turn {
   const actions = useGameActions();
   const { pending } = actions;
   const { game, state } = view;
+  const presence = useGameSelector((s) => s.presence);
 
   const actorSeat = view.actingSeat;
   const actorName =
@@ -47,6 +55,11 @@ export function useTurn(userId: string): Turn {
     view,
     actor: seatFor(),
     actorName,
+    actorPresence:
+      actorSeat && !view.mySeats.some((s) => s.id === actorSeat.id)
+        ? (presence[actorSeat.id] ?? null)
+        : null,
+    isOwner: game?.ownerId === userId,
     pending,
     can: (type) => !pending && seatFor(type) !== null,
     send(action) {

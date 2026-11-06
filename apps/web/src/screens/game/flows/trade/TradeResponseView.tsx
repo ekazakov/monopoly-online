@@ -16,7 +16,7 @@ export function TradeResponseView({ turn }: CentrePhaseProps) {
     return (
       <section className="trade-flow trade-flow--response" aria-label="Trade offer">
         <h2 className="trade-flow__title">Trade offer</h2>
-        <Waiting name={turn.actorName} />
+        <Waiting turn={turn} />
       </section>
     );
   }
@@ -42,7 +42,7 @@ export function TradeResponseView({ turn }: CentrePhaseProps) {
         <OfferColumn giver={to} offer={trade.get} state={state} />
       </div>
 
-      {!mayAnswer && <Waiting name={to} />}
+      {!mayAnswer && <Waiting turn={turn} />}
 
       {(mayAnswer || mayWithdraw) && (
         <div className="trade-flow__actions">

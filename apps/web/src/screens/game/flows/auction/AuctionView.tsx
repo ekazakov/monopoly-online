@@ -22,7 +22,7 @@ export function AuctionView({ turn }: { turn: Turn }) {
     return (
       <div className="auction">
         <Status title="Auction" />
-        <Waiting name={turn.actorName} />
+        <Waiting turn={turn} />
       </div>
     );
   }
@@ -81,7 +81,7 @@ export function AuctionView({ turn }: { turn: Turn }) {
           label={turn.view.mySeats.length > 1 ? `${turn.actorName}'s bid` : "Your bid"}
         />
       ) : (
-        <Waiting name={turn.actorName} />
+        <Waiting turn={turn} />
       )}
       <p className="auction__sending" role="status" aria-live="polite">
         {turn.pending ? "Sending…" : ""}

@@ -18,6 +18,7 @@ import { useRealtimeStatus, useTopic } from "../realtime/index.ts";
 import { BoardScene } from "../scene/BoardScene.tsx";
 import type { ScenePlayer } from "../scene/model.ts";
 import { useSession } from "../session/index.ts";
+import { ConnectionBanner } from "./game/ConnectionBanner.tsx";
 import { GameLayout } from "./game/GameLayout.tsx";
 import { HandoffPrompt } from "./game/handoff/index.ts";
 import { CardNotice } from "./game/flows/card/index.ts";
@@ -129,6 +130,7 @@ function GameRoute({ gameId }: { gameId: string }) {
   return (
     <GameActionsContext value={actions}>
       <MotionProvider>
+        <ConnectionBanner />
         <GameLayout
           rail={<PlayerRail userId={userId} />}
           log={<GameLog userId={userId} />}

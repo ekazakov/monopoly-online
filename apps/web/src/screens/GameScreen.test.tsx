@@ -5,6 +5,7 @@ import { afterEach, describe, expect, test, vi } from "vite-plus/test";
 import {
   actionResponse,
   actionsMessage,
+  presenceMessage,
   recordFixture,
   redact,
   roomMessage,
@@ -467,5 +468,102 @@ describe("GameScreen: a game finished by the owner", () => {
       await screen.findByRole("heading", { level: 1, name: "Game finished by Ann" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "OK" })).toBeInTheDocument();
+  });
+});
+
+describe("GameScreen: the connection of this device", () => {
+  test("shows nothing while the connection is open", async () => {
+    const { realtime } = await setup();
+    await roll();
+    act(() => realtime.setStatus("open"));
+    expect(screen.queryByText("Reconnecting…")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Connection closed/)).not.toBeInTheDocument();
+  });
+
+  test("a reconnecting transport shows the banner, and it goes when the connection returns", async () => {
+    const { realtime } = await setup();
+    await roll();
+
+    act(() => realtime.setStatus("reconnecting"));
+    const banner = await screen.findByText("Reconnecting…");
+    expect(banner.closest("[role=status]")).toHaveTextContent(
+      "Reconnecting… Your moves wait until the connection returns.",
+    );
+
+    act(() => realtime.setStatus("open"));
+    await waitFor(() => expect(screen.queryByText("Reconnecting…")).not.toBeInTheDocument());
+  });
+
+  test("a closed transport tells the user to reload", async () => {
+    const { realtime } = await setup();
+    await roll();
+    act(() => realtime.setStatus("closed"));
+    expect(await screen.findByText("Connection closed.")).toBeInTheDocument();
+    expect(screen.getByText(/Reload the page to return to the game/)).toBeInTheDocument();
+  });
+});
+
+describe("GameScreen: the game waits for a player who is away", () => {
+  // Ann (seats a and c) is the owner and watches. Bo is on turn on the other device.
+  const watching = () => setup({ userId: fx.ownerId });
+  const turnArea = () => screen.findByRole("region", { name: "Turn actions" });
+
+  test("an online player is just waited for", async () => {
+    const { realtime } = await watching();
+    await turnArea();
+    act(() => realtime.emit(presenceMessage(fx.game, { [b.id]: "online" })));
+    expect(await screen.findByText("Waiting for Bo")).toBeInTheDocument();
+    expect(screen.queryByText(/to return/)).not.toBeInTheDocument();
+  });
+
+  test("a player who is reconnecting is named, and the line says what ends the wait", async () => {
+    const { realtime } = await watching();
+    await turnArea();
+    act(() => realtime.emit(presenceMessage(fx.game, { [b.id]: "reconnecting" })));
+    expect(await screen.findByText("Bo is reconnecting…")).toBeInTheDocument();
+    expect(screen.getByText("The game continues when the connection returns.")).toBeInTheDocument();
+    expect(screen.queryByText(/save or finish/)).not.toBeInTheDocument();
+  });
+
+  test("a player who is away is waited for, and the owner is pointed to the Menu", async () => {
+    const { realtime } = await watching();
+    await turnArea();
+    act(() => realtime.emit(presenceMessage(fx.game, { [b.id]: "away" })));
+    expect(await screen.findByText("Waiting for Bo to return")).toBeInTheDocument();
+    expect(screen.getByText("The game continues when Bo returns.")).toBeInTheDocument();
+    expect(
+      screen.getByText("You can also save or finish the game in the Menu."),
+    ).toBeInTheDocument();
+  });
+
+  test("a player who is not the owner is not pointed to the Menu", async () => {
+    // The guest watches Ann: put the turn on her seat.
+    const onAnn = {
+      ...redact(fx.start),
+      turn: { ...redact(fx.start).turn, currentPlayerId: a.id },
+    };
+    const { realtime } = await setup({ userId: fx.guestId, state: onAnn });
+    await turnArea();
+    act(() => realtime.emit(presenceMessage(fx.game, { [a.id]: "away" })));
+    expect(await screen.findByText("Waiting for Ann to return")).toBeInTheDocument();
+    expect(screen.queryByText(/save or finish/)).not.toBeInTheDocument();
+  });
+
+  test("the line goes when the player returns", async () => {
+    const { realtime } = await watching();
+    await turnArea();
+    act(() => realtime.emit(presenceMessage(fx.game, { [b.id]: "away" })));
+    await screen.findByText("Waiting for Bo to return");
+    act(() => realtime.emit(presenceMessage(fx.game, { [b.id]: "online" })));
+    expect(await screen.findByText("Waiting for Bo")).toBeInTheDocument();
+    expect(screen.queryByText(/to return/)).not.toBeInTheDocument();
+  });
+
+  test("a device that has the turn shows the buttons, whatever the others do", async () => {
+    const { realtime } = await setup({ userId: fx.guestId });
+    await roll();
+    act(() => realtime.emit(presenceMessage(fx.game, { [a.id]: "away", [c.id]: "away" })));
+    expect(screen.getByRole("button", { name: "Roll" })).toBeEnabled();
+    expect(screen.queryByText(/to return/)).not.toBeInTheDocument();
   });
 });

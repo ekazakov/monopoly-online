@@ -1,0 +1,58 @@
+/*
+ * The banner of the connection of this device (design board "Away and connection"). It floats
+ * over the game, under the top bar, and takes no room in the layout. Tokens only.
+ */
+.conn-banner {
+  position: fixed;
+  top: calc(var(--hf-target) + var(--hf-space-16));
+  left: 50%;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: var(--hf-space-12);
+  box-sizing: border-box;
+  max-width: calc(100vw - 2 * var(--hf-space-12));
+  min-height: var(--hf-target);
+  padding: var(--hf-space-8) var(--hf-space-16);
+  transform: translateX(-50%);
+  border: 1px solid var(--hf-coin);
+  border-radius: var(--hf-radius-control);
+  background: var(--hf-panel);
+  color: var(--hf-ink);
+  font: var(--hf-type-body-small);
+}
+
+.conn-banner[data-connection="closed"] {
+  border-color: var(--hf-danger);
+}
+
+.conn-banner b {
+  font-weight: 600;
+}
+
+.conn-banner__dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--hf-coin);
+  animation: conn-banner-pulse 1.2s ease-in-out infinite;
+}
+
+.conn-banner[data-connection="closed"] .conn-banner__dot {
+  border: 1.5px solid var(--hf-ink-soft);
+  background: transparent;
+  animation: none;
+}
+
+@keyframes conn-banner-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .conn-banner__dot {
+    animation: none;
+  }
+}

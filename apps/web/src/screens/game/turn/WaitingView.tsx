@@ -22,7 +22,7 @@ export function WaitingView({ turn }: { turn: Turn }) {
     <>
       {dice && <Dice dice={dice} stale={stale} />}
       {title && <Status title={title} />}
-      {phase === "game_over" ? null : <Waiting name={turn.actorName} />}
+      {phase === "game_over" ? null : <Waiting turn={turn} />}
     </>
   );
 }
