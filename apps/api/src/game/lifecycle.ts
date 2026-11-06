@@ -31,6 +31,8 @@ export interface LifecycleService {
   finish(input: { gameId: string; userId: string }): Promise<{ game: Game }>;
   /** A member claims the seats that they control. Only while the game is `saved`. */
   claim(input: { gameId: string; userId: string }): Promise<{ game: Game }>;
+  /** Owner only, `saved` only. Back to `active` with the same state, the owner's seats claimed. */
+  restore(input: { gameId: string; userId: string }): Promise<{ game: Game }>;
   /** Owner only, `active` only. Rolls back to the start of the turn and clears all claims. */
   save(input: { gameId: string; userId: string }): Promise<{ game: Game }>;
 }
@@ -67,6 +69,33 @@ export function createLifecycleService(options: LifecycleServiceOptions): Lifecy
   }
 
   return {
+    async restore({ gameId, userId }) {
+      const { status } = await requireOwned(gameId, userId);
+      if (status !== "saved") {
+        throw new GameServiceError("game_not_saved", "The game is not saved");
+      }
+      await db.transaction().execute(async (trx) => {
+        // The state does not change, so the version stays. The guard keeps a second writer out.
+        const updated = await trx
+          .updateTable("games")
+          .set({ status: "active" })
+          .where("id", "=", gameId)
+          .where("status", "=", "saved")
+          .executeTakeFirst();
+        if (Number(updated.numUpdatedRows) !== 1) {
+          throw new GameServiceError("game_not_saved", "The game is not saved");
+        }
+        await trx
+          .updateTable("seats")
+          .set({ claimed_at: now().toISOString() })
+          .where("game_id", "=", gameId)
+          .where("controller_user_id", "=", userId)
+          .where("claimed_at", "is", null)
+          .execute();
+      });
+      return { game: await announce(gameId) };
+    },
+
     async claim({ gameId, userId }) {
       const game = await db
         .selectFrom("games")

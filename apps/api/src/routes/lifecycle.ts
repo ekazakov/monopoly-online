@@ -57,6 +57,21 @@ const claimRoute = createRoute({
   },
 });
 
+const restoreRoute = createRoute({
+  ...sessionSecurity,
+  method: "post",
+  path: "/games/{id}/restore",
+  tags: ["games"],
+  summary: "Continue a saved game",
+  description:
+    "Owner only, `saved` games only. The status becomes `active` and the owner's seats are claimed. The state and the version do not change, so the next roll gives the same dice. Every device gets a `snapshot`.",
+  request: { params: gameParamsSchema },
+  responses: {
+    200: jsonResponse("The active game", gameResponseSchema),
+    ...errorResponses(400, 401, 403, 404, 409, 500),
+  },
+});
+
 export function lifecycleRoutes(deps: AppDeps & { lifecycle: LifecycleService }) {
   const { lifecycle } = deps;
   return new OpenAPIHono<AppEnv>()
@@ -64,6 +79,25 @@ export function lifecycleRoutes(deps: AppDeps & { lifecycle: LifecycleService })
       const { id } = c.req.valid("param");
       try {
         return c.json(await lifecycle.finish({ gameId: id, userId: c.get("user").id }), 200);
+      } catch (error) {
+        if (!(error instanceof GameServiceError)) throw error;
+        const body = { error: { code: error.code, message: error.message } };
+        switch (error.status) {
+          case 403:
+            return c.json(body, 403);
+          case 404:
+            return c.json(body, 404);
+          case 409:
+            return c.json(body, 409);
+          default:
+            throw error;
+        }
+      }
+    })
+    .openapi(restoreRoute, async (c) => {
+      const { id } = c.req.valid("param");
+      try {
+        return c.json(await lifecycle.restore({ gameId: id, userId: c.get("user").id }), 200);
       } catch (error) {
         if (!(error instanceof GameServiceError)) throw error;
         const body = { error: { code: error.code, message: error.message } };

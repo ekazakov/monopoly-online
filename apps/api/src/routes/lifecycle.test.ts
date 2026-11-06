@@ -1,3 +1,4 @@
+import { actorFor, applyAction } from "@monopoly/game-engine";
 import { afterEach, beforeEach, describe, expect, test } from "vite-plus/test";
 // The app (and with it `@hono/zod-openapi`) loads before `@monopoly/shared`, as the zod extension needs.
 import { createApp } from "../app.ts";
@@ -307,6 +308,102 @@ describe("game lifecycle routes", () => {
         .execute();
       expect((await save(started.owner.cookie)).status).toBe(200);
       expect(await claimed()).toEqual({ Alice: false, Bobby: false, Carol: false });
+    });
+  });
+
+  describe("restore", () => {
+    const restore = (cookie: string, id = started.game.id) =>
+      sendAs(app, "POST", `/api/games/${id}/restore`, cookie);
+
+    test("continues with the same state, claims the owner's seats, and tells every device", async () => {
+      await play(8);
+      expect((await save(started.owner.cookie)).status).toBe(200);
+      const saved = await gameRow();
+      const savedState = await turnStartState();
+      seen.length = 0;
+
+      const res = await restore(started.owner.cookie);
+
+      expect(res.status).toBe(200);
+      const { game } = gameResponseSchema.parse(await res.json());
+      expect(game).toMatchObject({ status: "active", version: saved.version });
+      expect(Object.fromEntries(game.seats.map((seat) => [seat.name, seat.claimed]))).toEqual({
+        Alice: true,
+        Bobby: false,
+        Carol: true,
+      });
+      expect(await gameRow()).toEqual({ status: "active", version: saved.version });
+      expect(seen).toEqual([
+        {
+          topic: gameTopic(started.game.id),
+          type: "snapshot",
+          version: saved.version,
+          payload: { game, state: redactState(savedState) },
+        },
+      ]);
+    });
+
+    test("the same dice come back: a roll after restore equals a roll on a copy of the state", async () => {
+      await play(8);
+      expect((await save(started.owner.cookie)).status).toBe(200);
+      const savedState = await turnStartState();
+      expect((await restore(started.owner.cookie)).status).toBe(200);
+
+      const actor = actorFor(savedState);
+      const expected = applyAction(savedState, { type: "RollDice", playerId: actor });
+      expect(expected.ok).toBe(true);
+      const cookie = started.cookieOfSeat(actor);
+      const res = await app.request(`/api/games/${started.game.id}/actions`, {
+        method: "POST",
+        headers: { "content-type": "application/json", cookie },
+        body: JSON.stringify({
+          seatId: actor,
+          action: { type: "RollDice" },
+          expectedVersion: savedState.version,
+          clientActionId: crypto.randomUUID(),
+        }),
+      });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { events: unknown };
+      if (!expected.ok) return;
+      expect(body.events).toEqual(JSON.parse(JSON.stringify(expected.events)));
+    });
+
+    test("only the owner can restore", async () => {
+      expect((await save(started.owner.cookie)).status).toBe(200);
+      const res = await restore(started.guest.cookie);
+      expect(res.status).toBe(403);
+      expect(await errorCode(res)).toBe("not_game_owner");
+      expect((await gameRow()).status).toBe("saved");
+    });
+
+    test.each(["active", "finished"] as const)(
+      "a %s game is 409 game_not_saved",
+      async (status) => {
+        await db.updateTable("games").set({ status }).where("id", "=", started.game.id).execute();
+        const res = await restore(started.owner.cookie);
+        expect(res.status).toBe(409);
+        expect(await errorCode(res)).toBe("game_not_saved");
+      },
+    );
+
+    test("a waiting game is 409 and an unknown game is 404", async () => {
+      const room = gameResponseSchema.parse(
+        await (await postJson(app, "/api/games", started.owner.cookie, { name: "Dock" })).json(),
+      ).game;
+      expect((await restore(started.owner.cookie, room.id)).status).toBe(409);
+      const missing = await restore(started.owner.cookie, "00000000-0000-4000-8000-0000000000aa");
+      expect(missing.status).toBe(404);
+    });
+
+    test("save, restore and save again works", async () => {
+      expect((await save(started.owner.cookie)).status).toBe(200);
+      expect((await restore(started.owner.cookie)).status).toBe(200);
+      const again = await save(started.owner.cookie);
+      expect(again.status).toBe(200);
+      const { game } = gameResponseSchema.parse(await again.json());
+      expect(game).toMatchObject({ status: "saved", version: 2 });
+      expect(game.seats.every((seat) => !seat.claimed)).toBe(true);
     });
   });
 });
