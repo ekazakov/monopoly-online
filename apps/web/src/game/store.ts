@@ -2,6 +2,7 @@ import type {
   ActionResponse,
   Game,
   GameEvent,
+  PresenceStatus,
   RedactedGameState,
   StreamMessage,
 } from "@monopoly/shared";
@@ -34,6 +35,11 @@ export interface GameStoreState {
   connection: ConnectionStatus;
   /** A `game.actions` message skipped a version. The UI may refetch the state. */
   gapDetected: boolean;
+  /**
+   * The presence of each seat, by seat id. Only for an `active` game. A seat that is missing has
+   * no known status, for example a seat of this device.
+   */
+  presence: Readonly<Record<string, PresenceStatus>>;
 }
 
 export const initialGameState: GameStoreState = {
@@ -46,6 +52,7 @@ export const initialGameState: GameStoreState = {
   status: "idle",
   connection: "closed",
   gapDetected: false,
+  presence: {},
 };
 
 /** `game:<uuid>` to the game id. */
@@ -77,13 +84,21 @@ function applySnapshot(
 ): GameStoreState {
   const version = state?.version ?? 0;
   const sameGame = prev.game?.id === game.id;
-  const keepLog = sameGame && version >= prev.version;
+  // Save and Finish roll the turn back: the state is older than the log, but its version is higher.
+  // So the log goes with every change of status. Restore repeats the version of the Save.
+  const keepLog =
+    sameGame &&
+    version >= prev.version &&
+    game.status === "active" &&
+    prev.game?.status === "active";
   const sameVersion = keepLog && version === prev.version;
   return {
     ...prev,
     game,
     state,
     version,
+    // The server forgets the presence of a game that is not active.
+    presence: sameGame && game.status === "active" ? prev.presence : {},
     events: keepLog ? prev.events : [],
     droppedEvents: keepLog ? prev.droppedEvents : 0,
     lastActionEvents: sameVersion ? prev.lastActionEvents : [],
@@ -122,6 +137,11 @@ export function applyStreamMessage(prev: GameStoreState, message: StreamMessage)
   }
   // A message of another game, for example a late one after the user left for another room.
   if (prev.game && prev.game.id !== gameId) return prev;
+  if (message.type === "presence.updated") {
+    // Only an active game has a presence. A late message of a game that left `active` is dropped.
+    if (prev.game && prev.game.status !== "active") return prev;
+    return { ...prev, presence: message.payload.seats };
+  }
   if (message.type === "room.updated") {
     return { ...prev, game: message.payload.game, status: "ready" };
   }

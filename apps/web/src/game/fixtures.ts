@@ -8,6 +8,7 @@ import {
   gameEventSchema,
   gameSchema,
   redactedGameStateSchema,
+  presenceUpdatedMessageSchema,
   roomUpdatedMessageSchema,
   snapshotMessageSchema,
   TOKENS,
@@ -146,6 +147,19 @@ export function roomMessage(game: Game): StreamMessage {
     type: "room.updated",
     version: game.version,
     payload: { game },
+  });
+}
+
+/** `presence.updated`: version 0 and no SSE id, as the server sends it. */
+export function presenceMessage(
+  game: Game,
+  seats: Record<string, "online" | "reconnecting" | "away">,
+): StreamMessage {
+  return presenceUpdatedMessageSchema.parse({
+    topic: topicOf(game),
+    type: "presence.updated",
+    version: 0,
+    payload: { seats },
   });
 }
 

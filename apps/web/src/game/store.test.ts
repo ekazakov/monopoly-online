@@ -2,6 +2,7 @@ import { describe, expect, test, vi } from "vite-plus/test";
 import {
   actionResponse,
   actionsMessage,
+  presenceMessage,
   recordFixture,
   redact,
   roomMessage,
@@ -349,5 +350,126 @@ describe("applyStateResponse: first state", () => {
     const next = applyStateResponse(initialGameState, { version: 0, state });
     expect(next.state).toBe(state);
     expect(next.version).toBe(0);
+  });
+});
+
+describe("save, finish and restore snapshots", () => {
+  const live = () =>
+    apply(
+      initialGameState,
+      start,
+      actionsMessage(fx.game, s1),
+      actionsMessage(fx.game, s2),
+      actionsMessage(fx.game, s3),
+    );
+  // A rollback gives the state of an earlier version a higher version number.
+  const rolledBack = { ...redact(fx.start), version: s3.state.version + 1 };
+
+  test("a saved game takes the snapshot with its status and drops the discarded log", () => {
+    const saved = withStatus({ ...fx.game, version: rolledBack.version }, "saved");
+    const next = applyStreamMessage(live(), snapshotMessage(saved, rolledBack));
+    expect(next.game?.status).toBe("saved");
+    expect(next.state).toEqual(rolledBack);
+    expect(next.version).toBe(rolledBack.version);
+    expect(next.events).toEqual([]);
+    expect(next.lastActionEvents).toEqual([]);
+    expect(next.status).toBe("ready");
+  });
+
+  test("a finished game takes the snapshot the same way", () => {
+    const finished = withStatus({ ...fx.game, version: rolledBack.version }, "finished");
+    const next = applyStreamMessage(live(), snapshotMessage(finished, rolledBack));
+    expect(next.game?.status).toBe("finished");
+    expect(next.events).toEqual([]);
+  });
+
+  test("the snapshot of a restore repeats the version and is taken", () => {
+    const saved = withStatus({ ...fx.game, version: rolledBack.version }, "saved");
+    const savedState = applyStreamMessage(live(), snapshotMessage(saved, rolledBack));
+    const restored = withStatus({ ...saved }, "active");
+    const next = applyStreamMessage(savedState, snapshotMessage(restored, rolledBack));
+    expect(next.game?.status).toBe("active");
+    expect(next.version).toBe(rolledBack.version);
+    expect(next.events).toEqual([]);
+  });
+
+  test("the next action after a restore applies on the new version", () => {
+    const saved = withStatus({ ...fx.game, version: rolledBack.version }, "saved");
+    const restored = withStatus(saved, "active");
+    const base = apply(
+      live(),
+      snapshotMessage(saved, rolledBack),
+      snapshotMessage(restored, rolledBack),
+    );
+    const again = { ...s1, state: { ...s1.state, version: rolledBack.version + 1 } };
+    const next = applyStreamMessage(base, actionsMessage(fx.game, again));
+    expect(next.version).toBe(rolledBack.version + 1);
+    expect(next.gapDetected).toBe(false);
+    expect(next.events.map((e) => e.version)).toEqual(again.events.map(() => again.state.version));
+  });
+});
+
+describe("presence.updated", () => {
+  const [seatA, seatB] = fx.game.seats.map((seat) => seat.id) as [string, string];
+  const active = () => apply(initialGameState, start);
+
+  test("starts empty", () => {
+    expect(initialGameState.presence).toEqual({});
+    expect(active().presence).toEqual({});
+  });
+
+  test("replaces the map each time", () => {
+    const first = applyStreamMessage(
+      active(),
+      presenceMessage(fx.game, { [seatA]: "online", [seatB]: "reconnecting" }),
+    );
+    expect(first.presence).toEqual({ [seatA]: "online", [seatB]: "reconnecting" });
+    const second = applyStreamMessage(first, presenceMessage(fx.game, { [seatA]: "away" }));
+    expect(second.presence).toEqual({ [seatA]: "away" });
+  });
+
+  test("a reconnect snapshot keeps the presence", () => {
+    const withPresence = applyStreamMessage(
+      active(),
+      presenceMessage(fx.game, { [seatA]: "online" }),
+    );
+    const next = applyStreamMessage(withPresence, snapshotMessage(fx.game, s4.state));
+    expect(next.presence).toEqual({ [seatA]: "online" });
+  });
+
+  test("a snapshot of a game that is not active clears it", () => {
+    const withPresence = applyStreamMessage(
+      active(),
+      presenceMessage(fx.game, { [seatA]: "online" }),
+    );
+    const saved = withStatus(fx.game, "saved");
+    const next = applyStreamMessage(withPresence, snapshotMessage(saved, s4.state));
+    expect(next.presence).toEqual({});
+  });
+
+  test("a late message of a game that is not active is dropped", () => {
+    const saved = applyStreamMessage(
+      active(),
+      snapshotMessage(withStatus(fx.game, "saved"), s4.state),
+    );
+    const next = applyStreamMessage(saved, presenceMessage(fx.game, { [seatA]: "online" }));
+    expect(next).toBe(saved);
+  });
+
+  test("a message of another game is ignored", () => {
+    const other = recordFixture(1, 11).game;
+    const state = active();
+    expect(applyStreamMessage(state, presenceMessage(other, { [seatA]: "away" }))).toBe(state);
+  });
+
+  test("the same map still notifies once, and reset clears it", () => {
+    const store = createGameStore();
+    store.applyStreamMessage(start);
+    const listener = vi.fn<() => void>();
+    store.subscribe(listener);
+    store.applyStreamMessage(presenceMessage(fx.game, { [seatA]: "online" }));
+    expect(listener).toHaveBeenCalledTimes(1);
+    store.reset();
+    expect(store.getState().presence).toEqual({});
   });
 });
