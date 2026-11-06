@@ -14,6 +14,7 @@ const flush = () => Promise.resolve();
 const lobbyGame = {
   id: gameId,
   name: "Friday game",
+  ownerId: "00000000-0000-4000-8000-000000000001",
   ownerName: "Ann",
   status: "waiting" as const,
   seatCount: 2,

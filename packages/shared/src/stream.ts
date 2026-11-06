@@ -15,6 +15,7 @@ export const streamMessageTypes = [
   "lobby.updated",
   "lobby.removed",
   "invites.updated",
+  "presence.updated",
 ] as const;
 
 /** `game:<uuid>`: one room. Its messages carry the engine version. */
@@ -109,6 +110,18 @@ export const invitesUpdatedMessageSchema = message(
   z.strictObject({ invites: z.array(inviteSchema) }),
 );
 
+/** `online`: the controller has a game stream open. `reconnecting`: no stream, inside the grace time. `away`: the grace time ended. */
+export const presenceStatusSchema = z.enum(["online", "reconnecting", "away"]);
+
+/**
+ * The presence of every seat of a game, keyed by seat id. Sent on each change and on each connect
+ * to `game:<id>`, also when a resume has nothing to send. Version 0, no SSE id.
+ */
+export const presenceUpdatedMessageSchema = message(
+  "presence.updated",
+  z.strictObject({ seats: z.record(idSchema, presenceStatusSchema) }),
+);
+
 export const streamMessageSchema = z.discriminatedUnion("type", [
   snapshotMessageSchema,
   roomUpdatedMessageSchema,
@@ -118,7 +131,9 @@ export const streamMessageSchema = z.discriminatedUnion("type", [
   lobbyUpdatedMessageSchema,
   lobbyRemovedMessageSchema,
   invitesUpdatedMessageSchema,
+  presenceUpdatedMessageSchema,
 ]);
 
+export type PresenceStatus = z.infer<typeof presenceStatusSchema>;
 export type StreamMessage = z.infer<typeof streamMessageSchema>;
 export type StreamMessageType = StreamMessage["type"];

@@ -29,6 +29,7 @@ const seat = (n: number) => ({
   userId: id(100 + n),
   controllerUserId: id(100 + n),
   token: TOKENS[n - 1]!,
+  claimed: false,
 });
 
 const game = {
@@ -144,6 +145,7 @@ describe("lobby", () => {
   const lobbyGame = {
     id: id(1),
     name: "Friday night",
+    ownerId: id(1),
     ownerName: "Ann",
     status: "waiting" as const,
     seatCount: 2,

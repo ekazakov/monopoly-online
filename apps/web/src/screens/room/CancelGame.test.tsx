@@ -27,6 +27,7 @@ const ines: Seat = {
   userId: otherId,
   controllerUserId: otherId,
   token: TOKENS[1]!,
+  claimed: false,
 };
 const room = (seats: Seat[], fields: Partial<Game> = {}) => gameFixture({ seats, ...fields });
 const cancelledMessage: StreamMessage = {

@@ -19,6 +19,7 @@ afterEach(() => {
 const lobbyGame = (n: number, fields: Partial<LobbyGame> = {}): LobbyGame => ({
   id: `00000000-0000-4000-8000-00000000010${n}`,
   name: `Game ${n}`,
+  ownerId: "00000000-0000-4000-8000-000000000001",
   ownerName: "Ann",
   status: "waiting",
   seatCount: 2,

@@ -11,6 +11,7 @@ const userTopic = `user:${userFixture.id}` as const;
 const target: LobbyGame = {
   id: "00000000-0000-4000-8000-000000000301",
   name: "Game 1",
+  ownerId: "00000000-0000-4000-8000-000000000001",
   ownerName: "Ann",
   status: "waiting",
   seatCount: 2,

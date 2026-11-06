@@ -1,8 +1,9 @@
 import { z } from "zod";
 import { idSchema } from "./common.ts";
 import { MAX_SEATS, seatNameSchema } from "./games.ts";
+import { displayNameSchema } from "./session.ts";
 
-export const standingStatusSchema = z.enum(["winner", "bankrupt", "resigned"]);
+export const standingStatusSchema = z.enum(["winner", "bankrupt", "resigned", "in_game"]);
 
 export const standingSchema = z.strictObject({
   /** 1 is the winner. The others rank by elimination order: the last one out is 2, the first one out is last. */
@@ -29,7 +30,10 @@ export const standingSchema = z.strictObject({
 export const gameResultSchema = z.strictObject({
   gameId: idSchema,
   rounds: z.number().int().min(1),
-  winner: z.strictObject({ seatId: idSchema, name: seatNameSchema }),
+  /** Null when the owner finished the game before anybody won. */
+  winner: z.strictObject({ seatId: idSchema, name: seatNameSchema }).nullable(),
+  /** The owner's name when the owner finished the game. Null when the game ended by itself. */
+  finishedBy: displayNameSchema.nullable(),
   /** In rank order. */
   standings: z.array(standingSchema).min(2).max(MAX_SEATS),
 });

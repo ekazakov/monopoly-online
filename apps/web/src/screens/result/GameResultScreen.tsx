@@ -94,9 +94,13 @@ function Summary({
     <header className="result__summary">
       <div className="result__eyebrow">Game over</div>
       <h1 id="result-title" className="result__title" ref={headingRef} tabIndex={-1}>
-        {result.winner.name} wins
+        {result.winner ? `${result.winner.name} wins` : "Game finished"}
       </h1>
-      <p className="result__rounds">Last player left after {rounds}.</p>
+      <p className="result__rounds">
+        {result.winner
+          ? `Last player left after ${rounds}.`
+          : `Finished by ${result.finishedBy ?? "the owner"} after ${rounds}.`}
+      </p>
     </header>
   );
 }

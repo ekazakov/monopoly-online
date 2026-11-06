@@ -39,6 +39,7 @@
                   "game_not_waiting",
                   "game_not_active",
                   "game_not_finished",
+                  "game_not_saved",
                   "not_enough_players",
                   "seat_name_taken",
                   "owner_cannot_leave",
@@ -366,6 +367,10 @@
                             "minLength": 1,
                             "maxLength": 60
                           },
+                          "ownerId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
                           "ownerName": {
                             "type": "string",
                             "minLength": 2,
@@ -396,6 +401,7 @@
                         "required": [
                           "id",
                           "name",
+                          "ownerId",
                           "ownerName",
                           "status",
                           "seatCount",
@@ -531,6 +537,9 @@
                               "token": {
                                 "type": "string",
                                 "enum": ["dog", "cat", "penguin", "car", "horse", "duck"]
+                              },
+                              "claimed": {
+                                "type": "boolean"
                               }
                             },
                             "required": [
@@ -540,7 +549,8 @@
                               "kind",
                               "userId",
                               "controllerUserId",
-                              "token"
+                              "token",
+                              "claimed"
                             ],
                             "additionalProperties": false
                           },
@@ -648,6 +658,10 @@
                             "minLength": 1,
                             "maxLength": 60
                           },
+                          "ownerId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
                           "ownerName": {
                             "type": "string",
                             "minLength": 2,
@@ -678,6 +692,7 @@
                         "required": [
                           "id",
                           "name",
+                          "ownerId",
                           "ownerName",
                           "status",
                           "seatCount",
@@ -797,6 +812,9 @@
                               "token": {
                                 "type": "string",
                                 "enum": ["dog", "cat", "penguin", "car", "horse", "duck"]
+                              },
+                              "claimed": {
+                                "type": "boolean"
                               }
                             },
                             "required": [
@@ -806,7 +824,8 @@
                               "kind",
                               "userId",
                               "controllerUserId",
-                              "token"
+                              "token",
+                              "claimed"
                             ],
                             "additionalProperties": false
                           },
@@ -1038,6 +1057,9 @@
                               "token": {
                                 "type": "string",
                                 "enum": ["dog", "cat", "penguin", "car", "horse", "duck"]
+                              },
+                              "claimed": {
+                                "type": "boolean"
                               }
                             },
                             "required": [
@@ -1047,7 +1069,8 @@
                               "kind",
                               "userId",
                               "controllerUserId",
-                              "token"
+                              "token",
+                              "claimed"
                             ],
                             "additionalProperties": false
                           },
@@ -1223,6 +1246,9 @@
                               "token": {
                                 "type": "string",
                                 "enum": ["dog", "cat", "penguin", "car", "horse", "duck"]
+                              },
+                              "claimed": {
+                                "type": "boolean"
                               }
                             },
                             "required": [
@@ -1232,7 +1258,8 @@
                               "kind",
                               "userId",
                               "controllerUserId",
-                              "token"
+                              "token",
+                              "claimed"
                             ],
                             "additionalProperties": false
                           },
@@ -1437,6 +1464,9 @@
                               "token": {
                                 "type": "string",
                                 "enum": ["dog", "cat", "penguin", "car", "horse", "duck"]
+                              },
+                              "claimed": {
+                                "type": "boolean"
                               }
                             },
                             "required": [
@@ -1446,7 +1476,8 @@
                               "kind",
                               "userId",
                               "controllerUserId",
-                              "token"
+                              "token",
+                              "claimed"
                             ],
                             "additionalProperties": false
                           },
@@ -1651,6 +1682,9 @@
                               "token": {
                                 "type": "string",
                                 "enum": ["dog", "cat", "penguin", "car", "horse", "duck"]
+                              },
+                              "claimed": {
+                                "type": "boolean"
                               }
                             },
                             "required": [
@@ -1660,7 +1694,8 @@
                               "kind",
                               "userId",
                               "controllerUserId",
-                              "token"
+                              "token",
+                              "claimed"
                             ],
                             "additionalProperties": false
                           },
@@ -1873,6 +1908,9 @@
                               "token": {
                                 "type": "string",
                                 "enum": ["dog", "cat", "penguin", "car", "horse", "duck"]
+                              },
+                              "claimed": {
+                                "type": "boolean"
                               }
                             },
                             "required": [
@@ -1882,7 +1920,8 @@
                               "kind",
                               "userId",
                               "controllerUserId",
-                              "token"
+                              "token",
+                              "claimed"
                             ],
                             "additionalProperties": false
                           },
@@ -2097,6 +2136,9 @@
                               "token": {
                                 "type": "string",
                                 "enum": ["dog", "cat", "penguin", "car", "horse", "duck"]
+                              },
+                              "claimed": {
+                                "type": "boolean"
                               }
                             },
                             "required": [
@@ -2106,7 +2148,8 @@
                               "kind",
                               "userId",
                               "controllerUserId",
-                              "token"
+                              "token",
+                              "claimed"
                             ],
                             "additionalProperties": false
                           },
@@ -2302,6 +2345,9 @@
                               "token": {
                                 "type": "string",
                                 "enum": ["dog", "cat", "penguin", "car", "horse", "duck"]
+                              },
+                              "claimed": {
+                                "type": "boolean"
                               }
                             },
                             "required": [
@@ -2311,7 +2357,8 @@
                               "kind",
                               "userId",
                               "controllerUserId",
-                              "token"
+                              "token",
+                              "claimed"
                             ],
                             "additionalProperties": false
                           },
@@ -2916,6 +2963,9 @@
                               "token": {
                                 "type": "string",
                                 "enum": ["dog", "cat", "penguin", "car", "horse", "duck"]
+                              },
+                              "claimed": {
+                                "type": "boolean"
                               }
                             },
                             "required": [
@@ -2925,7 +2975,8 @@
                               "kind",
                               "userId",
                               "controllerUserId",
-                              "token"
+                              "token",
+                              "claimed"
                             ],
                             "additionalProperties": false
                           },
@@ -5312,7 +5363,7 @@
                           "minimum": 1
                         },
                         "winner": {
-                          "type": "object",
+                          "type": ["object", "null"],
                           "properties": {
                             "seatId": {
                               "type": "string",
@@ -5326,6 +5377,11 @@
                           },
                           "required": ["seatId", "name"],
                           "additionalProperties": false
+                        },
+                        "finishedBy": {
+                          "type": ["string", "null"],
+                          "minLength": 2,
+                          "maxLength": 16
                         },
                         "standings": {
                           "type": "array",
@@ -5352,7 +5408,7 @@
                               },
                               "status": {
                                 "type": "string",
-                                "enum": ["winner", "bankrupt", "resigned"]
+                                "enum": ["winner", "bankrupt", "resigned", "in_game"]
                               },
                               "outRound": {
                                 "type": ["integer", "null"],
@@ -5388,7 +5444,7 @@
                           "maxItems": 6
                         }
                       },
-                      "required": ["gameId", "rounds", "winner", "standings"],
+                      "required": ["gameId", "rounds", "winner", "finishedBy", "standings"],
                       "additionalProperties": false
                     }
                   },

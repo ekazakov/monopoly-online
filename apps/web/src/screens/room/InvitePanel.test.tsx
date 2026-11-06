@@ -25,6 +25,7 @@ const seatOf = (n: number, fields: Partial<Seat>): Seat => ({
   userId: me,
   controllerUserId: me,
   token: TOKENS[n - 1]!,
+  claimed: false,
   ...fields,
 });
 const ines = seatOf(2, { name: "Ines", userId: otherId, controllerUserId: otherId });

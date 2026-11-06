@@ -132,7 +132,7 @@ describe("GET /api/games/{id}/result", () => {
 
     expect(result.gameId).toBe(started.game.id);
     expect(result.rounds).toBe(1 + Math.floor(turns / 3));
-    expect(result.winner.seatId).toBe(first.id);
+    expect(result.winner?.seatId).toBe(first.id);
     expect(result.standings.map((s) => [s.rank, s.seatId, s.status])).toEqual([
       [1, first.id, "winner"],
       [2, second.id, "resigned"],

@@ -29,6 +29,7 @@ const result = {
   gameId: id(9),
   rounds: 5,
   winner: { seatId: id(1), name: "Ann" },
+  finishedBy: null,
   standings: [winner, out],
 };
 
@@ -36,6 +37,24 @@ describe("game result schemas", () => {
   test("accept a result and its response", () => {
     expect(gameResultSchema.parse(result)).toEqual(result);
     expect(gameResultResponseSchema.parse({ result })).toEqual({ result });
+  });
+
+  test("accept a game finished by the owner: no winner, players still in the game", () => {
+    const inGame = { ...winner, status: "in_game" as const };
+    const finished = {
+      ...result,
+      winner: null,
+      finishedBy: "Ann",
+      standings: [inGame, { ...inGame, rank: 2, seatId: id(3), netWorth: 900 }, out],
+    };
+    expect(gameResultSchema.parse(finished)).toEqual(finished);
+    expect(standingSchema.parse({ ...inGame, outRound: null })).toEqual(inGame);
+  });
+
+  test("a result must say who finished it", () => {
+    const { finishedBy: _finishedBy, ...withoutFinishedBy } = result;
+    expect(gameResultSchema.safeParse(withoutFinishedBy).success).toBe(false);
+    expect(gameResultSchema.safeParse({ ...result, finishedBy: 7 }).success).toBe(false);
   });
 
   test("reject an unknown status, a rank of 0 and a lone standing", () => {

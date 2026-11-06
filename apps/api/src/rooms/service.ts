@@ -87,6 +87,7 @@ export function toLobbyGame(game: GameRow & { owner_name: string }, seats: SeatR
   return {
     id: game.id,
     name: game.name,
+    ownerId: game.owner_id,
     ownerName: game.owner_name,
     status: game.status,
     seatCount: ordered.length,
@@ -113,6 +114,7 @@ export function toApiGame(game: GameRow, seats: SeatRow[], invites: RoomInvite[]
         userId: seat.user_id,
         controllerUserId: seat.controller_user_id,
         token: seat.token,
+        claimed: seat.claimed_at !== null,
       })),
     invites,
   };

@@ -5,6 +5,7 @@ import { OPEN_GAMES_LIMIT, initialLobbyState, lobbyReducer } from "./lobbyModel.
 const game = (n: number, fields: Partial<LobbyGame> = {}): LobbyGame => ({
   id: `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`,
   name: `Game ${n}`,
+  ownerId: "00000000-0000-4000-8000-000000000001",
   ownerName: "Ann",
   status: "waiting",
   seatCount: 1,

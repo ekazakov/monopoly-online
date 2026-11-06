@@ -59,7 +59,7 @@ Ask before you add or change a board. Sync the artifacts.
 
 ### B. Shared and database
 
-- [ ] **Milestone 3 shared schemas (B1).** `presence.updated`. `claimed` on `seatSchema`. `ownerId` on `lobbyGameSchema`. Result: `winner` nullable, new `finishedBy`, new standing status `in_game`. New error code `game_not_saved`, in the code list **and** in the status map.
+- [x] **Milestone 3 shared schemas (B1).** `presence.updated`. `claimed` on `seatSchema`. `ownerId` on `lobbyGameSchema`. Result: `winner` nullable, new `finishedBy`, new standing status `in_game`. New error code `game_not_saved`, in the code list **and** in the status map.
 - [x] **Seat claim migration (B2).** Migration `0007_seat_claims`: nullable `seats.claimed_at`. Test it on rows from before the migration.
 
 ### C. Finish, Save and Restore API

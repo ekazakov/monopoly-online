@@ -8,6 +8,7 @@ import {
 
 const gameId = "00000000-0000-4000-8000-000000000001";
 const topic = `game:${gameId}`;
+const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 
 const game = {
   id: gameId,
@@ -74,6 +75,22 @@ describe("stream messages", () => {
       payload: { events: [{ type: "TurnEnded", playerId: "a", nextPlayerId: "b" }], state },
     };
     expect(streamMessageSchema.parse(message)).toEqual(message);
+  });
+
+  test("presence.updated", () => {
+    const seats = { [id(1)]: "online", [id(2)]: "reconnecting", [id(3)]: "away" };
+    const message = { topic, type: "presence.updated", version: 0, payload: { seats } };
+    expect(streamMessageSchema.parse(message)).toEqual(message);
+    expect(streamMessageSchema.safeParse({ ...message, payload: { seats: {} } }).success).toBe(
+      true,
+    );
+    expect(
+      streamMessageSchema.safeParse({ ...message, payload: { seats: { [id(1)]: "gone" } } })
+        .success,
+    ).toBe(false);
+    expect(
+      streamMessageSchema.safeParse({ ...message, payload: { seats: { nope: "online" } } }).success,
+    ).toBe(false);
   });
 
   test("the payload must match the type", () => {

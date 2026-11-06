@@ -30,6 +30,8 @@ export const seatSchema = z.strictObject({
   controllerUserId: idSchema,
   /** Unique in a game. The controller of the seat can change it while the game is `waiting`. */
   token: tokenSchema,
+  /** True when `seats.claimed_at` is set. Only a `saved` game uses it: the room shows who is back. */
+  claimed: z.boolean(),
 });
 
 export const gameStatusSchema = z.enum(["waiting", "active", "saved", "finished"]);
@@ -63,6 +65,7 @@ export const gameSchema = z.strictObject({
 export const lobbyGameSchema = z.strictObject({
   id: idSchema,
   name: gameNameSchema,
+  ownerId: idSchema,
   ownerName: displayNameSchema,
   status: gameStatusSchema,
   seatCount: z.number().int().min(0).max(MAX_SEATS),

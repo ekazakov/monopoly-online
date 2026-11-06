@@ -59,6 +59,7 @@ describe("stream lifecycle", () => {
       "lobby.removed",
       "lobby.snapshot",
       "lobby.updated",
+      "presence.updated",
       "room.cancelled",
       "room.updated",
       "snapshot",

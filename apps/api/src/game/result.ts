@@ -103,6 +103,7 @@ export function buildGameResult(input: ResultInput): GameResult | null {
     gameId,
     rounds: roundAt(turnsEnded),
     winner: { seatId: winner.id, name: winner.name },
+    finishedBy: null,
     standings,
   };
 }

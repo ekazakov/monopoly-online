@@ -25,6 +25,7 @@ function seat(overrides: Partial<Seat>): Seat {
     userId: me,
     controllerUserId: me,
     token: TOKENS[(counter - 1) % TOKENS.length]!,
+    claimed: false,
     ...overrides,
   };
 }

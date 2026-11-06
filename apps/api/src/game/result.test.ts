@@ -79,6 +79,7 @@ describe("buildGameResult", () => {
       gameId: "game-1",
       rounds: 2,
       winner: { seatId: d, name: "Player 4" },
+      finishedBy: null,
       standings: [
         {
           rank: 1,
@@ -164,7 +165,7 @@ describe("buildGameResult", () => {
     expect(result.rounds).toBe(1 + Math.floor(turns / 4));
     expect(result.standings.map((s) => s.rank)).toEqual([1, 2, 3, 4]);
     const winner = final.players.find((p) => p.active);
-    expect(result.winner.seatId).toBe(winner?.id);
+    expect(result.winner?.seatId).toBe(winner?.id);
     const [first, ...others] = result.standings;
     expect(first).toMatchObject({ seatId: winner?.id, status: "winner", outRound: null });
     expect(first?.cash).toBe(winner?.cash);

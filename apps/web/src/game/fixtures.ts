@@ -56,6 +56,7 @@ export function roomOf(fields: Partial<Game> = {}) {
     controllerUserId: userId ?? ownerId,
     // The server numbers seats from 1, and the first free token goes to the first seat.
     token: TOKENS[order - 1]!,
+    claimed: false,
   });
   const seats = {
     a: seat(1, "Ann", "user", ownerId),

@@ -97,6 +97,7 @@ describe("game room routes", () => {
           userId: ann.user.id,
           controllerUserId: ann.user.id,
           token: "dog",
+          claimed: false,
         },
       ]);
       expect(game.invites).toEqual([]);
@@ -776,6 +777,7 @@ describe("game room routes", () => {
         {
           id: room.id,
           name: "Harbor",
+          ownerId: owner.user.id,
           ownerName: "Ann",
           status: "waiting",
           seatCount: 3,

@@ -51,6 +51,7 @@ function resultOf(game: Game, specs: Spec[] = []): GameResult {
     gameId: game.id,
     rounds: 21,
     winner: { seatId: winner.id, name: winner.name },
+    finishedBy: null,
     standings,
   };
 }
@@ -94,6 +95,7 @@ const seatsOf = (count: number, controller: string): Seat[] =>
     userId: null,
     controllerUserId: controller,
     token: TOKENS[index]!,
+    claimed: false,
   }));
 
 const rowsOf = () => within(screen.getByRole("table")).getAllByRole("row").slice(1);
