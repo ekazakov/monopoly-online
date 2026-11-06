@@ -24,6 +24,10 @@ export interface LifecycleServiceOptions {
   /** Called after a claim. Only the room of the game hears of it: a saved game is not in the lobby. */
   onRoomUpdated?: (game: Game) => void;
   now?: () => Date;
+  /** Called after a restore has been committed, before the `snapshot` goes out. */
+  onRestored?: (game: Game) => void;
+  /** Called after an `active` game has been saved, saved by itself or finished. */
+  onLeftActive?: (gameId: string) => void;
 }
 
 /** Owner actions that end or pause a started game: Finish now, Save, Claim and Restore later. */
@@ -47,7 +51,8 @@ export interface LifecycleService {
 }
 
 export function createLifecycleService(options: LifecycleServiceOptions): LifecycleService {
-  const { db, games, loader, readGame, onSnapshot, onRoomUpdated } = options;
+  const { db, games, loader, readGame, onSnapshot, onRoomUpdated, onRestored, onLeftActive } =
+    options;
   const now = options.now ?? (() => new Date());
 
   async function requireOwned(gameId: string, userId: string) {
@@ -64,18 +69,26 @@ export function createLifecycleService(options: LifecycleServiceOptions): Lifecy
   }
 
   /** Read the new room and state, and tell the devices. */
-  async function announce(gameId: string): Promise<Game> {
+  async function announce(gameId: string, before?: (game: Game) => void): Promise<Game> {
     const game = await readGame(gameId);
     const state = await loader.load(gameId);
     if (!state) throw new Error(`Game ${gameId} has no state`);
+    // The change is committed. A failing subscriber must not turn it into an error.
+    try {
+      before?.(game);
+    } catch (error) {
+      console.error(error);
+    }
     try {
       onSnapshot?.({ game, state: redactState(state) });
     } catch (error) {
-      // The change is committed. A failing subscriber must not turn it into an error.
       console.error(error);
     }
     return game;
   }
+
+  /** The game left `active`: the presence of its players no longer matters. */
+  const leftActive = (gameId: string) => (): void => onLeftActive?.(gameId);
 
   const clearClaims = (gameId: string) => async (trx: Transaction<Database>) => {
     await trx
@@ -93,7 +106,7 @@ export function createLifecycleService(options: LifecycleServiceOptions): Lifecy
         // Same transaction: a saved game never shows a claim from before the save.
         inTransaction: clearClaims(gameId),
       });
-      return saved ? { game: await announce(gameId) } : null;
+      return saved ? { game: await announce(gameId, leftActive(gameId)) } : null;
     },
 
     async restore({ gameId, userId }) {
@@ -120,7 +133,7 @@ export function createLifecycleService(options: LifecycleServiceOptions): Lifecy
           .where("claimed_at", "is", null)
           .execute();
       });
-      return { game: await announce(gameId) };
+      return { game: await announce(gameId, (game) => onRestored?.(game)) };
     },
 
     async claim({ gameId, userId }) {
@@ -180,7 +193,7 @@ export function createLifecycleService(options: LifecycleServiceOptions): Lifecy
         status: "saved",
         inTransaction: clearClaims(gameId),
       });
-      return { game: await announce(gameId) };
+      return { game: await announce(gameId, leftActive(gameId)) };
     },
 
     async finish({ gameId, userId }) {
@@ -201,7 +214,7 @@ export function createLifecycleService(options: LifecycleServiceOptions): Lifecy
       } else {
         throw new GameServiceError("game_not_active", "The game is not active");
       }
-      return { game: await announce(gameId) };
+      return { game: await announce(gameId, leftActive(gameId)) };
     },
   };
 }

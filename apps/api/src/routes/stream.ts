@@ -91,8 +91,10 @@ export function streamRoutes(deps: StreamRoutesDeps) {
     const unique = [...new Set(topics)];
     const user = c.get("user");
 
-    // Every topic is checked before the stream opens. Only `active` games count for presence.
-    const activeGameIds: string[] = [];
+    // Every topic is checked before the stream opens. The tracker counts the stream of every game,
+    // and sends the seat map only for an `active` one.
+    const gameIds: string[] = [];
+    const activeGameIds = new Set<string>();
     for (const topic of unique) {
       const kind = topicKind(topic);
       // Any signed-in user can read the open games.
@@ -115,7 +117,8 @@ export function streamRoutes(deps: StreamRoutesDeps) {
       if (!isSeated(game, user.id)) {
         return c.json(errorBody("not_a_member", "You are not seated in this game"), 403);
       }
-      if (game.status === "active") activeGameIds.push(game.id);
+      gameIds.push(game.id);
+      if (game.status === "active") activeGameIds.add(game.id);
     }
 
     // The browser sends one `Last-Event-ID` for the whole stream, and it is an engine version.
@@ -138,16 +141,17 @@ export function streamRoutes(deps: StreamRoutesDeps) {
       },
     });
 
-    // The user is online in each active game from now on. The seat map of the connect goes after
-    // the other first messages, also when a resume has nothing to send.
+    // The user has a stream in each game from now on. The seat map of the connect goes after the
+    // other first messages, also when a resume has nothing to send.
     const disconnects: (() => void)[] = [];
     const disconnect = () => {
       for (const close of disconnects.splice(0)) close();
     };
     const initial = [...connection.initial];
     try {
-      for (const gameId of activeGameIds) {
+      for (const gameId of gameIds) {
         disconnects.push(presence.connect(gameId, user.id));
+        if (!activeGameIds.has(gameId)) continue;
         initial.push(presenceMessage(gameId, await readSeatPresence(db, presence, gameId)));
       }
     } catch (error) {

@@ -4,6 +4,7 @@ import { serve } from "@hono/node-server";
 import { createApp } from "./app.ts";
 import { createDb } from "./db/client.ts";
 import { migrateToLatest } from "./db/migrations.ts";
+import { createPresenceTracker, watchActiveGames } from "./realtime/presence.ts";
 
 const port = Number(process.env.PORT ?? 8787);
 const dbPath = process.env.DB_PATH ?? "data/monopoly.db";
@@ -23,9 +24,13 @@ if (seed !== undefined && !Number.isInteger(seed)) {
   throw new Error(`GAME_SEED must be an integer, got "${fixedSeed}"`);
 }
 
-serve(
-  { fetch: createApp(db, seed === undefined ? {} : { seed: () => seed }).fetch, port },
-  (info) => {
-    console.log(`API listening on http://localhost:${info.port}`);
-  },
-);
+// The tracker is in memory, so a restart forgets who was online. Every controller of an active game
+// gets a new grace time, and a game that nobody comes back to saves itself.
+const presence = createPresenceTracker();
+const app = createApp(db, { presence, ...(seed === undefined ? {} : { seed: () => seed }) });
+const watched = await watchActiveGames(db, presence);
+if (watched > 0) console.log(`Watching ${watched} active game(s) for returning players`);
+
+serve({ fetch: app.fetch, port }, (info) => {
+  console.log(`API listening on http://localhost:${info.port}`);
+});

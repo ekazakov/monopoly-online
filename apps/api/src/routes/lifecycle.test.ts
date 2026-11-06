@@ -21,6 +21,8 @@ import { playGame } from "../game/test-helpers.ts";
 import { createBus } from "../realtime/bus.ts";
 import { gameTopic } from "../realtime/messages.ts";
 import type { StreamEnvelope } from "../realtime/messages.ts";
+import { createPresenceTracker } from "../realtime/presence.ts";
+import type { PresenceTracker } from "../realtime/presence.ts";
 import { startedGame, submitStep } from "../realtime/test-helpers.ts";
 import type { StartedGame } from "../realtime/test-helpers.ts";
 
@@ -31,20 +33,27 @@ describe("game lifecycle routes", () => {
   let app: ReturnType<typeof createApp>;
   let started: StartedGame;
   let seen: StreamMessage[];
+  let tracker: PresenceTracker;
 
   beforeEach(async () => {
     db = createDb(":memory:");
     await migrateToLatest(db);
     const bus = createBus<StreamEnvelope>();
-    app = createApp(db, { seed: () => SEED, bus });
+    // The grace timers never run here. The players have streams open, as in a browser: a game
+    // that nobody watches saves itself.
+    tracker = createPresenceTracker({ timers: { set: () => null, clear: () => {} } });
+    app = createApp(db, { seed: () => SEED, bus, presence: tracker });
     started = await startedGame(app, SEED);
+    tracker.connect(started.game.id, started.owner.user.id);
+    tracker.connect(started.game.id, started.guest.user.id);
     seen = [];
     bus.subscribe(gameTopic(started.game.id), (message) => {
-      seen.push(streamMessageSchema.parse(message));
+      if (message.type !== "presence.updated") seen.push(streamMessageSchema.parse(message));
     });
   });
 
   afterEach(async () => {
+    tracker.close();
     await db.destroy();
   });
 

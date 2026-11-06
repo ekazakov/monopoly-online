@@ -172,19 +172,36 @@ describe("automatic save", () => {
     expect((await gameRow()).status).toBe("active");
   });
 
-  test("a controller the tracker does not know counts as away", async () => {
-    const closeAlice = tracker.connect(gameId(), alice());
-    closeAlice();
+  test("nobody ever arrives: the game saves itself after the grace time of the start", async () => {
+    // Start gave both controllers a grace time. Nobody opened a stream.
+    expect(tracker.statuses(gameId())).toEqual({
+      [alice()]: "reconnecting",
+      [bobby()]: "reconnecting",
+    });
+    await expire();
+    expect((await gameRow()).status).toBe("active");
     await expire();
     expect((await gameRow()).status).toBe("saved");
+  });
+
+  test("a leaving game stops the timers: nothing is left to run", async () => {
+    tracker.connect(gameId(), alice());
+    expect(
+      (await sendAs(app, "POST", `/api/games/${gameId()}/save`, started.owner.cookie)).status,
+    ).toBe(200);
+    expect(timers.some((t) => t.live)).toBe(false);
+    expect(tracker.statuses(gameId())).toEqual({});
   });
 
   test("the owner can restore it and the same dice come back", async () => {
     await play(8);
     tracker.connect(gameId(), alice())();
     await expire();
+    await expire();
     expect((await gameRow()).status).toBe("saved");
     const savedState = await turnStartState();
+    // The owner opens the room of the saved game: a stream, which the tracker counts.
+    tracker.connect(gameId(), alice());
 
     const restored = await sendAs(
       app,
@@ -210,11 +227,50 @@ describe("automatic save", () => {
     );
   });
 
+  describe("after a restore", () => {
+    const restore = () =>
+      sendAs(app, "POST", `/api/games/${gameId()}/restore`, started.owner.cookie);
+    const save = () => sendAs(app, "POST", `/api/games/${gameId()}/save`, started.owner.cookie);
+
+    test("a controller with a stream is online after the restore", async () => {
+      tracker.connect(gameId(), alice());
+      expect((await save()).status).toBe(200);
+      // Both browsers are open on the room of the saved game.
+      tracker.connect(gameId(), bobby());
+
+      expect((await restore()).status).toBe(200);
+
+      expect(tracker.statuses(gameId())).toEqual({ [alice()]: "online", [bobby()]: "online" });
+      await settle();
+      expect((await gameRow()).status).toBe("active");
+    });
+
+    test("the player who is not there is away at once, and the game waits for them", async () => {
+      tracker.connect(gameId(), alice());
+      expect((await save()).status).toBe(200);
+
+      expect((await restore()).status).toBe(200);
+
+      expect(tracker.statuses(gameId())).toEqual({ [alice()]: "online", [bobby()]: "away" });
+      expect(timers.some((t) => t.live)).toBe(false);
+      await settle();
+      expect((await gameRow()).status).toBe("active");
+    });
+
+    test("with nobody online the restored game saves itself again", async () => {
+      expect((await save()).status).toBe(200);
+      expect((await restore()).status).toBe(200);
+      await settle();
+      expect((await gameRow()).status).toBe("saved");
+    });
+  });
+
   test("a game that is not active is left alone", async () => {
     await sendAs(app, "POST", `/api/games/${gameId()}/finish`, started.owner.cookie);
     const before = await gameRow();
     tracker.connect(gameId(), alice())();
-    await expire();
+    await settle();
+    expect(timers.some((t) => t.live)).toBe(false);
     expect(await gameRow()).toEqual(before);
     expect(before.status).toBe("finished");
   });

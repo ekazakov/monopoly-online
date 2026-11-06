@@ -15,6 +15,7 @@ import { createGameService } from "./game/service.ts";
 import { createBus, type Bus } from "./realtime/bus.ts";
 import { createPublishers, type StreamEnvelope } from "./realtime/messages.ts";
 import {
+  controllersOf,
   createPresenceTracker,
   readSeatPresence,
   type PresenceTracker,
@@ -71,6 +72,10 @@ export function createApp(db: Kysely<Database>, options?: AppOptions) {
     now: deps.now,
     seed: deps.seed,
     onRoomEvent: (event) => {
+      // The players in the room have streams already. The others get the grace time to arrive.
+      if (event.type === "started") {
+        presence.watch(event.game.id, controllersOf(event.game.seats), "reconnecting");
+      }
       publish.onRoomEvent(event);
       options?.onRoomEvent?.(event);
     },
@@ -80,7 +85,12 @@ export function createApp(db: Kysely<Database>, options?: AppOptions) {
     db,
     loader,
     now: deps.now,
-    onCommitted: (committed) => publish.onCommitted(committed),
+    onCommitted: (committed) => {
+      publish.onCommitted(committed);
+      if (committed.events.some((event) => event.type === "GameEnded")) {
+        presence.forget(committed.gameId);
+      }
+    },
   });
   const lifecycle = createLifecycleService({
     db,
@@ -88,6 +98,9 @@ export function createApp(db: Kysely<Database>, options?: AppOptions) {
     loader,
     readGame: (gameId) => rooms.get(gameId),
     onSnapshot: (snapshot) => publish.onSnapshot(snapshot),
+    // Restore: a controller with no open stream is away at once (gameplay 3.1).
+    onRestored: (game) => presence.watch(game.id, controllersOf(game.seats), "away"),
+    onLeftActive: (gameId) => presence.forget(gameId),
     onRoomUpdated: (game) => publish.onRoomUpdated(game),
     now: deps.now,
   });

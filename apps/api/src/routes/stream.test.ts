@@ -313,8 +313,12 @@ describe("GET /api/stream", () => {
         id: undefined,
         message: { topic: `game:${started.game.id}`, version: 0 },
       });
-      // Alice controls her own seat and the hot-seat Carol. Bobby has not connected.
-      expect(seatsOf(frame)).toEqual({ [seat.Alice!]: "online", [seat.Carol!]: "online" });
+      // Alice controls her own seat and the hot-seat Carol. Bobby has not arrived yet.
+      expect(seatsOf(frame)).toEqual({
+        [seat.Alice!]: "online",
+        [seat.Bobby!]: "reconnecting",
+        [seat.Carol!]: "online",
+      });
     });
 
     test("another player connecting is sent to the first one, and a close is too", async () => {
@@ -589,6 +593,8 @@ describe("GET /api/stream", () => {
           const log = vi.spyOn(console, "error").mockImplementation(() => {});
           try {
             await play(started, script(started, 8));
+            // The owner has the game open, so the restore finds somebody online.
+            await connect(started.owner.cookie, started.game.id);
             expect((await post("save")).status).toBe(200);
             expect((await post("restore")).status).toBe(200);
             const reader = await connect(started.owner.cookie, started.game.id, {
