@@ -3,7 +3,12 @@ import { afterEach, beforeEach, describe, expect, test } from "vite-plus/test";
 // The app (and with it `@hono/zod-openapi`) loads before `@monopoly/shared`, as the zod extension needs.
 import { createApp } from "../app.ts";
 import { postJson, sendAs, signIn } from "../auth/test-helpers.ts";
-import { apiErrorSchema, gameResponseSchema, streamMessageSchema } from "@monopoly/shared";
+import {
+  apiErrorSchema,
+  gameResponseSchema,
+  gameResultResponseSchema,
+  streamMessageSchema,
+} from "@monopoly/shared";
 import type { StreamMessage } from "@monopoly/shared";
 import type { Kysely } from "kysely";
 import { createDb } from "../db/client.ts";
@@ -404,6 +409,41 @@ describe("game lifecycle routes", () => {
       const { game } = gameResponseSchema.parse(await again.json());
       expect(game).toMatchObject({ status: "saved", version: 2 });
       expect(game.seats.every((seat) => !seat.claimed)).toBe(true);
+    });
+  });
+
+  describe("result of a game finished by the owner", () => {
+    test("has no winner, names the owner, and ranks the players in the game by net worth", async () => {
+      await play(8);
+      expect((await finish(started.owner.cookie)).status).toBe(200);
+
+      const res = await sendAs(
+        app,
+        "GET",
+        `/api/games/${started.game.id}/result`,
+        started.guest.cookie,
+      );
+
+      expect(res.status).toBe(200);
+      const { result } = gameResultResponseSchema.parse(await res.json());
+      expect(result.winner).toBeNull();
+      expect(result.finishedBy).toBe("Alice");
+      expect(result.standings).toHaveLength(3);
+      expect(result.standings.every((s) => s.status === "in_game")).toBe(true);
+      const worth = result.standings.map((s) => s.netWorth);
+      expect([...worth].sort((x, y) => y - x)).toEqual(worth);
+    });
+
+    test("a saved game has no result yet", async () => {
+      expect((await save(started.owner.cookie)).status).toBe(200);
+      const res = await sendAs(
+        app,
+        "GET",
+        `/api/games/${started.game.id}/result`,
+        started.owner.cookie,
+      );
+      expect(res.status).toBe(409);
+      expect(await errorCode(res)).toBe("game_not_finished");
     });
   });
 });

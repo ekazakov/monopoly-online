@@ -146,6 +146,68 @@ describe("buildGameResult", () => {
     ]);
   });
 
+  describe("finished by the owner, with no winner", () => {
+    // c is bankrupt. b, d and a are still in the game: d owns a street with 2 houses.
+    const base = newGame(1, IDS);
+    const noWinner = withState(base, {
+      players: base.players.map((p) => {
+        if (p.id === a) return { ...p, cash: 900 };
+        if (p.id === b) return { ...p, cash: 900 };
+        if (p.id === d) return { ...p, cash: 300 };
+        return { ...p, cash: 0, active: false };
+      }),
+      ownership: { "1": { ownerId: d, houses: 2, mortgaged: false } },
+    });
+    const events: GameEvent[] = [turnEnded(a, b), ...bankrupt(c), turnEnded(b, d)];
+    const build = (extra: Partial<Parameters<typeof buildGameResult>[0]> = {}) =>
+      buildGameResult({
+        gameId: "game-1",
+        state: noWinner,
+        events,
+        seats,
+        finishedBy: "Evgenii",
+        ...extra,
+      });
+
+    test("players in the game rank first by net worth, then the players who are out", () => {
+      const result = build();
+      expect(result).toMatchObject({ winner: null, finishedBy: "Evgenii", rounds: 1 });
+      // d: 300 + 60 + 100 = 460. a and b: 900 each, so the turn order of the state decides.
+      const [tiedFirst, tiedSecond] = noWinner.players.filter((p) => p.id === a || p.id === b);
+      expect(result?.standings.map((s) => [s.rank, s.seatId, s.status, s.netWorth])).toEqual([
+        [1, tiedFirst?.id, "in_game", 900],
+        [2, tiedSecond?.id, "in_game", 900],
+        [3, d, "in_game", 460],
+        [4, c, "bankrupt", 0],
+      ]);
+      expect(result?.standings[2]).toMatchObject({ cash: 300, properties: 1, outRound: null });
+      expect(result?.standings[3]).toMatchObject({ outRound: 1, cash: 0 });
+    });
+
+    test("a player who resigned ranks below the players in the game", () => {
+      const result = build({ events: [...resign(b), ...bankrupt(c)] });
+      expect(result?.standings.map((s) => [s.rank, s.seatId, s.status])).toEqual([
+        [1, a, "in_game"],
+        [2, d, "in_game"],
+        [3, c, "bankrupt"],
+        [4, b, "resigned"],
+      ]);
+    });
+
+    test("still returns null without finishedBy", () => {
+      expect(build({ finishedBy: null })).toBeNull();
+      expect(build({ finishedBy: undefined })).toBeNull();
+    });
+
+    test("a game with a GameEnded event has a winner and no finishedBy", () => {
+      const ended = build({
+        events: [...resign(b), ...bankrupt(c), ...resign(d), { type: "GameEnded", winnerId: a }],
+      });
+      expect(ended).toMatchObject({ winner: { seatId: a }, finishedBy: null });
+      expect(ended?.standings[0]?.status).toBe("winner");
+    });
+  });
+
   test("returns null when the events hold no GameEnded", () => {
     expect(
       buildGameResult({ gameId: "game-1", state: state(), events: resign(a), seats }),

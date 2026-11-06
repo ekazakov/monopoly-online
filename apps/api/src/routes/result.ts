@@ -20,7 +20,7 @@ const resultRoute = createRoute({
   tags: ["games"],
   summary: "Read the result of a finished game",
   description:
-    "For `finished` games. `standings` are in rank order: rank 1 is the winner, the others rank by elimination order (the last one out is 2). A round is `1 + floor(TurnEnded events so far / seats at game start)`; `rounds` is the round at the end and `outRound` the round in which a player went out. Net worth is cash, plus the price of each owned property (half when mortgaged), plus the build cost of each house and hotel. A player who is out has cash, properties and net worth 0. Answers 409 `game_not_finished` while the game is `waiting` or `active`, and for a finished game that has no winner.",
+    "For `finished` games. `standings` are in rank order: rank 1 is the winner, the others rank by elimination order (the last one out is 2). A round is `1 + floor(TurnEnded events so far / seats at game start)`; `rounds` is the round at the end and `outRound` the round in which a player went out. Net worth is cash, plus the price of each owned property (half when mortgaged), plus the build cost of each house and hotel. A player who is out has cash, properties and net worth 0. A game that the owner finished has `winner: null` and `finishedBy` (the owner's name). Its standings start with the players still in the game (`in_game`), ranked by net worth, and the players who are out follow. Answers 409 `game_not_finished` while the game is `waiting`, `active` or `saved`.",
   request: { params: gameParamsSchema },
   responses: {
     200: jsonResponse("The result", gameResultResponseSchema),
@@ -34,8 +34,9 @@ export function resultRoutes(deps: AppDeps & { loader: GameStateLoader }) {
     const { id } = c.req.valid("param");
     const game = await db
       .selectFrom("games")
-      .select("status")
-      .where("id", "=", id)
+      .innerJoin("users", "users.id", "games.owner_id")
+      .select(["games.status", "users.name as owner_name"])
+      .where("games.id", "=", id)
       .executeTakeFirst();
     if (!game) return c.json(errorBody("not_found", "Game not found"), 404);
 
@@ -67,6 +68,8 @@ export function resultRoutes(deps: AppDeps & { loader: GameStateLoader }) {
         state,
         events,
         seats: seats.map((s) => ({ id: s.id, controllerUserId: s.controller_user_id })),
+        // Without a `GameEnded` event the owner finished the game.
+        finishedBy: game.owner_name,
       });
     if (!result) return c.json(errorBody("game_not_finished", "The game has no result"), 409);
     return c.json({ result }, 200);

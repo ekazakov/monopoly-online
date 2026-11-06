@@ -14,6 +14,11 @@ export interface ResultInput {
   /** Every event of the game, in order. */
   events: readonly GameEvent[];
   seats: readonly ResultSeat[];
+  /**
+   * The owner's name when the owner finished the game before anybody won. Without it, a log with
+   * no `GameEnded` is not a finished game and has no result.
+   */
+  finishedBy?: string | null;
 }
 
 /**
@@ -36,17 +41,23 @@ export function netWorthOf(state: GameState, playerId: string) {
 }
 
 /**
- * The result of a finished game, or null when the events hold no `GameEnded` (the engine only
- * ends a game with a winner, so this means the log is not a finished game).
+ * The result of a finished game, or null when the events hold no `GameEnded` and `finishedBy` is
+ * not set (the engine only ends a game with a winner, so this means the log is not a finished
+ * game).
  *
  * A round is `1 + floor(TurnEnded events so far / seats at game start)`: the engine has no
  * round counter. `rounds` is the round at the end of the game and `outRound` the round in which
  * a player was eliminated. A player who sent `PlayerResigned` is `resigned`; any other
  * eliminated player is `bankrupt`. Rank 1 is the winner; the others rank by elimination order,
  * so the last one out is 2 and the first one out is last.
+ *
+ * When the owner finished the game (`finishedBy`), there is no winner. The players still in the
+ * game come first, as `in_game`, ranked by net worth (equal net worth keeps the turn order).
+ * The players who are out follow, as above.
  */
 export function buildGameResult(input: ResultInput): GameResult | null {
   const { gameId, state, events, seats } = input;
+  const finishedBy = input.finishedBy ?? null;
   const count = state.players.length;
   const roundAt = (turnsEnded: number) => 1 + Math.floor(turnsEnded / count);
 
@@ -62,15 +73,17 @@ export function buildGameResult(input: ResultInput): GameResult | null {
     } else if (event.type === "GameEnded") winnerId = event.winnerId;
   }
   const winner = state.players.find((p) => p.id === winnerId);
-  if (!winner) return null;
+  if (!winner && finishedBy === null) return null;
 
   const controllerOf = (id: string) => {
     const seat = seats.find((s) => s.id === id);
     if (!seat) throw new Error(`Game ${gameId} has no seat ${id}`);
     return seat.controllerUserId;
   };
-  const standings: Standing[] = [
-    {
+  const standings: Standing[] = [];
+  const outIds = new Set(out.map((entry) => entry.id));
+  if (winner) {
+    standings.push({
       rank: 1,
       seatId: winner.id,
       name: winner.name,
@@ -78,32 +91,55 @@ export function buildGameResult(input: ResultInput): GameResult | null {
       status: "winner",
       outRound: null,
       ...netWorthOf(state, winner.id),
-    },
-  ];
-  // The first player out gets the last rank.
-  [...out].reverse().forEach(({ id, round }, index) => {
-    const player = state.players.find((p) => p.id === id);
-    if (!player || id === winner.id) return;
-    standings.push({
-      rank: index + 2,
-      seatId: id,
-      name: player.name,
-      controllerUserId: controllerOf(id),
-      status: resigned.has(id) ? "resigned" : "bankrupt",
-      outRound: round,
-      cash: 0,
-      properties: 0,
-      netWorth: 0,
     });
-  });
+  } else {
+    const inGame = state.players
+      .filter((p) => !outIds.has(p.id))
+      .map((p) => ({ player: p, ...netWorthOf(state, p.id) }))
+      // Array.sort is stable, so equal net worth keeps the turn order.
+      .sort((a, b) => b.netWorth - a.netWorth);
+    inGame.forEach(({ player, cash, properties, netWorth }, index) => {
+      standings.push({
+        rank: index + 1,
+        seatId: player.id,
+        name: player.name,
+        controllerUserId: controllerOf(player.id),
+        status: "in_game",
+        outRound: null,
+        cash,
+        properties,
+        netWorth,
+      });
+    });
+  }
+  const placed = standings.length;
+  // The first player out gets the last rank.
+  [...out]
+    .reverse()
+    .filter(({ id }) => id !== winner?.id)
+    .forEach(({ id, round }, index) => {
+      const player = state.players.find((p) => p.id === id);
+      if (!player) return;
+      standings.push({
+        rank: placed + index + 1,
+        seatId: id,
+        name: player.name,
+        controllerUserId: controllerOf(id),
+        status: resigned.has(id) ? "resigned" : "bankrupt",
+        outRound: round,
+        cash: 0,
+        properties: 0,
+        netWorth: 0,
+      });
+    });
   if (standings.length !== count) {
     throw new Error(`Game ${gameId} ended with ${standings.length} of ${count} players ranked`);
   }
   return {
     gameId,
     rounds: roundAt(turnsEnded),
-    winner: { seatId: winner.id, name: winner.name },
-    finishedBy: null,
+    winner: winner ? { seatId: winner.id, name: winner.name } : null,
+    finishedBy: winner ? null : finishedBy,
     standings,
   };
 }
