@@ -78,7 +78,7 @@ export const PLAYERS = [
   { id: 'ines', name: 'Ines', color: '#2f6fd0', avatar: 'cat', avatarName: 'cat', device: 'remote', conn: 'online', cash: 1340, pos: 10, inJail: true, cards: 0 },
   { id: 'marlow', name: 'Marlow', color: '#d9392f', avatar: 'dog', avatarName: 'Scottish terrier', device: 'local', cash: 1500, pos: 21, cards: 1 },
   { id: 'tove', name: 'Tove', color: '#2fa05c', avatar: 'penguin', avatarName: 'penguin', device: 'local', cash: 820, pos: 13, cards: 0 },
-  { id: 'ravi', name: 'Ravi', color: '#f0b429', avatar: 'car', avatarName: 'racing car', device: 'remote', conn: 'reconnecting', cash: 2010, pos: 26, cards: 0 }
+  { id: 'ravi', name: 'Ravi', color: '#f0b429', avatar: 'car', avatarName: 'racing car', device: 'remote', conn: 'online', cash: 2010, pos: 26, cards: 0 }
 ];
 
 // square index -> owner, houses (5 = hotel), mortgaged

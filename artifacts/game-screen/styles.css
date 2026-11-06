@@ -154,6 +154,13 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .spinner { width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(23, 33, 27, 0.25); border-top-color: var(--card-ink); animation: spin 0.9s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .watch-tag { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: rgba(23, 33, 27, 0.12); }
+.wait-line { margin: 0; font-size: 15px; line-height: 1.4; color: #24382d; max-width: 34ch; }
+.notice-title { margin: 0; font-family: var(--display); font-weight: 700; font-size: 22px; letter-spacing: 0.06em; text-transform: uppercase; line-height: 1.1; }
+.conn-banner { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); z-index: 6; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 14px; box-sizing: border-box; border-radius: 8px; font-size: 14px; color: var(--ink); }
+.conn-banner[hidden] { display: none; }
+.conn-banner b { font-weight: 600; }
+.conn-banner-reconnecting { background: #2e2a1a; border: 1px solid rgba(240, 180, 41, 0.5); }
+.conn-banner-closed { background: #331d1e; border: 1px solid rgba(226, 87, 76, 0.5); }
 
 .amount { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .amount .label { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }

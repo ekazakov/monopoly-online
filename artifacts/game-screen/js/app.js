@@ -22,7 +22,8 @@ function reset() {
     situation: 'local', active: 'marlow', lastLocal: 'marlow',
     phase: 'resolved', dice: [4, 3], ctx: {},
     turnIdx: -1, rollIdx: 0, scripted: true,
-    reduceMotion: sysReduced.matches, sound: true, music: 40, view: 'angle'
+    reduceMotion: sysReduced.matches, sound: true, music: 40, view: 'angle',
+    isOwner: true, deviceConn: 'online', sessionNotice: null
   });
 }
 reset();
@@ -186,8 +187,15 @@ function renderTurn() {
   const remote = S.situation === 'remote';
   const p = P(S.active);
   actionsMap = [];
+  // the game waits for an away player (gameplay 3.2): nothing plays for them
+  const conn = remote ? p.conn : 'online';
   let actions = '';
-  if (v.primary || v.secondary) {
+  if (conn !== 'online') {
+    const away = conn === 'away';
+    actions = `<p class="deciding"><span class="spinner" aria-hidden="true"></span>${esc(away ? `Waiting for ${p.name} to return` : `${p.name} is reconnecting…`)}</p>
+      <p class="wait-line">${esc(away ? `The game continues when ${p.name} returns.` : 'The game continues when the connection returns.')}</p>
+      ${S.isOwner && away ? '<p class="wait-line">You can also save or finish the game in the Menu.</p>' : ''}`;
+  } else if (v.primary || v.secondary) {
     if (remote) actions = `<p class="deciding"><span class="spinner" aria-hidden="true"></span>${esc(p.name)} is deciding…</p>`;
     else {
       const btn = ([label, fn, disabled, cls], primary) => {
@@ -197,9 +205,16 @@ function renderTurn() {
       actions = `<div class="actions">${v.primary ? btn(v.primary, true) : ''}${(v.secondary || []).map((s) => btn(s, false)).join('')}</div>`;
     }
   }
-  const tag = remote ? `<span class="watch-tag">Watching · ${esc(p.name)} plays on their device</span>` : '';
-  const html = tag + v.content + actions;
-  const key = S.phase + S.situation + S.active;
+  const tag = remote ? `<span class="watch-tag">${conn === 'away' ? 'Away' : 'Watching'} · ${esc(p.name)} plays on their device</span>` : '';
+  let html = tag + v.content + actions;
+  // the saved notice replaces the turn on every device (gameplay 3.1)
+  if (S.sessionNotice === 'saved') {
+    actionsMap = [() => restart()];
+    html = `<h2 class="notice-title">${S.isOwner ? 'Game saved' : 'Game saved by Marlow'}</h2>
+      <p class="wait-line">${S.isOwner ? 'You can continue it from your saved games.' : 'Marlow can continue it later. You will find it in My games.'}</p>
+      <div class="actions"><button type="button" class="hf-primary" data-act="0">OK</button></div>`;
+  }
+  const key = S.phase + S.situation + S.active + conn + S.sessionNotice;
   const hadFocus = turnInner.contains(document.activeElement);
   if (html !== turnInner.innerHTML) {
     turnInner.innerHTML = html;
@@ -298,9 +313,19 @@ function render() {
   renderTurn();
   renderHand();
   renderHandoff();
+  renderConnBanner();
   renderProto();
   renderDebug();
   scheduleAuto();
+}
+
+// the connection of this device, not of other players (design board "Away and connection")
+function renderConnBanner() {
+  const el = $('#connBanner');
+  const text = { reconnecting: '<b>Reconnecting…</b> Your moves wait until the connection returns.', closed: '<b>Connection closed.</b> Reload the page to return to the game.' }[S.deviceConn];
+  el.hidden = !text;
+  el.className = `conn-banner conn-banner-${S.deviceConn}`;
+  el.innerHTML = text ? `<span class="conn-dot conn-${S.deviceConn === 'closed' ? 'away' : 'reconnecting'}" aria-hidden="true"></span><span>${text}</span>` : '';
 }
 
 // ---------- scripted turn flow ----------
@@ -411,7 +436,7 @@ function enterTurn(id, scripted) {
 let autoTimer = null;
 function scheduleAuto() {
   clearTimeout(autoTimer);
-  if (S.situation !== 'remote' || !S.scripted || $('dialog[open]')) return;
+  if (S.situation !== 'remote' || !S.scripted || $('dialog[open]') || S.sessionNotice || P(S.active).conn !== 'online') return;
   const act = { jail: payJail, start: roll, buy, rent: payRent, card: cardOk, tax: payTax, doubles: roll, resolved: nextTurn }[S.phase];
   if (act) autoTimer = setTimeout(act, S.phase === 'resolved' ? 1800 : 1500);
 }
@@ -667,6 +692,39 @@ function openGameOver() {
   });
 }
 
+// Owner controls (gameplay 3.1): each one needs a confirmation on the owner's device only.
+function closeDialogs() { for (const dlg of document.querySelectorAll('dialog')) dlg.close(); }
+function openSaveConfirm() {
+  const p = P(S.active);
+  dialog({
+    title: 'Save and exit?', narrow: true,
+    body: `<div class="summary">The game goes back to the start of ${esc(p.name)}'s turn.</div>
+      <p class="muted">All players go to the lobby. You can continue the game from your saved games. The dice and cards stay the same.</p>`,
+    actions: [{ label: 'Keep playing' }, { label: 'Save and exit', primary: true, onClick: () => { closeDialogs(); S.sessionNotice = 'saved'; S.focusTurn = true; render(); } }]
+  });
+}
+function openFinishConfirm() {
+  const p = P(S.active);
+  dialog({
+    title: 'Finish this game?', narrow: true,
+    body: `<div class="summary">There is no winner. The game goes back to the start of ${esc(p.name)}'s turn.</div>
+      <p class="muted">All players see the standings, for information only. You cannot undo this.</p>`,
+    actions: [{ label: 'Keep playing' }, { label: 'Finish game', danger: true, onClick: () => { closeDialogs(); openFinished(); } }]
+  });
+}
+function openFinished() {
+  const rows = S.players.map((p) => {
+    const worth = ownedBy(p.id).reduce((s, o) => s + o.sq.price + (o.houses || 0) * (o.sq.houseCost || 0), 0);
+    return { p, total: p.bankrupt ? -1 : p.cash + worth };
+  }).sort((a, b) => b.total - a.total);
+  dialog({
+    title: 'Game finished by Marlow',
+    body: `<p class="muted">No winner. The game ended in round ${S.round}. Standings for information only.</p>
+      <div class="results">${rows.map((r, k) => `<div class="result"><span class="pos">${k + 1}</span><span class="mini-av" style="--pc:${r.p.color}">${avatarSVG(r.p.avatar, 26)}</span><span><b>${esc(r.p.name)}</b> <span class="muted">· ${r.p.bankrupt ? 'bankrupt' : 'in the game'}</span></span><span class="nw">${fmt(Math.max(0, r.total))}</span></div>`).join('')}</div>`,
+    actions: [{ label: 'OK', primary: true, onClick: () => restart() }]
+  });
+}
+
 function openMenu() {
   const d = dialog({ title: 'Menu', narrow: true, onClose: () => $('#menuBtn').focus() });
   const sw = (id, on, label, sub) => `<div class="setting"><span class="lbl" id="${id}-l">${label}${sub ? `<small>${sub}</small>` : ''}</span><button type="button" class="switch" role="switch" id="${id}" aria-labelledby="${id}-l" aria-checked="${on}"></button></div>`;
@@ -677,6 +735,8 @@ function openMenu() {
       <div class="setting"><label for="mMusic">Music<small>${S.music}%</small></label><input type="range" id="mMusic" min="0" max="100" step="5" value="${S.music}"></div>
       ${sw('mMotion', S.reduceMotion, 'Reduce motion', 'Dice, tokens and highlights without animation')}
       <div class="setting"><span class="lbl">Board camera</span><div class="seg" role="group" aria-label="Board camera">${[['angle', 'Angle'], ['top', 'Top']].map(([v, l]) => `<button type="button" data-view="${v}" aria-pressed="${S.view === v}">${l}</button>`).join('')}</div></div>
+      ${S.isOwner ? `<div class="setting"><span class="lbl">Save and exit<small>Keep the game at the start of this turn</small></span><button type="button" class="hf-outline" data-m="save">Save</button></div>
+      <div class="setting"><span class="lbl">Finish game<small>End the game with no winner</small></span><button type="button" class="hf-outline hf-danger" data-m="finish">Finish</button></div>` : ''}
       <div class="setting"><span class="lbl">Leave game<small>Resign one of your players</small></span><button type="button" class="hf-outline hf-danger" data-m="leave">Leave</button></div>
     </div>`;
   };
@@ -688,6 +748,8 @@ function openMenu() {
     else if (b.dataset.view) { S.view = b.dataset.view; board?.setView(S.view); }
     else if (b.dataset.m === 'rules') { openRules(); return; }
     else if (b.dataset.m === 'leave') { openLeave(); return; }
+    else if (b.dataset.m === 'save') { openSaveConfirm(); return; }
+    else if (b.dataset.m === 'finish') { openFinishConfirm(); return; }
     else return;
     const id = b.id ? '#' + b.id : `[data-view="${b.dataset.view}"]`;
     draw(); $(id, d.body)?.focus();
@@ -821,6 +883,8 @@ function renderProto() {
       <button type="button" data-st="jail" ${pressed(P('ines').inJail)}>Ines in jail</button>
       <button type="button" data-st="card" ${pressed(P('marlow').cards > 0)}>Marlow jail card</button>
       <button type="button" data-st="conn">Ravi: ${P('ravi').conn}</button>
+      <button type="button" data-st="device">This device: ${S.deviceConn}</button>
+      <button type="button" data-st="owner" ${pressed(S.isOwner)}>This device is the owner</button>
       <button type="button" data-st="bankrupt" ${pressed(!!P('tove').bankrupt)}>Tove bankrupt</button>
       <button type="button" data-st="mort" ${pressed(!!S.own[3]?.mortgaged)}>Kelp Court mortgaged</button></div></div>
     <div><h3>Board</h3><div class="opts">${[['angle', 'Angle view'], ['top', 'Top view']].map(([v, l]) => `<button type="button" data-view="${v}" ${pressed(S.view === v)}>${l}</button>`).join('')}<button type="button" data-st="log">Add log entry</button></div></div>
@@ -864,6 +928,8 @@ protoPanel.addEventListener('click', (e) => {
     if (d.st === 'jail') { const p = P('ines'); p.inJail = !p.inJail; if (p.inJail) { p.pos = 10; board?.placeToken('ines', 10); } }
     if (d.st === 'card') P('marlow').cards = P('marlow').cards ? 0 : 1;
     if (d.st === 'conn') { const p = P('ravi'); p.conn = { online: 'reconnecting', reconnecting: 'away', away: 'online' }[p.conn]; }
+    if (d.st === 'device') S.deviceConn = { online: 'reconnecting', reconnecting: 'closed', closed: 'online' }[S.deviceConn];
+    if (d.st === 'owner') S.isOwner = !S.isOwner;
     if (d.st === 'bankrupt') { const p = P('tove'); p.bankrupt = !p.bankrupt; board?.setTokenVisible('tove', !p.bankrupt); }
     if (d.st === 'mort') { S.own[3].mortgaged = !S.own[3].mortgaged; if (S.own[3].mortgaged) S.own[3].houses = 0; board?.setOwnership(S.own); }
     if (d.st === 'log') addLog(S.active, '{n} is thinking about a trade.');
