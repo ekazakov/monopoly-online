@@ -116,6 +116,22 @@ describe("GameScreen: loading", () => {
     expect(await screen.findByRole("heading", { name: "Not your game" })).toBeInTheDocument();
   });
 
+  test.each(["active", "finished"] as const)(
+    "a stranger with readable %s room metadata gets no state, stream or game controls",
+    async (status) => {
+      const { realtime, stateCalls } = await setup({
+        game: withStatus(fx.game, status),
+        userId: "2b0f7a3e-3a53-4c2e-9a53-2f0d5f6f9d03",
+      });
+      expect(await screen.findByRole("heading", { name: "Not your game" })).toBeVisible();
+      expect(screen.getByText("You have no seat in this game.")).toBeVisible();
+      expect(screen.queryByRole("button", { name: "Roll" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("complementary", { name: "Players" })).not.toBeInTheDocument();
+      expect(realtime.subscribed(`game:${gameId}`)).toBe(false);
+      expect(stateCalls()).toBe(0);
+    },
+  );
+
   test("offers a retry for another load error", async () => {
     await setup({ room: errorReply(500, "internal_error", "Server down") });
     expect(

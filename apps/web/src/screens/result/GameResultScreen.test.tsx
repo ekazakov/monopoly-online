@@ -182,7 +182,7 @@ describe("GameResultScreen: the finished game", () => {
 
   test.each([4, 6])("lists %i players in rank order with their own colours", async (count) => {
     const game = { ...finishedGame, seats: seatsOf(count, fx.ownerId) };
-    await setup({ game, userId: fx.guestId });
+    await setup({ game, userId: fx.ownerId });
     await screen.findByRole("heading", { name: "Seat1 wins" });
     const rows = rowsOf();
     expect(rows).toHaveLength(count);

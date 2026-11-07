@@ -356,12 +356,18 @@ describe("visitor", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(text);
   });
 
-  test("an unseated visitor of a started game sees a notice and stays", async () => {
-    const { router } = await setup({ userId: visitorId, game: room({ status: "active" }) });
-    expect(await screen.findByText("This game has already started.")).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Join game" })).toBeNull();
-    expect(router.state.location.pathname).toBe(`/games/${gameId}`);
-  });
+  test.each(["active", "finished"] as const)(
+    "an unseated visitor of a %s game sees Not your game without a stream",
+    async (status) => {
+      const { router, realtime } = await setup({ userId: visitorId, game: room({ status }) });
+      expect(await screen.findByRole("heading", { name: "Not your game" })).toBeVisible();
+      expect(screen.getByText("You have no seat in this game.")).toBeVisible();
+      expect(screen.queryByRole("button", { name: "Join game" })).toBeNull();
+      expect(screen.queryByRole("region", { name: "Players" })).toBeNull();
+      expect(realtime.subscribed(`game:${gameId}`)).toBe(false);
+      expect(router.state.location.pathname).toBe(`/games/${gameId}`);
+    },
+  );
 });
 
 describe("live updates and navigation", () => {

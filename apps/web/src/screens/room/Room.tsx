@@ -157,6 +157,14 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
   const busy = actions.start.isPending;
 
   if (cancelled) return <GameCancelled hostName={view.host?.name ?? "The host"} />;
+  if (started && !view.seated) {
+    return (
+      <main className="screen" role="alert">
+        <h1>Not your game</h1>
+        <p>You have no seat in this game.</p>
+      </main>
+    );
+  }
   if (finishedWhileSaved && view.seated) {
     return <SavedGameFinished hostName={view.host?.name ?? "The host"} onSeeResult={goToPlay} />;
   }
@@ -199,12 +207,6 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
             {roomCopy.savedVisitor}
           </p>
         )}
-        {!view.seated && started && (
-          <p className="room__notice" data-tone="error" role="status">
-            {roomCopy.started}
-          </p>
-        )}
-
         <SeatList
           game={game}
           userId={userId}

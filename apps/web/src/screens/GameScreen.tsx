@@ -68,7 +68,8 @@ function GameRoute({ gameId }: { gameId: string }) {
   const [wasActive, setWasActive] = useState(false);
   if (status === "active" && !wasActive) setWasActive(true);
   const saved = status === "saved";
-  const live = room.isSuccess && status !== "waiting" && !(saved && !wasActive);
+  const seated = room.data?.seats.some((seat) => seat.controllerUserId === userId) ?? false;
+  const live = room.isSuccess && seated && status !== "waiting" && !(saved && !wasActive);
   const finished = useGameSelector((s) => isFinished(s.game, s.state));
   const roomGame = useGameSelector((s) => s.game) ?? room.data ?? null;
   const state = useQuery(gameStateQuery(store, gameId, live));
@@ -122,6 +123,13 @@ function GameRoute({ gameId }: { gameId: string }) {
   }
   if (status === "waiting" || (saved && !wasActive)) {
     return <Navigate to="/games/$gameId" params={{ gameId }} replace />;
+  }
+  if (!seated) {
+    return (
+      <Message title="Not your game">
+        <p>You have no seat in this game.</p>
+      </Message>
+    );
   }
   if (!userId) return null;
   if (finished && roomGame) {
