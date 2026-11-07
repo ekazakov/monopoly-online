@@ -6,7 +6,6 @@ const WEB_PORT = 5173;
 /** The API test flags are documented in `apps/api/src/index.ts`. */
 export default defineConfig({
   testDir: "./tests",
-  globalSetup: "./global-setup.ts",
   // One server and one database for the whole run, so the tests run one after another.
   workers: 1,
   fullyParallel: false,
@@ -17,10 +16,14 @@ export default defineConfig({
   outputDir: "./.results",
   use: {
     baseURL: `http://localhost:${WEB_PORT}`,
+    // A stuck click fails here with its own error, and it does not use up the whole test.
+    actionTimeout: 15_000,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
-    // The tests use the DOM controls only. Without WebGL the app shows its no-WebGL board, and two
-    // software-rendered 3D boards would slow the whole run.
+    // Reduced motion skips the waits for the dice and the tokens. `motion.spec.ts` keeps the animated path.
+    contextOptions: { reducedMotion: "reduce" },
+    // The software-rendered 3D board makes the whole run about 30 s slower, and the tests use only
+    // the DOM controls. The app then shows its no-WebGL board. `motion.spec.ts` keeps the real board.
     launchOptions: { args: ["--disable-3d-apis"] },
   },
   projects: [
@@ -31,7 +34,9 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: "node --experimental-strip-types src/index.ts",
+      // The database is removed in the command, before the API opens it. Not in a global setup, which
+      // runs after the web servers have started.
+      command: "rm -rf ../e2e/.data && node --experimental-strip-types src/index.ts",
       cwd: "../api",
       url: `http://localhost:${API_PORT}/api/health`,
       reuseExistingServer: false,

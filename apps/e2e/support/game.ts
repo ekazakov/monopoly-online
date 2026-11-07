@@ -1,4 +1,4 @@
-import { expect, type Browser, type BrowserContext, type Page } from "@playwright/test";
+import { errors, expect, type Browser, type BrowserContext, type Page } from "@playwright/test";
 
 /** One browser profile with its own cookie jar, so it is one player on one device. */
 export interface Device {
@@ -67,9 +67,11 @@ export interface Table {
 
 /** Alice hosts and plays Cara on the same device. Bob joins by link. The game is started. `tag` makes the user names unique. */
 export async function startTable(browser: Browser, tag: string): Promise<Table> {
-  // User names are unique in a database, and one database serves a whole run, so each test has a tag.
-  const alice = await openDevice(browser, `Alice${tag}`);
-  const bob = await openDevice(browser, `Bob${tag}`);
+  // User names are unique in a database. One database serves a whole run, and `playwright test --ui`
+  // runs a test again on the same database, so a name has the test tag and a random part.
+  const run = Math.random().toString(36).slice(2, 6);
+  const alice = await openDevice(browser, `Alice${tag}${run}`);
+  const bob = await openDevice(browser, `Bob${tag}${run}`);
   const roomUrl = await createGame(alice, `Table ${tag}`);
   await joinByLink(bob, roomUrl);
   await addHotSeat(alice, "Cara");
@@ -97,8 +99,15 @@ export async function step(devices: Device[]): Promise<string | null> {
     for (const [name, pattern] of ACTIONS) {
       const button = device.page.getByRole("button", { name: pattern });
       if (await button.isVisible()) {
-        await button.click();
-        return name;
+        // The button is disabled while the last action is on its way, and then it can go away. Such
+        // a click would wait for a button that does not come back, so the loop looks again.
+        try {
+          await button.click({ timeout: 1_000 });
+          return name;
+        } catch (error) {
+          if (error instanceof errors.TimeoutError) return null;
+          throw error;
+        }
       }
     }
   }
