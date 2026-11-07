@@ -3,14 +3,14 @@
 |                |                                                                                                    |
 | -------------- | -------------------------------------------------------------------------------------------------- |
 | Companion docs | [milestone-3-tasks.md](milestone-3-tasks.md) (section F), [implementation-roadmap.md](implementation-roadmap.md) (section 7), [milestone-2-tasks.md](milestone-2-tasks.md), [game-screen-2-gameplay.md](game-screen-2-gameplay.md) (3.1, 3.2) |
-| Status         | T01–T19 and T22–T25 are built: 23 of the 26 scenarios, and 2 motion scripts. T20, T21 and T26, the session gaps (F4), and the seed guard (F16) are open. Last updated 2026-11-07 |
+| Status         | All 26 scenarios are built, with the session gaps (F4) closed and the seed guard (F16) in place. The browser suite has 31 tests, including Chance and Chest variants, three Finish cases and 2 motion scripts. Manual session run (G1) and milestone close (G2) remain separate tasks. Last updated 2026-11-07 |
 
 This document is the plan for the browser tests of Milestone 3, section F:
 
 - Playwright setup (F1)
 - Core game script (F2)
 - Session and disconnect script (F3)
-- Session script gaps (F4) and the tasks F5 to F16, which build the open scenarios
+- Session script gaps (F4) and the tasks F5 to F16, which complete the scenario catalogue
 
 It also covers the M1 and M2 flows. Scenario codes are `T01` to `T26`. These codes are for this document only.
 
@@ -37,7 +37,7 @@ The package is `apps/e2e` (`@monopoly/e2e`). The existing `apps/*` glob includes
 
 ```
 apps/e2e/
-  package.json                 scripts: e2e, e2e:ui, e2e:report
+  package.json                 scripts: test (seed guard), find-seed, e2e, e2e:ui, e2e:report
   playwright.config.ts         one API and one web server, one worker
   tsconfig.json                so that `pnpm check` covers the package
   support/game.ts              UI helpers and device cleanup; sign-in waits for the live lobby stream
@@ -50,7 +50,7 @@ apps/e2e/
   tests/game-property-debt.spec.ts T15, T16
   tests/game-bankruptcy.spec.ts T17
   tests/game-leave-debug.spec.ts T18, T19
-  tests/session.spec.ts        T22, T23, T24, T25
+  tests/session.spec.ts        T20 to T26; three Finish cases
   tests/reduced-motion.spec.ts the default setup: reduced motion, no WebGL
   tests/motion.spec.ts         the animated path and the real 3D board
 ```
@@ -65,17 +65,20 @@ apps/e2e/
 - `step` and `playUntil`: take the next turn action until a goal is true.
 - `playBobsFirstTurn`, `saveFromMenu`, `finishFromMenu`, `bodyText`.
 
-`support/api.ts` holds `startGame`, `sendAction`, `debugEdit`, `readState` and `playRolls`. It uses real sessions and normal API routes through `context.request`, with shared response schema checks. It preserves the join order and opens both game streams before setup actions. `sendAction` uses the seat controller's cookies, the current version and a new action id. `playRolls` buys properties and completes each turn until the next roll. Both API and UI setup use the same device cleanup and video recording.
+`support/api.ts` holds `startGame`, `sendAction`, `debugEdit`, `readGame`, `readState` and `playRolls`. It uses real sessions and normal API routes through `context.request`, with shared response schema checks. It preserves the join order and opens both game streams before setup actions. `sendAction` uses the seat controller's cookies, the current version and a new action id. `playRolls` buys properties and completes each turn until the next roll. Both API and UI setup use the same device cleanup and video recording.
 
-**Open (remaining work in F16):**
+**Seed tools (F16), built:**
 
 ```
   src/seed.test.ts             Vitest guard: the dice that the tests need still come from the engine
   scripts/find-seed.ts         finds and prints a seed for a seat layout
+  support/seed.ts              seed shared by Playwright and the guard
+  support/seed-replay.ts       pure buy-policy engine replay for the guard and finder
+  vite.config.ts              includes only src/**/*.test.ts
 ```
 
 - **Spec names.** The Vitest includes and the Vitest lint override use `*.test.ts`, so they do not take `*.spec.ts`.
-- **Separate script.** The package has no `test` script, so `pnpm test` (`vp run -r test`) does not start it. Seed guard (F16) adds one, with `src/seed.test.ts`.
+- **Separate scripts.** `pnpm test` (`vp run -r test`) runs the seed guard through this package's `test` script. It does not start Playwright. The package's Vite+ config selects only `src/**/*.test.ts`. Browser tests still run through `pnpm e2e`.
 
 ## 3. Server stack
 
@@ -160,7 +163,7 @@ The first roll with 2 seats is 9 for Bob:
 ### Guards
 
 - **Built.** The scripts read the dice from the log, for example "rolled 5 and 6" and "Cara rolled 4 and 6". A change in the engine then fails with a clear message and not with a timeout.
-- **Open.** `src/seed.test.ts` would fail in `pnpm test` before any browser starts, and `scripts/find-seed.ts` would find a new seed. Neither exists.
+- **Built.** `src/seed.test.ts` checks the two-seat and three-seat turn order, dice and landings, plus the first Chance and Chest titles and cash effects. Playwright and the guard both import `E2E_SEED` from `support/seed.ts`. Changing that seed from 7 to 8 was verified to fail all four guards in `pnpm test`; it was then restored to 7. `scripts/find-seed.ts` searches an inclusive seed range for a requested pair of dice on a chosen roll, using the buy policy.
 
 ## 5. Test setup
 
@@ -175,7 +178,7 @@ The first roll with 2 seats is 9 for Bob:
 | Scenarios | Room setup | Reaching the state |
 | --- | --- | --- |
 | T01 | UI (`startTable`) | Plays from the first roll in the UI |
-| T22–T25 | UI (`startTable`) | Real actions in the UI (`playBobsFirstTurn`) |
+| T22–T25 | API (`startGame`) | Real actions in the UI (`playBobsFirstTurn`) |
 | T02–T09 | UI | Not needed |
 | T12, T13, T15, T16, T17 | API | `DebugEdit`, before the first roll |
 | T19 | API | Not needed. The test uses the debug panel in the UI |
@@ -183,7 +186,7 @@ The first roll with 2 seats is 9 for Bob:
 | T10, T11, T18 | API | Real actions, in the UI or the API |
 | T20, T21, T26 | API | A few real actions |
 
-- **Built scripts.** T10 to T19 use `support/api.ts`. T22 to T25 still use UI setup; they can move to the API helper when their session gaps are closed (F4).
+- **Built scripts.** T10 to T26 use `support/api.ts`. The core game and T02–T09 keep UI setup so they prove sign-in, join and start independently of later flows.
 - **Why the UI scripts stay.** T01 and T02–T09 prove sign-in, join and start in the UI.
 
 **Helpers.** `startTable` in `support/game.ts` does the room setup in the UI. `startGame` in `support/api.ts` signs in, creates, joins, adds seats and starts through `context.request`. The context keeps the session cookie, so its page is signed in. It accepts `hotSeat: false` for T10 and T17, which need only two seats.
@@ -205,7 +208,7 @@ The first roll with 2 seats is 9 for Bob:
 - **Isolation.** Each test makes its own game. The tests share one database and its lobby lists, so assert only on rows with the game name of this test. Do not assert an empty list. The suite stays below the list limit of 50.
 - **Selectors.** Use roles and accessible names first. The page also has `data-presence` marks on the rail, and `data-motion` on the root element. Add a `data-testid` only when no role or mark fits.
 - **Motion.** The default setup of all scripts is `reducedMotion: "reduce"` and Chromium with `--disable-3d-apis`. Reduced motion skips the waits for the dice and the tokens. With no WebGL, the app shows its fallback board, and the run is about 30 s faster than with a software-rendered 3D board. `motion.spec.ts` sets `reducedMotion: "no-preference"` and the real 3D board for its own file.
-- **Waits.** Use web-first assertions. The `expect` timeout is 10 s, the action timeout is 15 s, and the test timeout is 60 s. Known sleeps: `playUntil` waits 150 ms between steps, and T25 waits 4 s for the 2.5 s grace time.
+- **Waits.** Use web-first assertions. The `expect` timeout is 10 s, the action timeout is 15 s, and the test timeout is 60 s. `playUntil` waits 150 ms between steps. T25 polls game metadata for `saved` through the authenticated API context while both pages are closed, rather than sleeping for the grace time.
 - **No reconnect check.** T08 counts requests for the cancelled game's topic and expects no new request during a 3.5 s observation window. This also covers the browser's native EventSource retry. It checks the count again after the link gives the 404 view.
 - **Truth.** Assert on the log, the rail, the hand and the turn area. Do not read pixels from the WebGL canvas. In the default setup the page has no `canvas`. `motion.spec.ts` checks that one is visible.
 - **Run settings.** `workers: 1`, `fullyParallel: false`, 0 retries, trace and screenshot kept on failure, the reporters `list` and `html` (never opens), results in `.results`. Add a retry in CI (M5).
@@ -254,20 +257,22 @@ T09 found that the API's public room metadata was shown to a stranger as a start
 
 | Scenario | Steps and checks | Priority | Status |
 | --- | --- | --- | --- |
-| Reload during a game (T20) | Reload in mid-turn: same state, and the buttons still work | P1 | Open (F14) |
-| Missed actions (T21) | B loses the stream. A plays. B comes back and catches up with the log and the state | P1 | Open (F14) |
-| Save and restore, same dice (T22) | Bob rolls 5,6, buys and ends his turn. Alice saves from the Menu. Alice sees "Game saved", and Bob sees "Game saved by <owner>". Alice continues from the lobby. Bob opens the game from My games and claims his seats. Alice starts. Cara rolls 4,6, the next roll of the seed. **Gap:** the save is at the start of Cara's turn, so the rollback discards nothing. A save after a roll in the same turn, and the same roll again after the restore, is not tested | P0 | Built, with a gap (F4) |
-| Finish game (T23) | Alice finishes from the Menu at the start of the game. Bob sees "Game finished by <owner>". Both devices show "No winner" and the Final standings table with 3 players and no winner. Alice presses OK and goes to the lobby. **Open:** Finish during an auction, and Finish from the saved list | P0 | Built, with a gap (F4) |
+| Reload during a game (T20) | Bob rolls and buys Anchor Street, then reloads before ending his turn. The server state is unchanged; his rail and hand retain $1,360 and the deed. Next turn works and reaches Cara on Alice's device | P1 | Built (F14) |
+| Missed actions (T21) | Stop B's active browser request and block stream retries. A sees B away, then plays Cara's and Alice's turns. B stays stale. Unblock: a new stream carries the saved `lastEventId`, and each missed roll and purchase arrives once in B's log. B's rail catches up and Roll works without a page reload | P1 | Built (F14) |
+| Save and restore, same dice (T22) | Bob rolls 5,6 and buys, then Alice saves before End turn. Both see the save notice. Continue, open and claim, then restore. The version advances, the purchase is gone, and Bob has $1,500 and no property on both rails. Bob rolls 5,6 again, buys and ends his turn; Cara then rolls 4,6 | P0 | Built (F4) |
+| Finish game (T23) | Three scripts: Finish at game start; Finish during the Anchor Street auction, with rollback and persistent results after reload; Finish from the owner's saved-game lobby row, preserving Bob's bought property. Both devices show No winner and standings | P0 | Built (F4) |
 
 ### Presence (`tests/session.spec.ts`)
 
 | Scenario | Steps and checks | Priority | Status |
 | --- | --- | --- | --- |
-| Disconnect and return (T24) | Bob is first, so the game waits for him. Bob's tab closes. Alice sees reconnecting, then "Waiting for Bob to return", then away. A new tab in Bob's profile opens the game: the away mark and the waiting line go, Bob is online, and Bob plays his turn. **Open:** the owner sees that Save and Finish are in the Menu while a player is away | P0 | Built, with a gap (F4) |
-| Automatic save (T25) | Bob plays his first turn. Both tabs close. After 4 s (the grace time is 2.5 s) Alice opens the lobby and sees Continue. Continue, then Start. The state is the one before the save: Bob has 1 property. The game waits for a player, or shows a roll button. **Open:** the same dice after the restore (the next roll is the next roll of the seed) | P0 | Built, with a gap (F4) |
-| Open lobby during a game (T26) | B goes to the lobby: its stream closes, so B goes away. B returns to the game: online | P2 | Open (F15) |
+| Disconnect and return (T24) | Bob's tab closes. Alice sees reconnecting, the waiting line and away. Her Menu offers Save and Finish. Reopen Bob's tab in the same profile: online, the away waiting line goes, and Bob and Cara play | P0 | Built (F4) |
+| Automatic save (T25) | Bob buys and ends his turn. Close both pages and poll until saved. Alice opens the lobby, continues and starts. Bob still owns Anchor Street, and Cara rolls the next seeded 4,6 | P0 | Built (F4) |
+| Open lobby during a game (T26) | B opens the lobby: A sees reconnecting, away and the waiting line, while the game remains active. Resume from B's My games row restores online and Roll, with unchanged game state | P2 | Built (F15) |
 
 **Built differently from the first plan.** T24 opens a new tab in the same browser profile, not a saved storage state. Both ways keep the session cookie.
+
+**T21 transport check and fix.** A Chromium probe showed that `context.setOffline(true)` did not close the existing EventSource. T21 uses `window.stop()` to cancel that real request and a route abort to block retries, while the page and its store stay mounted. This exposed a product defect: a closed EventSource was replaced without a cursor, so a snapshot updated the board but lost the missed log. The client now preserves the cursor only for retries of the same topics and supplies `lastEventId` in the new URL. The API validates that fallback and gives the native header precedence. The test checks the retry cursor, stale state before reconnect, and exactly one copy of each missed event after reconnect. It does not inject stream messages.
 
 ### Also built, not in T01–T26
 
@@ -290,7 +295,7 @@ T09 found that the API's public room metadata was shown to a stranger as a start
 
 | Goal | Scenario |
 | --- | --- |
-| M3 done: save, restore, same dice | Save and restore, same dice (T22). The mid-turn check is open |
+| M3 done: save, restore, same dice | Save and restore, same dice (T22), including a discarded mid-turn roll and purchase |
 | M3 done: finish with no winner | Finish game (T23) |
 | M3 done: a player goes away, others wait, the player returns | Disconnect and return (T24) |
 | M3 done: all browsers closed, automatic save, restore | Automatic save (T25) |
@@ -337,6 +342,18 @@ Show the last report:
 pnpm e2e:report
 ```
 
+Run the seed guard without browsers:
+
+```bash
+pnpm --filter @monopoly/e2e test
+```
+
+Find a seed for a seat layout and roll (the defaults are 3 seats, roll 7, dice 3,3, seeds 1–10000):
+
+```bash
+pnpm --filter @monopoly/e2e find-seed --players 3 --roll 7 --dice 3,3 --from 1 --to 10000
+```
+
 - The results are in `apps/e2e/.results`, and the report is in `apps/e2e/playwright-report`. Git ignores both.
 - `pnpm test` and `pnpm check` do not start browsers.
 - The README has no E2E section yet. Add one in Milestone 3 close (G2).
@@ -350,12 +367,12 @@ pnpm e2e:report
    - The origin check passes through the proxy, because the API runs with `NODE_ENV=development` on the default ports.
    - Headless Chromium does not need WebGL for the scripts. They run with `--disable-3d-apis`, and `motion.spec.ts` runs with the real 3D board.
    - Closing a tab ends the stream through the proxy. T24 and T25 rely on this, and they pass.
-   - `context.setOffline` with an open `EventSource` is not tested. Missed actions (T21) must test it, and if it does not end the stream, the test closes the page or blocks the route.
+   - `context.setOffline(true)` did not close an existing EventSource in Chromium. T21 cancels the real request and blocks stream retries instead; see section 7.
 3. **Core game script (F2).** Done: Core game script (T01). Closed M1 Playwright setup (I1) and E2E script (I2) with a link.
-4. **Session and disconnect script (F3).** Done for T22 to T25. Their gaps are in section 7.
+4. **Session and disconnect scripts (F3, F4).** Done for T22 to T25, including the mid-turn rollback, all Finish cases, the away owner's Menu and the next seeded roll after automatic save.
 5. **Sign-in, lobby and room (F7 to F9).** Done: T02 to T09. The two spec files use UI setup and separate browser contexts. The shared sign-in helper waits for the live lobby stream before the next device acts.
 6. **API setup and game flows (F5, F6, F10 to F13).** Done: T10 to T19. T17 uses the API helper for the two-seat P0 case. T13 has one script for Chance and one for Chest.
-7. **The remaining scenarios.** The tasks are in [milestone-3-tasks.md](milestone-3-tasks.md#f-browser-tests). Session gaps (F4), Reload and missed actions (F14), Lobby while playing (F15), and Seed guard (F16) are open. Each task is one commit and has one spec file.
+7. **Reload, missed actions, lobby presence and seed guard (F14 to F16).** Done: T20, T21, T26, four Vitest guards and the seed finder. All tasks in section F of [milestone-3-tasks.md](milestone-3-tasks.md#f-browser-tests) are complete. Manual session run (G1) and milestone close (G2) remain outside this automated test work.
 
 | Task | Scenarios | Spec file | Priority | Needs F5 |
 | --- | --- | --- | --- | --- |
@@ -379,11 +396,11 @@ Each task: own commit, `pnpm check` and `pnpm test` green. A defect that a test 
 
 | Risk | Action |
 | --- | --- |
-| An engine change moves the dice | The scripts read the dice from the log, so they fail with a clear message. The seed guard and `find-seed.ts` are open |
+| An engine change moves the dice | The seed guard fails in `pnpm test`, and browser scripts also check the log. Use `find-seed` to inspect a replacement seed before updating the fixtures |
 | The debug panel gets a gate (Q24) | A flag in the stack, and one setup helper |
 | SSE timing gives flaky tests | Web-first assertions only. Investigate a test that passes only on a retry. Do not raise the retry count |
 | The stack uses the ports of `pnpm dev` | The run stops with an error when a port is in use. Stop `pnpm dev` first |
 | Reduced motion and no WebGL hide a defect that shows only with animation or the 3D board | `motion.spec.ts`, Vitest animation queue tests (H5), and the Manual session run (G1) with motion on |
 | A grace time of 2.5 s saves a game while a test has no open stream | Each script keeps a game page open, or closes the pages on purpose |
-| Fixed sleeps in `playUntil` and T25 give slow or flaky runs | Replace the T25 sleep with a check that polls the lobby, if it fails in CI |
+| Fixed sleeps in `playUntil` give slow or flaky runs | Its short wait is bounded. T25 already polls the actual saved status without a fixed grace-time sleep |
 | The tests fail in a sandbox that blocks local ports | Allow local port binding for the run |

@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { E2E_SEED } from "./support/seed.ts";
 
 const API_PORT = 8787;
 const WEB_PORT = 5173;
@@ -47,7 +48,7 @@ export default defineConfig({
         NODE_ENV: "development",
         PORT: String(API_PORT),
         DB_PATH: "../e2e/.data/e2e.db",
-        GAME_SEED: "7",
+        GAME_SEED: String(E2E_SEED),
         PRESENCE_GRACE_MS: "2500",
       },
     },
