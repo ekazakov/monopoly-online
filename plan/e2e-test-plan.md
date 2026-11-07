@@ -3,7 +3,7 @@
 |                |                                                                                                    |
 | -------------- | -------------------------------------------------------------------------------------------------- |
 | Companion docs | [milestone-3-tasks.md](milestone-3-tasks.md) (section F), [implementation-roadmap.md](implementation-roadmap.md) (section 7), [milestone-2-tasks.md](milestone-2-tasks.md), [game-screen-2-gameplay.md](game-screen-2-gameplay.md) (3.1, 3.2) |
-| Status         | Playwright setup (F1), Core game script (F2), Session and disconnect script (F3), Sign-in script (F7), Lobby live script (F8) and Room script (F9) are built: 13 of the 26 scenarios, and 2 motion scripts. 13 scenarios are open. Last updated 2026-11-07 |
+| Status         | T01–T19 and T22–T25 are built: 23 of the 26 scenarios, and 2 motion scripts. T20, T21 and T26, the session gaps (F4), and the seed guard (F16) are open. Last updated 2026-11-07 |
 
 This document is the plan for the browser tests of Milestone 3, section F:
 
@@ -40,10 +40,16 @@ apps/e2e/
   package.json                 scripts: e2e, e2e:ui, e2e:report
   playwright.config.ts         one API and one web server, one worker
   tsconfig.json                so that `pnpm check` covers the package
-  support/game.ts              all helpers (see below); sign-in waits for the live lobby stream
+  support/game.ts              UI helpers and device cleanup; sign-in waits for the live lobby stream
+  support/api.ts               real API setup, actions, debug edits, state reads and seeded rolls
   tests/core-game.spec.ts      T01
   tests/lobby.spec.ts          T02 to T05
   tests/room.spec.ts           T06 to T09
+  tests/game-auction-trade.spec.ts T10, T11
+  tests/game-jail-cards.spec.ts T12, T13 (Chance and Chest), T14
+  tests/game-property-debt.spec.ts T15, T16
+  tests/game-bankruptcy.spec.ts T17
+  tests/game-leave-debug.spec.ts T18, T19
   tests/session.spec.ts        T22, T23, T24, T25
   tests/reduced-motion.spec.ts the default setup: reduced motion, no WebGL
   tests/motion.spec.ts         the animated path and the real 3D board
@@ -52,17 +58,18 @@ apps/e2e/
 `support/game.ts` holds these helpers:
 
 - `test`: a fixture that closes every device at the end of a test.
+- `createDevice`: a browser context registered for cleanup and optional video recording, without signing in.
 - `openDevice`: a browser context, signed in with a unique name.
 - `startTable`: Alice hosts, Bob joins by link, Alice adds Cara, the game starts.
 - `createGame`, `joinByLink`, `addHotSeat`, `startGame`, `reopenPage`.
 - `step` and `playUntil`: take the next turn action until a goal is true.
 - `playBobsFirstTurn`, `saveFromMenu`, `finishFromMenu`, `bodyText`.
 
-**Open (remaining work in F5 to F16):**
+`support/api.ts` holds `startGame`, `sendAction`, `debugEdit`, `readState` and `playRolls`. It uses real sessions and normal API routes through `context.request`, with shared response schema checks. It preserves the join order and opens both game streams before setup actions. `sendAction` uses the seat controller's cookies, the current version and a new action id. `playRolls` buys properties and completes each turn until the next roll. Both API and UI setup use the same device cleanup and video recording.
+
+**Open (remaining work in F16):**
 
 ```
-  support/api.ts               startGame, debugEdit, readState and playRolls through context.request
-  tests/game-*.spec.ts         T10 to T19
   src/seed.test.ts             Vitest guard: the dice that the tests need still come from the engine
   scripts/find-seed.ts         finds and prints a seed for a seat layout
 ```
@@ -121,7 +128,7 @@ Rolls with 3 seats, when each player buys what they land on:
 - **First rent.** Roll 11: Alice rolls 1,1 and lands on Chandlers Quay, which Cara owns.
 - **Roll 7.** Bob rolls a double, so he rolls again (`awaiting_roll`, doubles 1).
 - **Top cards.** Chance "Loan matures" (collect $150). Chest "Tax refund" (collect $20).
-- **Used by the built scripts.** Roll 1 (Bob, 5,6) and roll 2 (Cara, 4,6).
+- **Used by the built scripts.** The three-seat setup is used by T11 to T16, T18 and T19. T14 checks all first six rolls before the UI rolls the double. T10 uses two seats: after three API rolls, Alice rolls 1,2 from square 10 to Rope Walk (13) and chooses Auction.
 
 ### Setup with the debug edit
 
@@ -143,6 +150,8 @@ The first roll with 2 seats is 9 for Bob:
 | Bankruptcy | Teleport to 29, cash $10, no deeds | Luxury Tax. Bankrupt at once, and the game is over |
 
 **Caution.** A player with no deeds who cannot pay goes bankrupt at once. There is no debt view. A debt test must give the player a deed.
+
+**Build and mortgage (T15), verified with an engine replay.** Give Bob Driftwood Lane (1) and Kelp Court (3), the full brown group, plus Grand Pier (39), all without buildings or mortgages. Both brown deeds cost $60, building costs $50, and their mortgage value is $30 each. Grand Pier costs $400 and mortgages for $200. From $1,500, building one house on Driftwood Lane leaves $1,450. Mortgaging Grand Pier then leaves $1,650. Its different colour group keeps the mortgage legal while the brown group has a house.
 
 **Doubles.** `playRolls` plays rolls 1 to 6 through the API with the buy policy. Bob then plays roll 7 in the UI.
 
@@ -174,10 +183,10 @@ The first roll with 2 seats is 9 for Bob:
 | T10, T11, T18 | API | Real actions, in the UI or the API |
 | T20, T21, T26 | API | A few real actions |
 
-- **Built scripts.** T22 to T25 start the room in the UI, because `support/api.ts` does not exist yet. They can move to the API helper when it exists, so that a defect on the join screen fails only T01 and T02–T09.
+- **Built scripts.** T10 to T19 use `support/api.ts`. T22 to T25 still use UI setup; they can move to the API helper when their session gaps are closed (F4).
 - **Why the UI scripts stay.** T01 and T02–T09 prove sign-in, join and start in the UI.
 
-**Helpers.** `startTable` in `support/game.ts` does the room setup in the UI. The planned `startGame` in `support/api.ts` signs in, creates, joins, adds seats and starts through `context.request`. The context keeps the session cookie, so its page is signed in.
+**Helpers.** `startTable` in `support/game.ts` does the room setup in the UI. `startGame` in `support/api.ts` signs in, creates, joins, adds seats and starts through `context.request`. The context keeps the session cookie, so its page is signed in. It accepts `hotSeat: false` for T10 and T17, which need only two seats.
 
 **Limits:**
 
@@ -230,16 +239,16 @@ T09 found that the API's public room metadata was shown to a stranger as a start
 
 | Scenario | Steps and checks | Priority | Status |
 | --- | --- | --- | --- |
-| Auction across devices (T10) | Host chooses Auction. Bids alternate on A and B. The winner pays and owns the deed on A and B | P1 | Open (F10) |
-| Hot-seat trade handoff (T11) | Trade between the host and the hot-seat seat: "Pass to" before the answer, and the hand stays hidden until the confirm | P1 | Open (F10) |
-| Jail (T12) | Debug setup, land on Go to Jail. On the next turn of that player, pay the fine | P1 | Open (F11) |
-| Card (T13) | Debug setup, draw the Chance card. A and B show it. Cash changes | P1 | Open (F11) |
-| Doubles (T14) | `playRolls` for rolls 1 to 6. Bob rolls 3,3 on roll 7: "Roll again" shows, and the turn continues | P2 | Open (F11) |
-| Build and mortgage (T15) | Debug setup, a full group. Build from the hand, mortgage from the hand | P1 | Open (F12) |
-| Debt paid (T16) | Debug setup, debt of $100 with Grand Pier. Mortgage, then pay. The game continues | P1 | Open (F12) |
-| Bankruptcy and result (T17) | 2 seats, debug setup. Result screen with winner and standings on A and B. Reload: still the result | P0 | Open (F6) |
-| Resign on a shared device (T18) | Leave game asks which seat. That seat is out, and the game continues | P2 | Open (F13) |
-| Debug panel (T19) | Change cash in the panel: the rail changes and the log says "(debug)" | P2 | Open (F13) |
+| Auction across devices (T10) | Two seats. Alice chooses Auction for Rope Walk. Alice bids $10, Bob $20, Alice $30, Bob passes. Both logs show the win; both rails show Alice with $1,470 and 1 property. Her hand shows Rope Walk | P1 | Built (F10) |
+| Hot-seat trade handoff (T11) | After five API rolls, Alice offers Lantern Row to Cara for $25 in the UI. "Pass to Cara" hides the hand and answer controls and makes the regions inert. Confirm, accept, then pass back to Alice. Both devices show the cash and property changes | P1 | Built (F10) |
+| Jail (T12) | Teleport Bob to 19. Roll into Go to Jail. Cara and Alice play real API turns. On Bob's next turn, pay $50 in the UI. Both rails show $1,450 and no jail mark; Bob can roll | P1 | Built (F11) |
+| Card (T13) | Separate Chance and Chest scripts. Teleport, then roll in the UI. Both devices show the card, log and cash change. Dismissing on Alice's device leaves Bob's card open | P1 | Built (F11) |
+| Doubles (T14) | `playRolls` checks rolls 1 to 6. Bob rolls 3,3 on roll 7 in the UI. Dismiss the card: Bob has an enabled "Roll again", Alice waits, and the server state keeps Bob on turn with doubles 1 | P2 | Built (F11) |
+| Build and mortgage (T15) | Give Bob the brown group and Grand Pier. Build one house on Driftwood Lane through the hand, then mortgage Grand Pier through the hand. Check the deed labels, both logs, and cash $1,650 | P1 | Built (F12) |
+| Debt paid (T16) | Bob has $10, Grand Pier, and position 27. Roll into Luxury Tax: $100 debt, short $90. Mortgage Grand Pier for $200, pay $100, and end the turn. Both devices show cash $110 and the payment log | P1 | Built (F12) |
+| Bankruptcy and result (T17) | Two seats. Bob has $10, no deeds and position 29. Roll into Luxury Tax. Both devices show Alice as winner, the ranked standings and Bob bankrupt. Reload each device: the result stays | P0 | Built (F6) |
+| Resign on a shared device (T18) | Alice's menu asks which seat resigns. Select Cara. Both devices show Cara out and Alice still in. Bob rolls, buys and ends his turn, then Alice can roll | P2 | Built (F13) |
+| Debug panel (T19) | Set Bob's cash to $1,234 through the UI panel. Both rails change and both logs show the marked debug edit. Bob can still roll | P2 | Built (F13) |
 
 ### Resume and session (`tests/session.spec.ts`)
 
@@ -345,7 +354,8 @@ pnpm e2e:report
 3. **Core game script (F2).** Done: Core game script (T01). Closed M1 Playwright setup (I1) and E2E script (I2) with a link.
 4. **Session and disconnect script (F3).** Done for T22 to T25. Their gaps are in section 7.
 5. **Sign-in, lobby and room (F7 to F9).** Done: T02 to T09. The two spec files use UI setup and separate browser contexts. The shared sign-in helper waits for the live lobby stream before the next device acts.
-6. **The remaining scenarios.** The tasks F4 to F16 are in [milestone-3-tasks.md](milestone-3-tasks.md#f-browser-tests). F7 to F9 are complete. Each task is one commit and has one spec file.
+6. **API setup and game flows (F5, F6, F10 to F13).** Done: T10 to T19. T17 uses the API helper for the two-seat P0 case. T13 has one script for Chance and one for Chest.
+7. **The remaining scenarios.** The tasks are in [milestone-3-tasks.md](milestone-3-tasks.md#f-browser-tests). Session gaps (F4), Reload and missed actions (F14), Lobby while playing (F15), and Seed guard (F16) are open. Each task is one commit and has one spec file.
 
 | Task | Scenarios | Spec file | Priority | Needs F5 |
 | --- | --- | --- | --- | --- |
