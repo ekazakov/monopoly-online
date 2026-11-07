@@ -60,6 +60,8 @@ export class SseHttpClient implements RealtimeClient {
   private status: RealtimeStatus = "idle";
   private source: EventSourceLike | null = null;
   private openedTopics = "";
+  /** Retained only across retries of the same topic set; native retries use their own header. */
+  private lastEventId: number | null = null;
   private syncQueued = false;
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private attempt = 0;
@@ -166,7 +168,8 @@ export class SseHttpClient implements RealtimeClient {
     this.openedTopics = topics;
     this.setStatus(status);
 
-    const source = this.createSource(`/api/stream?topics=${topics}`);
+    const cursor = this.lastEventId === null ? "" : `&lastEventId=${this.lastEventId}`;
+    const source = this.createSource(`/api/stream?topics=${topics}${cursor}`);
     this.source = source;
     source.onopen = () => {
       if (this.source !== source) return;
@@ -213,6 +216,7 @@ export class SseHttpClient implements RealtimeClient {
     }
     this.source = null;
     this.openedTopics = "";
+    this.lastEventId = null;
     this.attempt = 0;
   }
 
@@ -228,6 +232,16 @@ export class SseHttpClient implements RealtimeClient {
     if (!parsed.success) {
       this.onError(parsed.error);
       return;
+    }
+    const message = parsed.data;
+    const games = this.openedTopics.split(",").filter((topic) => topic.startsWith("game:"));
+    if (
+      games.length === 1 &&
+      games[0] === message.topic &&
+      (message.type === "game.actions" ||
+        (message.type === "snapshot" && message.payload.state !== null))
+    ) {
+      this.lastEventId = Math.max(this.lastEventId ?? 0, message.version);
     }
     for (const { handler } of [...(this.subscriptions.get(parsed.data.topic) ?? [])]) {
       try {

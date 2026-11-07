@@ -32,8 +32,14 @@ export const streamTopicSchema = z.union([
   userTopicSchema,
 ]);
 
-/** Query of `GET /api/stream`: a comma list of topics. */
-export const streamQuerySchema = z.strictObject({ topics: z.string().min(1) });
+/** A closed EventSource needs a new instance, so its cursor can be supplied in the query. */
+export const streamQuerySchema = z.strictObject({
+  topics: z.string().min(1),
+  lastEventId: z
+    .string()
+    .regex(/^\d{1,15}$/)
+    .optional(),
+});
 
 /** Split the `topics` query value. Null when it is empty, too long or has a bad topic. */
 export function parseStreamTopics(raw: string): string[] | null {

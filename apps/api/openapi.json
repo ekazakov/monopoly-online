@@ -6402,7 +6402,7 @@
         ],
         "tags": ["realtime"],
         "summary": "Open the event stream of games, the lobby and the invites of the user",
-        "description": "Server-sent events. Topics: `game:<id>` (seated users only), `lobby` (any signed-in user) and `user:<id>` (only that user, else 403 `forbidden_topic`). Each message has `event:` set to its type (`snapshot`, `room.updated`, `room.cancelled`, `game.actions`, `lobby.snapshot`, `lobby.updated`, `lobby.removed`, `invites.updated`, `presence.updated`) and `data:` set to the JSON envelope `{ topic, type, version, payload }`. `id:` is the engine version and is set only on `snapshot` of a started game and on `game.actions`; the lobby and user messages have no id. A comment line every 15 seconds keeps the stream open. After a reconnect with `Last-Event-ID` and exactly one game topic, the missed `game.actions` are replayed when the gap is 1 to 100 versions, and a `snapshot` is sent when the gap is larger, the id is not a valid version, or the game is not `active`. Each connect to `lobby` or `user:<id>` gets the full list. Each connect to an `active` game also gets `presence.updated` (version 0, no id): the status of every seat whose controller the server knows, `online`, `reconnecting` or `away`. It is sent again on each change. A user with a stream open in any tab is `online`; the status is `reconnecting` when the last stream closes, and `away` 60 seconds later.",
+        "description": "Server-sent events. Topics: `game:<id>` (seated users only), `lobby` (any signed-in user) and `user:<id>` (only that user, else 403 `forbidden_topic`). Each message has `event:` set to its type (`snapshot`, `room.updated`, `room.cancelled`, `game.actions`, `lobby.snapshot`, `lobby.updated`, `lobby.removed`, `invites.updated`, `presence.updated`) and `data:` set to the JSON envelope `{ topic, type, version, payload }`. `id:` is the engine version and is set only on `snapshot` of a started game and on `game.actions`; the lobby and user messages have no id. A comment line every 15 seconds keeps the stream open. After a reconnect with `Last-Event-ID` and exactly one game topic, the missed `game.actions` are replayed when the gap is 1 to 100 versions, and a `snapshot` is sent when the gap is larger, the id is not a valid version, or the game is not `active`. A new EventSource instance can supply the optional `lastEventId` query instead; the header takes precedence. Each connect to `lobby` or `user:<id>` gets the full list. Each connect to an `active` game also gets `presence.updated` (version 0, no id): the status of every seat whose controller the server knows, `online`, `reconnecting` or `away`. It is sent again on each change. A user with a stream open in any tab is `online`; the status is `reconnecting` when the last stream closes, and `away` 60 seconds later.",
         "parameters": [
           {
             "schema": {
@@ -6411,6 +6411,15 @@
             },
             "required": true,
             "name": "topics",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{1,15}$"
+            },
+            "required": false,
+            "name": "lastEventId",
             "in": "query"
           }
         ],

@@ -75,8 +75,11 @@ describe("GET /api/stream", () => {
     cookie: string,
     gameId: string,
     headers: Record<string, string> = {},
+    lastEventId?: string,
   ): Promise<SseReader> {
-    const res = await app.request(`/api/stream?topics=game:${gameId}`, {
+    const cursor =
+      lastEventId === undefined ? "" : `&lastEventId=${encodeURIComponent(lastEventId)}`;
+    const res = await app.request(`/api/stream?topics=game:${gameId}${cursor}`, {
       headers: { cookie, ...headers },
     });
     expect(res.status).toBe(200);
@@ -127,6 +130,9 @@ describe("GET /api/stream", () => {
     test.each([
       ["no topics", ""],
       ["an empty topics value", "?topics="],
+      ["a negative resume cursor", `?topics=game:${MISSING_ID}&lastEventId=-1`],
+      ["a fractional resume cursor", `?topics=game:${MISSING_ID}&lastEventId=1.5`],
+      ["an oversized resume cursor", `?topics=game:${MISSING_ID}&lastEventId=1234567890123456`],
       ["a topic that is not a game", "?topics=user:1"],
       ["a game id that is not a uuid", "?topics=game:abc"],
       ["an empty item in the list", `?topics=game:${MISSING_ID},`],
@@ -480,6 +486,29 @@ describe("GET /api/stream", () => {
     });
 
     describe("resume with Last-Event-ID", () => {
+      test("a new EventSource can replay from a query cursor and then receive live actions", async () => {
+        const steps = script(started, 9);
+        await play(started, steps.slice(0, 8));
+        const resumed = await connect(started.owner.cookie, started.game.id, {}, "3");
+        expect(await resumed.take(5)).toEqual(
+          steps.slice(3, 8).map((step) => expect.objectContaining(actionsFrame(started, step))),
+        );
+        await play(started, steps.slice(8));
+        expect((await resumed.next()).id).toBe("9");
+      });
+
+      test("the native header takes precedence over an older query cursor", async () => {
+        await play(started, script(started, 8));
+        const resumed = await connect(
+          started.owner.cookie,
+          started.game.id,
+          { "last-event-id": "5" },
+          "2",
+        );
+        expect((await resumed.take(3)).map((frame) => frame.id)).toEqual(["6", "7", "8"]);
+        await resumed.expectQuiet();
+      });
+
       test("replays exactly the missed frames, in order", async () => {
         const live = await connect(started.owner.cookie, started.game.id);
         await live.next();

@@ -8,6 +8,7 @@ import {
   gameId,
   otherTopic,
   roomUpdated,
+  state,
   topic,
 } from "./fixtures.ts";
 import { retryDelay, SseHttpClient, type SseHttpClientOptions } from "./SseHttpClient.ts";
@@ -266,6 +267,76 @@ describe("status", () => {
     sources[2]!.fail();
     await vi.advanceTimersByTimeAsync(1_000);
     expect(sources).toHaveLength(4);
+  });
+
+  test("a new EventSource resumes the latest game version after a fatal close", async () => {
+    vi.useFakeTimers();
+    const { client, sources } = setup();
+    client.subscribe(topic, () => {});
+    await vi.advanceTimersByTimeAsync(0);
+    sources[0]!.open();
+    sources[0]!.emit("game.actions", {
+      ...gameActions(),
+      version: 3,
+      payload: { ...gameActions().payload, state: { ...state, version: 3 } },
+    });
+    sources[0]!.emit("room.updated", roomUpdated());
+    sources[0]!.emit("presence.updated", {
+      topic,
+      type: "presence.updated",
+      version: 0,
+      payload: { seats: {} },
+    });
+    sources[0]!.emit("game.actions", gameActions()); // a repeated older frame cannot move the cursor back
+    sources[0]!.fail();
+    await vi.advanceTimersByTimeAsync(750);
+    expect(sources[1]!.url).toBe(`/api/stream?topics=${topic}&lastEventId=3`);
+  });
+
+  test("a started snapshot at version zero is a valid retry cursor", async () => {
+    vi.useFakeTimers();
+    const { client, sources } = setup();
+    client.subscribe(topic, () => {});
+    await vi.advanceTimersByTimeAsync(0);
+    const game = roomUpdated().payload.game;
+    sources[0]!.emit("snapshot", {
+      topic,
+      type: "snapshot",
+      version: 0,
+      payload: { game: { ...game, status: "active" }, state: { ...state, version: 0 } },
+    });
+    sources[0]!.fail();
+    await vi.advanceTimersByTimeAsync(750);
+    expect(sources[1]!.url).toBe(`/api/stream?topics=${topic}&lastEventId=0`);
+  });
+
+  test("topic changes, unsubscribe and close clear the retry cursor", async () => {
+    vi.useFakeTimers();
+    const { client, sources, latest } = setup();
+    const off = client.subscribe(topic, () => {});
+    await vi.advanceTimersByTimeAsync(0);
+    latest().emit("game.actions", gameActions());
+    const offOther = client.subscribe(otherTopic, () => {});
+    await vi.advanceTimersByTimeAsync(0);
+    expect(latest().url).toBe(`/api/stream?topics=${topic},${otherTopic}`);
+    latest().emit("game.actions", gameActions());
+    latest().fail();
+    await vi.advanceTimersByTimeAsync(750);
+    expect(latest().url).toBe(`/api/stream?topics=${topic},${otherTopic}`);
+    offOther();
+    await vi.advanceTimersByTimeAsync(0);
+    latest().emit("game.actions", gameActions());
+    off();
+    await vi.advanceTimersByTimeAsync(0);
+    client.subscribe(topic, () => {});
+    await vi.advanceTimersByTimeAsync(0);
+    expect(latest().url).toBe(`/api/stream?topics=${topic}`);
+    latest().emit("game.actions", gameActions());
+    client.close();
+    client.subscribe(topic, () => {});
+    await vi.advanceTimersByTimeAsync(0);
+    expect(latest().url).toBe(`/api/stream?topics=${topic}`);
+    expect(sources.every((source) => !source.url.includes("lastEventId"))).toBe(true);
   });
 
   test("leaving during the backoff cancels the retry", async () => {
