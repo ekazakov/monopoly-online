@@ -3,7 +3,7 @@
 |                |                                                                                                    |
 | -------------- | -------------------------------------------------------------------------------------------------- |
 | Companion docs | [milestone-3-tasks.md](milestone-3-tasks.md) (section F), [implementation-roadmap.md](implementation-roadmap.md) (section 7), [milestone-2-tasks.md](milestone-2-tasks.md), [game-screen-2-gameplay.md](game-screen-2-gameplay.md) (3.1, 3.2) |
-| Status         | Playwright setup (F1), Core game script (F2) and Session and disconnect script (F3) are built: 5 of the 26 scenarios, and 2 motion scripts. 21 scenarios are open. Last updated 2026-11-07 |
+| Status         | Playwright setup (F1), Core game script (F2), Session and disconnect script (F3), Sign-in script (F7), Lobby live script (F8) and Room script (F9) are built: 13 of the 26 scenarios, and 2 motion scripts. 13 scenarios are open. Last updated 2026-11-07 |
 
 This document is the plan for the browser tests of Milestone 3, section F:
 
@@ -40,8 +40,10 @@ apps/e2e/
   package.json                 scripts: e2e, e2e:ui, e2e:report
   playwright.config.ts         one API and one web server, one worker
   tsconfig.json                so that `pnpm check` covers the package
-  support/game.ts              all helpers (see below)
+  support/game.ts              all helpers (see below); sign-in waits for the live lobby stream
   tests/core-game.spec.ts      T01
+  tests/lobby.spec.ts          T02 to T05
+  tests/room.spec.ts           T06 to T09
   tests/session.spec.ts        T22, T23, T24, T25
   tests/reduced-motion.spec.ts the default setup: reduced motion, no WebGL
   tests/motion.spec.ts         the animated path and the real 3D board
@@ -56,12 +58,10 @@ apps/e2e/
 - `step` and `playUntil`: take the next turn action until a goal is true.
 - `playBobsFirstTurn`, `saveFromMenu`, `finishFromMenu`, `bodyText`.
 
-**Open (planned for F5 to F16):**
+**Open (remaining work in F5 to F16):**
 
 ```
   support/api.ts               startGame, debugEdit, readState and playRolls through context.request
-  tests/lobby.spec.ts          T02 to T05
-  tests/room.spec.ts           T06 to T09
   tests/game-*.spec.ts         T10 to T19
   src/seed.test.ts             Vitest guard: the dice that the tests need still come from the engine
   scripts/find-seed.ts         finds and prints a seed for a seat layout
@@ -197,6 +197,7 @@ The first roll with 2 seats is 9 for Bob:
 - **Selectors.** Use roles and accessible names first. The page also has `data-presence` marks on the rail, and `data-motion` on the root element. Add a `data-testid` only when no role or mark fits.
 - **Motion.** The default setup of all scripts is `reducedMotion: "reduce"` and Chromium with `--disable-3d-apis`. Reduced motion skips the waits for the dice and the tokens. With no WebGL, the app shows its fallback board, and the run is about 30 s faster than with a software-rendered 3D board. `motion.spec.ts` sets `reducedMotion: "no-preference"` and the real 3D board for its own file.
 - **Waits.** Use web-first assertions. The `expect` timeout is 10 s, the action timeout is 15 s, and the test timeout is 60 s. Known sleeps: `playUntil` waits 150 ms between steps, and T25 waits 4 s for the 2.5 s grace time.
+- **No reconnect check.** T08 counts requests for the cancelled game's topic and expects no new request during a 3.5 s observation window. This also covers the browser's native EventSource retry. It checks the count again after the link gives the 404 view.
 - **Truth.** Assert on the log, the rail, the hand and the turn area. Do not read pixels from the WebGL canvas. In the default setup the page has no `canvas`. `motion.spec.ts` checks that one is visible.
 - **Run settings.** `workers: 1`, `fullyParallel: false`, 0 retries, trace and screenshot kept on failure, the reporters `list` and `html` (never opens), results in `.results`. Add a retry in CI (M5).
 
@@ -214,14 +215,16 @@ There are 26 scenarios: 21 at P0 or P1, and 5 at P2. P0 runs first and blocks th
 
 | Scenario | Steps and checks | Priority | Status |
 | --- | --- | --- | --- |
-| Sign-in and session (T02) | Sign in, reload, still signed in. A name that is taken gets the answer. A game link with no session goes to sign-in, then back to the game | P1 | Open (F7) |
-| Live open games (T03) | A creates: the row shows on B with no reload. B joins: 2/6 on A and B. Start: the row leaves the list | P1 | Open (F8) |
-| Invite by name (T04) | A invites B: live in the B inbox. Decline: A sees it. Invite again, accept: B has a seat | P1 | Open (F8) |
-| Start expires an invite (T05) | A invites B, then starts. The invite leaves the B inbox, live | P1 | Open (F8) |
-| Tokens (T06) | 6 seats show 6 figures. B takes a token: disabled on A, live. The host is red in the room and on the rail | P1 | Open (F9) |
-| Hot-seat seats (T07) | Add and remove a seat. Start stays disabled with one seat | P1 | Open (F9) |
-| Cancel game (T08) | Host cancels: B sees "Game cancelled". B opens no new `/api/stream` connections for the game. The link then gives the 404 view | P1 | Open (F9) |
-| Stranger (T09) | C opens the link of a started game: "Not your game" | P2 | Open (F9) |
+| Sign-in and session (T02) | Sign in, reload, still signed in. A name that is taken gets the answer. A game link with no session goes to sign-in, then back to that room. Join gives a seat on both devices | P1 | Built (F7) |
+| Live open games (T03) | A creates: the row shows on both devices' lobby tabs with no reload. B joins: 2/6 in both rooms and both lobby tabs. Start: the row leaves both lists | P1 | Built (F8) |
+| Invite by name (T04) | A invites B: live in the B inbox. Decline: the pending row leaves A's room. Invite again, accept: B has a joined seat and both rooms show 2/6 | P1 | Built (F8) |
+| Start expires an invite (T05) | A adds a hot-seat seat, invites B, then starts. The invite leaves the B inbox, live | P1 | Built (F8) |
+| Tokens (T06) | B takes Horse: disabled on A, live, and Cat becomes free. Fill 6 seats and check 6 distinct figures on both devices. The host's avatar ring is red in both rooms and on both rails | P1 | Built (F9) |
+| Hot-seat seats (T07) | Add and remove a seat. Start is enabled with two seats and disabled again with one seat | P1 | Built (F9) |
+| Cancel game (T08) | Host cancels: B sees "Game cancelled". B opens no new `/api/stream` connections for the game during a 3.5 s observation window. Back to lobby, then the same link gives the 404 view | P1 | Built (F9) |
+| Stranger (T09) | C opens both the room link and the play link of a started game: "Not your game", with no Join or Roll controls | P2 | Built (F9) |
+
+T09 found that the API's public room metadata was shown to a stranger as a started room. The web now checks seat control before it shows a started room or play screen. It does not request game state or open a game stream for a stranger. Waiting rooms still allow visitors to join, and the API contract is unchanged.
 
 ### Game flows (`tests/game-*.spec.ts`)
 
@@ -341,7 +344,8 @@ pnpm e2e:report
    - `context.setOffline` with an open `EventSource` is not tested. Missed actions (T21) must test it, and if it does not end the stream, the test closes the page or blocks the route.
 3. **Core game script (F2).** Done: Core game script (T01). Closed M1 Playwright setup (I1) and E2E script (I2) with a link.
 4. **Session and disconnect script (F3).** Done for T22 to T25. Their gaps are in section 7.
-5. **The open scenarios.** The tasks F4 to F16 are in [milestone-3-tasks.md](milestone-3-tasks.md#f-browser-tests). Each task is one commit and has one spec file.
+5. **Sign-in, lobby and room (F7 to F9).** Done: T02 to T09. The two spec files use UI setup and separate browser contexts. The shared sign-in helper waits for the live lobby stream before the next device acts.
+6. **The remaining scenarios.** The tasks F4 to F16 are in [milestone-3-tasks.md](milestone-3-tasks.md#f-browser-tests). F7 to F9 are complete. Each task is one commit and has one spec file.
 
 | Task | Scenarios | Spec file | Priority | Needs F5 |
 | --- | --- | --- | --- | --- |

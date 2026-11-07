@@ -41,11 +41,22 @@ export async function openDevice(browser: Browser, name: string): Promise<Device
   const page = await context.newPage();
   await page.goto("/");
   await page.getByPlaceholder("Your name").fill(name);
+  // Wait for the live lobby subscription as well as the form. A test must not pass only because
+  // the first REST load happened after another device created a game or sent an invite.
+  const lobbyStream = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return (
+      url.pathname === "/api/stream" &&
+      url.searchParams.get("topics")?.split(",").includes("lobby") === true &&
+      response.ok()
+    );
+  });
   await page
     .getByRole("button", { name: /^(continue|enter|sign in|join|start|play)/i })
     .first()
     .click();
   await expect(page.getByRole("button", { name: "Create game" })).toBeVisible();
+  await lobbyStream;
   return { context, page, name };
 }
 
