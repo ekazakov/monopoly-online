@@ -35,10 +35,17 @@ export const test = base.extend<{ closeDevices: void }>({
   ],
 });
 
-export async function openDevice(browser: Browser, name: string): Promise<Device> {
+/** Register a device for cleanup and video recording, without signing in. */
+export async function createDevice(browser: Browser, name: string): Promise<Device> {
   const context = await browser.newContext(recordingOptions(name));
   opened.push(context);
   const page = await context.newPage();
+  return { context, page, name };
+}
+
+export async function openDevice(browser: Browser, name: string): Promise<Device> {
+  const device = await createDevice(browser, name);
+  const { page } = device;
   await page.goto("/");
   await page.getByPlaceholder("Your name").fill(name);
   // Wait for the live lobby subscription as well as the form. A test must not pass only because
@@ -57,7 +64,7 @@ export async function openDevice(browser: Browser, name: string): Promise<Device
     .click();
   await expect(page.getByRole("button", { name: "Create game" })).toBeVisible();
   await lobbyStream;
-  return { context, page, name };
+  return device;
 }
 
 /**

@@ -113,7 +113,7 @@ The tasks F4 to F16 turn the open scenarios of the plan into work. A scenario co
   - Finish during an auction, and Finish from the saved list.
   - While a player is away, the owner's Menu shows Save and Finish.
   - After the automatic save and the restore, the next roll is the next roll of the seed.
-- [ ] **API setup helper (F5).** `support/api.ts` for the plan section "Test setup": `startGame` (sign in, create, join, add a hot-seat seat and start, through `context.request`), `debugEdit`, `readState` and `playRolls`. The context keeps the session cookie, so its page is signed in. Done when F6 uses it.
+- [x] **API setup helper (F5).** `support/api.ts` for the plan section "Test setup": `startGame` (sign in, create, join, add a hot-seat seat and start, through `context.request`), `debugEdit`, `readState` and `playRolls`. The context keeps the session cookie, so its page is signed in. Done when F6 uses it.
 - [ ] **Bankruptcy and result script (F6).** P0. Bankruptcy and result (T17) in `tests/game-bankruptcy.spec.ts`. 2 seats, and the debug setup of the plan (teleport to 29, cash $10, no deeds). The result screen shows the winner and the standings on both devices, and a reload keeps it. Depends on API setup helper (F5).
 - [x] **Sign-in script (F7).** Sign-in and session (T02) in `tests/lobby.spec.ts`: a reload keeps the session, a taken name gets the answer, and a game link with no session goes to sign-in and then back to the game.
 - [x] **Lobby live script (F8).** Live open games (T03), Invite by name (T04) and Start expires an invite (T05) in `tests/lobby.spec.ts`. Assert only on rows with the game name of the test.
