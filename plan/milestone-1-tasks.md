@@ -9,7 +9,7 @@
 
 ## Scope rules
 
-- Not in M1: public game list, invite by name, player tokens (M2); Finish, Save, Restore, disconnect/autopilot (M3); WebSocket, OAuth, rematch (M4); Cloudflare, OpenTelemetry, CI (M5).
+- Not in M1: public game list, invite by name, player tokens (M2); Finish, Save, Restore, disconnect/autopilot (M3); WebSocket, OAuth (M4); Cloudflare, OpenTelemetry, CI (M5).
 - Resign is in M1. The engine has it, and it is the only way to end a game early before Finish (M3).
 - Keep SQL portable (roadmap 3.3). JSON as text, ids as UUID text, times as ISO text.
 - Each task: small, own commit (Conventional Commits), `pnpm check` and `pnpm test` green. Controller or DTO changes regenerate `apps/api/openapi.json`.

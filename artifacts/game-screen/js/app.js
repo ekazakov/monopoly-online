@@ -688,7 +688,7 @@ function openGameOver() {
     title: 'Game over',
     body: `<div class="winner"><div class="big-av" style="color:${w.color}">${avatarSVG(w.avatar, 64)}</div><p class="eyebrow">Winner · Round ${S.round}</p><h3>${esc(w.name)}</h3></div>
       <div class="results">${rows.map((r, k) => `<div class="result${k === 0 ? ' win' : ''}"><span class="pos">${k + 1}</span><span class="mini-av" style="--pc:${r.p.color}">${avatarSVG(r.p.avatar, 26)}</span><span><b>${esc(r.p.name)}</b>${r.p.bankrupt ? ' <span class="muted">· bankrupt</span>' : ''}</span><span class="nw">${r.p.bankrupt ? '—' : fmt(r.total)}<small>${r.p.bankrupt ? '' : `${fmt(r.cash)} cash · ${fmt(r.worth)} property`}</small></span></div>`).join('')}</div>`,
-    actions: [{ label: 'Leave game' }, { label: 'Rematch', primary: true, onClick: () => restart() }]
+    actions: [{ label: 'Leave game', primary: true }]
   });
 }
 

@@ -43,7 +43,7 @@ Milestones M1 to M4 run on the local machine with `pnpm dev`. Deployment comes l
 | **M1 Local playable game** ([tasks](milestone-1-tasks.md)) | Guest sessions (one per browser or browser profile), create a game, join by invite link, hot-seat seats, start. The engine on the server, the SSE game channel, the game screen in React with all turn actions, resign, and the result screen. Done when two browser profiles and one hot-seat player finish a game on `localhost` |
 | **M2 Lobby** ([tasks](milestone-2-tasks.md)) | Public game list, My games, the full game room (host and guest views), invite by name, player tokens (game pieces), Cancel game, and the dice and token animation (moved from M1). **Done** on 2026-11-05, with the manual run on two browser profiles (I1) |
 | **M3 Session and resilience** ([tasks](milestone-3-tasks.md)) | Owner Finish, Save and Restore (gameplay 3.1), disconnect and away rules (3.2): the game waits for an away player, and it saves itself when nobody is online. The Playwright setup and script from M1, with a disconnect script |
-| **M4 Polish**                 | Accessibility pass, rematch, WebSocket transport, Google OAuth |
+| **M4 Polish**                 | Accessibility pass, WebSocket transport, Google OAuth |
 | **M5 Deployment**             | CI, Docker image, the droplet with Cloudflare Tunnel and Access, OpenTelemetry export to Grafana Cloud |
 | **Later (no milestone)**      | The autopilot for away players (postponed 2026-11-06). Claim from another browser (gameplay Q25) |
 
@@ -225,3 +225,4 @@ Only persons on an allow list can open the game. Cloudflare Access (Zero Trust, 
 | 2026-11-05 | Milestone 2 done: token and cancel API, lobby lists, invites, the `lobby` and `user:<id>` topics, and the lobby, token picker, invite panel and cancel flow in the web app. "As built" rules in [api-schema.md](api-schema.md). The manual run (I1) passed on two browser profiles |
 | 2026-11-06 | Task list for milestone 3 in [milestone-3-tasks.md](milestone-3-tasks.md), and the M3 section in [api-schema.md](api-schema.md). The autopilot is postponed. The game waits for an away player, and it saves itself when nobody is online. No `GET /api/me/saved-games`. Playwright moved from M1 to M3 |
 | 2026-11-06 | E2E test plan in [e2e-test-plan.md](e2e-test-plan.md). The tests use dedicated seeded servers and reduced motion, so Reduced motion fallback (H4) moved from M2 to M3 |
+| 2026-11-07 | Rematch removed from the project: the M4 scope, the game-over dialog in the prototype and the Dialogs board. The game-over dialog has one action, Leave game |

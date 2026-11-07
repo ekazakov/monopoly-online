@@ -21,7 +21,7 @@
   - The autopilot. It is postponed.
   - Claim from another browser (gameplay Q25), and a change of hot-seat groups on restore.
   - The host removes a joined player.
-  - Rematch, WebSocket, OAuth (M4).
+  - WebSocket, OAuth (M4).
   - Reduced motion fallback (M2 H4).
 - No engine change. The engine already waits for the player who must act (`actorFor`).
 - Keep SQL portable (roadmap 3.3).
