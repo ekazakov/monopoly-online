@@ -9,6 +9,7 @@
     "dev:api": "pnpm --filter @monopoly/api dev",
     "build": "vp run -r build",
     "test": "vp run -r test",
+    "e2e": "pnpm --filter @monopoly/e2e e2e",
     "check": "vp check",
     "fmt": "vp fmt",
     "artifact:game-screen": "node artifacts/serve.mjs game-screen 8791",

@@ -8,5 +8,9 @@ export const roomQuery = (gameId: string) =>
   queryOptions({
     queryKey: roomKey(gameId),
     queryFn: () => getGame(gameId),
+    // The room is not kept after the screen goes. A copy from before a save would still say
+    // `active`: the room sends the player to the table, the table sends them back to the room, and
+    // the two redirects repeat until the tab freezes.
+    gcTime: 0,
     retry: false,
   });

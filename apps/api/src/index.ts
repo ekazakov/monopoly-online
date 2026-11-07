@@ -24,9 +24,20 @@ if (seed !== undefined && !Number.isInteger(seed)) {
   throw new Error(`GAME_SEED must be an integer, got "${fixedSeed}"`);
 }
 
+// PRESENCE_GRACE_MS is a test-only flag for the end-to-end tests. It shortens the grace time before
+// an away player counts as gone, so it is ignored when NODE_ENV is "production".
+const fixedGrace = process.env.PRESENCE_GRACE_MS;
+const graceMs =
+  fixedGrace !== undefined && fixedGrace !== "" && process.env.NODE_ENV !== "production"
+    ? Number(fixedGrace)
+    : undefined;
+if (graceMs !== undefined && !(Number.isInteger(graceMs) && graceMs > 0)) {
+  throw new Error(`PRESENCE_GRACE_MS must be a positive integer, got "${fixedGrace}"`);
+}
+
 // The tracker is in memory, so a restart forgets who was online. Every controller of an active game
 // gets a new grace time, and a game that nobody comes back to saves itself.
-const presence = createPresenceTracker();
+const presence = createPresenceTracker(graceMs === undefined ? {} : { graceMs });
 const app = createApp(db, { presence, ...(seed === undefined ? {} : { seed: () => seed }) });
 const watched = await watchActiveGames(db, presence);
 if (watched > 0) console.log(`Watching ${watched} active game(s) for returning players`);

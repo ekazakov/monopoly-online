@@ -87,8 +87,8 @@ Mark a task `[x]` in the commit that completes it. Design for F6 is done (board 
 
 ### I. Verification
 
-- [ ] **I1. Playwright setup** against `pnpm dev`, with the seed flag.
-- [ ] **I2. E2E script.** Two browser contexts plus one hot-seat seat: create, join by link, add hot-seat, start, play a short seeded script (roll, buy, rent, a hot-seat handoff, trade, end turn).
+- [x] **I1. Playwright setup** (done in M3 F1, `apps/e2e`) against `pnpm dev`, with the seed flag.
+- [x] **I2. E2E script.** (done in M3 F2 and F3) Two browser contexts plus one hot-seat seat: create, join by link, add hot-seat, start, play a short seeded script (roll, buy, rent, a hot-seat handoff, trade, end turn).
 - [ ] **I3. Finish a full game.** Manual run: two profiles + one hot-seat finish a game on `localhost` (milestone done condition). Fix defects found.
 - [ ] **I4. Docs.** Update the roadmap status, the README (how to run), and sync `artifacts/game-screen` or the design system if the port changed them.
 
