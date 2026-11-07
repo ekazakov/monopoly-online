@@ -12,7 +12,7 @@ export default defineConfig({
   retries: 0,
   timeout: 60_000,
   expect: { timeout: 10_000 },
-  reporter: [["list"]],
+  reporter: [["list"], ["html", { open: "never" }]],
   outputDir: "./.results",
   use: {
     baseURL: `http://localhost:${WEB_PORT}`,
@@ -29,7 +29,10 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
-      use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 960 } },
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1440, height: 960 },
+      },
     },
   ],
   webServer: [
