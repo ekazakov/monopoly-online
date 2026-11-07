@@ -11,6 +11,7 @@
     "test": "vp run -r test",
     "e2e": "pnpm --filter @monopoly/e2e e2e",
     "e2e:ui": "pnpm --filter @monopoly/e2e e2e:ui",
+    "e2e:debug": "pnpm --filter @monopoly/e2e e2e --debug inspector",
     "e2e:video": "E2E_VIDEO=1 pnpm --filter @monopoly/e2e e2e",
     "e2e:report": "pnpm --filter @monopoly/e2e e2e:report",
     "check": "vp check",

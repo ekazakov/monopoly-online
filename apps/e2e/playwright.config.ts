@@ -25,7 +25,9 @@ export default defineConfig({
     contextOptions: { reducedMotion: "reduce" },
     // The software-rendered 3D board makes the whole run about 30 s slower, and the tests use only
     // the DOM controls. The app then shows its no-WebGL board. `motion.spec.ts` keeps the real board.
-    launchOptions: { args: ["--disable-3d-apis"] },
+    launchOptions: {
+      args: ["--disable-3d-apis"],
+    },
   },
   projects: [
     {
