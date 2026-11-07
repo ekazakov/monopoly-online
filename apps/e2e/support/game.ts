@@ -1,4 +1,11 @@
-import { errors, expect, type Browser, type BrowserContext, type Page } from "@playwright/test";
+import {
+  test as base,
+  errors,
+  expect,
+  type Browser,
+  type BrowserContext,
+  type Page,
+} from "@playwright/test";
 
 /** One browser profile with its own cookie jar, so it is one player on one device. */
 export interface Device {
@@ -7,8 +14,30 @@ export interface Device {
   name: string;
 }
 
+const opened: BrowserContext[] = [];
+
+/** `pnpm e2e:video` sets `E2E_VIDEO`. The `video` option of the config skips our own contexts. */
+function recordingOptions(name: string) {
+  if (!process.env.E2E_VIDEO) return {};
+  const size = { width: 1440, height: 960 };
+  return { recordVideo: { dir: test.info().outputPath(name), size } };
+}
+
+/** Every test closes its devices, because a video is complete only when its context closes. */
+export const test = base.extend<{ closeDevices: void }>({
+  closeDevices: [
+    // eslint-disable-next-line no-empty-pattern -- Playwright requires a destructured first argument.
+    async ({}, use) => {
+      await use();
+      await Promise.all(opened.splice(0).map((context) => context.close()));
+    },
+    { auto: true },
+  ],
+});
+
 export async function openDevice(browser: Browser, name: string): Promise<Device> {
-  const context = await browser.newContext();
+  const context = await browser.newContext(recordingOptions(name));
+  opened.push(context);
   const page = await context.newPage();
   await page.goto("/");
   await page.getByPlaceholder("Your name").fill(name);

@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
 import {
   bodyText,
   finishFromMenu,
@@ -7,6 +7,7 @@ import {
   reopenPage,
   saveFromMenu,
   startTable,
+  test,
 } from "../support/game.ts";
 
 // F3. Finish, Save and Restore, away players, and the automatic save. The grace time before a

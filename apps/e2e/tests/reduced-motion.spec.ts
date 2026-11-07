@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
-import { startTable } from "../support/game.ts";
+import { expect } from "@playwright/test";
+import { startTable, test } from "../support/game.ts";
 
 // The default setup of the scripts: reduced motion, and the no-WebGL board.
 test("a roll on the no-WebGL board goes straight to the next action", async ({ browser }) => {

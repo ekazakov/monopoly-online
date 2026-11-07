@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
-import { startTable } from "../support/game.ts";
+import { expect } from "@playwright/test";
+import { startTable, test } from "../support/game.ts";
 
 // The other scripts run with reduced motion and with no WebGL, so this one covers the animated path
 // and the real 3D board. A browser option must be at the top of a file: it needs its own worker.

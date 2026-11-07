@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
-import { bodyText, playUntil, startTable } from "../support/game.ts";
+import { expect } from "@playwright/test";
+import { bodyText, playUntil, startTable, test } from "../support/game.ts";
 
 // F2. Two browser profiles and one hot-seat seat play a short game with the fixed dice from
 // `GAME_SEED`: roll, buy, rent, a hot-seat handoff, a trade and the end of a turn.
