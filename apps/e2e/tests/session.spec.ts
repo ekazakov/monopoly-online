@@ -273,3 +273,29 @@ test("T21: a disconnected stream resumes missed actions and catches up without a
   await expect(staleOwner).toContainText("1 property");
   await expect(bob.page.getByRole("button", { name: "Roll", exact: true })).toBeEnabled();
 });
+
+test("T26: visiting the lobby makes the player away, and Resume returns them online", async ({
+  browser,
+}) => {
+  const table = await startGame(browser, "Lobby while playing");
+  const { alice, bob } = table;
+  const before = await readState(table);
+  const row = alice.page.locator(".player-row").filter({ hasText: bob.name });
+  await expect(row.locator('[data-presence="online"]')).toBeVisible();
+  await bob.page.goto("/");
+  await expect(bob.page.getByRole("heading", { name: "Lobby", exact: true })).toBeVisible();
+  await expect(row.locator('[data-presence="reconnecting"]')).toBeVisible();
+  await expect(row.locator('[data-presence="away"]')).toBeVisible();
+  await expect(
+    alice.page.getByText(`Waiting for ${bob.name} to return`, { exact: true }),
+  ).toBeVisible();
+  expect((await readGame(table)).status).toBe("active");
+  await bob.page.getByRole("button", { name: `Resume ${table.game.name}`, exact: true }).click();
+  await expect(bob.page).toHaveURL(table.gameUrl);
+  await expect(row.locator('[data-presence="online"]')).toBeVisible();
+  await expect(
+    alice.page.getByText(`Waiting for ${bob.name} to return`, { exact: true }),
+  ).toBeHidden();
+  await expect(bob.page.getByRole("button", { name: "Roll", exact: true })).toBeEnabled();
+  expect(await readState(table)).toEqual(before);
+});
