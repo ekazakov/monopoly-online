@@ -25,36 +25,41 @@ test("two devices and a hot-seat seat play roll, buy, rent, handoff and trade", 
   expect(log).toMatch(/bought .* for \$\d+/);
   expect(log).toMatch(/paid .*rent/i);
 
-  // Trade: the first device that may roll opens the builder, offers cash to another player, and
-  // that player accepts. The log and the cash of both players change.
-  await playUntil(devices, async () => {
-    for (const device of devices) {
-      if (await device.page.getByRole("button", { name: "Trade" }).isVisible()) return true;
-    }
-    return false;
-  });
-  const proposer = (await bob.page.getByRole("button", { name: "Trade" }).isVisible())
-    ? bob
-    : alice;
-  await proposer.page.getByRole("button", { name: "Trade" }).click();
-  const partner = proposer === bob ? "Cara" : bob.name;
-  await proposer.page.getByRole("radio", { name: partner }).check();
-  await proposer.page
-    .getByLabel(/^Cash from /)
-    .first()
-    .fill("25");
-  await proposer.page.getByRole("button", { name: "Propose" }).click();
+  // Trade: Bob gives a street and asks $25 from Cara, who plays on Alice's device. Cara accepts, and
+  // Bob's hand shows one property less and $25 more.
+  const bobHand = bob.page.getByRole("button", { name: new RegExp(`^${bob.name}'s properties, `) });
+  // The hand label gives the number of properties. Bob's cash is in his row of the player rail.
+  const bobRow = bob.page.locator(".player-row").filter({ hasText: bob.name });
+  const readHand = async () => {
+    const label = (await bobHand.getAttribute("aria-label")) ?? "";
+    const count = Number(label.match(/(\d+) propert(?:y|ies)/)?.[1]);
+    const cash = Number(
+      ((await bobRow.innerText()).match(/\$([\d,]+)/)?.[1] ?? "").replace(/,/g, ""),
+    );
+    return { count, cash };
+  };
+  await playUntil(devices, () => bob.page.getByRole("button", { name: "Trade" }).isVisible());
+  const before = await readHand();
+  expect(before.count).toBeGreaterThanOrEqual(1);
 
-  const responder = proposer === bob ? alice : bob;
-  // The response may wait behind a hot-seat handoff on a shared device.
-  await playUntil(
-    [responder],
-    async () => responder.page.getByRole("button", { name: "Accept" }).isVisible(),
-    { maxSteps: 4 },
-  ).catch(() => undefined);
-  await responder.page.getByRole("button", { name: "Accept" }).click();
-  await expect(proposer.page.getByText(/trade/i).first()).toBeVisible();
-  await expect.poll(() => bodyText(responder.page)).toMatch(/accepted|traded/i);
+  await bob.page.getByRole("button", { name: "Trade" }).click();
+  await bob.page.getByRole("radio", { name: "Cara" }).check();
+  await bob.page
+    .getByRole("region", { name: `${bob.name} gives` })
+    .getByRole("checkbox")
+    .first()
+    .check();
+  await bob.page.getByLabel("Cash from Cara").fill("25");
+  await bob.page.getByRole("button", { name: "Propose" }).click();
+
+  // The offer may wait behind a hot-seat handoff on Alice's device.
+  const accept = alice.page.getByRole("button", { name: "Accept" });
+  const handoff = alice.page.getByRole("button", { name: /^I.m .+, start my turn$/ });
+  await expect(accept.or(handoff)).toBeVisible();
+  if (await handoff.isVisible()) await handoff.click();
+  await accept.click();
+
+  await expect.poll(readHand).toEqual({ count: before.count - 1, cash: before.cash + 25 });
 
   // The game goes on after the trade, and a turn ends with the next player.
   await playUntil(

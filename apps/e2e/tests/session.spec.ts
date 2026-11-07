@@ -44,6 +44,12 @@ test("finish a game with no winner", async ({ browser }) => {
   await expect(bob.page.getByText(`Game finished by ${alice.name}`)).toBeVisible();
   for (const device of [alice, bob]) {
     await expect(device.page.getByText(/No winner/)).toBeVisible();
+    const standings = device.page.getByRole("table", { name: "Final standings" });
+    await expect(standings.getByRole("row")).toHaveCount(4); // the header and three players
+    for (const player of [alice.name, bob.name, "Cara"]) {
+      await expect(standings.getByRole("row", { name: new RegExp(player) })).toBeVisible();
+    }
+    await expect(standings.getByText(/winner/i)).toHaveCount(0);
   }
   await alice.page.getByRole("button", { name: "OK" }).click();
   await expect(alice.page.getByRole("button", { name: "Create game" })).toBeVisible();
@@ -58,6 +64,9 @@ test("a player who closes the browser goes away, the game waits, and play goes o
   await expect(bob.page.getByRole("button", { name: "Roll", exact: true })).toBeVisible();
   await bob.page.close();
 
+  // First the stream is gone and the player may still come back: reconnecting. After the grace
+  // time the player is away, and the game says that it waits.
+  await expect(alice.page.locator('[data-presence="reconnecting"]')).toBeVisible();
   await expect(alice.page.getByText(`Waiting for ${bob.name} to return`)).toBeVisible();
   await expect(alice.page.locator('[data-presence="away"]')).toBeVisible();
 
