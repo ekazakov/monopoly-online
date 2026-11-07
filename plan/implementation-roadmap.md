@@ -141,7 +141,7 @@ The request and response schemas are zod schemas in `packages/shared`.
 | API        | Vitest with `app.request` (as in `apps/api/src/app.test.ts`), SQLite in memory |
 | Realtime   | Tests open an SSE stream, apply actions, reconnect with `Last-Event-ID`, and check the events that the server sends again                           |
 | Web        | Vitest and Testing Library for components and for the game store                                                                                      |
-| End to end | Playwright, in M3. Plan: [e2e-test-plan.md](e2e-test-plan.md). Two browser contexts and one hot-seat seat play a short seeded game, and other scripts cover the lobby, the session and disconnects. Runs on its own seeded servers, with `pnpm test:e2e` |
+| End to end | Playwright, in M3. Plan: [e2e-test-plan.md](e2e-test-plan.md). Two browser contexts and one hot-seat seat play a short seeded game, and other scripts cover the lobby, the session and disconnects. Runs on its own seeded servers, with `pnpm e2e` |
 | CI         | From M5: GitHub Actions runs `pnpm check`, `pnpm test`, `pnpm build`, and Playwright on `main` |
 
 - **Seeded.** The engine takes its dice and decks from a seed (`createGame({ seed })`). A test-only environment flag, never on in production, lets the test set the seed. Then the dice give the same numbers on each run, and the test knows where each token lands.

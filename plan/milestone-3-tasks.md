@@ -101,12 +101,30 @@ Ask before you add or change a board. Sync the artifacts.
 
 ### F. Browser tests
 
-The scenarios, the server stacks and the seed are in [e2e-test-plan.md](e2e-test-plan.md).
+The scenarios, the server stack and the seed are in [e2e-test-plan.md](e2e-test-plan.md).
 
 - [x] **Playwright setup (F1).** Moved from M1 I1. Use the `GAME_SEED` flag. Add a test-only `PRESENCE_GRACE_MS`, ignored when `NODE_ENV` is `production`, the same as `GAME_SEED`. Close M1 I1 and I2 with a link to here.
 - [x] **Core game script (F2).** Moved from M1 I2. Two contexts, one hot-seat seat: roll, buy, rent, handoff, trade, end turn.
 - [x] **Session and disconnect script (F3).** Close a context: reconnecting, away, and the other player waits. Open it again: back online, and play continues. Save, claim, restore, same dice. Finish: standings with no winner. Close all contexts: the game saves itself, and the owner restores it.
-- [ ] **Lobby, room and game flows (F4).** Scenarios T02 to T19 in [e2e-test-plan.md](e2e-test-plan.md).
+The tasks F4 to F16 turn the open scenarios of the plan into work. A scenario code (T01 to T26) is a row in the scenario catalogue (section 7 of the plan). Each task is one commit, and it has one spec file. The priority is the highest priority of its scenarios (P0 first).
+
+- [ ] **Session script gaps (F4).** P0. The open parts of Save and restore, same dice (T22), Finish game (T23), Disconnect and return (T24) and Automatic save (T25). Add to `tests/session.spec.ts`:
+  - Save after a roll in the same turn. After the restore, the same roll comes again.
+  - Finish during an auction, and Finish from the saved list.
+  - While a player is away, the owner's Menu shows Save and Finish.
+  - After the automatic save and the restore, the next roll is the next roll of the seed.
+- [ ] **API setup helper (F5).** `support/api.ts` for the plan section "Test setup": `startGame` (sign in, create, join, add a hot-seat seat and start, through `context.request`), `debugEdit`, `readState` and `playRolls`. The context keeps the session cookie, so its page is signed in. Done when F6 uses it.
+- [ ] **Bankruptcy and result script (F6).** P0. Bankruptcy and result (T17) in `tests/game-bankruptcy.spec.ts`. 2 seats, and the debug setup of the plan (teleport to 29, cash $10, no deeds). The result screen shows the winner and the standings on both devices, and a reload keeps it. Depends on API setup helper (F5).
+- [ ] **Sign-in script (F7).** Sign-in and session (T02) in `tests/lobby.spec.ts`: a reload keeps the session, a taken name gets the answer, and a game link with no session goes to sign-in and then back to the game.
+- [ ] **Lobby live script (F8).** Live open games (T03), Invite by name (T04) and Start expires an invite (T05) in `tests/lobby.spec.ts`. Assert only on rows with the game name of the test.
+- [ ] **Room script (F9).** Tokens (T06), Hot-seat seats (T07), Cancel game (T08) and Stranger (T09) in `tests/room.spec.ts`. T08 counts the `/api/stream` requests of the guest after the cancel.
+- [ ] **Auction and trade script (F10).** Auction across devices (T10) and Hot-seat trade handoff (T11) in `tests/game-auction-trade.spec.ts`. Depends on API setup helper (F5).
+- [ ] **Jail, card and doubles script (F11).** Jail (T12), Card (T13) and Doubles (T14) in `tests/game-jail-cards.spec.ts`. Use the debug setup values and the roll 7 of the plan. Depends on API setup helper (F5).
+- [ ] **Property and debt script (F12).** Build and mortgage (T15) and Debt paid (T16) in `tests/game-property-debt.spec.ts`. Find the deed values for a full group with an engine replay, and write them in the plan. Depends on API setup helper (F5).
+- [ ] **Leave and debug panel script (F13).** Resign on a shared device (T18) and Debug panel (T19) in `tests/game-leave-debug.spec.ts`. Depends on API setup helper (F5).
+- [ ] **Reload and missed actions script (F14).** Reload during a game (T20) and Missed actions (T21) in `tests/session.spec.ts`. First check whether `context.setOffline` ends an open `EventSource`. If it does not, close the page or block the route. Depends on API setup helper (F5).
+- [ ] **Lobby while playing script (F15).** Open lobby during a game (T26) in `tests/session.spec.ts`. Depends on API setup helper (F5).
+- [ ] **Seed guard (F16).** `src/seed.test.ts`, a Vitest test that fails in `pnpm test` when the engine no longer gives the dice that the scripts need, and `scripts/find-seed.ts`. Add a `test` script to `apps/e2e/package.json`. Done when a changed seed fails `pnpm test`.
 
 ### G. Close
 
@@ -119,6 +137,7 @@ The scenarios, the server stacks and the seed are in [e2e-test-plan.md](e2e-test
 - Shared and database (B) → Finish, Save and Restore API (C) and Presence API (D) → Web (E) → Browser tests (F) → Close (G).
 - C and D do not depend on each other after B, but both change `game/service.ts`. The Automatic save (D3) uses the Rollback operation (C1), so do C1 before D3.
 - The boards (A2 to A4) come before their web tasks.
+- Browser tests (F): Session script gaps (F4) first, because it is P0. API setup helper (F5) comes before F6, F10 to F15, which use it. Sign-in script (F7), Lobby live script (F8), Room script (F9) and Seed guard (F16) do not need it.
 
 ## Risks
 
