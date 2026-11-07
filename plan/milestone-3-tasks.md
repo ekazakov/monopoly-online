@@ -122,7 +122,7 @@ The tasks F4 to F16 turn the open scenarios of the plan into work. A scenario co
 - [x] **Jail, card and doubles script (F11).** Jail (T12), Card (T13) and Doubles (T14) in `tests/game-jail-cards.spec.ts`. Use the debug setup values and the roll 7 of the plan. Depends on API setup helper (F5).
 - [x] **Property and debt script (F12).** Build and mortgage (T15) and Debt paid (T16) in `tests/game-property-debt.spec.ts`. Find the deed values for a full group with an engine replay, and write them in the plan. Depends on API setup helper (F5).
 - [x] **Leave and debug panel script (F13).** Resign on a shared device (T18) and Debug panel (T19) in `tests/game-leave-debug.spec.ts`. Depends on API setup helper (F5).
-- [ ] **Reload and missed actions script (F14).** Reload during a game (T20) and Missed actions (T21) in `tests/session.spec.ts`. First check whether `context.setOffline` ends an open `EventSource`. If it does not, close the page or block the route. Depends on API setup helper (F5).
+- [x] **Reload and missed actions script (F14).** Reload during a game (T20) and Missed actions (T21) in `tests/session.spec.ts`. The Chromium probe kept an EventSource open under `setOffline`, so T21 stops the real request and blocks retries. It verifies the retained retry cursor and the missed log and state on reconnect. Depends on API setup helper (F5).
 - [ ] **Lobby while playing script (F15).** Open lobby during a game (T26) in `tests/session.spec.ts`. Depends on API setup helper (F5).
 - [ ] **Seed guard (F16).** `src/seed.test.ts`, a Vitest test that fails in `pnpm test` when the engine no longer gives the dice that the scripts need, and `scripts/find-seed.ts`. Add a `test` script to `apps/e2e/package.json`. Done when a changed seed fails `pnpm test`.
 

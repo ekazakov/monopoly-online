@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import { readGame, readState, startGame } from "../support/api.ts";
+import { playRolls, readGame, readState, startGame } from "../support/api.ts";
 import {
   bodyText,
   finishFromMenu,
@@ -190,4 +190,86 @@ test("T23: the owner finishes a saved game from its lobby row", async ({ browser
     await expect(standings.getByRole("row").filter({ hasText: bob.name })).toContainText("$1,360");
   }
   expect((await readGame(table)).status).toBe("finished");
+});
+
+test("T20: reload in mid-turn keeps cash, the deed and phase, and the next action still works", async ({
+  browser,
+}) => {
+  const table = await startGame(browser, "Reload");
+  const { alice, bob } = table;
+  await bob.page.getByRole("button", { name: "Roll", exact: true }).click();
+  await bob.page.getByRole("button", { name: /^Buy \$/ }).click();
+  await expect(bob.page.getByRole("button", { name: "Next turn", exact: true })).toBeVisible();
+  const beforeReload = await readState(table);
+  await bob.page.reload();
+  await expect(bob.page.getByRole("button", { name: "Next turn", exact: true })).toBeEnabled();
+  expect(await readState(table)).toEqual(beforeReload);
+  const row = bob.page.locator(".player-row").filter({ hasText: bob.name });
+  await expect(row).toContainText("$1,360");
+  await expect(row).toContainText("1 property");
+  await bob.page
+    .getByRole("button", { name: new RegExp(`^${bob.name}'s properties, 1 property,`) })
+    .click();
+  await expect(bob.page.getByRole("button", { name: /^Anchor Street, \$140,/ })).toBeVisible();
+  await bob.page.getByRole("button", { name: "Next turn", exact: true }).click();
+  for (const device of [alice, bob]) {
+    await expect(device.page.getByRole("log", { name: "Game log" })).toContainText(
+      `${bob.name} ended the turn. Cara is next.`,
+    );
+  }
+  await expect(alice.page.getByRole("button", { name: "Roll", exact: true })).toBeEnabled();
+});
+
+test("T21: a disconnected stream resumes missed actions and catches up without a reload", async ({
+  browser,
+}) => {
+  const table = await startGame(browser, "Missed actions");
+  const { alice, bob } = table;
+  await playRolls(table, 1);
+  const beforeDisconnect = await readState(table);
+  const bobOnAlice = alice.page.locator(".player-row").filter({ hasText: bob.name });
+  await expect(bobOnAlice.locator('[data-presence="online"]')).toBeVisible();
+  await expect(bob.page.getByRole("log", { name: "Game log" })).toContainText(
+    `${bob.name} ended the turn. Cara is next.`,
+  );
+
+  // Chromium's setOffline does not close an existing EventSource. Stop the real browser
+  // request and block its retries instead, keeping the page and store for the resume.
+  const streamPattern = "**/api/stream?**";
+  await bob.page.route(streamPattern, (route) => route.abort("internetdisconnected"));
+  await bob.page.evaluate(() => window.stop());
+  await expect(bobOnAlice.locator('[data-presence="away"]')).toBeVisible();
+
+  await alice.page.getByRole("button", { name: "Roll", exact: true }).click();
+  await alice.page.getByRole("button", { name: "Next turn", exact: true }).click();
+  await alice.page
+    .getByRole("button", { name: `I’m ${alice.name}, start my turn`, exact: true })
+    .click();
+  await alice.page.getByRole("button", { name: "Roll", exact: true }).click();
+  await alice.page.getByRole("button", { name: /^Buy \$/ }).click();
+  await alice.page.getByRole("button", { name: "Next turn", exact: true }).click();
+  const missedPurchase = `${alice.name} bought Lantern Row for $100.`;
+  await expect(alice.page.getByRole("log", { name: "Game log" })).toContainText(missedPurchase);
+  const staleOwner = bob.page.locator(".player-row").filter({ hasText: alice.name });
+  await expect(staleOwner).toContainText("$1,500");
+  await expect(staleOwner).toContainText("0 properties");
+  await expect(bob.page.getByRole("log", { name: "Game log" })).not.toContainText(missedPurchase);
+
+  const resumed = bob.page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname === "/api/stream" && response.ok();
+  });
+  await bob.page.unroute(streamPattern);
+  const response = await resumed;
+  expect(new URL(response.url()).searchParams.get("lastEventId")).toBe(
+    String(beforeDisconnect.version),
+  );
+  await expect(bobOnAlice.locator('[data-presence="online"]')).toBeVisible();
+  const log = bob.page.getByRole("log", { name: "Game log" });
+  for (const line of ["Cara rolled 4 and 6.", `${alice.name} rolled 5 and 1.`, missedPurchase]) {
+    await expect(log.getByText(line, { exact: true })).toHaveCount(1);
+  }
+  await expect(staleOwner).toContainText("$1,400");
+  await expect(staleOwner).toContainText("1 property");
+  await expect(bob.page.getByRole("button", { name: "Roll", exact: true })).toBeEnabled();
 });
