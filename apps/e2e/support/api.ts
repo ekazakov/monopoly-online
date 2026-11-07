@@ -91,6 +91,12 @@ export async function startGame(
   return table;
 }
 
+export async function readGame(table: ApiTable): Promise<Game> {
+  const response = await table.alice.context.request.get(`/api/games/${table.game.id}`);
+  expect(response.ok(), `GET game: ${response.status()} ${await response.text()}`).toBe(true);
+  return gameResponseSchema.parse(await response.json()).game;
+}
+
 export async function readState(table: ApiTable): Promise<RedactedGameState> {
   const response = await table.alice.context.request.get(`/api/games/${table.game.id}/state`);
   expect(response.ok(), `GET state: ${response.status()} ${await response.text()}`).toBe(true);

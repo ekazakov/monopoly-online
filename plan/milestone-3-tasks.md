@@ -108,7 +108,7 @@ The scenarios, the server stack and the seed are in [e2e-test-plan.md](e2e-test-
 - [x] **Session and disconnect script (F3).** Close a context: reconnecting, away, and the other player waits. Open it again: back online, and play continues. Save, claim, restore, same dice. Finish: standings with no winner. Close all contexts: the game saves itself, and the owner restores it.
 The tasks F4 to F16 turn the open scenarios of the plan into work. A scenario code (T01 to T26) is a row in the scenario catalogue (section 7 of the plan). Each task is one commit, and it has one spec file. The priority is the highest priority of its scenarios (P0 first).
 
-- [ ] **Session script gaps (F4).** P0. The open parts of Save and restore, same dice (T22), Finish game (T23), Disconnect and return (T24) and Automatic save (T25). Add to `tests/session.spec.ts`:
+- [x] **Session script gaps (F4).** P0. The open parts of Save and restore, same dice (T22), Finish game (T23), Disconnect and return (T24) and Automatic save (T25). Add to `tests/session.spec.ts`:
   - Save after a roll in the same turn. After the restore, the same roll comes again.
   - Finish during an auction, and Finish from the saved list.
   - While a player is away, the owner's Menu shows Save and Finish.

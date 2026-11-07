@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test";
+import { readGame, readState, startGame } from "../support/api.ts";
 import {
   bodyText,
   finishFromMenu,
@@ -6,18 +7,23 @@ import {
   playUntil,
   reopenPage,
   saveFromMenu,
-  startTable,
   test,
 } from "../support/game.ts";
 
-// F3. Finish, Save and Restore, away players, and the automatic save. The grace time before a
-// player counts as away is short, because the API runs with `PRESENCE_GRACE_MS`.
+// Session and resilience: real API setup, with UI actions and a short presence grace time.
 
-test("save, restore and get the same dice as before the save", async ({ browser }) => {
-  const table = await startTable(browser, "save");
+test("T22: a mid-turn save discards the roll and purchase, then restore gives the same dice", async ({
+  browser,
+}) => {
+  const table = await startGame(browser, "Mid-turn save");
   const { alice, bob } = table;
-  await playBobsFirstTurn(table);
-  await expect(alice.page.getByText(/rolled 5 and 6/)).toBeVisible();
+  await bob.page.getByRole("button", { name: "Roll", exact: true }).click();
+  await bob.page.getByRole("button", { name: /^Buy \$/ }).click();
+  await expect(bob.page.getByRole("button", { name: "Next turn", exact: true })).toBeVisible();
+  await expect(bob.page.locator(".player-row").filter({ hasText: bob.name })).toContainText(
+    "$1,360",
+  );
+  const beforeSave = await readState(table);
 
   await saveFromMenu(alice);
   await expect(alice.page.getByText("Game saved", { exact: true })).toBeVisible();
@@ -26,20 +32,37 @@ test("save, restore and get the same dice as before the save", async ({ browser 
   await bob.page.getByRole("button", { name: "OK" }).click();
 
   // The owner continues from the lobby, and the other player opens the saved game from My games.
-  await alice.page.getByRole("button", { name: /^Continue/ }).click();
-  await bob.page.getByRole("button", { name: "Open Table save" }).click();
+  await alice.page
+    .getByRole("button", { name: `Continue ${table.game.name}`, exact: true })
+    .click();
+  await bob.page.getByRole("button", { name: `Open ${table.game.name}`, exact: true }).click();
   await expect(bob.page.getByText("Saved", { exact: true })).toBeVisible();
   await bob.page.getByRole("button", { name: "Claim my seats" }).click();
   await alice.page.getByRole("button", { name: "Start game" }).click();
   await alice.page.waitForURL(/\/play$/);
   await bob.page.waitForURL(/\/play$/);
 
-  // The dice carry on from the saved state: Cara rolls what the seed gives her after Bob's roll.
+  // The purchase and roll were in the discarded turn. The version still goes forward.
+  const restored = await readState(table);
+  expect(restored.version).toBeGreaterThan(beforeSave.version);
+  expect(restored.ownership).toEqual({});
+  for (const device of [alice, bob]) {
+    const row = device.page.locator(".player-row").filter({ hasText: bob.name });
+    await expect(row).toContainText("$1,500");
+    await expect(row).toContainText("0 properties");
+  }
+  await playBobsFirstTurn(table);
+  for (const device of [alice, bob]) {
+    await expect(device.page.getByRole("log", { name: "Game log" })).toContainText(
+      `${bob.name} rolled 5 and 6.`,
+    );
+  }
+  // The next turn also keeps the next roll of the seed.
   await playUntil([alice, bob], async () => /Cara rolled 4 and 6/.test(await bodyText(alice.page)));
 });
 
-test("finish a game with no winner", async ({ browser }) => {
-  const table = await startTable(browser, "finish");
+test("T23: finish a game with no winner", async ({ browser }) => {
+  const table = await startGame(browser, "Finish");
   const { alice, bob } = table;
   await finishFromMenu(alice);
   await expect(bob.page.getByText(`Game finished by ${alice.name}`)).toBeVisible();
@@ -56,10 +79,10 @@ test("finish a game with no winner", async ({ browser }) => {
   await expect(alice.page.getByRole("button", { name: "Create game" })).toBeVisible();
 });
 
-test("a player who closes the browser goes away, the game waits, and play goes on when they return", async ({
+test("T24: an away player waits, the owner can save or finish, and play resumes on return", async ({
   browser,
 }) => {
-  const table = await startTable(browser, "away");
+  const table = await startGame(browser, "Away");
   const { alice, bob } = table;
   // Bob is first, so the game waits for him.
   await expect(bob.page.getByRole("button", { name: "Roll", exact: true })).toBeVisible();
@@ -70,6 +93,12 @@ test("a player who closes the browser goes away, the game waits, and play goes o
   await expect(alice.page.locator('[data-presence="reconnecting"]')).toBeVisible();
   await expect(alice.page.getByText(`Waiting for ${bob.name} to return`)).toBeVisible();
   await expect(alice.page.locator('[data-presence="away"]')).toBeVisible();
+  await alice.page.getByRole("button", { name: "Menu", exact: true }).click();
+  await expect(
+    alice.page.getByRole("button", { name: "Save and exit", exact: true }),
+  ).toBeVisible();
+  await expect(alice.page.getByRole("button", { name: "Finish game", exact: true })).toBeVisible();
+  await alice.page.getByRole("button", { name: "Menu", exact: true }).click();
 
   await reopenPage(bob, table.gameUrl);
   await expect(alice.page.getByText(`Waiting for ${bob.name} to return`)).toBeHidden();
@@ -79,29 +108,86 @@ test("a player who closes the browser goes away, the game waits, and play goes o
   await playUntil([alice, bob], async () => /Cara rolled/.test(await bodyText(alice.page)));
 });
 
-test("a game that nobody is in saves itself, and the owner restores it", async ({ browser }) => {
-  const table = await startTable(browser, "auto");
+test("T25: automatic save restores the purchased deed and the next seeded roll", async ({
+  browser,
+}) => {
+  const table = await startGame(browser, "Automatic save");
   const { alice, bob } = table;
   await playBobsFirstTurn(table);
 
   await alice.page.close();
   await bob.page.close();
 
-  // After the grace time the server saves the game. The owner opens the lobby and finds it there.
-  // The API runs with a grace time of 2.5 seconds.
-  await new Promise((resolve) => setTimeout(resolve, 4000));
+  // Poll through the signed-in context while both pages are closed. No fixed sleep is needed.
+  await expect.poll(async () => (await readGame(table)).status).toBe("saved");
   await reopenPage(alice, "/");
-  await expect(alice.page.getByRole("button", { name: /^Continue/ })).toBeVisible();
+  const resume = alice.page.getByRole("button", {
+    name: `Continue ${table.game.name}`,
+    exact: true,
+  });
+  await expect(resume).toBeVisible();
   // Continue claims the owner's seats, so only Start game is left.
-  await alice.page.getByRole("button", { name: /^Continue/ }).click();
+  await resume.click();
   await alice.page.getByRole("button", { name: "Start game" }).click();
   await alice.page.waitForURL(/\/play$/);
   // The state is the one before the save: Bob still owns the street he bought.
   await expect(alice.page.getByText("1 property", { exact: true })).toBeVisible();
-  await expect(
-    alice.page
-      .getByText("Waiting for", { exact: false })
-      .or(alice.page.getByRole("button", { name: /Roll|start my turn/ }))
-      .first(),
-  ).toBeVisible();
+  await alice.page.getByRole("button", { name: "Roll", exact: true }).click();
+  await expect(alice.page.getByRole("log", { name: "Game log" })).toContainText(
+    "Cara rolled 4 and 6.",
+  );
+});
+
+test("T23: finishing during an auction rolls back the unfinished turn on both devices", async ({
+  browser,
+}) => {
+  const table = await startGame(browser, "Finish auction");
+  const { alice, bob } = table;
+  await bob.page.getByRole("button", { name: "Roll", exact: true }).click();
+  await bob.page.getByRole("button", { name: "Auction", exact: true }).click();
+  for (const device of [alice, bob]) {
+    await expect(device.page.getByRole("region", { name: "Turn actions" })).toContainText(
+      "Auction: Anchor Street",
+    );
+  }
+  await finishFromMenu(alice);
+  for (const device of [alice, bob]) {
+    await expect(device.page.getByText(/^No winner\./)).toBeVisible();
+    const standings = device.page.getByRole("table", { name: "Final standings" });
+    await expect(standings.getByRole("row")).toHaveCount(4);
+    await expect(standings.getByRole("row").filter({ hasText: bob.name })).toContainText("$1,500");
+    await expect(device.page.getByRole("list", { name: "Bidders" })).toHaveCount(0);
+    await device.page.reload();
+    await expect(device.page.getByText(`Game finished by ${alice.name}`)).toBeVisible();
+    await expect(standings.getByRole("row")).toHaveCount(4);
+  }
+  const state = await readState(table);
+  expect(state.auction).toBeNull();
+  expect(state.ownership).toEqual({});
+});
+
+test("T23: the owner finishes a saved game from its lobby row", async ({ browser }) => {
+  const table = await startGame(browser, "Finish saved");
+  const { alice, bob } = table;
+  await playBobsFirstTurn(table);
+  await saveFromMenu(alice);
+  for (const device of [alice, bob]) {
+    await device.page.getByRole("button", { name: "OK", exact: true }).click();
+  }
+  const row = alice.page
+    .getByRole("list", { name: "Saved games", exact: true })
+    .getByRole("listitem")
+    .filter({ hasText: table.game.name });
+  await row.getByRole("button", { name: `Finish ${table.game.name}`, exact: true }).click();
+  await row.getByRole("button", { name: "Finish game", exact: true }).click();
+  await expect(row).toHaveCount(0);
+  for (const device of [alice, bob]) {
+    await device.page.goto(table.gameUrl);
+    await expect(device.page.getByText(`Game finished by ${alice.name}`)).toBeVisible();
+    await expect(device.page.getByText(/^No winner\./)).toBeVisible();
+    const standings = device.page.getByRole("table", { name: "Final standings" });
+    await expect(standings.getByRole("row")).toHaveCount(4);
+    await expect(standings.getByRole("row").filter({ hasText: bob.name })).toContainText("$1,360");
+  }
+  expect((await readGame(table)).status).toBe("finished");
 });
