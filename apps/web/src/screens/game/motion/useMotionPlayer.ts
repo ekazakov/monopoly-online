@@ -3,6 +3,7 @@ import { useGameSnapshot, useGameStore } from "../../../game/index.ts";
 import type { ConnectionStatus } from "../../../game/index.ts";
 import { IDLE_PLAYBACK, createMotionQueue, stepDuration } from "../../../scene/motion.ts";
 import type { MotionPlayback } from "../../../scene/motion.ts";
+import { useReducedMotion } from "../../../styles/motionPreference.ts";
 
 /**
  * Actions that come this long after the stream reopens are the replay of what the device missed.
@@ -24,7 +25,8 @@ export const REPLAY_WINDOW_MS = 1000;
  * - a newer state with no events (a snapshot, or a state read again after a gap),
  * - the replay after a reconnect (`REPLAY_WINDOW_MS`), and
  * - an action that comes while the tab is hidden, because nobody watches it and the steps would
- *   play one after the other when the user comes back.
+ *   play one after the other when the user comes back, and
+ * - any action under reduced motion: no dice roll, no hops, the result shows at once.
  */
 export function useMotionPlayer(): MotionPlayback {
   const store = useGameStore();
@@ -37,9 +39,12 @@ export function useMotionPlayer(): MotionPlayback {
   const lastConnection = useRef<ConnectionStatus>(store.getState().connection);
   const down = useRef(false);
   const replayUntil = useRef(0);
+  const reduced = useReducedMotion();
+  const reducedNow = useRef(reduced);
 
   const advance = useCallback(
     function advance() {
+      if (reducedNow.current) queue.clear();
       const step = queue.next() ?? null;
       setPlayback(step ? { current: step, waiting: queue.pending() } : IDLE_PLAYBACK);
       timer.current = step ? setTimeout(advance, stepDuration(step)) : undefined;
@@ -74,14 +79,19 @@ export function useMotionPlayer(): MotionPlayback {
     if (version <= seen.current) return;
     seen.current = version;
     const replay = down.current || Date.now() < replayUntil.current;
-    if (lastActionEvents.length === 0 || replay || document.hidden) {
+    if (lastActionEvents.length === 0 || replay || document.hidden || reduced) {
       settle();
       return;
     }
     queue.push(lastActionEvents);
     if (timer.current === undefined) advance();
     else setPlayback((prev) => ({ current: prev.current, waiting: queue.pending() }));
-  }, [version, lastActionEvents, queue, advance, settle]);
+  }, [version, lastActionEvents, queue, advance, settle, reduced]);
+
+  // Reduced motion that starts while steps play: the step that plays ends, and `advance` drops the rest.
+  useEffect(() => {
+    reducedNow.current = reduced;
+  }, [reduced]);
 
   useEffect(() => () => clearTimeout(timer.current), []);
 

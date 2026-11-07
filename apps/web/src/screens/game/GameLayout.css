@@ -197,12 +197,3 @@
     overflow: auto hidden;
   }
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .game-layout,
-  .game-layout * {
-    animation: none !important;
-    transition: none !important;
-    scroll-behavior: auto !important;
-  }
-}

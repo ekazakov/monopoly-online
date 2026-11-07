@@ -123,11 +123,9 @@
   --hf-ease-camera: cubic-bezier(0.65, 0, 0.35, 1);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  :root {
-    --hf-dur-fast: 0ms;
-    --hf-dur-base: 0ms;
-    --hf-dur-hop: 0ms;
-    --hf-dur-camera: 0ms;
-  }
+:root[data-motion="reduce"] {
+  --hf-dur-fast: 0ms;
+  --hf-dur-base: 0ms;
+  --hf-dur-hop: 0ms;
+  --hf-dur-camera: 0ms;
 }

@@ -6,6 +6,7 @@ import { actionsMessage, recordFixture, redact, snapshotMessage } from "../../..
 import { GameStoreProvider } from "../../../game/GameStoreProvider.tsx";
 import { createGameStore } from "../../../game/store.ts";
 import { ROLL_MS, planMotion, stepDuration } from "../../../scene/motion.ts";
+import { setMotionPreference } from "../../../styles/motionPreference.ts";
 import { TurnArea } from "../turn/index.ts";
 import { MotionProvider } from "./MotionProvider.tsx";
 import { REPLAY_WINDOW_MS } from "./useMotionPlayer.ts";
@@ -38,6 +39,7 @@ describe("dice roll animation", () => {
   });
   afterEach(() => {
     vi.useRealTimers();
+    setMotionPreference("system");
   });
 
   test("a roll that arrives live shows tumbling dice and no buttons, then the move, then the phase view", () => {
@@ -64,6 +66,16 @@ describe("dice roll animation", () => {
     act(() => void vi.advanceTimersByTime(total - ROLL_MS));
     expect(screen.queryByText("Moving…")).toBeNull();
     // the phase view is back: the roll led to a property, so the title deed shows
+    expect(screen.getByText("Title deed")).toBeInTheDocument();
+  });
+
+  test("under reduced motion a live roll shows its result at once, with no roll and no move", () => {
+    setMotionPreference("reduce");
+    const store = setup();
+    act(() => store.applyStreamMessage(actionsMessage(fx.game, rollStep!)));
+    expect(rolling()).toBeNull();
+    expect(screen.queryByText("Rolling…")).toBeNull();
+    expect(screen.queryByText("Moving…")).toBeNull();
     expect(screen.getByText("Title deed")).toBeInTheDocument();
   });
 

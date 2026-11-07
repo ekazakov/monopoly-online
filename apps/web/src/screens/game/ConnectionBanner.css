@@ -50,9 +50,3 @@
     opacity: 0.35;
   }
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .conn-banner__dot {
-    animation: none;
-  }
-}

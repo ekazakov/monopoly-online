@@ -6,8 +6,11 @@ import { createRoot } from "react-dom/client";
 import { RealtimeProvider } from "./realtime/index.ts";
 import { createQueryClient } from "./queryClient.ts";
 import { createAppRouter } from "./router.tsx";
+import { startMotionPreference } from "./styles/motionPreference.ts";
 import "./styles/tokens.css";
 import "./styles.css";
+
+startMotionPreference();
 
 const queryClient = createQueryClient();
 const router = createAppRouter({ queryClient });

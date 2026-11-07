@@ -272,10 +272,3 @@
   font: var(--hf-type-body-small);
   font-weight: 600;
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .turn-area__spinner,
-  .turn-area__dice--rolling .turn-area__die {
-    animation: none;
-  }
-}

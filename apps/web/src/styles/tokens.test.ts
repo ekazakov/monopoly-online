@@ -118,8 +118,7 @@ describe("design tokens", () => {
   });
 
   test("zeroes every duration under reduced motion", () => {
-    const block =
-      css.match(/@media \(prefers-reduced-motion: reduce\) \{([\s\S]*)\}\s*$/)?.[1] ?? "";
+    const block = css.match(/:root\[data-motion="reduce"\] \{([\s\S]*)\}\s*$/)?.[1] ?? "";
     const zeroed = definedTokens(block);
     const durations = [...defined].filter((n) => n.startsWith("--hf-dur-"));
     expect(durations.length).toBeGreaterThan(0);

@@ -10,6 +10,7 @@ import {
   useGameActions,
 } from "../../../../game/index.ts";
 import { tokenLook } from "../../../../scene/colors.ts";
+import { setReducedMotion, useReducedMotion } from "../../../../styles/motionPreference.ts";
 import { consequenceText } from "./consequence.ts";
 import "./LeaveGameMenu.css";
 
@@ -29,6 +30,7 @@ type Step = "menu" | "confirm" | "save" | "finish";
 export function LeaveGameMenu({ userId, onLeft }: LeaveGameMenuProps) {
   const view = useGame(userId);
   const actions = useGameActions();
+  const reducedMotion = useReducedMotion();
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -208,6 +210,24 @@ export function LeaveGameMenu({ userId, onLeft }: LeaveGameMenuProps) {
                   </div>
                 </>
               )}
+              <div className="leave-menu__row">
+                <p className="leave-menu__row-text">
+                  <span className="leave-menu__row-title">Reduce motion</span>
+                  <span className="leave-menu__hint">
+                    No animation. Follows your device until you change it
+                  </span>
+                </p>
+                <button
+                  type="button"
+                  role="switch"
+                  className="leave-menu__btn"
+                  aria-label="Reduce motion"
+                  aria-checked={reducedMotion}
+                  onClick={() => setReducedMotion(!reducedMotion)}
+                >
+                  {reducedMotion ? "On" : "Off"}
+                </button>
+              </div>
               <div className="leave-menu__row">
                 <p className="leave-menu__row-text">
                   <span className="leave-menu__row-title">Leave game</span>

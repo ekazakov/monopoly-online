@@ -157,7 +157,7 @@ Files: `apps/api/src/rooms/service.ts`, `routes/games.ts`.
 - [x] **Dice roll animation (H1).** From `DiceRolled` (`dice`).
 - [x] **Token movement animation (H2).** Square by square from `PlayerMoved.from` to `PlayerMoved.to`. `SentToJail` jumps with no steps. Start each move from the position in the event, not from the current state. Queue `game.actions` messages that come one after the other.
 - [x] **No animation on snapshot or resume (H3).** A `snapshot` or a resume replay puts the tokens on their squares at once.
-- [ ] **Reduced motion fallback (H4). Optional, deferred.** Not built in M2. With `prefers-reduced-motion`, the token would go to its square at once and the dice would show at once (spec R-T6). What exists now: the CSS dice shake stops, and `BoardScene` takes a `reducedMotion` prop for camera damping. Still open: the dice faces change every 80 ms, the 700 ms roll wait stays, and the tokens hop. A later task can make the motion player skip the steps (zero duration) when the preference is on.
+- [x] **Reduced motion fallback (H4). Done later, outside M2.** All animation is off under reduced motion; see `styles/motionPreference.ts`. Original note: Not built in M2. With `prefers-reduced-motion`, the token would go to its square at once and the dice would show at once (spec R-T6). What exists now: the CSS dice shake stops, and `BoardScene` takes a `reducedMotion` prop for camera damping. Still open: the dice faces change every 80 ms, the 700 ms roll wait stays, and the tokens hop. A later task can make the motion player skip the steps (zero duration) when the preference is on.
 - [x] **Animation queue tests (H5).** The queue is a pure model in `scene/`. Test it without a renderer.
 
 ### I. Verification

@@ -170,13 +170,3 @@
   outline: 2px solid var(--hf-focus);
   outline-offset: 2px;
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .game-log__line[data-fresh="true"] {
-    animation: none;
-  }
-
-  .game-log__toggle svg {
-    transition: none;
-  }
-}

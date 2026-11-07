@@ -224,9 +224,3 @@
     opacity: 0.35;
   }
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .player-row__presence[data-presence="reconnecting"] .player-row__dot {
-    animation: none;
-  }
-}

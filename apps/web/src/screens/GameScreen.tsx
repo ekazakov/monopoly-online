@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Navigate, getRouteApi, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { isApiError } from "../api/index.ts";
 import {
@@ -18,6 +18,7 @@ import { useRealtimeStatus, useTopic } from "../realtime/index.ts";
 import { BoardScene } from "../scene/BoardScene.tsx";
 import type { ScenePlayer } from "../scene/model.ts";
 import { useSession } from "../session/index.ts";
+import { useReducedMotion } from "../styles/motionPreference.ts";
 import { ConnectionBanner } from "./game/ConnectionBanner.tsx";
 import { GameLayout } from "./game/GameLayout.tsx";
 import { HandoffPrompt } from "./game/handoff/index.ts";
@@ -154,19 +155,6 @@ function GameRoute({ gameId }: { gameId: string }) {
         />
       </MotionProvider>
     </GameActionsContext>
-  );
-}
-
-const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
-
-function useReducedMotion(): boolean {
-  return useSyncExternalStore(
-    (listener) => {
-      const query = window.matchMedia?.(REDUCED_MOTION);
-      query?.addEventListener("change", listener);
-      return () => query?.removeEventListener("change", listener);
-    },
-    () => window.matchMedia?.(REDUCED_MOTION).matches ?? false,
   );
 }
 

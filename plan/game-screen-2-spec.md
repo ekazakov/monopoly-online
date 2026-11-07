@@ -367,7 +367,7 @@ The board centre changes with each phase of the turn. The phase list and what ea
 | Text contrast at least 4.5:1 (ink and ink soft on ground both pass; accent ink on accent is 5.2:1) | Done            |
 | Players differ by **shape** (unique avatar) as well as colour                                      | Done            |
 | The active player isn't shown by colour alone: use size, a tag or a marker                         | Gap             |
-| Respect `prefers-reduced-motion` for dice, token movement and the log highlight                    | Gap             |
+| Respect `prefers-reduced-motion` for dice, token movement and the log highlight                    | Done            |
 | Expanded hand opens on focus, closes on Esc, and its card actions are reachable by keyboard        | Gap             |
 | Keyboard order: log toggle → Menu → turn actions → hand                                            | Gap (to verify) |
 
@@ -424,7 +424,7 @@ Rules:
 - **R-T3 MUST** [Gap] Design the board centre for every phase in the gameplay doc, section 2 (including In debt and Bankrupt), following 5.2.
 - **R-T4 MUST** [Gap] Show the read-only remote-turn state (5.3).
 - **R-T5 MUST** [Gap] Design the "Pass to <name>" handoff interstitial.
-- **R-T6 SHOULD** [Partial] Animate the dice roll and the token movement, with reduced-motion fallbacks. The animation is done; the reduced-motion fallback is optional and deferred (milestone 2 tasks, H4).
+- **R-T6 SHOULD** [Done] Animate the dice roll and the token movement, with reduced-motion fallbacks. Done. Reduced motion (device setting, or the switch in the Menu) turns off all animation: the result of a roll and the new token squares show at once.
 
 ### 8.5 Hand
 
