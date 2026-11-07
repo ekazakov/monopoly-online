@@ -118,7 +118,7 @@ The tasks F4 to F16 turn the open scenarios of the plan into work. A scenario co
 - [x] **Sign-in script (F7).** Sign-in and session (T02) in `tests/lobby.spec.ts`: a reload keeps the session, a taken name gets the answer, and a game link with no session goes to sign-in and then back to the game.
 - [x] **Lobby live script (F8).** Live open games (T03), Invite by name (T04) and Start expires an invite (T05) in `tests/lobby.spec.ts`. Assert only on rows with the game name of the test.
 - [x] **Room script (F9).** Tokens (T06), Hot-seat seats (T07), Cancel game (T08) and Stranger (T09) in `tests/room.spec.ts`. T08 counts the `/api/stream` requests of the guest after the cancel. T09 checks both room and play links; the web checks seat control before showing a started game.
-- [ ] **Auction and trade script (F10).** Auction across devices (T10) and Hot-seat trade handoff (T11) in `tests/game-auction-trade.spec.ts`. Depends on API setup helper (F5).
+- [x] **Auction and trade script (F10).** Auction across devices (T10) and Hot-seat trade handoff (T11) in `tests/game-auction-trade.spec.ts`. Depends on API setup helper (F5).
 - [ ] **Jail, card and doubles script (F11).** Jail (T12), Card (T13) and Doubles (T14) in `tests/game-jail-cards.spec.ts`. Use the debug setup values and the roll 7 of the plan. Depends on API setup helper (F5).
 - [ ] **Property and debt script (F12).** Build and mortgage (T15) and Debt paid (T16) in `tests/game-property-debt.spec.ts`. Find the deed values for a full group with an engine replay, and write them in the plan. Depends on API setup helper (F5).
 - [ ] **Leave and debug panel script (F13).** Resign on a shared device (T18) and Debug panel (T19) in `tests/game-leave-debug.spec.ts`. Depends on API setup helper (F5).
