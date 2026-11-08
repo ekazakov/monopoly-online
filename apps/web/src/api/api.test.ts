@@ -11,17 +11,20 @@ import {
 } from "../testing/fakeApi.ts";
 import {
   addHotSeat,
+  chooseGoogleName,
   claimSeats,
   createGame,
   createSession,
   deleteSession,
   finishGame,
   getGame,
+  getAuthMethods,
   getMe,
   getResult,
   getState,
   joinGame,
   leaveGame,
+  removePlayer,
   removeSeat,
   restoreGame,
   saveGame,
@@ -49,6 +52,25 @@ describe("session calls", () => {
     });
     expect(await createSession("Marlow")).toEqual(userFixture);
     expect(calls[0]).toMatchObject({ method: "POST", body: { name: "Marlow" } });
+  });
+
+  test("getAuthMethods returns the methods", async () => {
+    mockApi({ "GET /api/auth/methods": Response.json({ google: true, guest: false }) });
+    expect(await getAuthMethods()).toEqual({ google: true, guest: false });
+  });
+
+  test("chooseGoogleName posts the name and returns the user", async () => {
+    const calls = mockApi({ "POST /api/auth/google/name": Response.json({ user: userFixture }) });
+    expect(await chooseGoogleName("Marlow")).toEqual(userFixture);
+    expect(calls[0]).toMatchObject({ method: "POST", body: { name: "Marlow" } });
+  });
+
+  test("chooseGoogleName keeps the code of a failure", async () => {
+    mockApi({ "POST /api/auth/google/name": errorReply(409, "name_taken") });
+    await expect(chooseGoogleName("Marlow")).rejects.toMatchObject({
+      status: 409,
+      code: "name_taken",
+    });
   });
 
   test("deleteSession accepts 204", async () => {
@@ -109,6 +131,21 @@ describe("game calls", () => {
     expect(await addHotSeat(id, "Ines")).toEqual(game);
     expect(await removeSeat(id, seatId)).toEqual(game);
     expect(calls[0]).toMatchObject({ body: { name: "Ines" } });
+  });
+
+  test("removePlayer deletes the player of the game and returns the game", async () => {
+    const userId = "3b0f7a3e-3a53-4c2e-9a53-2f0d5f6f9d33";
+    const calls = mockApi({
+      [`DELETE /api/games/${id}/players/${userId}`]: Response.json({ game }),
+    });
+    expect(await removePlayer(id, userId)).toEqual(game);
+    expect(calls).toHaveLength(1);
+  });
+
+  test("removePlayer keeps the code of a failure", async () => {
+    const userId = "3b0f7a3e-3a53-4c2e-9a53-2f0d5f6f9d33";
+    mockApi({ [`DELETE /api/games/${id}/players/${userId}`]: errorReply(409, "game_not_waiting") });
+    await expect(removePlayer(id, userId)).rejects.toMatchObject({ code: "game_not_waiting" });
   });
 
   test("startGame returns the game and the state", async () => {

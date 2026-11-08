@@ -88,7 +88,7 @@ Ask before you add or change a board. Sync the artifacts.
 
 - [x] **Remove player in the room (E1).** A Remove control with a confirm step in the host view of `screens/room/`. The removed player gets a notice from `room.removed` and goes to the lobby. Depends on Remove player boards (A3).
 - [x] **Sign-in screen (E2).** `SignInScreen.tsx` reads `GET /api/auth/methods` through the API helpers. The Google button, and the name step after the callback. The guest name form only when `guest` is on. Reload after sign-in. Depends on Sign-in board (A4).
-- [ ] **Web tests (E3).** Components and API helpers for each task above. Update `testing/fakeApi.ts`.
+- [x] **Web tests (E3).** Components and API helpers for each task above. Update `testing/fakeApi.ts`.
 
 ### F. Browser tests
 
