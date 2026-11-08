@@ -26,11 +26,13 @@
     "better-sqlite3": "catalog:",
     "hono": "catalog:",
     "kysely": "catalog:",
+    "pino": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@types/better-sqlite3": "catalog:",
     "@types/node": "catalog:",
+    "pino-pretty": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   }

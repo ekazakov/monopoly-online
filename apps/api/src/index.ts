@@ -4,9 +4,11 @@ import { serve } from "@hono/node-server";
 import { createApp } from "./app.ts";
 import { createArcticGoogle, readAuthConfig } from "./auth/index.ts";
 import { createDb } from "./db/client.ts";
+import { createLogger } from "./log.ts";
 import { migrateToLatest } from "./db/migrations.ts";
 import { createPresenceTracker, watchActiveGames } from "./realtime/presence.ts";
 
+const logger = createLogger();
 const port = Number(process.env.PORT ?? 8787);
 const dbPath = process.env.DB_PATH ?? "data/monopoly.db";
 
@@ -43,6 +45,7 @@ if (graceMs !== undefined && !(Number.isInteger(graceMs) && graceMs > 0)) {
 // gets a new grace time, and a game that nobody comes back to saves itself.
 const presence = createPresenceTracker(graceMs === undefined ? {} : { graceMs });
 const app = createApp(db, {
+  logger,
   presence,
   auth: {
     guest: authConfig.guest,

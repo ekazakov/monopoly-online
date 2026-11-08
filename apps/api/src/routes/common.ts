@@ -3,6 +3,7 @@ import { apiErrorSchema } from "@monopoly/shared";
 import type { ZodType } from "zod";
 import type { Kysely } from "kysely";
 import type { Database } from "../db/schema.ts";
+import { createSilentLogger, type Logger } from "../log.ts";
 
 /** Name of the session cookie. Also the cookie name in the OpenAPI `sessionCookie` scheme. */
 export const SESSION_COOKIE = "harborfront_session";
@@ -18,6 +19,8 @@ export type AppOptions = {
   seed?: () => number;
   /** Defaults to `process.env.NODE_ENV`. The session cookie is `Secure` unless it is `development` or `test`. */
   nodeEnv?: string;
+  /** The logger. Defaults to a silent one, so tests write no lines. `index.ts` passes the real logger. */
+  logger?: Logger;
 };
 
 /** What a route file receives: the database and the options with defaults applied. */
@@ -26,6 +29,7 @@ export type AppDeps = {
   now: () => Date;
   seed: () => number;
   nodeEnv: string | undefined;
+  log: Logger;
 };
 
 export function resolveDeps(db: Kysely<Database>, options: AppOptions = {}): AppDeps {
@@ -34,6 +38,7 @@ export function resolveDeps(db: Kysely<Database>, options: AppOptions = {}): App
     now: options.now ?? (() => new Date()),
     seed: options.seed ?? (() => crypto.getRandomValues(new Uint32Array(1))[0]!),
     nodeEnv: options.nodeEnv ?? process.env.NODE_ENV,
+    log: options.logger ?? createSilentLogger(),
   };
 }
 
