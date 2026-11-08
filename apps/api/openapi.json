@@ -1357,6 +1357,214 @@
         }
       }
     },
+    "/api/games/{id}/players/{userId}": {
+      "delete": {
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["games"],
+        "summary": "Remove a player from a waiting game",
+        "description": "Owner only, only while the game is `waiting`. Removes every seat the user controls, hot-seat seats included. The owner cannot remove their own seat (409 `cannot_remove_self`). A user with no seat in the game is 404. There is no ban: the user can join again with the game link. The removed user gets `room.removed` on `user:<id>`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "userId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The game without the seats of the user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "game": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 60
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["waiting", "active", "saved", "finished"]
+                        },
+                        "ownerId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "seats": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "order": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 2,
+                                "maxLength": 16
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": ["user", "hotseat"]
+                              },
+                              "userId": {
+                                "type": ["string", "null"],
+                                "format": "uuid"
+                              },
+                              "controllerUserId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "token": {
+                                "type": "string",
+                                "enum": ["dog", "cat", "penguin", "car", "horse", "duck"]
+                              },
+                              "claimed": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "order",
+                              "name",
+                              "kind",
+                              "userId",
+                              "controllerUserId",
+                              "token",
+                              "claimed"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "maxItems": 6
+                        },
+                        "invites": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "userId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 2,
+                                "maxLength": 16
+                              },
+                              "state": {
+                                "type": "string",
+                                "enum": ["pending", "accepted", "declined", "expired"]
+                              }
+                            },
+                            "required": ["id", "userId", "name", "state"],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "status",
+                        "ownerId",
+                        "version",
+                        "createdAt",
+                        "seats",
+                        "invites"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["game"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/games/{id}/seats": {
       "post": {
         "security": [
@@ -6404,7 +6612,7 @@
         ],
         "tags": ["realtime"],
         "summary": "Open the event stream of games, the lobby and the invites of the user",
-        "description": "Server-sent events. Topics: `game:<id>` (seated users only), `lobby` (any signed-in user) and `user:<id>` (only that user, else 403 `forbidden_topic`). Each message has `event:` set to its type (`snapshot`, `room.updated`, `room.cancelled`, `game.actions`, `lobby.snapshot`, `lobby.updated`, `lobby.removed`, `invites.updated`, `presence.updated`) and `data:` set to the JSON envelope `{ topic, type, version, payload }`. `id:` is the engine version and is set only on `snapshot` of a started game and on `game.actions`; the lobby and user messages have no id. A comment line every 15 seconds keeps the stream open. After a reconnect with `Last-Event-ID` and exactly one game topic, the missed `game.actions` are replayed when the gap is 1 to 100 versions, and a `snapshot` is sent when the gap is larger, the id is not a valid version, or the game is not `active`. A new EventSource instance can supply the optional `lastEventId` query instead; the header takes precedence. Each connect to `lobby` or `user:<id>` gets the full list. Each connect to an `active` game also gets `presence.updated` (version 0, no id): the status of every seat whose controller the server knows, `online`, `reconnecting` or `away`. It is sent again on each change. A user with a stream open in any tab is `online`; the status is `reconnecting` when the last stream closes, and `away` 60 seconds later.",
+        "description": "Server-sent events. Topics: `game:<id>` (seated users only), `lobby` (any signed-in user) and `user:<id>` (only that user, else 403 `forbidden_topic`). Each message has `event:` set to its type (`snapshot`, `room.updated`, `room.cancelled`, `room.removed`, `game.actions`, `lobby.snapshot`, `lobby.updated`, `lobby.removed`, `invites.updated`, `presence.updated`) and `data:` set to the JSON envelope `{ topic, type, version, payload }`. `id:` is the engine version and is set only on `snapshot` of a started game and on `game.actions`; the lobby and user messages have no id. A comment line every 15 seconds keeps the stream open. After a reconnect with `Last-Event-ID` and exactly one game topic, the missed `game.actions` are replayed when the gap is 1 to 100 versions, and a `snapshot` is sent when the gap is larger, the id is not a valid version, or the game is not `active`. A new EventSource instance can supply the optional `lastEventId` query instead; the header takes precedence. Each connect to `lobby` or `user:<id>` gets the full list. Each connect to an `active` game also gets `presence.updated` (version 0, no id): the status of every seat whose controller the server knows, `online`, `reconnecting` or `away`. It is sent again on each change. A user with a stream open in any tab is `online`; the status is `reconnecting` when the last stream closes, and `away` 60 seconds later.",
         "parameters": [
           {
             "schema": {

@@ -55,6 +55,8 @@ describe("game room routes", () => {
     sendAs(app, "POST", `/api/games/${game.id}/join`, who.cookie);
   const leave = (game: Game, who: Player) =>
     sendAs(app, "POST", `/api/games/${game.id}/leave`, who.cookie);
+  const removePlayer = (game: Game, who: Player, userId: string) =>
+    sendAs(app, "DELETE", `/api/games/${game.id}/players/${userId}`, who.cookie);
   const addSeat = (game: Game, who: Player, name: string) =>
     postJson(app, `/api/games/${game.id}/seats`, who.cookie, { name });
   const removeSeat = (game: Game, who: Player, seatId: string) =>
@@ -308,6 +310,89 @@ describe("game room routes", () => {
       const b = await leave(room, owner);
       expect(b.status).toBe(409);
       expect(await errorCode(b)).toBe("owner_cannot_leave");
+    });
+  });
+
+  describe("remove player", () => {
+    test("the host removes a player, with their hot-seat seats, and the others renumber", async () => {
+      const ann = await signIn(app, "Ann");
+      const bo = await signIn(app, "Bo");
+      const cy = await signIn(app, "Cy");
+      const room = await createRoom(ann);
+      await join(room, bo);
+      await addSeat(room, bo, "BoTwo");
+      await join(room, cy);
+      await addSeat(room, ann, "AnnTwo");
+      events.length = 0;
+
+      const res = await removePlayer(room, ann, bo.user.id);
+      expect(res.status).toBe(200);
+      const game = await gameOf(res);
+      expect(names(game)).toEqual(["Ann", "Cy", "AnnTwo"]);
+      expect(orders(game)).toEqual([1, 2, 3]);
+      expect(await db.selectFrom("seats").select("id").execute()).toHaveLength(3);
+      expect(events.map((e) => e.type)).toEqual(["room.updated", "room.removed"]);
+      expect(events[1]).toEqual({ type: "room.removed", gameId: room.id, userId: bo.user.id });
+    });
+
+    test("the removed player can join again with the game link", async () => {
+      const { owner, others, room } = await fullRoom(2);
+      expect((await removePlayer(room, owner, others[0]!.user.id)).status).toBe(200);
+      const res = await join(room, others[0]!);
+      expect(res.status).toBe(200);
+      expect(names(await gameOf(res))).toEqual(["Ann", "Player1"]);
+    });
+
+    test("only the host can remove: not_game_owner", async () => {
+      const { others, room } = await fullRoom(3);
+      const res = await removePlayer(room, others[0]!, others[1]!.user.id);
+      expect(res.status).toBe(403);
+      expect(await errorCode(res)).toBe("not_game_owner");
+      const stranger = await signIn(app, "Stranger");
+      expect(await errorCode(await removePlayer(room, stranger, others[1]!.user.id))).toBe(
+        "not_game_owner",
+      );
+    });
+
+    test("the host cannot remove their own seat: cannot_remove_self", async () => {
+      const { owner, room } = await fullRoom(2);
+      const res = await removePlayer(room, owner, owner.user.id);
+      expect(res.status).toBe(409);
+      expect(await errorCode(res)).toBe("cannot_remove_self");
+    });
+
+    test("a user with no seat is 404, and so is an unknown game", async () => {
+      const { owner, room } = await fullRoom(2);
+      const stranger = await signIn(app, "Stranger");
+      const res = await removePlayer(room, owner, stranger.user.id);
+      expect(res.status).toBe(404);
+      expect(await errorCode(res)).toBe("not_found");
+      const missing = await sendAs(
+        app,
+        "DELETE",
+        `/api/games/${MISSING_ID}/players/${stranger.user.id}`,
+        owner.cookie,
+      );
+      expect(missing.status).toBe(404);
+    });
+
+    test("a started game is game_not_waiting and keeps its seats", async () => {
+      const { owner, others, room } = await fullRoom(2);
+      expect((await start(room, owner)).status).toBe(200);
+      const res = await removePlayer(room, owner, others[0]!.user.id);
+      expect(res.status).toBe(409);
+      expect(await errorCode(res)).toBe("game_not_waiting");
+      expect(await db.selectFrom("seats").select("id").execute()).toHaveLength(2);
+    });
+
+    test("a bad user id is 404, as for every path id, and the route needs a session", async () => {
+      const { owner, room } = await fullRoom(2);
+      const bad = await sendAs(app, "DELETE", `/api/games/${room.id}/players/nope`, owner.cookie);
+      expect(bad.status).toBe(404);
+      const anon = await app.request(`/api/games/${room.id}/players/${owner.user.id}`, {
+        method: "DELETE",
+      });
+      expect(anon.status).toBe(401);
     });
   });
 

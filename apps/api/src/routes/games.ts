@@ -7,6 +7,8 @@ import {
   createInviteSchema,
   createSeatSchema,
   gameParamsSchema,
+  removePlayerParamsSchema,
+  removePlayerResponseSchema,
   gameResponseSchema,
   lobbyGamesResponseSchema,
   openGamesQuerySchema,
@@ -111,6 +113,21 @@ const leaveRoute = createRoute({
   request: { params: gameParamsSchema },
   responses: {
     200: jsonResponse("The game without the seats of the caller", gameResponseSchema),
+    ...errorResponses(401, 403, 404, 409),
+  },
+});
+
+const removePlayerRoute = createRoute({
+  ...sessionSecurity,
+  method: "delete",
+  path: "/games/{id}/players/{userId}",
+  tags: ["games"],
+  summary: "Remove a player from a waiting game",
+  description:
+    "Owner only, only while the game is `waiting`. Removes every seat the user controls, hot-seat seats included. The owner cannot remove their own seat (409 `cannot_remove_self`). A user with no seat in the game is 404. There is no ban: the user can join again with the game link. The removed user gets `room.removed` on `user:<id>`.",
+  request: { params: removePlayerParamsSchema },
+  responses: {
+    200: jsonResponse("The game without the seats of the user", removePlayerResponseSchema),
     ...errorResponses(401, 403, 404, 409),
   },
 });
@@ -258,6 +275,14 @@ export function gameRoutes(deps: AppDeps & { rooms: RoomService }) {
     .openapi(leaveRoute, async (c) => {
       try {
         return c.json({ game: await rooms.leave(c.req.valid("param").id, c.get("user")) }, 200);
+      } catch (error) {
+        return fail<403 | 404 | 409>(c, error);
+      }
+    })
+    .openapi(removePlayerRoute, async (c) => {
+      try {
+        const { id, userId } = c.req.valid("param");
+        return c.json({ game: await rooms.removePlayer(id, c.get("user"), userId) }, 200);
       } catch (error) {
         return fail<403 | 404 | 409>(c, error);
       }

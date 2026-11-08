@@ -25,6 +25,8 @@ export type RoomEvent =
   | { type: "room.created"; lobby: LobbyGame }
   | { type: "room.updated"; game: Game; lobby: LobbyGame }
   | { type: "room.cancelled"; gameId: string }
+  /** The host removed `userId` from a waiting game. Only that user hears it. */
+  | { type: "room.removed"; gameId: string; userId: string }
   /** The pending invites of one user changed. `invites` is the full list after the change. */
   | { type: "invites.updated"; userId: string; invites: Invite[] }
   | { type: "started"; game: Game; state: RedactedGameState };
@@ -65,6 +67,8 @@ export interface RoomService {
   addSeat(gameId: string, user: User, name: string): Promise<Game>;
   removeSeat(gameId: string, user: User, seatId: string): Promise<Game>;
   changeToken(gameId: string, user: User, seatId: string, token: Token): Promise<Game>;
+  /** Host only: removes the seats that `userId` controls, hot-seat seats included. */
+  removePlayer(gameId: string, host: User, userId: string): Promise<Game>;
   cancel(gameId: string, user: User): Promise<void>;
   /** The host invites a user by name. The invite does not hold a seat. */
   invite(gameId: string, user: User, name: string): Promise<Game>;
@@ -517,6 +521,27 @@ export function createRoomService(options: RoomServiceOptions): RoomService {
         // The unique `(game_id, token)` index is the last guard against a race.
         await trx.updateTable("seats").set({ token }).where("id", "=", seat.id).execute();
       }),
+
+    async removePlayer(gameId, host, userId) {
+      const game = await changeRoom(gameId, async (trx, game, seats) => {
+        if (game.owner_id !== host.id) {
+          throw new RoomError("not_game_owner", "Only the owner can remove a player");
+        }
+        requireWaiting(game);
+        if (userId === host.id) {
+          throw new RoomError("cannot_remove_self", "The owner cannot remove their own seat");
+        }
+        const theirs = seats.filter((seat) => seat.controller_user_id === userId);
+        if (theirs.length === 0) throw new RoomError("not_found", "This user has no seat");
+        await removeSeats(
+          trx,
+          seats,
+          theirs.map((seat) => seat.id),
+        );
+      });
+      emit({ type: "room.removed", gameId, userId });
+      return game;
+    },
 
     async cancel(gameId, user) {
       const invitees = await db.transaction().execute(async (trx) => {

@@ -9,10 +9,10 @@ const isVersioned = (message: StreamEnvelope) =>
 /**
  * A message that replaces or edits a whole view (`room.updated`, the lobby messages and
  * `invites.updated`). One that was published before the topic was read is older than what the
- * read returned. `room.cancelled` is never stale: it ends the topic.
+ * read returned. `room.cancelled` and `room.removed` are never stale: they are one-time events.
  */
 const isStateless = (message: StreamEnvelope) =>
-  !isVersioned(message) && message.type !== "room.cancelled";
+  !isVersioned(message) && message.type !== "room.cancelled" && message.type !== "room.removed";
 
 export interface StreamConnection {
   /** Messages to send first, in order. */
@@ -56,17 +56,30 @@ export async function openConnection(options: {
     send?.(message);
   }
 
-  const unsubscribers = topics.map((topic) =>
-    bus.subscribe(topic, (message) => {
-      if (closed) return;
-      if (send) deliver(message);
-      else pending.push(message);
-    }),
-  );
+  const unsubscribers = new Map<string, () => void>();
+  for (const topic of topics) {
+    unsubscribers.set(
+      topic,
+      bus.subscribe(topic, (message) => {
+        if (closed) return;
+        if (send) deliver(message);
+        else pending.push(message);
+        // The host removed this user: the game topic has nothing more for them. The client
+        // drops the topic too, and opens it again if the user joins again.
+        if (message.type === "room.removed") {
+          const gameId = (message.payload as { gameId: string }).gameId;
+          const gameTopic = `game:${gameId}`;
+          unsubscribers.get(gameTopic)?.();
+          unsubscribers.delete(gameTopic);
+        }
+      }),
+    );
+  }
   const close = () => {
     closed = true;
     send = null;
-    for (const unsubscribe of unsubscribers) unsubscribe();
+    for (const unsubscribe of unsubscribers.values()) unsubscribe();
+    unsubscribers.clear();
   };
 
   const initial: StreamEnvelope[] = [];

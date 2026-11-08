@@ -154,6 +154,17 @@ export function createPublishers(bus: Bus<StreamEnvelope>) {
           publishLobby(lobbyRemoved(event.gameId));
           return;
         }
+        case "room.removed": {
+          // Version 0 and no SSE id. The user topic is the only one that hears it.
+          const topic = userTopic(event.userId);
+          bus.publish(topic, {
+            topic,
+            type: "room.removed",
+            version: 0,
+            payload: { gameId: event.gameId },
+          });
+          return;
+        }
         case "invites.updated": {
           const topic = userTopic(event.userId);
           bus.publish(topic, {

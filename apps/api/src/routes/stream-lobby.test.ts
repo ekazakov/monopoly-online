@@ -170,6 +170,46 @@ describe("GET /api/stream: lobby and user topics", () => {
     });
   });
 
+  describe("remove player", () => {
+    test("the removed user gets room.removed on their user topic, and the game topic ends", async () => {
+      const ann = await signIn(app, "Ann");
+      const bo = await signIn(app, "Bo");
+      const room = await createRoom(ann);
+      await join(room, bo);
+      const boReader = await connect(bo.cookie, `game:${room.id},user:${bo.user.id}`);
+      await boReader.take(2);
+      const lobbyReader = await connect(ann.cookie, "lobby");
+      await lobbyReader.next();
+
+      const res = await sendAs(
+        app,
+        "DELETE",
+        `/api/games/${room.id}/players/${bo.user.id}`,
+        ann.cookie,
+      );
+      expect(res.status).toBe(200);
+
+      const frames = await boReader.take(2);
+      expect(frames.map((frame) => frame.event).sort()).toEqual(["room.removed", "room.updated"]);
+      const removed = frames.find((frame) => frame.event === "room.removed")!;
+      expect(removed.id).toBeUndefined();
+      expect(removed.message).toMatchObject({
+        topic: `user:${bo.user.id}`,
+        version: 0,
+        payload: { gameId: room.id },
+      });
+      // The lobby hears the new seat list.
+      expect((await lobbyReader.next()).message).toMatchObject({
+        type: "lobby.updated",
+        payload: { game: { id: room.id, seatCount: 1 } },
+      });
+
+      // The game topic of the removed user is closed: a later change does not reach them.
+      await postJson(app, `/api/games/${room.id}/seats`, ann.cookie, { name: "AnnTwo" });
+      await boReader.expectQuiet();
+    });
+  });
+
   describe("user topic", () => {
     test("a connect gets the pending invites; each change sends the full list", async () => {
       const ann = await signIn(app, "Ann");

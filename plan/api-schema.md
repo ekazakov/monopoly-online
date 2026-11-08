@@ -229,7 +229,7 @@ The plan for [milestone-4-tasks.md](milestone-4-tasks.md). The code does not hav
 ### New and changed methods
 | # | Method and path | Request | Success | Errors |
 | --- | --- | --- | --- | --- |
-| 28 | `DELETE /api/games/:id/players/:userId` (session, Origin check) | – | 200 `{ game }` | 403 `not_game_owner`, 404 `not_found` (no game, or the user has no seat), 409 `game_not_waiting`, 409 `cannot_remove_self` |
+| 28 | `DELETE /api/games/:id/players/:userId` (session, Origin check) | – | 200 `{ game }` | 403 `not_game_owner`, 404 `not_found` (no game, a bad id, or the user has no seat), 409 `game_not_waiting`, 409 `cannot_remove_self` |
 | 29 | `GET /api/auth/methods` (no session) | – | 200 `{ google, guest }` | – |
 | 30 | `GET /api/auth/google/start` (no session) | – | 302 to Google. Sets the `state` and PKCE cookies (HttpOnly, SameSite=Lax, short life) | 404 `not_found` (Google is off), 409 `already_signed_in` |
 | 31 | `GET /api/auth/google/callback` (no session) | `code` and `state` in the query | 302 to the web app. A known subject gets a session cookie. A new subject gets a short pending sign-in cookie and goes to the name step. The `state` and PKCE cookies are cleared | A bad `state` or a failed exchange: 302 to the sign-in screen with `oauth_failed` |
@@ -239,7 +239,7 @@ The plan for [milestone-4-tasks.md](milestone-4-tasks.md). The code does not hav
 ### Stream messages
 - **`room.removed`** (new): `{ gameId }` on `user:<removedUserId>`. The removed player gets a notice and goes to the lobby.
 - After a removal the other members get `room.updated` on `game:<id>`, and the open list gets `lobby.updated`.
-- Open decision (Remove player messages, C2): the server may also close the game subscription of the removed user.
+- The server ends the game subscription of the removed user on that stream, when the stream has both `user:<id>` and `game:<id>`. The client drops the topic too. `room.removed` is never dropped on connect, like `room.cancelled`.
 
 ## Debug edit (added 2026-11-03, not in a milestone)
 
