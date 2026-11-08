@@ -9,7 +9,15 @@ import { createSilentLogger, type Logger } from "../log.ts";
 export const SESSION_COOKIE = "harborfront_session";
 
 /** Hono env of every route file. The auth middleware sets `user`; read it with `c.get("user")`. */
-export type AppEnv = { Variables: { user: User } };
+export type AppEnv = {
+  Variables: {
+    user: User;
+    /** Set by the `requestLog` middleware. */
+    requestId: string;
+    /** A child logger with the request id. Set by the `requestLog` middleware. */
+    log: Logger;
+  };
+};
 
 /** Optional settings of `createApp`. Tests set them; production uses the defaults. */
 export type AppOptions = {

@@ -162,6 +162,9 @@ export function streamRoutes(deps: StreamRoutesDeps) {
       throw error;
     }
 
+    const log = c.get("log");
+    const openedAt = performance.now();
+    log.info({ userId: user.id, topics: unique }, "stream open");
     c.header("X-Accel-Buffering", "no");
     c.header("Cache-Control", "no-cache");
     const response = streamSSE(c, async (stream) => {
@@ -197,6 +200,10 @@ export function streamRoutes(deps: StreamRoutesDeps) {
       clearInterval(timer);
       connection.close();
       disconnect();
+      log.info(
+        { userId: user.id, topics: unique, durationMs: Math.round(performance.now() - openedAt) },
+        "stream closed",
+      );
     });
     // The library types only JSON bodies. The 200 response is declared for the document only.
     return response as never;

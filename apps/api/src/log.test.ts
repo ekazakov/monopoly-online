@@ -1,17 +1,8 @@
-import { Writable } from "node:stream";
 import { describe, expect, it } from "vite-plus/test";
-import { createLogger, createSilentLogger, readLogLevel } from "./log.ts";
+import { createMemoryLogger } from "./log-test-helpers.ts";
+import { createSilentLogger, readLogLevel } from "./log.ts";
 
-function memoryLogger(level: "info" | "debug" = "info") {
-  const lines: Record<string, unknown>[] = [];
-  const destination = new Writable({
-    write(chunk: Buffer, _encoding, done) {
-      lines.push(JSON.parse(chunk.toString()) as Record<string, unknown>);
-      done();
-    },
-  });
-  return { logger: createLogger({ level, pretty: false, destination }), lines };
-}
+const memoryLogger = (level: "info" | "debug" = "info") => createMemoryLogger(level);
 
 describe("readLogLevel", () => {
   it("defaults to info, and to debug in development", () => {

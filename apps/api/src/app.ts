@@ -7,6 +7,7 @@ import {
   parseOrigins,
   type GoogleProvider,
 } from "./auth/index.ts";
+import { requestLog } from "./request-log.ts";
 import { errorHandler, notFoundHandler, validationHook } from "./errors.ts";
 import {
   SESSION_COOKIE,
@@ -144,6 +145,7 @@ export function createApp(db: Kysely<Database>, options?: AppOptions) {
   const api = new OpenAPIHono<AppEnv>({ defaultHook: validationHook }).basePath("/api");
   // Registered before every route, so later routes are covered too. `.use` returns a plain
   // Hono type, so it stays out of the chain that keeps the OpenAPI types.
+  api.use(requestLog(deps.log));
   api.use(checkOrigin({ extraOrigins, nodeEnv: deps.nodeEnv }));
   const app = api
     .notFound(notFoundHandler)
