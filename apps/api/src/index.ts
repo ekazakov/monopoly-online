@@ -11,6 +11,7 @@ import { createLogger } from "./log.ts";
 import { migrateToLatest } from "./db/migrations.ts";
 import { createPresenceTracker, watchActiveGames } from "./realtime/presence.ts";
 import { getTelemetry } from "./otel.ts";
+import { serveWeb } from "./web.ts";
 import { createShutdownHandle, readShutdownTimeout, runShutdown } from "./shutdown.ts";
 
 const logger = createLogger();
@@ -33,6 +34,8 @@ const dbPath = process.env.DB_PATH ?? "data/monopoly.db";
 // A wrong sign-in setting stops the start here, before the database opens.
 const authConfig = readAuthConfig(process.env);
 const shutdownTimeoutMs = readShutdownTimeout(process.env);
+// The web build is served by the API only when this is set. Without it the API serves no web files.
+const webDistDir = process.env.WEB_DIST_DIR || undefined;
 
 mkdirSync(dirname(dbPath), { recursive: true });
 const db = createDb(dbPath, { log: createQueryObserver() });
@@ -73,6 +76,7 @@ logger.info(
     fixedSeed: seed !== undefined,
     presenceGraceMs: graceMs ?? null,
     shutdownTimeoutMs,
+    webDistDir: webDistDir ?? null,
   },
   "starting",
 );
@@ -95,7 +99,8 @@ const watched = await watchActiveGames(db, presence);
 if (watched > 0) logger.info({ games: watched }, "watching active games for returning players");
 
 // No `createServer` or `serverOptions` is set, so the server is a plain HTTP/1 `http.Server`.
-const server = serve({ fetch: app.fetch, port }, (info) => {
+const handler = webDistDir ? serveWeb(app, { distDir: webDistDir }) : app;
+const server = serve({ fetch: handler.fetch, port }, (info) => {
   logger.info({ port: info.port }, "API listening");
 }) as Server;
 

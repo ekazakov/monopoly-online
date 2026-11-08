@@ -104,7 +104,7 @@ Mark a task `[x]` in the commit that completes it.
 
 ### D. Docker
 
-- [ ] **Static web serving (D1).** `serveStatic` for the web build, and a fallback to `index.html` for app routes. Mount it after the typed route chain, so `AppType` does not change and an unknown `/api/*` path still gets the JSON 404 error. The path comes from `WEB_DIST_DIR`; when it is not set, the API serves no web files (as now). Tests: an app route gets `index.html`; `/api/unknown` gets the JSON error.
+- [x] **Static web serving (D1).** `serveStatic` for the web build, and a fallback to `index.html` for app routes. Mount it after the typed route chain, so `AppType` does not change and an unknown `/api/*` path still gets the JSON 404 error. The path comes from `WEB_DIST_DIR`; when it is not set, the API serves no web files (as now). Tests: an app route gets `index.html`; `/api/unknown` gets the JSON error.
 - [ ] **Dockerfile (D2).** The stages in "Decisions". pnpm through Corepack with the version from `package.json`. A `.dockerignore`: no `.env`, no databases, no `node_modules`, no `dist`, no test results and reports, no `.git`.
 - [ ] **Compose (D3).** `compose.yaml` with the three profiles. App: port 8787, the `/data` volume, an env file, the health check on `/api/ready`, `OTEL_EXPORTER_OTLP_ENDPOINT` to otel-lgtm. otel-lgtm: Grafana on port 3000 and the dashboard mount. `dev` profile: a `node_modules` volume in the container, because the macOS `better-sqlite3` build does not load on Linux, and Vite listens on `0.0.0.0`.
 - [ ] **Dashboard (D4).** `ops/grafana/dashboards/harborfront.json` and its provisioning file. Panels: realtime, HTTP, runtime and database, and a log panel with links to traces.
