@@ -65,7 +65,7 @@ describe("migrations", () => {
     };
   }
 
-  async function count(table: "seats" | "game_events" | "game_snapshots") {
+  async function count(table: "seats" | "game_events" | "game_snapshots" | "auth_identities") {
     const row = await db
       .selectFrom(table)
       .select((eb) => eb.fn.countAll<number>().as("n"))
@@ -118,6 +118,7 @@ describe("migrations", () => {
     for (const table of [
       "users",
       "sessions",
+      "auth_identities",
       "games",
       "seats",
       "invites",
@@ -446,6 +447,54 @@ describe("migrations", () => {
       expect(await count("seats")).toBe(0);
       expect(await count("game_events")).toBe(0);
       expect(await count("game_snapshots")).toBe(0);
+    });
+  });
+
+  describe("auth identities", () => {
+    const identity = (id: string, subject: string, userId = U1) => ({
+      id,
+      provider: "google",
+      subject,
+      user_id: userId,
+    });
+
+    test("one provider subject belongs to one user", async () => {
+      await addUsers();
+      await db.insertInto("auth_identities").values(identity("i1", "sub-1")).execute();
+      await expect(
+        db
+          .insertInto("auth_identities")
+          .values(identity("i2", "sub-1", U2))
+          .execute(),
+      ).rejects.toThrow(/UNIQUE/);
+      await db
+        .insertInto("auth_identities")
+        .values(identity("i3", "sub-2", U2))
+        .execute();
+      expect(await count("auth_identities")).toBe(2);
+    });
+
+    test("the same subject can exist for another provider", async () => {
+      await addUsers();
+      await db.insertInto("auth_identities").values(identity("i1", "sub-1")).execute();
+      await db
+        .insertInto("auth_identities")
+        .values({ ...identity("i2", "sub-1", U2), provider: "other" })
+        .execute();
+      expect(await count("auth_identities")).toBe(2);
+    });
+
+    test("refuses an identity of an unknown user", async () => {
+      await expect(
+        db.insertInto("auth_identities").values(identity("i1", "sub-1")).execute(),
+      ).rejects.toThrow(/FOREIGN KEY/);
+    });
+
+    test("deleting a user removes its identities", async () => {
+      await addUsers();
+      await db.insertInto("auth_identities").values(identity("i1", "sub-1")).execute();
+      await db.deleteFrom("users").where("id", "=", U1).execute();
+      expect(await count("auth_identities")).toBe(0);
     });
   });
 });

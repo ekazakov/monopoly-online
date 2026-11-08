@@ -24,6 +24,16 @@ export interface SessionsTable {
   created_at: Generated<string>;
 }
 
+export interface AuthIdentitiesTable {
+  id: string;
+  // Only "google" for now.
+  provider: string;
+  // The id the provider gives to the person. Unique with `provider`.
+  subject: string;
+  user_id: string;
+  created_at: Generated<string>;
+}
+
 export interface GamesTable {
   id: string;
   name: string;
@@ -89,6 +99,7 @@ export interface GameSnapshotsTable {
 export interface Database {
   users: UsersTable;
   sessions: SessionsTable;
+  auth_identities: AuthIdentitiesTable;
   games: GamesTable;
   seats: SeatsTable;
   invites: InvitesTable;
@@ -103,6 +114,9 @@ export type UserUpdate = Updateable<UsersTable>;
 export type Session = Selectable<SessionsTable>;
 export type NewSession = Insertable<SessionsTable>;
 export type SessionUpdate = Updateable<SessionsTable>;
+
+export type AuthIdentity = Selectable<AuthIdentitiesTable>;
+export type NewAuthIdentity = Insertable<AuthIdentitiesTable>;
 
 export type Game = Selectable<GamesTable>;
 export type NewGame = Insertable<GamesTable>;

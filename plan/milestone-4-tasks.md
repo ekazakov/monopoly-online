@@ -3,7 +3,7 @@
 |                |                                                                                                    |
 | -------------- | -------------------------------------------------------------------------------------------------- |
 | Companion docs | [implementation-roadmap.md](implementation-roadmap.md), [api-schema.md](api-schema.md) (section "Milestone 4"), [game-screen-2-gameplay.md](game-screen-2-gameplay.md) (Q25), [milestone-3-tasks.md](milestone-3-tasks.md), [e2e-test-plan.md](e2e-test-plan.md) |
-| Status         | In progress. A1 to A4 are done. Last updated 2026-11-08                                 |
+| Status         | In progress. A1 to B2 are done. Last updated 2026-11-08                                 |
 
 **Goal.** On production, a player signs in with Google and keeps one account in each browser. The host decides who stays in the room.
 
@@ -70,7 +70,7 @@ Ask before you add or change a board. Sync the artifacts.
 ### B. Shared and database
 
 - [x] **Milestone 4 shared schemas (B1).** The remove player response. The `room.removed` message on `user:<id>` with `{ gameId }`. The sign-in methods response `{ google, guest }`. The name step request for a new Google user. New error codes, in the code list **and** in the status map: `cannot_remove_self`, `oauth_failed`. Keep `drift.test.ts` green.
-- [ ] **Auth identities migration (B2).** Migration `0008_auth_identities`: provider, subject, user id, created time. A unique index on provider and subject. Update `db/schema.ts`.
+- [x] **Auth identities migration (B2).** Migration `0008_auth_identities`: provider, subject, user id, created time. A unique index on provider and subject. Update `db/schema.ts`.
 
 ### C. Host removes a player API
 
@@ -106,7 +106,7 @@ The project owner must create a Google Cloud OAuth client, with the redirect add
 
 ## Order and dependencies
 
-- Docs and design (A1 to A4) are done. Shared and database (B) is next.
+- Docs and design (A1 to A4) and Shared and database (B) are done. Host removes a player API (C1) or Sign-in configuration (D1) is next.
 - Shared and database (B) → Host removes a player API (C) and Google sign-in API (D) → Web (E) → Browser tests (F) → Close (G).
 - C and D do not depend on each other after B, but both change `app.ts`, the shared schemas and `openapi.json`. Do them one after the other.
 - Guest sign-in for browser tests (F1) goes in the same change as Guest sign-in behind the variable (D2), so the Playwright scripts do not break.

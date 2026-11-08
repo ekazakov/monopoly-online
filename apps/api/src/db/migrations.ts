@@ -224,6 +224,36 @@ const migrations: Record<string, Migration> = {
       await db.schema.alterTable("seats").dropColumn("claimed_at").execute();
     },
   },
+  "0008_auth_identities": {
+    async up(db: Kysely<unknown>) {
+      // One row per outside sign-in identity. Only the provider subject is kept: no email, no name
+      // and no token. A guest user has no row.
+      await db.schema
+        .createTable("auth_identities")
+        .addColumn("id", "text", (col) => col.primaryKey())
+        .addColumn("provider", "text", (col) => col.notNull())
+        .addColumn("subject", "text", (col) => col.notNull())
+        .addColumn("user_id", "text", (col) =>
+          col.notNull().references("users.id").onDelete("cascade"),
+        )
+        .addColumn("created_at", "text", (col) => col.notNull().defaultTo(nowIso))
+        .execute();
+      await db.schema
+        .createIndex("auth_identities_provider_subject_idx")
+        .on("auth_identities")
+        .columns(["provider", "subject"])
+        .unique()
+        .execute();
+      await db.schema
+        .createIndex("auth_identities_user_id_idx")
+        .on("auth_identities")
+        .column("user_id")
+        .execute();
+    },
+    async down(db: Kysely<unknown>) {
+      await db.schema.dropTable("auth_identities").execute();
+    },
+  },
 };
 
 function createMigrator(db: Kysely<Database>): Migrator {
