@@ -275,7 +275,9 @@ export async function migrateToLatest(
   const migrator = createMigrator(db);
   const { error, results } = await migrator.migrateToLatest();
   for (const result of results ?? []) {
-    if (result.status === "Error") {
+    if (result.status === "Success") {
+      log.info({ migration: result.migrationName }, "migration applied");
+    } else if (result.status === "Error") {
       log.error({ migration: result.migrationName }, "migration failed");
     }
   }

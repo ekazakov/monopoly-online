@@ -78,7 +78,8 @@ export function createApp(db: Kysely<Database>, options?: AppOptions) {
   const presence =
     options?.presence ?? createPresenceTracker({ graceMs: options?.presenceGraceMs });
   // The full seat map goes to every device of the game on each change.
-  presence.subscribe(({ gameId }) => {
+  presence.subscribe(({ gameId, userId, status }) => {
+    deps.log.info({ gameId, userId, status }, "presence changed");
     readSeatPresence(db, presence, gameId).then(
       (seats) => publish.onPresence(gameId, seats),
       (err: unknown) => deps.log.error({ err, gameId }, "presence update failed"),

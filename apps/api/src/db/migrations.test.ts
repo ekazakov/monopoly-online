@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "vite-plus/test";
 import { TOKENS } from "@monopoly/shared";
 import type { Kysely } from "kysely";
 import { sql } from "kysely";
+import { createMemoryLogger } from "../log-test-helpers.ts";
 import { createDb } from "./client.ts";
 import { migrateTo, migrateToLatest } from "./migrations.ts";
 import type { Database } from "./schema.ts";
@@ -496,5 +497,21 @@ describe("migrations", () => {
       await db.deleteFrom("users").where("id", "=", U1).execute();
       expect(await count("auth_identities")).toBe(0);
     });
+  });
+});
+
+describe("migration log", () => {
+  test("each applied migration is logged once, and a second run logs nothing", async () => {
+    const db = createDb(":memory:");
+    const { logger, lines } = createMemoryLogger();
+    await migrateToLatest(db, logger);
+    const applied = lines.filter((line) => line.msg === "migration applied");
+    expect(applied.length).toBeGreaterThan(0);
+    expect(applied.every((line) => typeof line.migration === "string")).toBe(true);
+
+    lines.length = 0;
+    await migrateToLatest(db, logger);
+    expect(lines).toEqual([]);
+    await db.destroy();
   });
 });

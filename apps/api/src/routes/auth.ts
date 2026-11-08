@@ -131,22 +131,32 @@ export function authRoutes(deps: AppDeps, { guest, google, pending }: AuthRoutes
       clearGoogleCookie(c, VERIFIER_COOKIE, deps.nodeEnv);
 
       const query = c.req.valid("query");
+      const log = c.get("log");
       if (!query.code || query.error || !state || !verifier || !query.state) {
+        // `error` is the OAuth error name, for example `access_denied`. It holds no token.
+        log.warn(
+          { reason: query.error ? "provider_error" : "missing_values", providerError: query.error },
+          "google sign-in refused",
+        );
         return c.redirect(SIGN_IN_FAILED, 302);
       }
-      if (!sameValue(state, query.state)) return c.redirect(SIGN_IN_FAILED, 302);
+      if (!sameValue(state, query.state)) {
+        log.warn({ reason: "state_mismatch" }, "google sign-in refused");
+        return c.redirect(SIGN_IN_FAILED, 302);
+      }
 
       let subject: string;
       try {
         ({ subject } = await google.exchange(query.code, verifier));
       } catch (err) {
-        c.get("log").error({ err }, "google sign-in failed");
+        log.error({ err }, "google sign-in failed");
         return c.redirect(SIGN_IN_FAILED, 302);
       }
 
       const known = await createSessionForGoogleSubject(deps, subject);
       if (known) {
         setSessionCookie(c, known.token, deps.nodeEnv);
+        log.info({ userId: known.user.id, provider: "google" }, "signed in");
         return c.redirect(AFTER_SIGN_IN, 302);
       }
       setGoogleCookie(c, PENDING_COOKIE, pending.create(subject), deps.nodeEnv);
@@ -165,6 +175,10 @@ export function authRoutes(deps: AppDeps, { guest, google, pending }: AuthRoutes
       pending.consume(pendingToken);
       clearGoogleCookie(c, PENDING_COOKIE, deps.nodeEnv);
       setSessionCookie(c, created.token, deps.nodeEnv);
+      c.get("log").info(
+        { userId: created.user.id, provider: "google", newUser: true },
+        "signed in",
+      );
       return c.json({ user: created.user }, 200);
     });
 }

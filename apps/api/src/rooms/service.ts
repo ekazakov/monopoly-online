@@ -710,6 +710,7 @@ export function createRoomService(options: RoomServiceOptions): RoomService {
       );
       loader?.put(gameId, result.state);
       const redacted = redactState(result.state);
+      log.info({ gameId, userId: user.id, seats: result.game.seats.length }, "game started");
       emit({ type: "started", game: result.game, state: redacted });
       await announceInvites(result.invitees);
       return { game: result.game, state: redacted };

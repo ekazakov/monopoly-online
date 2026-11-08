@@ -110,7 +110,10 @@ export function createLifecycleService(options: LifecycleServiceOptions): Lifecy
         // Same transaction: a saved game never shows a claim from before the save.
         inTransaction: clearClaims(gameId),
       });
-      return saved ? { game: await announce(gameId, leftActive(gameId)) } : null;
+      if (!saved) return null;
+      const game = await announce(gameId, leftActive(gameId));
+      log.info({ gameId, version: saved.version }, "game saved automatically");
+      return { game };
     },
 
     async restore({ gameId, userId }) {
@@ -137,7 +140,9 @@ export function createLifecycleService(options: LifecycleServiceOptions): Lifecy
           .where("claimed_at", "is", null)
           .execute();
       });
-      return { game: await announce(gameId, (game) => onRestored?.(game)) };
+      const game = await announce(gameId, (restored) => onRestored?.(restored));
+      log.info({ gameId, userId }, "game restored");
+      return { game };
     },
 
     async claim({ gameId, userId }) {
@@ -197,7 +202,9 @@ export function createLifecycleService(options: LifecycleServiceOptions): Lifecy
         status: "saved",
         inTransaction: clearClaims(gameId),
       });
-      return { game: await announce(gameId, leftActive(gameId)) };
+      const game = await announce(gameId, leftActive(gameId));
+      log.info({ gameId, userId }, "game saved");
+      return { game };
     },
 
     async finish({ gameId, userId }) {
@@ -218,7 +225,9 @@ export function createLifecycleService(options: LifecycleServiceOptions): Lifecy
       } else {
         throw new GameServiceError("game_not_active", "The game is not active");
       }
-      return { game: await announce(gameId, leftActive(gameId)) };
+      const game = await announce(gameId, leftActive(gameId));
+      log.info({ gameId, userId, from: status }, "game finished");
+      return { game };
     },
   };
 }

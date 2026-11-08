@@ -253,7 +253,10 @@ export function createGameService(options: GameServiceOptions): GameService {
     throw error;
   }
 
-  async function submit(input: SubmitActionInput): Promise<ActionResult> {
+  /** `repeated` is true when the `clientActionId` had been accepted before: nothing was applied now. */
+  type Submitted = { result: ActionResult; repeated: boolean };
+
+  async function submit(input: SubmitActionInput): Promise<Submitted> {
     const { gameId, userId, seatId, clientActionId } = input;
     const game = await requireGame(gameId);
     await requireMember(gameId, userId);
@@ -271,7 +274,7 @@ export function createGameService(options: GameServiceOptions): GameService {
     // Before the status and version checks: a retry of an accepted action, also the one that
     // ended the game, gets its stored result.
     const stored = await storedResult(gameId, clientActionId);
-    if (stored) return stored;
+    if (stored) return { result: stored, repeated: true };
 
     if (game.status !== "active") {
       throw new GameServiceError("game_not_active", "The game is not active");
@@ -292,7 +295,7 @@ export function createGameService(options: GameServiceOptions): GameService {
       await commit(input, action, prev, next, events);
     } catch (error) {
       loader.evict(gameId);
-      return recover(error, input, prev.version);
+      return recover(error, input, prev.version).then((result) => ({ result, repeated: true }));
     }
     loader.put(gameId, next);
 
@@ -303,7 +306,46 @@ export function createGameService(options: GameServiceOptions): GameService {
       // The action is committed. A failing subscriber must not turn it into an error.
       log.error({ err, gameId, version: next.version }, "committed subscriber failed");
     }
-    return { version: next.version, events, state };
+    return { result: { version: next.version, events, state }, repeated: false };
+  }
+
+  /** Runs one action in the queue of its game, and writes the log line for the outcome. */
+  async function submitLogged(input: SubmitActionInput): Promise<ActionResult> {
+    const started = performance.now();
+    const fields = {
+      gameId: input.gameId,
+      seatId: input.seatId,
+      userId: input.userId,
+      actionType: input.action.type,
+      clientActionId: input.clientActionId,
+    };
+    const durationMs = () => Math.round(performance.now() - started);
+    try {
+      const { result, repeated } = await submit(input);
+      log.info(
+        { ...fields, version: result.version, durationMs: durationMs() },
+        repeated ? "action repeated" : "action applied",
+      );
+      return result;
+    } catch (err) {
+      if (err instanceof GameServiceError) {
+        if (err.code === "version_conflict") {
+          log.warn(
+            {
+              ...fields,
+              expectedVersion: input.expectedVersion,
+              currentVersion: err.currentVersion,
+              durationMs: durationMs(),
+            },
+            "action version conflict",
+          );
+        } else {
+          log.info({ ...fields, errorCode: err.code, durationMs: durationMs() }, "action refused");
+        }
+      }
+      // Other errors are not domain refusals. The error handler of the route logs them.
+      throw err;
+    }
   }
 
   async function rollback(input: RollbackInput): Promise<RollbackResult> {
@@ -375,7 +417,7 @@ export function createGameService(options: GameServiceOptions): GameService {
   }
 
   return {
-    submitAction: (input) => serialise(input.gameId, () => submit(input)),
+    submitAction: (input) => serialise(input.gameId, () => submitLogged(input)),
 
     rollbackToTurnStart: (input) => serialise(input.gameId, () => rollback(input)),
 

@@ -152,18 +152,29 @@ export function createTopicReader(options: TopicReaderOptions) {
       lastEventId,
       maxGap: options.maxGap,
     });
-    if (plan.kind === "none") return { messages: [], covered: current };
+    if (plan.kind === "none") {
+      log.debug({ gameId, lastEventId, version: current }, "stream resume: nothing missed");
+      return { messages: [], covered: current };
+    }
+    let reason = plan.kind === "replay" ? "log_hole" : plan.kind;
     if (plan.kind === "replay" && lastEventId !== null) {
       try {
-        return {
-          messages: await replayActions(db, gameId, lastEventId, current),
-          covered: current,
-        };
+        const messages = await replayActions(db, gameId, lastEventId, current);
+        log.info(
+          { gameId, lastEventId, version: current, messages: messages.length },
+          "stream resumed with events",
+        );
+        return { messages, covered: current };
       } catch (err) {
         if (!(err instanceof LogHoleError)) {
+          reason = "error";
           log.error({ err, gameId, lastEventId }, "stream resume failed, sending a snapshot");
         }
       }
+    }
+    // A first connect has no `lastEventId`, so it is not a resume.
+    if (lastEventId !== null) {
+      log.info({ gameId, lastEventId, version: current, reason }, "stream resumed with a snapshot");
     }
     return { messages: [snapshotMessage(game, redactState(full))], covered: current };
   };

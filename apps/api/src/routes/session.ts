@@ -79,6 +79,7 @@ export function sessionRoutes(deps: AppDeps, { guest }: { guest: boolean }) {
       const created = await createGuestSession(deps, c.req.valid("json").name);
       if (!created) return c.json(errorBody("name_taken", "This name is taken"), 409);
       setSessionCookie(c, created.token, deps.nodeEnv);
+      c.get("log").info({ userId: created.user.id, provider: "guest" }, "signed in");
       return c.json({ user: created.user }, 201);
     })
     .openapi(meRoute, (c) => c.json({ user: c.get("user") }, 200))
@@ -86,6 +87,7 @@ export function sessionRoutes(deps: AppDeps, { guest }: { guest: boolean }) {
       // `auth` ran first, so the cookie is present and valid.
       await deleteSession(deps, readSessionToken(c)!);
       clearSessionCookie(c, deps.nodeEnv);
+      c.get("log").info({ userId: c.get("user").id }, "signed out");
       return c.body(null, 204);
     });
 }
