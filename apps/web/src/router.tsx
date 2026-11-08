@@ -39,10 +39,19 @@ const homeRoute = createRoute({
 const signInRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/sign-in",
-  // A bad `redirect` becomes an explicit undefined: the router merges the result over the raw
+  // A bad value becomes an explicit undefined: the router merges the result over the raw
   // search, so an omitted key would let the bad value through.
-  validateSearch: (search: Record<string, unknown>): { redirect?: string | undefined } => ({
+  // `error` and `step` come from the Google callback (`/sign-in?error=oauth_failed`, `?step=name`).
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): {
+    redirect?: string | undefined;
+    error?: "oauth_failed" | undefined;
+    step?: "name" | undefined;
+  } => ({
     redirect: safeRedirect(search.redirect),
+    error: search.error === "oauth_failed" ? "oauth_failed" : undefined,
+    step: search.step === "name" ? "name" : undefined,
   }),
   beforeLoad: ({ context, search }) => redirectIfSignedIn(context.queryClient, search),
   component: SignInScreen,

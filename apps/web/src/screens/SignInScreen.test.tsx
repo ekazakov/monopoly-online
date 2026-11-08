@@ -9,7 +9,10 @@ const signedOut = () => errorReply(401, "unauthorized");
 const posts = (calls: ApiCall[]) => calls.filter((c) => c.method === "POST");
 
 async function openSignIn(routes: Parameters<typeof mockApi>[0] = {}, path = "/sign-in") {
-  const calls = mockApi({ "GET /api/me": signedOut(), ...routes });
+  const calls = mockApi({
+    "GET /api/me": signedOut(),
+    ...routes,
+  });
   const view = await renderRoute(path);
   const input = await screen.findByLabelText("Display name");
   return { ...view, calls, input, user: userEvent.setup() };

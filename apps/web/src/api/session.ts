@@ -1,4 +1,4 @@
-import type { User } from "@monopoly/shared";
+import type { AuthMethods, User } from "@monopoly/shared";
 import { ApiError, client, unwrap } from "../api.ts";
 
 export async function getMe(): Promise<User> {
@@ -8,6 +8,19 @@ export async function getMe(): Promise<User> {
 export async function createSession(name: string): Promise<User> {
   return (await unwrap(await client.api.session.$post({ json: { name } }))).user;
 }
+
+/** The sign-in methods the server offers. No session is needed. */
+export async function getAuthMethods(): Promise<AuthMethods> {
+  return unwrap(await client.api.auth.methods.$get());
+}
+
+/** The display name of a new Google user. Needs the pending sign-in cookie from the callback. */
+export async function chooseGoogleName(name: string): Promise<User> {
+  return (await unwrap(await client.api.auth.google.name.$post({ json: { name } }))).user;
+}
+
+/** Where the browser goes to start Google sign-in. It is a full page navigation, not a fetch. */
+export const GOOGLE_START_PATH = "/api/auth/google/start";
 
 export async function deleteSession(): Promise<void> {
   const res = await client.api.session.$delete();

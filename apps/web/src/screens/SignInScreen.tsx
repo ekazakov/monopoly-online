@@ -1,128 +1,22 @@
-import { displayNameSchema } from "@monopoly/shared";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
-import { useEffect, useId, useRef, useState, type ChangeEvent, type FormEvent } from "react";
-import { ApiError } from "../api.ts";
-import { useSignIn } from "../session/index.ts";
+import type { ReactNode } from "react";
+import { GOOGLE_START_PATH, isApiError } from "../api/index.ts";
+import { useAuthMethods, useGoogleName, useSignIn } from "../session/index.ts";
+import { Icon, SignInNameForm } from "./SignInNameForm.tsx";
 import "./SignInScreen.css";
 
 const route = getRouteApi("/sign-in");
 
-const NAME_MAX = 16;
 const copy = {
-  hint: "2 to 16 characters. Capital letters do not matter.",
-  valid: "Looks good. Press Continue.",
-  pending: "Signing you in…",
-  short: "Use at least 2 characters.",
-  long: "Use 16 characters or fewer.",
-  taken: "That name is taken. Try another one.",
-  failed: "We could not sign you in. Check the connection and try again.",
+  loading: "Loading the sign-in options…",
+  optionsFailed: "We could not load the sign-in options. Check the connection and try again.",
+  retry: "Try again",
+  oauthFailed: "Google did not sign you in. Try again, or ask the host to check the setup.",
+  googleKept:
+    "We keep only your Google account id. We do not keep your email, your Google name or your tokens.",
 } as const;
 
-type ProblemKey = "short" | "long" | "taken" | "failed";
-
-// Local rules come from the shared schema, so the form and the API agree.
-function checkName(value: string): ProblemKey | null {
-  if (displayNameSchema.safeParse(value).success) return null;
-  return value.trim().length > NAME_MAX ? "long" : "short";
-}
-
-function serverProblem(error: unknown, value: string): { key: ProblemKey; text: string } {
-  if (error instanceof ApiError) {
-    if (error.code === "name_taken") return { key: "taken", text: copy.taken };
-    if (error.status === 400) {
-      const local = checkName(value);
-      if (local) return { key: local, text: copy[local] };
-      const issue = error.issues.find((i) => i.path[0] === "name");
-      if (issue) return { key: "short", text: issue.message };
-    }
-  }
-  // 5xx, a lost connection and any other answer look the same to the user.
-  return { key: "failed", text: copy.failed };
-}
-
-function Icon({ kind }: { kind: "ok" | "error" }) {
-  return (
-    <svg
-      className="sign-in__icon"
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      {kind === "ok" ? (
-        <path d="M5 12.5l4.5 4.5L19 7.5" />
-      ) : (
-        <>
-          <circle cx="12" cy="12" r="9" />
-          <path d="M12 7v6M12 16.5v.5" />
-        </>
-      )}
-    </svg>
-  );
-}
-
-export function SignInScreen() {
-  const { redirect } = route.useSearch();
-  const navigate = useNavigate();
-  const signIn = useSignIn();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const inputId = useId();
-  const hintId = `${inputId}-hint`;
-
-  const [value, setValue] = useState("");
-  const [focused, setFocused] = useState(false);
-  // Checks run on submit. After the first error they run on every keystroke.
-  const [live, setLive] = useState(false);
-  const [failure, setFailure] = useState<{ key: ProblemKey; text: string } | null>(null);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
-
-  // Stays busy after success until the router has left this screen.
-  const busy = signIn.isPending || signIn.isSuccess;
-  const length = value.trim().length;
-  const local = checkName(value);
-  const problem = failure ?? (live && local ? { key: local, text: copy[local] } : null);
-  // A failed request says nothing about the name, so the field is not marked invalid then.
-  const fieldProblem = problem && problem.key !== "failed";
-  const valid = !problem && !busy && !focused && local === null;
-
-  function onChange(event: ChangeEvent<HTMLInputElement>) {
-    setValue(event.target.value);
-    setFailure(null);
-  }
-
-  function onSubmit(event: FormEvent) {
-    event.preventDefault();
-    if (busy) return;
-    const parsed = displayNameSchema.safeParse(value);
-    if (!parsed.success) {
-      setLive(true);
-      inputRef.current?.focus();
-      return;
-    }
-    setFailure(null);
-    signIn.mutate(parsed.data, {
-      onSuccess: () => void navigate({ href: redirect ?? "/" }),
-      onError: (error) => {
-        setLive(true);
-        setFailure(serverProblem(error, value));
-        inputRef.current?.focus();
-      },
-    });
-  }
-
-  let hint: { text: string; tone: "plain" | "ok" | "error" } = { text: copy.hint, tone: "plain" };
-  if (busy) hint = { text: copy.pending, tone: "plain" };
-  else if (problem) hint = { text: problem.text, tone: "error" };
-  else if (valid) hint = { text: copy.valid, tone: "ok" };
-
+function Frame({ title, lead, children }: { title: string; lead: string; children: ReactNode }) {
   return (
     <div className="sign-in">
       <header className="sign-in__top">
@@ -131,69 +25,136 @@ export function SignInScreen() {
       <main className="sign-in__main">
         <div className="sign-in__intro">
           <p className="sign-in__eyebrow">Welcome</p>
-          <h1 className="sign-in__title">Pick a name to play</h1>
-          <p className="sign-in__lead">
-            Friends see this name at the table. No password. Names are unique, and capital letters
-            do not matter.
-          </p>
+          <h1 className="sign-in__title">{title}</h1>
+          {lead && <p className="sign-in__lead">{lead}</p>}
         </div>
-        <form className="sign-in__card" onSubmit={onSubmit} noValidate>
-          <div className="sign-in__field">
-            <label className="sign-in__label" htmlFor={inputId}>
-              Display name
-            </label>
-            <div
-              className="sign-in__control"
-              data-tone={fieldProblem ? "error" : valid ? "ok" : "plain"}
-              data-busy={busy || undefined}
-            >
-              <input
-                ref={inputRef}
-                id={inputId}
-                className="sign-in__input"
-                type="text"
-                value={value}
-                onChange={onChange}
-                onFocus={() => setFocused(true)}
-                onBlur={() => setFocused(false)}
-                placeholder="Your name"
-                autoComplete="nickname"
-                autoCapitalize="words"
-                spellCheck={false}
-                aria-describedby={hintId}
-                aria-invalid={fieldProblem ? true : undefined}
-                aria-busy={busy || undefined}
-                readOnly={busy}
-              />
-            </div>
-            <div className="sign-in__meta">
-              {/* A new element per kind of message, so a screen reader reads each alert when it appears. */}
-              <span
-                key={hint.tone === "error" ? hint.text : hint.tone}
-                id={hintId}
-                className="sign-in__hint"
-                data-tone={hint.tone}
-                role={hint.tone === "error" ? "alert" : undefined}
-              >
-                {hint.tone !== "plain" && <Icon kind={hint.tone} />}
-                {hint.text}
-              </span>
-              <span className="sign-in__count" aria-hidden="true">
-                {length}/{NAME_MAX}
-              </span>
-            </div>
-          </div>
-          <button
-            type="submit"
-            className="sign-in__submit"
-            aria-disabled={busy || undefined}
-            aria-busy={busy || undefined}
-          >
-            {busy && <span className="sign-in__spinner" aria-hidden="true" />}
-            {busy ? "Signing in" : "Continue"}
-          </button>
-        </form>
+        {children}
       </main>
     </div>
+  );
+}
+
+// A link, not a button: Google sign-in leaves the app, so the browser must load the address.
+function GoogleButton({ children }: { children: string }) {
+  return (
+    <a className="sign-in__google" href={GOOGLE_START_PATH}>
+      <span className="sign-in__google-mark" aria-hidden="true">
+        G
+      </span>
+      {children}
+    </a>
+  );
+}
+
+function Problem({ children }: { children: string }) {
+  return (
+    <div className="sign-in__problem" role="alert">
+      <Icon kind="error" />
+      <span>{children}</span>
+    </div>
+  );
+}
+
+/** Step 2 of Google sign-in: a new Google user chooses the display name. */
+function GoogleNameStep() {
+  const { redirect } = route.useSearch();
+  const navigate = useNavigate();
+  const mutation = useGoogleName();
+  return (
+    <Frame
+      title="Pick a name to play"
+      lead="You are signed in with Google. Pick the name friends see at the table."
+    >
+      <div className="sign-in__card">
+        <SignInNameForm
+          mutation={mutation}
+          onSuccess={() => void navigate({ href: redirect ?? "/" })}
+          // 401: the pending sign-in is gone (it lives 10 minutes). Start again.
+          onFailure={(error) => {
+            if (!isApiError(error) || error.status !== 401) return false;
+            void navigate({ to: "/sign-in", search: { error: "oauth_failed" }, replace: true });
+            return true;
+          }}
+        />
+      </div>
+    </Frame>
+  );
+}
+
+function GuestForm() {
+  const { redirect } = route.useSearch();
+  const navigate = useNavigate();
+  const signIn = useSignIn();
+  return (
+    <SignInNameForm mutation={signIn} onSuccess={() => void navigate({ href: redirect ?? "/" })} />
+  );
+}
+
+export function SignInScreen() {
+  const { error, step } = route.useSearch();
+  const methods = useAuthMethods();
+
+  if (step === "name") return <GoogleNameStep />;
+
+  if (methods.isPending) {
+    return (
+      <Frame title="Sign in to play" lead="">
+        <p className="sign-in__lead" role="status">
+          {copy.loading}
+        </p>
+      </Frame>
+    );
+  }
+  if (methods.isError) {
+    return (
+      <Frame title="Sign in to play" lead="">
+        <div className="sign-in__card">
+          <Problem>{copy.optionsFailed}</Problem>
+          <button
+            type="button"
+            className="sign-in__secondary"
+            onClick={() => void methods.refetch()}
+          >
+            {copy.retry}
+          </button>
+        </div>
+      </Frame>
+    );
+  }
+
+  const { google, guest } = methods.data;
+  // Guest only is the first screen of the board: one form, no Google.
+  if (!google) {
+    return (
+      <Frame
+        title="Pick a name to play"
+        lead="Friends see this name at the table. No password. Names are unique, and capital letters do not matter."
+      >
+        <div className="sign-in__card">{guest && <GuestForm />}</div>
+      </Frame>
+    );
+  }
+  return (
+    <Frame
+      title="Sign in to play"
+      lead="Sign in with Google. Friends see the name you pick at the table, not your Google name."
+    >
+      <div className="sign-in__card">
+        {error === "oauth_failed" && <Problem>{copy.oauthFailed}</Problem>}
+        <GoogleButton>
+          {error === "oauth_failed" ? "Try again with Google" : "Continue with Google"}
+        </GoogleButton>
+        {guest ? (
+          <>
+            <div className="sign-in__separator" role="separator">
+              or, guest name
+            </div>
+            <GuestForm />
+          </>
+        ) : (
+          <p className="sign-in__note">{copy.googleKept}</p>
+        )}
+      </div>
+    </Frame>
   );
 }

@@ -77,9 +77,17 @@ export function errorReply(status: number, code: string, message = code, issues?
 
 export const noContent = () => new Response(null, { status: 204 });
 
-// Replaces `fetch` with a table of "METHOD /path" -> reply. An unlisted call answers 404.
+/** The sign-in methods that `mockApi` answers by default: guest sign-in only, as in development. */
+export const methodsFixture = { google: false, guest: true };
+
+// Replaces `fetch` with a table of "METHOD /path" -> reply. An unlisted call answers 404, except
+// `GET /api/auth/methods`, which answers `methodsFixture` unless a test sets it.
 // Returns the recorded calls. Unstub in afterEach with `vi.unstubAllGlobals()`.
-export function mockApi(routes: Record<string, Handler | Reply>): ApiCall[] {
+export function mockApi(given: Record<string, Handler | Reply>): ApiCall[] {
+  const routes: Record<string, Handler | Reply> = {
+    "GET /api/auth/methods": Response.json(methodsFixture),
+    ...given,
+  };
   const calls: ApiCall[] = [];
   vi.stubGlobal(
     "fetch",

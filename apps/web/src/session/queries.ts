@@ -6,7 +6,14 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { createSession, deleteSession, getMe, isApiError } from "../api/index.ts";
+import {
+  chooseGoogleName,
+  createSession,
+  deleteSession,
+  getAuthMethods,
+  getMe,
+  isApiError,
+} from "../api/index.ts";
 
 export const sessionKey = ["session"] as const;
 
@@ -27,6 +34,18 @@ export const sessionQuery = queryOptions({
   staleTime: 30_000,
   retry: false,
 });
+
+// The server reads its sign-in settings at start, so the answer holds until the next load.
+export const authMethodsQuery = queryOptions({
+  queryKey: ["auth-methods"] as const,
+  queryFn: getAuthMethods,
+  staleTime: Infinity,
+  retry: false,
+});
+
+export function useAuthMethods() {
+  return useQuery(authMethodsQuery);
+}
 
 export function useSession() {
   return useQuery(sessionQuery);
@@ -52,6 +71,15 @@ export function useSignIn() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: signIn,
+    onSuccess: (user) => queryClient.setQueryData(sessionKey, user),
+  });
+}
+
+// The name step of a new Google user. The session cookie comes with the answer.
+export function useGoogleName() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: chooseGoogleName,
     onSuccess: (user) => queryClient.setQueryData(sessionKey, user),
   });
 }
