@@ -98,7 +98,7 @@ Mark a task `[x]` in the commit that completes it.
 
 - [x] **OpenTelemetry bootstrap (C1).** `apps/api/src/telemetry.ts` starts the Node SDK with OTLP exporters for traces, metrics and logs. Load it with `node --import` before `index.ts`, in the `dev` and `start` scripts and in the image. Off when `OTEL_EXPORTER_OTLP_ENDPOINT` is not set. Keep pino and the OpenTelemetry packages external in `vp pack`, because the instrumentation patches modules when they load, and it cannot patch bundled code.
 - [x] **Traces (C2).** HTTP spans from a Hono OpenTelemetry middleware, with the route template. Remove the client IP and the user agent from the span attributes. A Kysely plugin makes query spans (Kysely and `better-sqlite3` have no official instrumentation). An `applyAction` span with the game id and version.
-- [ ] **Logs bridge (C3).** pino lines go through OpenTelemetry with the trace and span ids. The stdout lines also have these ids.
+- [x] **Logs bridge (C3).** pino lines go through OpenTelemetry with the trace and span ids. The stdout lines also have these ids.
 - [ ] **Metrics (C4).** The metrics in "Metrics". The database file size is an observable gauge. Presence and SSE counts come from the existing tracker and stream code. Tests read the values with an in-memory metric reader.
 - [ ] **Readiness route (C5).** `GET /api/ready`: 200 when a database query works and the migrations are applied, or else 503. A shared schema in `packages/shared`, the route in the chain in `app.ts`, and `pnpm openapi`.
 

@@ -23,10 +23,13 @@
     "@monopoly/game-engine": "workspace:*",
     "@monopoly/shared": "workspace:*",
     "@opentelemetry/api": "catalog:",
+    "@opentelemetry/instrumentation": "catalog:",
+    "@opentelemetry/instrumentation-pino": "catalog:",
     "@opentelemetry/sdk-node": "catalog:",
     "arctic": "catalog:",
     "better-sqlite3": "catalog:",
     "hono": "catalog:",
+    "import-in-the-middle": "catalog:",
     "kysely": "catalog:",
     "pino": "catalog:",
     "zod": "catalog:"
