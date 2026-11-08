@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, test, vi } from "vite-plus/test";
+import { createMemoryLogger } from "../log-test-helpers.ts";
 import { createBus } from "./bus.ts";
 
 describe("bus", () => {
@@ -130,8 +131,8 @@ describe("bus", () => {
   });
 
   test("a throwing handler does not stop other handlers or throw from publish", () => {
-    const error = vi.spyOn(console, "error").mockImplementation(() => {});
-    const bus = createBus<string>();
+    const { logger, lines } = createMemoryLogger();
+    const bus = createBus<string>(logger);
     const before = vi.fn<(message: string) => void>();
     const after = vi.fn<(message: string) => void>();
     const failure = new Error("boom");
@@ -145,8 +146,13 @@ describe("bus", () => {
 
     expect(before).toHaveBeenCalledTimes(1);
     expect(after).toHaveBeenCalledTimes(1);
-    expect(error).toHaveBeenCalledTimes(1);
-    expect(error.mock.calls[0]).toContain(failure);
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatchObject({
+      level: "error",
+      msg: "bus handler failed",
+      topic: "t",
+      err: { message: "boom" },
+    });
   });
 
   test("subscriberCount tracks subscriptions per topic", () => {

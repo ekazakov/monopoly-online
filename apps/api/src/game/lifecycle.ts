@@ -5,6 +5,7 @@ import type { GameStateLoader } from "./loader.ts";
 import { redactState } from "./redact.ts";
 import { GameServiceError } from "./service.ts";
 import type { GameService } from "./service.ts";
+import { createSilentLogger, type Logger } from "../log.ts";
 
 /** The new game and its state, for the `snapshot` that every device of the game gets. */
 export interface LifecycleSnapshot {
@@ -14,6 +15,8 @@ export interface LifecycleSnapshot {
 
 export interface LifecycleServiceOptions {
   db: Kysely<Database>;
+  /** Defaults to a silent logger. */
+  log?: Logger;
   /** Does the rollback of the turn. */
   games: GameService;
   loader: GameStateLoader;
@@ -53,6 +56,7 @@ export interface LifecycleService {
 export function createLifecycleService(options: LifecycleServiceOptions): LifecycleService {
   const { db, games, loader, readGame, onSnapshot, onRoomUpdated, onRestored, onLeftActive } =
     options;
+  const log = (options.log ?? createSilentLogger()).child({ component: "lifecycle" });
   const now = options.now ?? (() => new Date());
 
   async function requireOwned(gameId: string, userId: string) {
@@ -76,13 +80,13 @@ export function createLifecycleService(options: LifecycleServiceOptions): Lifecy
     // The change is committed. A failing subscriber must not turn it into an error.
     try {
       before?.(game);
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      log.error({ err, gameId }, "room subscriber failed");
     }
     try {
       onSnapshot?.({ game, state: redactState(state) });
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      log.error({ err, gameId }, "snapshot subscriber failed");
     }
     return game;
   }
@@ -177,8 +181,8 @@ export function createLifecycleService(options: LifecycleServiceOptions): Lifecy
       }
       try {
         onRoomUpdated?.(current);
-      } catch (error) {
-        console.error(error);
+      } catch (err) {
+        log.error({ err, gameId }, "room update subscriber failed");
       }
       return { game: current };
     },

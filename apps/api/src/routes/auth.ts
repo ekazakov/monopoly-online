@@ -139,8 +139,8 @@ export function authRoutes(deps: AppDeps, { guest, google, pending }: AuthRoutes
       let subject: string;
       try {
         ({ subject } = await google.exchange(query.code, verifier));
-      } catch (error) {
-        console.error("Google sign-in failed", error);
+      } catch (err) {
+        c.get("log").error({ err }, "google sign-in failed");
         return c.redirect(SIGN_IN_FAILED, 302);
       }
 

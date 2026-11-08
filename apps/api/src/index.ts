@@ -9,6 +9,7 @@ import { migrateToLatest } from "./db/migrations.ts";
 import { createPresenceTracker, watchActiveGames } from "./realtime/presence.ts";
 
 const logger = createLogger();
+
 const port = Number(process.env.PORT ?? 8787);
 const dbPath = process.env.DB_PATH ?? "data/monopoly.db";
 
@@ -17,7 +18,7 @@ const authConfig = readAuthConfig(process.env);
 
 mkdirSync(dirname(dbPath), { recursive: true });
 const db = createDb(dbPath);
-await migrateToLatest(db);
+await migrateToLatest(db, logger);
 
 // GAME_SEED is a test-only flag for the end-to-end tests. A fixed integer seed gives every game
 // the same dice, shuffled decks and turn order, so it is ignored when NODE_ENV is "production".
@@ -54,8 +55,8 @@ const app = createApp(db, {
   ...(seed === undefined ? {} : { seed: () => seed }),
 });
 const watched = await watchActiveGames(db, presence);
-if (watched > 0) console.log(`Watching ${watched} active game(s) for returning players`);
+if (watched > 0) logger.info({ games: watched }, "watching active games for returning players");
 
 serve({ fetch: app.fetch, port }, (info) => {
-  console.log(`API listening on http://localhost:${info.port}`);
+  logger.info({ port: info.port }, "API listening");
 });

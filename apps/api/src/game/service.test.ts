@@ -4,6 +4,7 @@ import type { ActionInput } from "@monopoly/shared";
 import type { Kysely, KyselyPlugin } from "kysely";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vite-plus/test";
 import { createDb } from "../db/client.ts";
+import { createMemoryLogger } from "../log-test-helpers.ts";
 import { migrateToLatest } from "../db/migrations.ts";
 import type { Database } from "../db/schema.ts";
 import {
@@ -514,18 +515,25 @@ describe("cache, hooks and rollback", () => {
   });
 
   test("a failing onCommitted hook does not fail the action", async () => {
-    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { logger, lines } = createMemoryLogger();
     service = createGameService({
       db,
       loader,
+      log: logger,
       onCommitted: () => {
         throw new Error("boom");
       },
     });
     const result = await act(first, { type: "RollDice" });
     expect(result.version).toBe(1);
-    expect(log).toHaveBeenCalled();
-    log.mockRestore();
+    const failed = lines.filter((line) => line.level === "error");
+    expect(failed).toHaveLength(1);
+    expect(failed[0]).toMatchObject({
+      msg: "committed subscriber failed",
+      gameId: GAME_ID,
+      version: 1,
+      err: { message: "boom" },
+    });
   });
 
   test("a failed write rolls back every row and evicts the cache", async () => {

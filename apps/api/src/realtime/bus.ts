@@ -1,3 +1,5 @@
+import { createSilentLogger, type Logger } from "../log.ts";
+
 export type Bus<TMessage> = {
   publish(topic: string, message: TMessage): void;
   subscribe(topic: string, handler: (message: TMessage) => void): () => void;
@@ -6,7 +8,8 @@ export type Bus<TMessage> = {
 
 type Subscription<TMessage> = { handler: (message: TMessage) => void };
 
-export function createBus<TMessage>(): Bus<TMessage> {
+/** `log` defaults to a silent logger. */
+export function createBus<TMessage>(log: Logger = createSilentLogger()): Bus<TMessage> {
   const topics = new Map<string, Set<Subscription<TMessage>>>();
 
   return {
@@ -19,8 +22,8 @@ export function createBus<TMessage>(): Bus<TMessage> {
         if (!subscriptions.has(subscription)) continue;
         try {
           subscription.handler(message);
-        } catch (error) {
-          console.error(`Bus handler failed for topic ${topic}`, error);
+        } catch (err) {
+          log.error({ err, topic }, "bus handler failed");
         }
       }
     },

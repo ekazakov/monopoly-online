@@ -70,6 +70,7 @@ export function streamRoutes(deps: StreamRoutesDeps) {
     loader,
     readGame: (gameId) => rooms.get(gameId),
     maxGap: deps.resumeMaxGap,
+    log: deps.log,
   });
   const routes = new OpenAPIHono<AppEnv>();
   // `.use` returns a plain Hono type, so it stays out of the typed chain below.

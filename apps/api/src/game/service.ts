@@ -13,6 +13,7 @@ import type { Database } from "../db/schema.ts";
 import { deserializeState, serializeState, shouldSnapshot } from "./loader.ts";
 import type { GameStateLoader, SnapshotOptions } from "./loader.ts";
 import { redactState } from "./redact.ts";
+import { createSilentLogger, type Logger } from "../log.ts";
 
 /** A domain error with the shared API error code. The route maps it to the error body. */
 export class GameServiceError extends Error {
@@ -39,6 +40,8 @@ export interface CommittedAction {
 
 export interface GameServiceOptions {
   db: Kysely<Database>;
+  /** Defaults to a silent logger. */
+  log?: Logger;
   loader: GameStateLoader;
   /** Clock for `created_at` of the rows the service writes. */
   now?: () => Date;
@@ -115,6 +118,7 @@ const notFound = (what: string) => new GameServiceError("not_found", `${what} no
 
 export function createGameService(options: GameServiceOptions): GameService {
   const { db, loader, onCommitted } = options;
+  const log = (options.log ?? createSilentLogger()).child({ component: "game-service" });
   const now = options.now ?? (() => new Date());
   // The tail of the promise chain of each game with work in flight.
   const chains = new Map<string, Promise<void>>();
@@ -295,9 +299,9 @@ export function createGameService(options: GameServiceOptions): GameService {
     const state = redactState(next);
     try {
       onCommitted?.({ gameId, events, state, version: next.version });
-    } catch (error) {
+    } catch (err) {
       // The action is committed. A failing subscriber must not turn it into an error.
-      console.error(error);
+      log.error({ err, gameId, version: next.version }, "committed subscriber failed");
     }
     return { version: next.version, events, state };
   }

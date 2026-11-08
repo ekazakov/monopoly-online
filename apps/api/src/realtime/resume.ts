@@ -24,6 +24,7 @@ import type { GameStateLoader } from "../game/loader.ts";
 import { redactState } from "../game/redact.ts";
 import { gameTopic, userTopic } from "./messages.ts";
 import type { StreamEnvelope } from "./messages.ts";
+import { createSilentLogger, type Logger } from "../log.ts";
 
 export type ResumePlan = { kind: "snapshot" } | { kind: "none" } | { kind: "replay" };
 
@@ -127,6 +128,8 @@ export interface TopicStart {
 
 export interface TopicReaderOptions {
   db: Kysely<Database>;
+  /** Defaults to a silent logger. */
+  log?: Logger;
   loader: GameStateLoader;
   readGame: (gameId: string) => Promise<Game>;
   maxGap?: number;
@@ -134,6 +137,7 @@ export interface TopicReaderOptions {
 
 export function createTopicReader(options: TopicReaderOptions) {
   const { db, loader, readGame } = options;
+  const log = (options.log ?? createSilentLogger()).child({ component: "resume" });
   return async function readTopic(gameId: string, lastEventId: number | null): Promise<TopicStart> {
     const game = await readGame(gameId);
     // A waiting game has no state. Live messages from version 0 on are all new.
@@ -155,9 +159,9 @@ export function createTopicReader(options: TopicReaderOptions) {
           messages: await replayActions(db, gameId, lastEventId, current),
           covered: current,
         };
-      } catch (error) {
-        if (!(error instanceof LogHoleError)) {
-          console.error("Stream resume failed, sending a snapshot", error);
+      } catch (err) {
+        if (!(err instanceof LogHoleError)) {
+          log.error({ err, gameId, lastEventId }, "stream resume failed, sending a snapshot");
         }
       }
     }

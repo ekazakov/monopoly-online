@@ -1,6 +1,7 @@
 import { type Kysely, sql } from "kysely";
 import { type Migration, Migrator } from "kysely/migration";
 import type { Database } from "./schema.ts";
+import { createSilentLogger, type Logger } from "../log.ts";
 
 const nowIso = sql`(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`;
 
@@ -266,12 +267,16 @@ export async function migrateTo(db: Kysely<Database>, name: string): Promise<voi
   if (error) throw error;
 }
 
-export async function migrateToLatest(db: Kysely<Database>): Promise<void> {
+/** `log` defaults to a silent logger. */
+export async function migrateToLatest(
+  db: Kysely<Database>,
+  log: Logger = createSilentLogger(),
+): Promise<void> {
   const migrator = createMigrator(db);
   const { error, results } = await migrator.migrateToLatest();
   for (const result of results ?? []) {
     if (result.status === "Error") {
-      console.error(`Migration "${result.migrationName}" failed`);
+      log.error({ migration: result.migrationName }, "migration failed");
     }
   }
   if (error) throw error;

@@ -31,6 +31,6 @@ export const errorHandler: ErrorHandler = (err, c) => {
   if (err instanceof HTTPException) {
     return c.json(errorBody("bad_request", err.message || "Bad request"), err.status);
   }
-  console.error(err);
+  c.get("log").error({ err }, "unhandled error");
   return c.json(errorBody("internal_error", "Internal server error"), 500);
 };

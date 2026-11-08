@@ -73,7 +73,7 @@ export function createApp(db: Kysely<Database>, options?: AppOptions) {
   const deps = resolveDeps(db, options);
   const extraOrigins = options?.allowedOrigins ?? parseOrigins(process.env.ALLOWED_ORIGINS);
   const loader = options?.loader ?? createGameStateLoader(db);
-  const bus = options?.bus ?? createBus<StreamEnvelope>();
+  const bus = options?.bus ?? createBus<StreamEnvelope>(deps.log);
   const publish = createPublishers(bus);
   const presence =
     options?.presence ?? createPresenceTracker({ graceMs: options?.presenceGraceMs });
@@ -81,7 +81,7 @@ export function createApp(db: Kysely<Database>, options?: AppOptions) {
   presence.subscribe(({ gameId }) => {
     readSeatPresence(db, presence, gameId).then(
       (seats) => publish.onPresence(gameId, seats),
-      (error: unknown) => console.error("Presence update failed", error),
+      (err: unknown) => deps.log.error({ err, gameId }, "presence update failed"),
     );
   });
   const rooms = createRoomService({
@@ -97,10 +97,12 @@ export function createApp(db: Kysely<Database>, options?: AppOptions) {
       options?.onRoomEvent?.(event);
     },
     loader,
+    log: deps.log,
   });
   const service = createGameService({
     db,
     loader,
+    log: deps.log,
     now: deps.now,
     onCommitted: (committed) => {
       publish.onCommitted(committed);
@@ -111,6 +113,7 @@ export function createApp(db: Kysely<Database>, options?: AppOptions) {
   });
   const lifecycle = createLifecycleService({
     db,
+    log: deps.log,
     games: service,
     loader,
     readGame: (gameId) => rooms.get(gameId),
@@ -138,7 +141,7 @@ export function createApp(db: Kysely<Database>, options?: AppOptions) {
     if (status !== "away") return;
     lifecycle
       .saveUnattended({ gameId, stillUnattended: () => nobodyOnline(gameId) })
-      .catch((error: unknown) => console.error("Automatic save failed", error));
+      .catch((err: unknown) => deps.log.error({ err, gameId }, "automatic save failed"));
   });
   const guest = options?.auth?.guest ?? false;
   const pending = createPendingSignIns(deps.now);

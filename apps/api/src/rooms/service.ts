@@ -18,6 +18,7 @@ import type { Database, Game as GameRow, Seat as SeatRow } from "../db/schema.ts
 import { serializeState } from "../game/loader.ts";
 import type { GameStateLoader } from "../game/loader.ts";
 import { redactState } from "../game/redact.ts";
+import { createSilentLogger, type Logger } from "../log.ts";
 
 /** What the room service reports after a change has been committed. */
 export type RoomEvent =
@@ -46,6 +47,8 @@ export class RoomError extends Error {
 
 export interface RoomServiceOptions {
   db: Kysely<Database>;
+  /** Defaults to a silent logger. */
+  log?: Logger;
   now?: () => Date;
   /** Seed of the engine RNG for a new game. Defaults to a random 32-bit integer. */
   seed?: () => number;
@@ -150,6 +153,7 @@ export async function withConflictRetry<T>(run: () => Promise<T>): Promise<T> {
 
 export function createRoomService(options: RoomServiceOptions): RoomService {
   const { db, onRoomEvent, loader } = options;
+  const log = (options.log ?? createSilentLogger()).child({ component: "rooms" });
   const now = options.now ?? (() => new Date());
   const seed = options.seed ?? (() => crypto.getRandomValues(new Uint32Array(1))[0]!);
 
@@ -157,8 +161,8 @@ export function createRoomService(options: RoomServiceOptions): RoomService {
     // The change is committed. A failing listener must not turn it into an error response.
     try {
       onRoomEvent?.(event);
-    } catch (error) {
-      console.error("Room event listener failed", error);
+    } catch (err) {
+      log.error({ err, eventType: event.type }, "room event listener failed");
     }
   }
 
@@ -292,9 +296,9 @@ export function createRoomService(options: RoomServiceOptions): RoomService {
       let invites: Invite[];
       try {
         invites = await invitesOf(userId);
-      } catch (error) {
+      } catch (err) {
         // The change is committed. A failed read must not turn it into an error response.
-        console.error("Invite list read failed", error);
+        log.error({ err, userId }, "invite list read failed");
         continue;
       }
       emit({ type: "invites.updated", userId, invites });
