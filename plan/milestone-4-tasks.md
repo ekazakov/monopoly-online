@@ -3,7 +3,7 @@
 |                |                                                                                                    |
 | -------------- | -------------------------------------------------------------------------------------------------- |
 | Companion docs | [implementation-roadmap.md](implementation-roadmap.md), [api-schema.md](api-schema.md) (section "Milestone 4"), [game-screen-2-gameplay.md](game-screen-2-gameplay.md) (Q25), [milestone-3-tasks.md](milestone-3-tasks.md), [e2e-test-plan.md](e2e-test-plan.md) |
-| Status         | Code done. Only the manual run (G1) is open: it needs the Google Cloud client. Last updated 2026-11-08 |
+| Status         | Done. The manual run (G1) passed with real Google sign-in. Last updated 2026-11-08 |
 
 **Goal.** On production, a player signs in with Google and keeps one account in each browser. The host decides who stays in the room.
 
@@ -97,7 +97,7 @@ Ask before you add or change a board. Sync the artifacts.
 
 ### G. Close
 
-- [ ] **Manual run (G1).** Two browser profiles and one hot-seat seat. Real Google sign-in on `localhost`, and the remove player flow. Fix the defects that you find. This task needs the Google Cloud client (see "Setup").
+- [x] **Manual run (G1).** Two browser profiles and one hot-seat seat. Real Google sign-in on `localhost`, and the remove player flow. Fix the defects that you find. This task needs the Google Cloud client (see "Setup").
 - [x] **Milestone 4 close (G2).** Roadmap status and change log. "As built" notes in [api-schema.md](api-schema.md). Copy the open questions to the roadmap if they stay open. Sync `artifacts/`.
 
 ## Setup
@@ -106,7 +106,7 @@ The project owner must create a Google Cloud OAuth client, with the redirect add
 
 ## Order and dependencies
 
-- A to F are done. The manual run (G1) is open. It needs the Google Cloud client.
+- A to G are done. Milestone 4 is complete.
 - Shared and database (B) → Host removes a player API (C) and Google sign-in API (D) → Web (E) → Browser tests (F) → Close (G).
 - C and D do not depend on each other after B, but both change `app.ts`, the shared schemas and `openapi.json`. Do them one after the other.
 - Guest sign-in for browser tests (F1) goes in the same change as Guest sign-in behind the variable (D2), so the Playwright scripts do not break.

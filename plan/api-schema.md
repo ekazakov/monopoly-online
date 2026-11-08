@@ -252,7 +252,7 @@ Rules that the first design did not fix, as the code does them:
 - **Pending sign-in.** It is in memory (`auth/pending.ts`), holds only the subject, and lives 10 minutes. A restart loses it, and the user starts again. It stays after `name_taken`, so the user can try another name, and it works once.
 - **New session at each sign-in.** A known Google user gets a new session row each time. The name step checks the name before the transaction, and again after a failed insert (two requests with one name).
 - **Sign-in screen.** It reads `GET /api/auth/methods` once per page load. It shows Google, guest, or both, and a retry button when the methods fail. A 401 from the name step goes to `/sign-in?error=oauth_failed`. The screen does not reload the page after sign-in: a signed-out browser has no stream to close.
-- **Not done.** A manual run with a real Google client (G1). Claim from another browser (Q25) is still an open question.
+- **Not done.** Claim from another browser (Q25) is still an open question. The manual run with real Google sign-in (G1) passed.
 
 ## Debug edit (added 2026-11-03, not in a milestone)
 
