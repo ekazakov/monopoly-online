@@ -13,7 +13,7 @@
 - Not in M2:
   - The host removes a joined player, and the host cancels an invite. The boards `LobbyHostReady` and `LobbyStates` show both, but they are not built.
   - Presence states (reconnecting, away), Finish, Save and Restore (M3).
-  - Rematch, WebSocket, OAuth (M4).
+  - WebSocket, OAuth (M4).
   - Playwright and E2E. They stay in M1: Playwright setup (I1) and E2E script (I2).
   - More than 6 figures, and the parked colour-clash question (spec question 5).
 - Keep SQL portable (roadmap 3.3). JSON as text, ids as UUID text, times as ISO text.
