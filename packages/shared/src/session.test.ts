@@ -1,8 +1,10 @@
 import { describe, expect, test } from "vite-plus/test";
 import {
+  authMethodsSchema,
   createSessionResponseSchema,
   createSessionSchema,
   displayNameSchema,
+  googleNameRequestSchema,
   healthResponseSchema,
   userSchema,
 } from "./index.ts";
@@ -59,5 +61,21 @@ describe("user responses", () => {
   test("the health response is ok", () => {
     expect(healthResponseSchema.parse({ status: "ok" })).toEqual({ status: "ok" });
     expect(healthResponseSchema.safeParse({ status: "down" }).success).toBe(false);
+  });
+
+  test("the sign-in methods have two flags and no more", () => {
+    expect(authMethodsSchema.parse({ google: true, guest: false })).toEqual({
+      google: true,
+      guest: false,
+    });
+    expect(authMethodsSchema.safeParse({ google: true }).success).toBe(false);
+    expect(authMethodsSchema.safeParse({ google: true, guest: 1 }).success).toBe(false);
+    expect(authMethodsSchema.safeParse({ google: true, guest: true, x: 1 }).success).toBe(false);
+  });
+
+  test("the Google name step uses the display name rule", () => {
+    expect(googleNameRequestSchema.parse({ name: "  Ines " })).toEqual({ name: "Ines" });
+    expect(googleNameRequestSchema.safeParse({ name: "I" }).success).toBe(false);
+    expect(googleNameRequestSchema.safeParse({ name: "Ines", email: "a@b.c" }).success).toBe(false);
   });
 });

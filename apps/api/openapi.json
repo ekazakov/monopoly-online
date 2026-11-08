@@ -44,6 +44,8 @@
                   "seat_name_taken",
                   "owner_cannot_leave",
                   "cannot_remove_user_seat",
+                  "cannot_remove_self",
+                  "oauth_failed",
                   "token_taken",
                   "already_invited",
                   "cannot_invite_self",

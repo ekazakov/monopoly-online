@@ -89,4 +89,12 @@ describe("apiErrorSchema", () => {
     expect(apiErrorSchema.safeParse({ code: "not_found", message: "x" }).success).toBe(false);
     expect(apiErrorSchema.safeParse({ error: { code: "not_found" } }).success).toBe(false);
   });
+
+  test("the Milestone 4 codes have a status", () => {
+    expect(errorStatus("cannot_remove_self")).toBe(409);
+    expect(errorStatus("oauth_failed")).toBe(502);
+    expect(
+      apiErrorSchema.safeParse({ error: { code: "oauth_failed", message: "x" } }).success,
+    ).toBe(true);
+  });
 });

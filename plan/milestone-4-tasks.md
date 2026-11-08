@@ -69,7 +69,7 @@ Ask before you add or change a board. Sync the artifacts.
 
 ### B. Shared and database
 
-- [ ] **Milestone 4 shared schemas (B1).** The remove player response. The `room.removed` message on `user:<id>` with `{ gameId }`. The sign-in methods response `{ google, guest }`. The name step request for a new Google user. New error codes, in the code list **and** in the status map: `cannot_remove_self`, `oauth_failed`. Keep `drift.test.ts` green.
+- [x] **Milestone 4 shared schemas (B1).** The remove player response. The `room.removed` message on `user:<id>` with `{ gameId }`. The sign-in methods response `{ google, guest }`. The name step request for a new Google user. New error codes, in the code list **and** in the status map: `cannot_remove_self`, `oauth_failed`. Keep `drift.test.ts` green.
 - [ ] **Auth identities migration (B2).** Migration `0008_auth_identities`: provider, subject, user id, created time. A unique index on provider and subject. Update `db/schema.ts`.
 
 ### C. Host removes a player API

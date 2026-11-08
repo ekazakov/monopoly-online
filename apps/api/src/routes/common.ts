@@ -48,6 +48,7 @@ const errorDescriptions = {
   409: "Conflict with the current state",
   422: "Rejected by the game engine",
   500: "Internal server error",
+  502: "Sign-in provider failed",
 } satisfies Record<ErrorStatus, string>;
 
 // Named, so the document holds one `ApiError` component that every error response points to.

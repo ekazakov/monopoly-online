@@ -101,6 +101,19 @@ describe("stream messages", () => {
   });
 });
 
+describe("room.removed", () => {
+  const userTopic = `user:${id(9)}`;
+  const message = { topic: userTopic, type: "room.removed", version: 0, payload: { gameId } };
+
+  test("carries the game id on a user topic", () => {
+    expect(streamMessageSchema.parse(message)).toEqual(message);
+    expect(streamMessageSchema.safeParse({ ...message, payload: {} }).success).toBe(false);
+    expect(
+      streamMessageSchema.safeParse({ ...message, payload: { gameId, extra: 1 } }).success,
+    ).toBe(false);
+  });
+});
+
 describe("parseStreamTopics", () => {
   test("splits a comma list of game topics", () => {
     expect(parseStreamTopics(topic)).toEqual([topic]);

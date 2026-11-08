@@ -10,6 +10,7 @@ export const streamMessageTypes = [
   "snapshot",
   "room.updated",
   "room.cancelled",
+  "room.removed",
   "game.actions",
   "lobby.snapshot",
   "lobby.updated",
@@ -86,6 +87,12 @@ export const roomCancelledMessageSchema = message(
   z.strictObject({ gameId: idSchema }),
 );
 
+/** The host removed this user from a `waiting` game. Goes to `user:<id>` only. The client shows a notice. No SSE id. */
+export const roomRemovedMessageSchema = message(
+  "room.removed",
+  z.strictObject({ gameId: idSchema }),
+);
+
 /** One message per accepted action. */
 export const gameActionsMessageSchema = message(
   "game.actions",
@@ -132,6 +139,7 @@ export const streamMessageSchema = z.discriminatedUnion("type", [
   snapshotMessageSchema,
   roomUpdatedMessageSchema,
   roomCancelledMessageSchema,
+  roomRemovedMessageSchema,
   gameActionsMessageSchema,
   lobbySnapshotMessageSchema,
   lobbyUpdatedMessageSchema,

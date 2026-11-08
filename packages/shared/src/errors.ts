@@ -24,6 +24,8 @@ export const apiErrorCodes = [
   "seat_name_taken",
   "owner_cannot_leave",
   "cannot_remove_user_seat",
+  "cannot_remove_self",
+  "oauth_failed",
   "token_taken",
   "already_invited",
   "cannot_invite_self",
@@ -64,7 +66,7 @@ export type ApiErrorCode = (typeof apiErrorCodes)[number];
 export type EngineErrorCode = (typeof engineErrorCodes)[number];
 export type ErrorCode = (typeof errorCodes)[number];
 
-export type ErrorStatus = 400 | 401 | 403 | 404 | 409 | 422 | 500;
+export type ErrorStatus = 400 | 401 | 403 | 404 | 409 | 422 | 500 | 502;
 
 const apiErrorStatus: Record<ApiErrorCode, ErrorStatus> = {
   bad_request: 400,
@@ -89,6 +91,8 @@ const apiErrorStatus: Record<ApiErrorCode, ErrorStatus> = {
   seat_name_taken: 409,
   owner_cannot_leave: 409,
   cannot_remove_user_seat: 409,
+  cannot_remove_self: 409,
+  oauth_failed: 502,
   token_taken: 409,
   already_invited: 409,
   cannot_invite_self: 409,

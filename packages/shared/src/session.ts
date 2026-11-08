@@ -17,7 +17,16 @@ export const createSessionResponseSchema = userResponseSchema;
 /** `GET /api/me` answers 200 with the signed-in user. */
 export const meResponseSchema = userResponseSchema;
 
+/** `GET /api/auth/methods`: which sign-in buttons the server offers. No session is needed. */
+export const authMethodsSchema = z.strictObject({ google: z.boolean(), guest: z.boolean() });
+
+/** `POST /api/auth/google/name`: the display name of a new Google user. Answers 200 with the user. */
+export const googleNameRequestSchema = z.strictObject({ name: displayNameSchema });
+export const googleNameResponseSchema = userResponseSchema;
+
 export const healthResponseSchema = z.strictObject({ status: z.literal("ok") });
 
 export type User = z.infer<typeof userSchema>;
+export type AuthMethods = z.infer<typeof authMethodsSchema>;
+export type GoogleNameInput = z.infer<typeof googleNameRequestSchema>;
 export type CreateSessionInput = z.infer<typeof createSessionSchema>;

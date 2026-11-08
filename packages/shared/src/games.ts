@@ -97,6 +97,11 @@ export const seatParamsSchema = z.strictObject({ id: idSchema, seatId: idSchema 
 
 export const gameResponseSchema = z.strictObject({ game: gameSchema });
 
+/** `DELETE /api/games/:id/players/:userId`: the host removes a player. */
+export const removePlayerParamsSchema = z.strictObject({ id: idSchema, userId: idSchema });
+/** Answers 200 with the game after the removal. */
+export const removePlayerResponseSchema = gameResponseSchema;
+
 /** `GET /api/games` lists open games only, so `waiting` is the one status it takes. */
 export const openGamesQuerySchema = z.strictObject({ status: z.literal("waiting") });
 export const lobbyGamesResponseSchema = z.strictObject({ games: z.array(lobbyGameSchema) });
