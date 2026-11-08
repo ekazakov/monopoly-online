@@ -8,6 +8,7 @@ import { createDb } from "./db/client.ts";
 import { createLogger } from "./log.ts";
 import { migrateToLatest } from "./db/migrations.ts";
 import { createPresenceTracker, watchActiveGames } from "./realtime/presence.ts";
+import { getTelemetry } from "./otel.ts";
 import { createShutdownHandle, readShutdownTimeout, runShutdown } from "./shutdown.ts";
 
 const logger = createLogger();
@@ -65,7 +66,7 @@ logger.info(
     dbPath,
     logLevel: logger.level,
     signIn: { guest: authConfig.guest, google: Boolean(authConfig.google) },
-    telemetry: Boolean(process.env.OTEL_EXPORTER_OTLP_ENDPOINT),
+    telemetry: getTelemetry() !== undefined,
     fixedSeed: seed !== undefined,
     presenceGraceMs: graceMs ?? null,
     shutdownTimeoutMs,
@@ -138,6 +139,8 @@ async function stop(reason: string) {
         run: () => Promise.all(shutdown.drains.map((drain) => drain())),
       },
       { name: "close database", run: () => db.destroy() },
+      // Last, so the spans, metrics and logs of the other steps are exported too.
+      { name: "flush telemetry", run: () => getTelemetry()?.shutdown() },
     ],
   });
   if (outcome === "timeout") server.closeAllConnections();

@@ -2,7 +2,8 @@ import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   pack: {
-    entry: ["src/index.ts"],
+    // `telemetry.ts` is a second entry: `node --import` loads it before `index.mjs`.
+    entry: ["src/index.ts", "src/telemetry.ts"],
     format: ["esm"],
     platform: "node",
     dts: false,
