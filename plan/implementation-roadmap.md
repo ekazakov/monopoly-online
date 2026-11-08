@@ -4,23 +4,24 @@
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Companion docs | [game-rules-reference.md](game-rules-reference.md) (rules), [game-screen-2-gameplay.md](game-screen-2-gameplay.md) (turn flow, devices, session owner), [game-screen-2-spec.md](game-screen-2-spec.md) (UI), [GLOSSARY.md](../GLOSSARY.md) (terms) |
 | Engine         | [packages/game-engine](../packages/game-engine/README.md): complete                                                                                                                                              |
-| Status         | M1 and M2 done. M3 planned. Last updated 2026-11-06                                                                                                                                                                                    |
+| Status         | M1 to M4 done. M5 planned ([tasks](milestone-5-tasks.md)). Last updated 2026-11-08 |
 
-This document is the plan from the current scaffold to a fully working online game. It covers the API, the realtime layer, auth, the UI, testing, telemetry, and hosting.
+This document is the plan from the first scaffold to a fully working online game. It covers the API, the realtime layer, auth, the UI, testing, telemetry, and hosting.
 
-**Where we are.** The game engine is complete and all gameplay questions are decided. The API (`apps/api`: Hono, Kysely, SQLite, one `games` table) and the web app (`apps/web`: React, TanStack Query, a React Three Fiber board) are only a scaffold. The UI exists as a prototype (`artifacts/game-screen`) and in the design system canvas.
+**Where we are.** M1 to M4 are done: the game is playable on the local machine, with the lobby, Save and Restore, presence, and Google sign-in. The API has no structured logs, no telemetry and no Docker image yet (M5). Nothing is deployed (M6, M7).
 
 **Decisions (2026-10-31)**
 
 | Topic     | Decision                                                                                                  |
 | --------- | --------------------------------------------------------------------------------------------------------- |
 | Auth      | Google sign-in in production. Guest name sign-in for test and development only (M4)                       |
-| Realtime  | SSE + HTTP POST now, behind a transport layer. WebSocket after M5, only if SSE has a problem, with a fallback from WebSocket to SSE + POST |
+| Realtime  | SSE + HTTP POST now, behind a transport layer. WebSocket after the first release (M7), only if SSE has a problem, with a fallback from WebSocket to SSE + POST |
 | Database  | SQLite. All queries go through Kysely and stay portable, so a later change to Postgres needs only a new dialect in `db/client.ts` |
 | First goal | A playable game on the local machine: hot-seat on one device, and several browsers or browser profiles as separate devices |
 | Hosting   | Minimal cost, free tiers where possible                                                                   |
-| Access    | Only selected persons can open the game. Cloudflare Access (Zero Trust) stands in front of the web app and the API (section 10) |
-| Telemetry | Full OpenTelemetry: traces, metrics and logs                                                              |
+| Access    | Only selected persons can open the game. Cloudflare Access (Zero Trust) stands in front of the web app and the API (section 10, M7) |
+| Telemetry | Full OpenTelemetry: traces, metrics and logs. Local Grafana stack (`grafana/otel-lgtm`) in M5, Grafana Cloud free tier in M6 |
+| CI        | Later, no milestone. Run `pnpm ready` and the browser suites on the local machine before a deploy (decided 2026-11-08) |
 
 ---
 
@@ -36,19 +37,21 @@ This document is the plan from the current scaffold to a fully working online ga
 
 ## 2. Milestones
 
-Milestones M1 to M4 run on the local machine with `pnpm dev`. Deployment comes last.
+Milestones M1 to M5 run on the local machine. Deployment (M6) and Cloudflare (M7) come last.
 
 | Milestone                     | Scope |
 | ----------------------------- | ----- |
 | **M1 Local playable game** ([tasks](milestone-1-tasks.md)) | Guest sessions (one per browser or browser profile), create a game, join by invite link, hot-seat seats, start. The engine on the server, the SSE game channel, the game screen in React with all turn actions, resign, and the result screen. Done when two browser profiles and one hot-seat player finish a game on `localhost` |
 | **M2 Lobby** ([tasks](milestone-2-tasks.md)) | Public game list, My games, the full game room (host and guest views), invite by name, player tokens (game pieces), Cancel game, and the dice and token animation (moved from M1). **Done** on 2026-11-05, with the manual run on two browser profiles (I1) |
 | **M3 Session and resilience** ([tasks](milestone-3-tasks.md)) | Owner Finish, Save and Restore (gameplay 3.1), disconnect and away rules (3.2): the game waits for an away player, and it saves itself when nobody is online. The Playwright setup and script from M1, with a disconnect script |
-| **M4 Sign-in and room control** ([tasks](milestone-4-tasks.md)) | Host removes a player, Google sign-in. Guest sign-in stays for test and development only. The accessibility pass and WebSocket move to after M5. **Done** on 2026-11-08, with the manual run on real Google sign-in (G1) |
-| **M5 Deployment**             | CI, Docker image, the droplet with Cloudflare Tunnel and Access, OpenTelemetry export to Grafana Cloud |
+| **M4 Sign-in and room control** ([tasks](milestone-4-tasks.md)) | Host removes a player, Google sign-in. Guest sign-in stays for test and development only. The accessibility pass and WebSocket move to after the first release. **Done** on 2026-11-08, with the manual run on real Google sign-in (G1) |
+| **M5 Observability and Docker** ([tasks](milestone-5-tasks.md)) | pino logs, OpenTelemetry metrics, logs and traces, a local Grafana stack (`grafana/otel-lgtm`) with a dashboard, readiness and graceful shutdown, the API serves the web build, one Docker image (dev and prod targets), docker compose, and the browser suite on the image (`pnpm e2e:docker`). All on the local machine |
+| **M6 Deployment**             | A domain (Cloudflare Registrar, DNS only), one DigitalOcean droplet with Docker, Caddy with Let's Encrypt, a local build and deploy script (no registry), the Google redirect address for production, the OpenTelemetry export to Grafana Cloud with alerts, and the daily SQLite backup |
+| **M7 Cloudflare**             | The Cloudflare proxy and edge TLS, Cloudflare Tunnel (Caddy removed, no open HTTP port), Cloudflare Access, the Access JWT check in the API, and the SSE check through Cloudflare. This is the first release |
 | **After the first release**   | Accessibility pass ([future work](milestone-4-tasks.md#future-work-after-the-first-release)), WebSocket transport (only if SSE has a problem through Cloudflare) |
-| **Later (no milestone)**      | The autopilot for away players (postponed 2026-11-06). Claim from another browser (gameplay Q25) |
+| **Later (no milestone)**      | The autopilot for away players (postponed 2026-11-06). Claim from another browser (gameplay Q25). CI with GitHub Actions. Browser telemetry |
 
-Tests are written with each milestone (section 7). CI runs them from M5. Until M5, the API writes plain pino logs to the console.
+Tests are written with each milestone (section 7). There is no CI: run them on the local machine before each commit and each deploy.
 
 ---
 
@@ -100,7 +103,7 @@ The request and response schemas are zod schemas in `packages/shared`.
 ### 4.1 Server
 
 - **`Bus`**: publish and subscribe by topic, in memory in the API process.
-- **`Transport`**: connects one device. SSE now, WebSocket after M5 if needed.
+- **`Transport`**: connects one device. SSE now, WebSocket after the first release (M7) if needed.
 - **Envelope**: `{ topic, type, version, payload }`.
 - **SSE.** Hono `streamSSE`. The event id is the engine version; room, lobby and user messages have no id. A heartbeat every 15 seconds. On reconnect the browser sends `Last-Event-ID`: the server sends the events after that version, or a new snapshot when the gap is more than 100 versions (see [api-schema.md](api-schema.md)).
 - **Presence.** A device is online while it has an open stream (or WebSocket). When the stream closes, its players are "reconnecting". After 60 seconds they are "away" (gameplay 3.2). When all seated users are away, the game saves itself. The timers run in the API process. At start, each controller in an active game gets a new grace timer. Presence is not stored in the database.
@@ -109,7 +112,7 @@ The request and response schemas are zod schemas in `packages/shared`.
 
 - **`RealtimeClient`**: `subscribe(topic, handler)`, `send(action)`, `status`.
 - **`SseHttpClient`** (now): `EventSource` for events, POST for actions.
-- **`WsClient`** (after M5, only if needed): the factory tries WebSocket first. If the connection fails or is blocked, it uses SSE + POST. The POST route for actions stays in all cases, so the fallback is always possible.
+- **`WsClient`** (after the first release, only if needed): the factory tries WebSocket first. If the connection fails or is blocked, it uses SSE + POST. The POST route for actions stays in all cases, so the fallback is always possible.
 
 ---
 
@@ -150,7 +153,8 @@ The request and response schemas are zod schemas in `packages/shared`.
 | Realtime   | Tests open an SSE stream, apply actions, reconnect with `Last-Event-ID`, and check the events that the server sends again                           |
 | Web        | Vitest and Testing Library for components and for the game store                                                                                      |
 | End to end | Playwright, in M3. Plan: [e2e-test-plan.md](e2e-test-plan.md). Two browser contexts and one hot-seat seat play a short seeded game, and other scripts cover the lobby, the session and disconnects. Runs on its own seeded servers, with `pnpm e2e` |
-| CI         | From M5: GitHub Actions runs `pnpm check`, `pnpm test`, `pnpm build`, and Playwright on `main` |
+| Image      | M5: `pnpm e2e:docker` runs the Playwright suite against the prod Docker image, with the test settings |
+| CI         | Later, no milestone. Before that, run `pnpm ready`, `pnpm e2e` and `pnpm e2e:docker` on the local machine |
 
 - **Seeded.** The engine takes its dice and decks from a seed (`createGame({ seed })`). A test-only environment flag, never on in production, lets the test set the seed. Then the dice give the same numbers on each run, and the test knows where each token lands.
 - **Short.** The test plays a fixed script of a few turns, for example roll, buy, pay rent, trade, end turn. It does not play a full game to a winner. The full games stay in the engine's bot test.
@@ -159,34 +163,47 @@ The request and response schemas are zod schemas in `packages/shared`.
 
 ## 8. Logging and telemetry (OpenTelemetry)
 
-- **API.** The OpenTelemetry Node SDK.
-  - Traces: HTTP requests (Hono), database queries, `applyAction` with the game id and version.
-  - Metrics: active games, connected devices, open SSE streams, action latency, refused actions by error code, reconnects.
-  - Logs: pino JSON with the trace and span ids, sent through OpenTelemetry.
-- **Web.** The OpenTelemetry browser SDK for page loads, fetch spans and errors. It exports through an API route (`/api/telemetry`), so no key is in the browser.
-- **Backend.** OTLP to the Grafana Cloud free tier (logs, traces, metrics). Use sampling to stay in the free limits.
-- **Privacy.** No personal data except the display name. No cookies or IP addresses in spans.
+M5 builds this section on the local machine. M6 sends the same data to Grafana Cloud. Tasks: [milestone-5-tasks.md](milestone-5-tasks.md).
+
+- **Logs (API).** pino writes JSON lines to stdout (pretty output in development). The level comes from `LOG_LEVEL`. Each line has the request id, and the trace and span ids when a span is open. The OpenTelemetry log bridge also sends the lines through OTLP.
+  - Events: HTTP requests, game actions (applied, refused, `expectedVersion` conflicts, `clientActionId` repeats), lifecycle (start, migrations, Save, Finish, Restore, automatic save), presence changes, auth (sign-in, sign-out, Google failures), SSE streams (open, close, resume with events or a snapshot, bus handler failures), the start-up settings without secrets, the shutdown steps, and process faults.
+- **Traces (API).** HTTP spans with the route template, query spans from a Kysely plugin, and an `applyAction` span with the game id and version.
+- **Metrics (API).**
+  - Realtime: open SSE streams, connected devices, reconnects, resume with events or a snapshot, presence states, automatic saves.
+  - HTTP: request count and duration by route and status.
+  - Runtime and database: event loop delay, memory, garbage collection, query duration, database file size.
+  - No game metrics in M5 (decided 2026-11-08).
+- **Health.** `/api/health` is the liveness check. `/api/ready` checks the database and the migrations.
+- **Local stack (M5).** One `grafana/otel-lgtm` container in docker compose: an OpenTelemetry Collector, Prometheus, Loki, Tempo and Grafana. A dashboard file in the repository is loaded at start.
+- **Backend (M6).** OTLP to the Grafana Cloud free tier. Only the endpoint, the headers and the sampling ratio change. Alerts in M6.
+- **Settings.** Telemetry is off when no OTLP endpoint is set, and in the unit tests.
+- **Privacy.** No personal data except the display name. No cookies, tokens, IP addresses or user agents in logs or spans. pino removes cookies, `Authorization`, session tokens, and the OAuth `code` and `state`.
+- **Web.** No browser telemetry for now (Later).
 
 ---
 
 ## 9. Hosting and deployment
 
-| Part      | Choice                                                                                                       | Cost             |
-| --------- | ------------------------------------------------------------------------------------------------------------ | ---------------- |
-| API + web | One small DigitalOcean droplet with Docker. The API container also serves the static web build. One instance in v1 | About $4–6/month |
-| Edge      | Cloudflare: DNS, TLS, Cloudflare Tunnel to the droplet, Cloudflare Access (section 10)                       | Free             |
-| Database  | SQLite file on the droplet volume. A daily backup of the file (`sqlite3 .backup`), copied to the local machine | Free             |
-| Telemetry | Grafana Cloud, free tier                                                                                     | Free             |
+| Part      | Choice                                                                                                       | Cost             | Milestone |
+| --------- | ------------------------------------------------------------------------------------------------------------ | ---------------- | --------- |
+| Image     | One Docker image, `node:26-slim`. The API process also serves the static web build. One instance            | Free             | M5        |
+| Domain    | Bought at Cloudflare Registrar. DNS only (no proxy) in M6                                                   | About $10/year   | M6        |
+| API + web | One small DigitalOcean droplet with Docker and docker compose                                                | About $4–6/month | M6        |
+| TLS       | Caddy with Let's Encrypt in M6. Cloudflare edge TLS in M7, and Caddy is removed                             | Free             | M6, M7    |
+| Edge      | Cloudflare proxy, Cloudflare Tunnel to the droplet, Cloudflare Access (section 10)                          | Free             | M7        |
+| Database  | SQLite file on the droplet volume. A daily backup of the file (`sqlite3 .backup`), copied to the local machine | Free             | M6        |
+| Telemetry | Grafana Cloud, free tier                                                                                     | Free             | M6        |
 
 - **One origin.** The web app and the API share one hostname, for example `play.<domain>`, with the API under `/api`. Then one Access application covers both, and the session cookie needs no cross-site settings.
-- **Why a droplet and not App Platform.** On a droplet, `cloudflared` runs next to the API and opens an outbound tunnel. The droplet then needs no public HTTP port, so nobody can go around Cloudflare Access. App Platform is still possible, but then only the JWT check in the API (section 10) protects the origin.
+- **One image.** The same prod image runs on the local machine, in `pnpm e2e:docker` and on the droplet. Only the environment variables are different.
+- **Why a droplet and not App Platform.** On a droplet, `cloudflared` runs next to the API and opens an outbound tunnel (M7). The droplet then needs no public HTTP port, so nobody can go around Cloudflare Access. App Platform is still possible, but then only the JWT check in the API (section 10) protects the origin.
 - **Why the API is not on Vercel.** Serverless functions run for a short time only. They cannot keep SSE streams open or run the grace timers.
-- **Pipeline.** GitHub Actions builds a Docker image and deploys on each push to `main`. The API applies the migrations at start. Secrets are platform environment variables. The health check is `/api/health`.
+- **Deploy (M6).** A local script builds the image for `linux/amd64` with `docker buildx` (the local machine is arm64, so this build is slow), sends it with `docker save | ssh … docker load`, runs `docker compose up -d`, and checks `/api/ready` inside the droplet. No registry and no CI. The API applies the migrations at start. Secrets are in an env file on the droplet.
 - **One instance.** The game is not built for scale. One API process holds the bus, the game cache and the timers.
 
 ---
 
-## 10. Access control (Cloudflare Access)
+## 10. Access control (Cloudflare Access, M7)
 
 Only persons on an allow list can open the game. Cloudflare Access (Zero Trust, free for up to 50 users) checks each request before it reaches the droplet.
 
@@ -213,7 +230,10 @@ Only persons on an allow list can open the game. Cloudflare Access (Zero Trust, 
 | The origin is reached without Cloudflare                 | Cloudflare Tunnel with no open HTTP port, and the JWT check in the API     |
 | The SQLite file is lost with the droplet                 | Daily backup of the file                                                   |
 | Timers in the API process are lost on a restart          | Make them again from the database at start                                 |
-| A silent network drop (a laptop sleeps) closes no stream, so the server can see the device as online for minutes | Check this through Cloudflare in M5. If it is a problem, add a client ping |
+| A silent network drop (a laptop sleeps) closes no stream, so the server can see the device as online for minutes | Check this through Cloudflare in M7. If it is a problem, add a client ping |
+| Open SSE streams stop a clean shutdown, because the server waits for them | On SIGTERM the API closes the streams itself (M5) |
+| The OpenTelemetry HTTP spans record the client IP and the user agent by default | Remove these attributes (M5) |
+| Before M7 the droplet has an open HTTPS port, and Access does not protect it | Short M6 period. Google sign-in still controls who plays |
 | One absent player stops the game, because the game waits for them (gameplay 3.2) | The owner can use Save or Finish. When all players leave, the game saves itself |
 
 ---
@@ -236,3 +256,4 @@ Only persons on an allow list can open the game. Cloudflare Access (Zero Trust, 
 | 2026-11-07 | Rematch removed from the project: the M4 scope, the game-over dialog in the prototype and the Dialogs board. The game-over dialog has one action, Leave game |
 | 2026-11-08 | Task list for milestone 4 in [milestone-4-tasks.md](milestone-4-tasks.md). Google is the only production sign-in; guest sign-in is for test and development only. The accessibility pass and WebSocket move to after the first release (M5) |
 | 2026-11-08 | Milestone 4 code done: the host removes a player (API, `room.removed`, room screen), Google sign-in with Arctic behind an injected provider, guest sign-in behind `GUEST_SIGN_IN_ENABLED`, the sign-in screen, and the remove player Playwright script (32 scripts pass). "As built" rules in [api-schema.md](api-schema.md). The manual run with real Google sign-in (G1) passed. Claim from another browser (Q25) stays an open question |
+| 2026-11-08 | Milestone 5 split: M5 Observability and Docker ([tasks](milestone-5-tasks.md)), M6 Deployment (droplet, Caddy, local deploy script, Grafana Cloud, backup), M7 Cloudflare (proxy, Tunnel, Access, JWT check). CI moves to Later. No game metrics in M5 |

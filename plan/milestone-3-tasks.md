@@ -143,7 +143,7 @@ The tasks F4 to F16 turn the open scenarios of the plan into work. A scenario co
 
 | Risk | Action |
 | --- | --- |
-| A silent network drop (a laptop sleeps) closes no stream. The server can see the device as online for minutes | Local tests close the stream, so they do not show this. If it is a problem through Cloudflare (M5), add a client ping |
+| A silent network drop (a laptop sleeps) closes no stream. The server can see the device as online for minutes | Local tests close the stream, so they do not show this. If it is a problem through Cloudflare (M7), add a client ping |
 | One absent player stops the game, and only the owner can act | The waiting line tells the players why. If the owner is also absent, the others can only wait or leave. When all leave, the game saves itself |
 | The automatic save rolls back the current turn | Accepted: it is the normal Save rule. The same dice and cards come back |
 | A player opens the lobby during a game: the game stream closes, so they go away after 60 seconds, and the game waits | Accepted. They return when they open the game again. If this was the last device, the game saves itself |

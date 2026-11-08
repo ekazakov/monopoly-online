@@ -211,7 +211,7 @@ The first roll with 2 seats is 9 for Bob:
 - **Waits.** Use web-first assertions. The `expect` timeout is 10 s, the action timeout is 15 s, and the test timeout is 60 s. `playUntil` waits 150 ms between steps. T25 polls game metadata for `saved` through the authenticated API context while both pages are closed, rather than sleeping for the grace time.
 - **No reconnect check.** T08 counts requests for the cancelled game's topic and expects no new request during a 3.5 s observation window. This also covers the browser's native EventSource retry. It checks the count again after the link gives the 404 view.
 - **Truth.** Assert on the log, the rail, the hand and the turn area. Do not read pixels from the WebGL canvas. In the default setup the page has no `canvas`. `motion.spec.ts` checks that one is visible.
-- **Run settings.** `workers: 1`, `fullyParallel: false`, 0 retries, trace and screenshot kept on failure, the reporters `list` and `html` (never opens), results in `.results`. Add a retry in CI (M5).
+- **Run settings.** `workers: 1`, `fullyParallel: false`, 0 retries, trace and screenshot kept on failure, the reporters `list` and `html` (never opens), results in `.results`. Add a retry when CI exists (Later, no milestone).
 
 ## 7. Scenario catalogue
 
@@ -357,7 +357,7 @@ pnpm --filter @monopoly/e2e find-seed --players 3 --roll 7 --dice 3,3 --from 1 -
 - The results are in `apps/e2e/.results`, and the report is in `apps/e2e/playwright-report`. Git ignores both.
 - `pnpm test` and `pnpm check` do not start browsers.
 - The README has no E2E section yet. Add one in Milestone 3 close (G2).
-- **CI (M5).** GitHub Actions runs `pnpm check`, `pnpm test`, `pnpm build`, then installs Chromium with a cache and runs `pnpm e2e`. On a failure, it uploads the report and the traces.
+- **CI (Later, no milestone).** GitHub Actions runs `pnpm check`, `pnpm test`, `pnpm build`, then installs Chromium with a cache and runs `pnpm e2e`. On a failure, it uploads the report and the traces. Until then, run the suites on the local machine. M5 adds `pnpm e2e:docker`, which runs the suite against the prod Docker image ([milestone-5-tasks.md](milestone-5-tasks.md), D5).
 
 ## 10. Tasks and order
 

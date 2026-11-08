@@ -18,8 +18,8 @@
 
 - In M4: the rematch removal, host removes a player, Google sign-in, and guest sign-in behind an environment variable.
 - Not in M4:
-  - The accessibility pass. It moves to after the first release (M5). See "Future work".
-  - WebSocket transport. It moves to after deployment (M5), and only if real use shows a problem with SSE.
+  - The accessibility pass. It moves to after the first release (M7). See "Future work".
+  - WebSocket transport. It moves to after the first release (M7), and only if real use shows a problem with SSE.
   - Rematch. It is removed from the project.
   - The autopilot, and claim from another browser (gameplay Q25). See "Open questions".
   - A link or a merge of a guest user and a Google user.
@@ -37,9 +37,9 @@
 | Topic | Decision |
 | --- | --- |
 | Rematch | Removed from the project. The game-over dialog has one action, Leave game |
-| Accessibility pass | After the first release (M5). See "Future work" |
-| WebSocket | After M5, only if SSE has a problem through Cloudflare. Actions stay on POST in all cases |
-| Production sign-in | Google only. Cloudflare Access (M5) stays the gate to the site |
+| Accessibility pass | After the first release (M7). See "Future work" |
+| WebSocket | After the first release (M7), only if SSE has a problem through Cloudflare. Actions stay on POST in all cases |
+| Production sign-in | Google only. Cloudflare Access (M7) stays the gate to the site |
 | Guest sign-in | Test and development only. On when `GUEST_SIGN_IN_ENABLED=true`, off when the variable is not set. When it is off, `POST /api/session` is not registered (404) |
 | Production guard | The API does not start when `GUEST_SIGN_IN_ENABLED=true` and `NODE_ENV=production`, with a clear error message |
 | Start rule | Google client values are required in production. In other environments the API needs at least one sign-in method, or it does not start |
@@ -114,7 +114,7 @@ The project owner must create a Google Cloud OAuth client, with the redirect add
 
 ## Future work (after the first release)
 
-Not in M4. Plan these tasks after the first release (M5). Start from the known gaps in section 6 of [game-screen-2-spec.md](game-screen-2-spec.md).
+Not in M4. Plan these tasks after the first release (M7, see the roadmap section 2). Start from the known gaps in section 6 of [game-screen-2-spec.md](game-screen-2-spec.md).
 
 - **Accessibility pass.**
   - Active player marker: a visible marker or a "Turn" tag for the player on turn, not only colour (spec R-P3). It needs a board change first.
@@ -144,8 +144,8 @@ Not decided, and not in M4 scope.
 | If Google is not available, nobody can make a new sign-in | Open sessions continue to work (30 days) |
 | Most tests and local runs use guest users, so the Google path gets less use | The Google path has its own API tests with the injected provider, and the Manual run (G1) uses real Google |
 | A manual run of real Google sign-in with two players needs two Google accounts | Other manual runs use guest users |
-| After M5, a player passes Access and then signs in to the game | Accepted. Long sessions make it rare |
-| The Access session cookie with SameSite=Strict breaks the Google callback | Keep the Access cookie on Lax in M5. Production needs its own redirect address, added in M5 |
+| After M7, a player passes Access and then signs in to the game | Accepted. Long sessions make it rare |
+| The Access session cookie with SameSite=Strict breaks the Google callback | Keep the Access cookie on Lax in M7. Production needs its own redirect address, added in M6 |
 | While the Google consent screen is in "Testing", only listed test users can sign in | Check the current Google rules during setup |
 | A removed player keeps an open game stream until the client drops the topic | Done in C2: the server ends the game subscription when it sends `room.removed` |
 

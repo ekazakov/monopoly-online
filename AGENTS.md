@@ -19,6 +19,7 @@ This is a pnpm workspace for a browser property-trading game. It supports remote
 | `apps/e2e`             | Playwright browser tests with a dedicated database and seeded API server.                                        |
 | `artifacts`            | Standalone copies of the design system and game screen prototype.                                                |
 | `plan`                 | Game rules, API contracts, design specifications, and milestone task lists.                                      |
+| `ops` (planned, M5)    | Grafana dashboard and provisioning files for the local telemetry stack.                                          |
 
 Read the relevant documents before a change:
 
@@ -26,6 +27,7 @@ Read the relevant documents before a change:
 - [Game engine README](packages/game-engine/README.md) and [game rules](plan/game-rules-reference.md): engine design and rules.
 - [Implementation roadmap](plan/implementation-roadmap.md) and [API schema](plan/api-schema.md): planned scope and API contracts.
 - [Milestone 3 tasks](plan/milestone-3-tasks.md) and [E2E test plan](plan/e2e-test-plan.md): session, presence, save and restore, and browser test work.
+- [Milestone 5 tasks](plan/milestone-5-tasks.md): logging, telemetry, the Docker image and docker compose. Deployment is M6 and Cloudflare is M7.
 
 Some documents describe work before it was built. Check the source and tests before treating a plan or a README statement as current behavior. The engine is connected to the API and web app. Milestone 3 has session and presence support, but its task list still has open browser tests and close tasks. The autopilot for away players is postponed.
 
@@ -61,19 +63,21 @@ Do not set `--use-openssl-ca` and `--use-system-ca` together in `NODE_OPTIONS`.
 
 Run these commands from the repository root:
 
-| Command                                                     | Purpose                                                                                    |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `pnpm install`                                              | Install workspace dependencies.                                                            |
-| `pnpm dev`                                                  | Start web on port 5173 and API on port 8787. The web server proxies `/api`.                |
-| `pnpm check`                                                | Check formatting, lint, and types through Vite+.                                           |
-| `pnpm test`                                                 | Run workspace unit and integration tests. Does not run Playwright.                         |
-| `pnpm --filter @monopoly/game-engine test`                  | Run one package's tests; use the corresponding package name for API, web, or shared tests. |
-| `pnpm build`                                                | Build the apps.                                                                            |
-| `pnpm ready`                                                | Run checks, unit and integration tests, and builds.                                        |
-| `pnpm openapi`                                              | Regenerate `apps/api/openapi.json` from the API routes.                                    |
-| `pnpm e2e`                                                  | Run the Playwright browser suite.                                                          |
-| `pnpm e2e:ui` / `pnpm e2e:video` / `pnpm e2e:report`        | Open the test UI, record videos, or open the last HTML report.                             |
-| `pnpm artifact:game-screen` / `pnpm artifact:design-system` | Serve the local artifacts on ports 8791 and 8792.                                          |
+| Command                                                               | Purpose                                                                                    |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `pnpm install`                                                        | Install workspace dependencies.                                                            |
+| `pnpm dev`                                                            | Start web on port 5173 and API on port 8787. The web server proxies `/api`.                |
+| `pnpm check`                                                          | Check formatting, lint, and types through Vite+.                                           |
+| `pnpm test`                                                           | Run workspace unit and integration tests. Does not run Playwright.                         |
+| `pnpm --filter @monopoly/game-engine test`                            | Run one package's tests; use the corresponding package name for API, web, or shared tests. |
+| `pnpm build`                                                          | Build the apps.                                                                            |
+| `pnpm ready`                                                          | Run checks, unit and integration tests, and builds.                                        |
+| `pnpm openapi`                                                        | Regenerate `apps/api/openapi.json` from the API routes.                                    |
+| `pnpm e2e`                                                            | Run the Playwright browser suite.                                                          |
+| `pnpm e2e:ui` / `pnpm e2e:video` / `pnpm e2e:report`                  | Open the test UI, record videos, or open the last HTML report.                             |
+| `pnpm e2e:docker` (planned, M5)                                       | Run the Playwright suite against the prod Docker image.                                    |
+| `docker compose up` / `docker compose --profile dev up` (planned, M5) | Start the prod image and the local Grafana stack, or the dev target with hot reload.       |
+| `pnpm artifact:game-screen` / `pnpm artifact:design-system`           | Serve the local artifacts on ports 8791 and 8792.                                          |
 
 For a format fix, use `pnpm exec vp fmt <changed-files>`. Avoid formatting unrelated files. Import test helpers from `vite-plus/test`, as the existing tests do.
 

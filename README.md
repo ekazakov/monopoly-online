@@ -96,6 +96,15 @@ pnpm --filter @monopoly/api start
 
 This command starts the built API from `apps/api/dist`.
 
+## Docker and telemetry (planned, M5)
+
+Milestone 5 adds a Docker image, docker compose and a local Grafana stack. See [milestone-5-tasks.md](plan/milestone-5-tasks.md). This section changes when the tasks are done.
+
+- `docker compose up` starts the app on http://localhost:8787 and Grafana on http://localhost:3000.
+- `docker compose --profile dev up` starts the app with hot reload.
+- `pnpm e2e:docker` runs the browser suite against the prod image.
+- New environment variables: `LOG_LEVEL`, `WEB_DIST_DIR`, `OTEL_EXPORTER_OTLP_ENDPOINT` and the other standard `OTEL_*` variables. Telemetry is off when no OTLP endpoint is set.
+
 ## Artifacts
 
 The `artifacts/` folder has two standalone copies of Claude artifacts. They run with Node only. They have no dependencies, but they need an internet connection: fonts load from Google Fonts and three.js loads from jsDelivr.
