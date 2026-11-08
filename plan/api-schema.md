@@ -202,7 +202,7 @@ All need the session cookie and check `Origin`.
 
 ## Milestone 4
 
-The plan for [milestone-4-tasks.md](milestone-4-tasks.md). The code does not have these methods yet.
+The plan for [milestone-4-tasks.md](milestone-4-tasks.md). The code has these methods (2026-11-08). See "As built" at the end of this section.
 
 ### Decisions (user answers)
 - **Remove a player.** Host only, `waiting` games only, never the host's own seat. It removes the seat of the player and the hot-seat seats that the player controls. There is no ban: the player can join again with the game link.
@@ -240,6 +240,19 @@ The plan for [milestone-4-tasks.md](milestone-4-tasks.md). The code does not hav
 - **`room.removed`** (new): `{ gameId }` on `user:<removedUserId>`. The removed player gets a notice and goes to the lobby.
 - After a removal the other members get `room.updated` on `game:<id>`, and the open list gets `lobby.updated`.
 - The server ends the game subscription of the removed user on that stream, when the stream has both `user:<id>` and `game:<id>`. The client drops the topic too. `room.removed` is never dropped on connect, like `room.cancelled`.
+
+### As built (added 2026-11-08)
+Rules that the first design did not fix, as the code does them:
+- **Remove a player.** The checks run in this order: not the host (403), game not `waiting` (409), the host's own user (409 `cannot_remove_self`), no seat of that user (404). A bad id in the path is 404, not 400. All seats that the user controls go, and the seats are renumbered.
+- **`room.removed`.** Published on `user:<id>` with version 0. The web app ignores a `room.updated` that takes away the viewer's own seat, so the removed player does not see a Join button before the notice. After a removal the host's status line says "<name> left": the room announcer uses one text for every seat that goes.
+- **Start rules.** `readAuthConfig` (`auth/config.ts`) stops the start for: guest sign-in in production, no method on, production without Google, a part of the three Google values, and a `GUEST_SIGN_IN_ENABLED` value other than `true` or `false`. Empty values count as not set.
+- **Guest switch.** `createApp` has guest sign-in off unless `auth.guest` is set; `createTestApp` turns it on. `POST /api/session` stays in the route chain and the OpenAPI document, and answers 404 `not_found` when guest sign-in is off. `pnpm dev` and the Playwright API server set `GUEST_SIGN_IN_ENABLED=true`.
+- **Google cookies.** `harborfront_google_state`, `harborfront_google_verifier` and `harborfront_google_pending`: HttpOnly, SameSite=Lax, path `/api/auth/google`, 10 minutes. The state and PKCE cookies are cleared at every callback. The PKCE verifier and the state are 32 random bytes (base64url). The scope is `openid` only.
+- **Callback.** It sends the browser to `/` (known user, session cookie set), to `/sign-in?step=name` (new subject) or to `/sign-in?error=oauth_failed` (a Google error, a missing code, a bad or missing state, or a failed exchange). It does not keep the `redirect` search value of the sign-in screen, so a new sign-in ends on `/`.
+- **Pending sign-in.** It is in memory (`auth/pending.ts`), holds only the subject, and lives 10 minutes. A restart loses it, and the user starts again. It stays after `name_taken`, so the user can try another name, and it works once.
+- **New session at each sign-in.** A known Google user gets a new session row each time. The name step checks the name before the transaction, and again after a failed insert (two requests with one name).
+- **Sign-in screen.** It reads `GET /api/auth/methods` once per page load. It shows Google, guest, or both, and a retry button when the methods fail. A 401 from the name step goes to `/sign-in?error=oauth_failed`. The screen does not reload the page after sign-in: a signed-out browser has no stream to close.
+- **Not done.** A manual run with a real Google client (G1). Claim from another browser (Q25) is still an open question.
 
 ## Debug edit (added 2026-11-03, not in a milestone)
 
