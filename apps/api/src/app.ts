@@ -8,6 +8,7 @@ import {
   type GoogleProvider,
 } from "./auth/index.ts";
 import { requestLog } from "./request-log.ts";
+import { httpTracing } from "./tracing.ts";
 import type { ShutdownHandle } from "./shutdown.ts";
 import { errorHandler, notFoundHandler, validationHook } from "./errors.ts";
 import {
@@ -153,6 +154,8 @@ export function createApp(db: Kysely<Database>, options?: AppOptions) {
   const api = new OpenAPIHono<AppEnv>({ defaultHook: validationHook }).basePath("/api");
   // Registered before every route, so later routes are covered too. `.use` returns a plain
   // Hono type, so it stays out of the chain that keeps the OpenAPI types.
+  // The span is first, so the request log runs inside it and every later span is its child.
+  api.use(httpTracing());
   api.use(requestLog(deps.log));
   api.use(checkOrigin({ extraOrigins, nodeEnv: deps.nodeEnv }));
   const app = api

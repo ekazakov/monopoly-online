@@ -32,6 +32,9 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@opentelemetry/context-async-hooks": "catalog:",
+    "@opentelemetry/core": "catalog:",
+    "@opentelemetry/sdk-trace": "catalog:",
     "@types/better-sqlite3": "catalog:",
     "@types/node": "catalog:",
     "pino-pretty": "catalog:",

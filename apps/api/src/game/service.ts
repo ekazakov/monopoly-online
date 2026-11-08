@@ -13,6 +13,7 @@ import type { Database } from "../db/schema.ts";
 import { deserializeState, serializeState, shouldSnapshot } from "./loader.ts";
 import type { GameStateLoader, SnapshotOptions } from "./loader.ts";
 import { redactState } from "./redact.ts";
+import { inSpan } from "../tracing.ts";
 import { createSilentLogger, type Logger } from "../log.ts";
 
 /** A domain error with the shared API error code. The route maps it to the error body. */
@@ -323,7 +324,25 @@ export function createGameService(options: GameServiceOptions): GameService {
     };
     const durationMs = () => Math.round(performance.now() - started);
     try {
-      const { result, repeated } = await submit(input);
+      // The span covers the queue, the engine, the commit and its queries, which are its children.
+      const { result, repeated } = await inSpan(
+        "applyAction",
+        { "game.id": input.gameId, "game.action.type": input.action.type },
+        async (span) => {
+          try {
+            const submitted = await submit(input);
+            span.setAttributes({
+              "game.version": submitted.result.version,
+              "game.action.repeated": submitted.repeated,
+            });
+            return submitted;
+          } catch (error) {
+            if (error instanceof GameServiceError) span.setAttribute("game.error.code", error.code);
+            throw error;
+          }
+        },
+        (error) => error instanceof GameServiceError,
+      );
       log.info(
         { ...fields, version: result.version, durationMs: durationMs() },
         repeated ? "action repeated" : "action applied",

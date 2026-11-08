@@ -176,9 +176,18 @@ catalogs:
     '@opentelemetry/api':
       specifier: ^1.10.0
       version: 1.10.0
+    '@opentelemetry/context-async-hooks':
+      specifier: ^3.1.0
+      version: 3.1.0
+    '@opentelemetry/core':
+      specifier: ^3.1.0
+      version: 3.1.0
     '@opentelemetry/sdk-node':
       specifier: ^0.301.0
       version: 0.301.0
+    '@opentelemetry/sdk-trace':
+      specifier: ^3.1.0
+      version: 3.1.0
     '@playwright/test':
       specifier: 1.65.0
       version: 1.65.0
@@ -326,6 +335,15 @@ importers:
         specifier: 'catalog:'
         version: 4.6.7
     devDependencies:
+      '@opentelemetry/context-async-hooks':
+        specifier: 'catalog:'
+        version: 3.1.0(@opentelemetry/api@1.10.0)
+      '@opentelemetry/core':
+        specifier: 'catalog:'
+        version: 3.1.0(@opentelemetry/api@1.10.0)
+      '@opentelemetry/sdk-trace':
+        specifier: 'catalog:'
+        version: 3.1.0(@opentelemetry/api@1.10.0)
       '@types/better-sqlite3':
         specifier: 'catalog:'
         version: 9.6.0

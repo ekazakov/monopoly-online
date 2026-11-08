@@ -1,3 +1,4 @@
+import { trace } from "@opentelemetry/api";
 import type { ApiErrorBody, ApiIssue, ErrorCode } from "@monopoly/shared";
 import type { Context, ErrorHandler, NotFoundHandler } from "hono";
 import { HTTPException } from "hono/http-exception";
@@ -31,6 +32,8 @@ export const errorHandler: ErrorHandler = (err, c) => {
   if (err instanceof HTTPException) {
     return c.json(errorBody("bad_request", err.message || "Bad request"), err.status);
   }
+  // The span of the request is still active here. The middleware sets its status from the 500.
+  trace.getActiveSpan()?.recordException(err);
   c.get("log").error({ err }, "unhandled error");
   return c.json(errorBody("internal_error", "Internal server error"), 500);
 };
