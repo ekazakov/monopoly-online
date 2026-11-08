@@ -25,6 +25,7 @@ import { redactState } from "../game/redact.ts";
 import { gameTopic, userTopic } from "./messages.ts";
 import type { StreamEnvelope } from "./messages.ts";
 import { createSilentLogger, type Logger } from "../log.ts";
+import type { Metrics } from "../metrics.ts";
 
 export type ResumePlan = { kind: "snapshot" } | { kind: "none" } | { kind: "replay" };
 
@@ -130,6 +131,8 @@ export interface TopicReaderOptions {
   db: Kysely<Database>;
   /** Defaults to a silent logger. */
   log?: Logger;
+  /** Counts what each reconnect got. */
+  metrics?: Pick<Metrics, "resumed">;
   loader: GameStateLoader;
   readGame: (gameId: string) => Promise<Game>;
   maxGap?: number;
@@ -154,6 +157,7 @@ export function createTopicReader(options: TopicReaderOptions) {
     });
     if (plan.kind === "none") {
       log.debug({ gameId, lastEventId, version: current }, "stream resume: nothing missed");
+      if (lastEventId !== null) options.metrics?.resumed("none");
       return { messages: [], covered: current };
     }
     let reason = plan.kind === "replay" ? "log_hole" : plan.kind;
@@ -164,6 +168,7 @@ export function createTopicReader(options: TopicReaderOptions) {
           { gameId, lastEventId, version: current, messages: messages.length },
           "stream resumed with events",
         );
+        options.metrics?.resumed("events");
         return { messages, covered: current };
       } catch (err) {
         if (!(err instanceof LogHoleError)) {
@@ -174,6 +179,7 @@ export function createTopicReader(options: TopicReaderOptions) {
     }
     // A first connect has no `lastEventId`, so it is not a resume.
     if (lastEventId !== null) {
+      options.metrics?.resumed("snapshot");
       log.info({ gameId, lastEventId, version: current, reason }, "stream resumed with a snapshot");
     }
     return { messages: [snapshotMessage(game, redactState(full))], covered: current };

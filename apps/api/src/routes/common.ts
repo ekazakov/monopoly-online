@@ -4,6 +4,8 @@ import type { ZodType } from "zod";
 import type { Kysely } from "kysely";
 import type { Database } from "../db/schema.ts";
 import { createSilentLogger, type Logger } from "../log.ts";
+import { createMetrics, type Metrics } from "../metrics.ts";
+import type { Meter } from "@opentelemetry/api";
 
 /** Name of the session cookie. Also the cookie name in the OpenAPI `sessionCookie` scheme. */
 export const SESSION_COOKIE = "harborfront_session";
@@ -29,6 +31,8 @@ export type AppOptions = {
   nodeEnv?: string;
   /** The logger. Defaults to a silent one, so tests write no lines. `index.ts` passes the real logger. */
   logger?: Logger;
+  /** The OpenTelemetry meter of the metrics. Defaults to the global meter, a no-op without telemetry. Tests pass one with a memory reader. */
+  meter?: Meter;
 };
 
 /** What a route file receives: the database and the options with defaults applied. */
@@ -38,6 +42,7 @@ export type AppDeps = {
   seed: () => number;
   nodeEnv: string | undefined;
   log: Logger;
+  metrics: Metrics;
 };
 
 export function resolveDeps(db: Kysely<Database>, options: AppOptions = {}): AppDeps {
@@ -47,6 +52,7 @@ export function resolveDeps(db: Kysely<Database>, options: AppOptions = {}): App
     seed: options.seed ?? (() => crypto.getRandomValues(new Uint32Array(1))[0]!),
     nodeEnv: options.nodeEnv ?? process.env.NODE_ENV,
     log: options.logger ?? createSilentLogger(),
+    metrics: createMetrics(options.meter),
   };
 }
 

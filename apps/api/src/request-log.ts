@@ -1,6 +1,7 @@
 import { createMiddleware } from "hono/factory";
 import { routePath } from "hono/route";
 import type { Logger } from "./log.ts";
+import type { Metrics } from "./metrics.ts";
 import type { AppEnv } from "./routes/common.ts";
 
 export const REQUEST_ID_HEADER = "X-Request-Id";
@@ -22,7 +23,7 @@ export const readRequestId = (incoming: string | undefined) =>
  *   has ids in it and would make a new label value for each game).
  * An SSE response is logged when its headers are sent. The stream route logs open and close.
  */
-export function requestLog(log: Logger) {
+export function requestLog(log: Logger, metrics?: Metrics) {
   return createMiddleware<AppEnv>(async (c, next) => {
     const started = performance.now();
     const requestId = readRequestId(c.req.header(REQUEST_ID_HEADER));
@@ -36,6 +37,12 @@ export function requestLog(log: Logger) {
       // The last matched route is the handler. When no handler matched, it is a wildcard.
       const route = routePath(c, -1);
       const status = c.res.status;
+      metrics?.httpRequest({
+        method: c.req.method,
+        route,
+        status,
+        seconds: (performance.now() - started) / 1000,
+      });
       const level = QUIET_ROUTES.has(route) ? "debug" : status >= 500 ? "error" : "info";
       c.get("log")[level](
         {

@@ -25,6 +25,7 @@
     "@opentelemetry/api": "catalog:",
     "@opentelemetry/instrumentation": "catalog:",
     "@opentelemetry/instrumentation-pino": "catalog:",
+    "@opentelemetry/instrumentation-runtime-node": "catalog:",
     "@opentelemetry/sdk-node": "catalog:",
     "arctic": "catalog:",
     "better-sqlite3": "catalog:",
@@ -37,6 +38,7 @@
   "devDependencies": {
     "@opentelemetry/context-async-hooks": "catalog:",
     "@opentelemetry/core": "catalog:",
+    "@opentelemetry/sdk-metrics": "catalog:",
     "@opentelemetry/sdk-trace": "catalog:",
     "@types/better-sqlite3": "catalog:",
     "@types/node": "catalog:",

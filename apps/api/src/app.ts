@@ -147,8 +147,12 @@ export function createApp(db: Kysely<Database>, options?: AppOptions) {
     if (status !== "away") return;
     lifecycle
       .saveUnattended({ gameId, stillUnattended: () => nobodyOnline(gameId) })
+      .then((saved) => {
+        if (saved) deps.metrics.autoSaved();
+      })
       .catch((err: unknown) => deps.log.error({ err, gameId }, "automatic save failed"));
   });
+  deps.metrics.observePresence(presence);
   const guest = options?.auth?.guest ?? false;
   const pending = createPendingSignIns(deps.now);
   const api = new OpenAPIHono<AppEnv>({ defaultHook: validationHook }).basePath("/api");
@@ -156,7 +160,7 @@ export function createApp(db: Kysely<Database>, options?: AppOptions) {
   // Hono type, so it stays out of the chain that keeps the OpenAPI types.
   // The span is first, so the request log runs inside it and every later span is its child.
   api.use(httpTracing());
-  api.use(requestLog(deps.log));
+  api.use(requestLog(deps.log, deps.metrics));
   api.use(checkOrigin({ extraOrigins, nodeEnv: deps.nodeEnv }));
   const app = api
     .notFound(notFoundHandler)

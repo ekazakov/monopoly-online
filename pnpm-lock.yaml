@@ -188,6 +188,12 @@ catalogs:
     '@opentelemetry/instrumentation-pino':
       specifier: ^0.71.0
       version: 0.71.0
+    '@opentelemetry/instrumentation-runtime-node':
+      specifier: ^0.38.0
+      version: 0.38.0
+    '@opentelemetry/sdk-metrics':
+      specifier: ^3.1.0
+      version: 3.1.0
     '@opentelemetry/sdk-node':
       specifier: ^0.301.0
       version: 0.301.0
@@ -328,6 +334,9 @@ importers:
       '@opentelemetry/instrumentation-pino':
         specifier: 'catalog:'
         version: 0.71.0(@opentelemetry/api@1.10.0)
+      '@opentelemetry/instrumentation-runtime-node':
+        specifier: 'catalog:'
+        version: 0.38.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/sdk-node':
         specifier: 'catalog:'
         version: 0.301.0(@opentelemetry/api@1.10.0)
@@ -357,6 +366,9 @@ importers:
         specifier: 'catalog:'
         version: 3.1.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/core':
+        specifier: 'catalog:'
+        version: 3.1.0(@opentelemetry/api@1.10.0)
+      '@opentelemetry/sdk-metrics':
         specifier: 'catalog:'
         version: 3.1.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/sdk-trace':
@@ -736,6 +748,12 @@ packages:
 
   '@opentelemetry/instrumentation-pino@0.71.0':
     resolution: {integrity: sha512-cMb7ScE170lTPhL18CXvmInaV0NeKnjhZwK9uzZfCdFxlKgHgHxkvuzSzlwF7Mo/b4mDyhSwFogvubFYpn/IBg==}
+    engines: {node: '>=22.15.0'}
+    peerDependencies:
+      '@opentelemetry/api': ^1.10.0
+
+  '@opentelemetry/instrumentation-runtime-node@0.38.0':
+    resolution: {integrity: sha512-+q1AaCRYNujeNz/cY4lcw8l+Tnw6O6jmJd8Y+wd/7DaJpwNypHfDN7ZCwPzZXf5KgEJIdgISy/nAamkD4shb8g==}
     engines: {node: '>=22.15.0'}
     peerDependencies:
       '@opentelemetry/api': ^1.10.0
@@ -2984,6 +3002,14 @@ snapshots:
       '@opentelemetry/core': 3.1.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/instrumentation': 0.301.0(@opentelemetry/api@1.10.0)
       '@opentelemetry/semantic-conventions': 1.45.0
+    transitivePeerDependencies:
+      - supports-color
+
+  '@opentelemetry/instrumentation-runtime-node@0.38.0(@opentelemetry/api@1.10.0)':
+    dependencies:
+      '@opentelemetry/api': 1.10.0
+      '@opentelemetry/core': 3.1.0(@opentelemetry/api@1.10.0)
+      '@opentelemetry/instrumentation': 0.301.0(@opentelemetry/api@1.10.0)
     transitivePeerDependencies:
       - supports-color
 

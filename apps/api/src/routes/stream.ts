@@ -73,6 +73,7 @@ export function streamRoutes(deps: StreamRoutesDeps) {
     readGame: (gameId) => rooms.get(gameId),
     maxGap: deps.resumeMaxGap,
     log: deps.log,
+    metrics: deps.metrics,
   });
   const routes = new OpenAPIHono<AppEnv>();
   // `.use` returns a plain Hono type, so it stays out of the typed chain below.
@@ -127,6 +128,9 @@ export function streamRoutes(deps: StreamRoutesDeps) {
     // Native retries supply the header; a new EventSource supplies the query fallback. Both are
     // engine versions, used only with exactly one game topic; `lobby` and `user:` have no ids.
     const gameTopics = unique.filter((topic) => topicKind(topic) === "game");
+    // A reconnect has an id from the header or the query, also one that is not valid.
+    const reconnect =
+      c.req.header("last-event-id") !== undefined || c.req.valid("query").lastEventId !== undefined;
     const lastEventId =
       gameTopics.length === 1
         ? parseLastEventId(c.req.header("last-event-id") ?? c.req.valid("query").lastEventId)
@@ -185,6 +189,7 @@ export function streamRoutes(deps: StreamRoutesDeps) {
           }),
         );
 
+      deps.metrics.streamOpened(user.id, reconnect);
       // A first comment makes the response start now, also when nothing else is due.
       enqueue(() => stream.write(": open\n\n"));
       for (const message of initial) send(message);
@@ -209,6 +214,7 @@ export function streamRoutes(deps: StreamRoutesDeps) {
       clearInterval(timer);
       connection.close();
       disconnect();
+      deps.metrics.streamClosed(user.id);
       log.info(
         { userId: user.id, topics: unique, durationMs: Math.round(performance.now() - openedAt) },
         "stream closed",

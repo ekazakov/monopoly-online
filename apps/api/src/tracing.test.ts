@@ -5,7 +5,7 @@ import { createApp } from "./app.ts";
 import { postJson, signIn } from "./auth/test-helpers.ts";
 import { createDb } from "./db/client.ts";
 import { migrateToLatest } from "./db/migrations.ts";
-import { describeQuery, traceQueries } from "./db/query-trace.ts";
+import { createQueryObserver, describeQuery } from "./db/query-telemetry.ts";
 import type { Database } from "./db/schema.ts";
 import { playGame } from "./game/test-helpers.ts";
 import { startedGame, submitStep } from "./realtime/test-helpers.ts";
@@ -21,7 +21,7 @@ describe("tracing", () => {
 
   beforeEach(async () => {
     tracing = installTestTracing();
-    db = createDb(":memory:", { log: traceQueries });
+    db = createDb(":memory:", { log: createQueryObserver() });
     await migrateToLatest(db);
     app = createApp(db, { auth: { guest: true }, seed: () => SEED });
   });
@@ -103,7 +103,7 @@ describe("tracing", () => {
   });
 
   test("the migrations at start make no span", async () => {
-    const other = createDb(":memory:", { log: traceQueries });
+    const other = createDb(":memory:", { log: createQueryObserver() });
     await migrateToLatest(other);
     await other.destroy();
     expect(tracing.spans().filter((span) => span.kind === SpanKind.CLIENT)).toEqual([]);

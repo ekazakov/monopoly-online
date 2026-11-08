@@ -5,7 +5,8 @@ import { serve } from "@hono/node-server";
 import { createApp } from "./app.ts";
 import { createArcticGoogle, readAuthConfig } from "./auth/index.ts";
 import { createDb } from "./db/client.ts";
-import { traceQueries } from "./db/query-trace.ts";
+import { createQueryObserver } from "./db/query-telemetry.ts";
+import { getMeter, registerProcessMetrics } from "./metrics.ts";
 import { createLogger } from "./log.ts";
 import { migrateToLatest } from "./db/migrations.ts";
 import { createPresenceTracker, watchActiveGames } from "./realtime/presence.ts";
@@ -34,7 +35,8 @@ const authConfig = readAuthConfig(process.env);
 const shutdownTimeoutMs = readShutdownTimeout(process.env);
 
 mkdirSync(dirname(dbPath), { recursive: true });
-const db = createDb(dbPath, { log: traceQueries });
+const db = createDb(dbPath, { log: createQueryObserver() });
+registerProcessMetrics(getMeter(), { dbPath });
 await migrateToLatest(db, logger);
 
 // GAME_SEED is a test-only flag for the end-to-end tests. A fixed integer seed gives every game

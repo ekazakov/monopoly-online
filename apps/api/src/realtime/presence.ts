@@ -43,6 +43,8 @@ export interface PresenceTracker {
   status(gameId: string, userId: string): PresenceStatus | undefined;
   /** The status of every known user of a watched game, keyed by user id. */
   statuses(gameId: string): Record<string, PresenceStatus>;
+  /** How many users have each status, summed over the watched games. For the metrics. */
+  counts(): Record<PresenceStatus, number>;
   /** Listen to the changes, as `onChange` does. Returns the function that stops listening. */
   subscribe(listener: (change: PresenceChange) => void): () => void;
   /** Stop to watch a game and clear its timers: it left `active`. Open streams stay counted. */
@@ -197,6 +199,16 @@ export function createPresenceTracker(options: PresenceTrackerOptions = {}): Pre
         if (entry.status) result[userId] = entry.status;
       }
       return result;
+    },
+
+    counts() {
+      const counts: Record<PresenceStatus, number> = { online: 0, reconnecting: 0, away: 0 };
+      for (const game of games.values()) {
+        for (const entry of game.users.values()) {
+          if (entry.status) counts[entry.status] += 1;
+        }
+      }
+      return counts;
     },
 
     subscribe(listener) {

@@ -36,11 +36,14 @@ export async function startTelemetry(
   }
   const { NodeSDK } = await import("@opentelemetry/sdk-node");
   const { PinoInstrumentation } = await import("@opentelemetry/instrumentation-pino");
+  const { RuntimeNodeInstrumentation } =
+    await import("@opentelemetry/instrumentation-runtime-node");
   const sdk = new NodeSDK({
     ...(env.OTEL_SERVICE_NAME ? {} : { serviceName: DEFAULT_SERVICE_NAME }),
     // Adds `trace_id`, `span_id` and `trace_flags` to each pino line, and sends the line to the
     // OTLP log exporter. It patches `pino` when the module loads, so this runs before the app.
-    instrumentations: [new PinoInstrumentation()],
+    // The runtime instrumentation reports the event loop delay, the garbage collection and the heap.
+    instrumentations: [new PinoInstrumentation(), new RuntimeNodeInstrumentation()],
   });
   sdk.start();
   return { shutdown: () => sdk.shutdown() };
