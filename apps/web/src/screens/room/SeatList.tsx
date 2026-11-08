@@ -2,6 +2,7 @@ import { MAX_SEATS, type Game, type Seat } from "@monopoly/shared";
 import { useState } from "react";
 import { tokenLook } from "../../scene/colors.ts";
 import { AvatarIcon } from "../game/rail/avatars.tsx";
+import { RemovePlayer } from "./RemovePlayer.tsx";
 import { seatLabels } from "./roomModel.ts";
 
 // Names who joined or left since the last room, for the polite live region.
@@ -28,10 +29,21 @@ interface Props {
   userId: string;
   removingId: string | null;
   onRemove: (seat: Seat) => void;
+  /** The id of the user whose removal is on its way. */
+  removingPlayerId: string | null;
+  onRemovePlayer: (seat: Seat) => void;
   headingRef: React.RefObject<HTMLHeadingElement | null>;
 }
 
-export function SeatList({ game, userId, removingId, onRemove, headingRef }: Props) {
+export function SeatList({
+  game,
+  userId,
+  removingId,
+  onRemove,
+  removingPlayerId,
+  onRemovePlayer,
+  headingRef,
+}: Props) {
   const announcement = useSeatAnnouncement(game.seats);
   // A saved game is the restore room: each seat is back or not, and nobody joins or is invited.
   const saved = game.status === "saved";
@@ -74,6 +86,16 @@ export function SeatList({ game, userId, removingId, onRemove, headingRef }: Pro
                   <span className="room__seat-note">{labels.note}</span>
                 )}
               </span>
+              {labels.playerRemovable && (
+                <RemovePlayer
+                  name={seat.name}
+                  alsoRemoves={game.seats
+                    .filter((s) => s.kind === "hotseat" && s.controllerUserId === seat.userId)
+                    .map((s) => s.name)}
+                  pending={removingPlayerId === seat.userId}
+                  onRemove={() => onRemovePlayer(seat)}
+                />
+              )}
               {labels.removable && (
                 <button
                   type="button"

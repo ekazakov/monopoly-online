@@ -7,6 +7,7 @@ import { useRealtimeStatus, useTopic } from "../../realtime/index.ts";
 import { AddSeatForm } from "./AddSeatForm.tsx";
 import { CancelGame } from "./CancelGame.tsx";
 import { GameCancelled } from "./GameCancelled.tsx";
+import { GameRemoved } from "./GameRemoved.tsx";
 import { SavedGameFinished } from "./SavedGameFinished.tsx";
 import { InviteLink } from "./InviteLink.tsx";
 import { InvitePanel } from "./InvitePanel.tsx";
@@ -34,6 +35,7 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
   const [notice, setNotice] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [cancelled, setCancelled] = useState(false);
+  const [removed, setRemoved] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
@@ -64,15 +66,26 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
   // A visitor has no seat, so the stream would refuse them: they follow the room only after joining.
   // After a cancel the topic is null, which drops the subscription. Without that the EventSource
   // would connect to the deleted game again and again.
-  useTopic(view.seated && !cancelled ? `game:${gameId}` : null, (message) => {
+  useTopic(view.seated && !cancelled && !removed ? `game:${gameId}` : null, (message) => {
     if (message.type === "room.cancelled") {
       // The host's own request answers the host: the stream copy would only flash the notice.
       if (actions.cancel.isPending || actions.cancel.isSuccess) return;
       gone.current = true;
       setCancelled(true);
     } else if (message.type === "room.updated" || message.type === "snapshot") {
+      // The host removed this user: `room.removed` follows at once. Until then the old room stays,
+      // so the user does not see a visitor view with a Join button for a moment.
+      const stillSeated = message.payload.game.seats.some((s) => s.controllerUserId === userId);
+      if (!stillSeated && view.seated) return;
       queryClient.setQueryData(roomKey(gameId), message.payload.game);
     }
+  });
+
+  // The host removed this user from the game. The private topic carries that message.
+  useTopic(view.seated && !removed ? `user:${userId}` : null, (message) => {
+    if (message.type !== "room.removed" || message.payload.gameId !== gameId) return;
+    gone.current = true;
+    setRemoved(true);
   });
 
   function fail(action: RoomAction, error: unknown) {
@@ -153,10 +166,20 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
     });
   }
 
+  function removePlayer(seat: Seat) {
+    if (!seat.userId || actions.removePlayer.isPending) return;
+    setNotice(null);
+    actions.removePlayer.mutate(seat.userId, {
+      onSuccess: () => headingRef.current?.focus(),
+      onError: (error) => fail("removePlayer", error),
+    });
+  }
+
   const hostName = view.host?.name ?? "the host";
   const busy = actions.start.isPending;
 
   if (cancelled) return <GameCancelled hostName={view.host?.name ?? "The host"} />;
+  if (removed) return <GameRemoved hostName={view.host?.name ?? "The host"} />;
   if (started && !view.seated) {
     return (
       <main className="screen" role="alert">
@@ -212,6 +235,8 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
           userId={userId}
           removingId={removingId}
           onRemove={remove}
+          removingPlayerId={actions.removePlayer.isPending ? actions.removePlayer.variables : null}
+          onRemovePlayer={removePlayer}
           headingRef={headingRef}
         />
 

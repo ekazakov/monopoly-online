@@ -201,7 +201,9 @@ describe("hot-seat seats", () => {
         }),
       },
     });
-    expect(await screen.findAllByRole("button", { name: /^Remove / })).toHaveLength(1);
+    // Tove (own hot-seat seat) and Ines (a joined player, for the host). Ravi-type seats of another
+    // device have none.
+    expect(await screen.findAllByRole("button", { name: /^Remove / })).toHaveLength(2);
     await user.click(screen.getByRole("button", { name: "Remove Tove" }));
     await waitFor(() => expect(screen.queryByText("Tove")).toBeNull());
     expect(screen.getByText("Tove left")).toBeInTheDocument();

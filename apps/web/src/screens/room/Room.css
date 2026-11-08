@@ -120,6 +120,7 @@
 
 .room__seat {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--hf-space-12);
@@ -395,6 +396,11 @@
   padding: var(--hf-space-12) var(--hf-space-16);
   border: 1px solid var(--hf-danger);
   border-radius: var(--hf-radius-control);
+}
+
+/* The confirm step of Remove player sits under the seat row. */
+.room__seat-confirm {
+  flex: 1 1 100%;
 }
 
 .room__button--danger {

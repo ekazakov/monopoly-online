@@ -7,6 +7,7 @@ import {
   inviteByName,
   joinGame,
   leaveGame,
+  removePlayer,
   removeSeat,
   startGame,
 } from "../../api/index.ts";
@@ -30,6 +31,10 @@ export function useRoomActions(gameId: string) {
     }),
     remove: useMutation({
       mutationFn: (seatId: string) => removeSeat(gameId, seatId),
+      onSuccess: replace,
+    }),
+    removePlayer: useMutation({
+      mutationFn: (userId: string) => removePlayer(gameId, userId),
       onSuccess: replace,
     }),
     // No cache write: the game is gone, and the screen leaves or shows the cancelled notice.

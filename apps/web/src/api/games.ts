@@ -29,6 +29,15 @@ export async function removeSeat(id: string, seatId: string): Promise<Game> {
   ).game;
 }
 
+/** `DELETE /api/games/:id/players/:userId`: the host removes a player and the seats they control. */
+export async function removePlayer(id: string, userId: string): Promise<Game> {
+  return (
+    await unwrap(
+      await client.api.games[":id"].players[":userId"].$delete({ param: { id, userId } }),
+    )
+  ).game;
+}
+
 /** `DELETE /api/games/:id`: the host cancels a waiting game. Answers 204 with no body. */
 export async function cancelGame(id: string): Promise<void> {
   const res = await client.api.games[":id"].$delete({ param: { id } });

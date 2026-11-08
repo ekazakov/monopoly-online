@@ -25,6 +25,8 @@ export interface SeatLabels {
   thisDevice: boolean;
   note: string;
   removable: boolean;
+  /** The host can remove this joined player, with the hot-seat seats on their device. */
+  playerRemovable: boolean;
 }
 
 export function seatLabels(game: Game, seat: Seat, userId: string): SeatLabels {
@@ -46,6 +48,11 @@ export function seatLabels(game: Game, seat: Seat, userId: string): SeatLabels {
     thisDevice: seat.kind === "hotseat" && mine,
     note,
     removable: game.status === "waiting" && seat.kind === "hotseat" && mine,
+    playerRemovable:
+      game.status === "waiting" &&
+      game.ownerId === userId &&
+      seat.kind === "user" &&
+      seat.userId !== userId,
   };
 }
 
@@ -82,6 +89,7 @@ export type RoomAction =
   | "leave"
   | "start"
   | "remove"
+  | "removePlayer"
   | "add"
   | "token"
   | "invite"
@@ -129,7 +137,10 @@ export function errorText(action: RoomAction, error: unknown): string {
         return "You can only change the seats on your own device.";
       case "not_game_owner":
         return "Only the host can do that.";
+      case "cannot_remove_self":
+        return "The host cannot remove their own seat.";
       case "not_found":
+        if (action === "removePlayer") return "This player is already gone.";
         return action === "join" || action === "cancel"
           ? "This game no longer exists. The host may have cancelled it."
           : "This seat is already gone.";
