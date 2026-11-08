@@ -5,6 +5,7 @@ import { createDb } from "./db/client.ts";
 import { migrateToLatest } from "./db/migrations.ts";
 import type { Database } from "./db/schema.ts";
 import { createMemoryLogger, type LogLine } from "./log-test-helpers.ts";
+import { createShutdownHandle } from "./shutdown.ts";
 import { readSse } from "./realtime/test-helpers.ts";
 import type { Kysely } from "kysely";
 
@@ -107,5 +108,24 @@ describe("request id and request log", () => {
     expect(opened).toMatchObject({ requestId, userId: user.id, topics: ["lobby"] });
     expect(closed).toMatchObject({ requestId, userId: user.id });
     expect(typeof closed!.durationMs).toBe("number");
+  });
+
+  test("a shutdown ends an open stream and a stream opened after it", async () => {
+    const shutdown = createShutdownHandle();
+    const db2 = createDb(":memory:");
+    await migrateToLatest(db2);
+    const app2 = createApp(db2, { auth: { guest: true }, shutdown });
+    const { cookie } = await signIn(app2, "Ada");
+
+    const open = await app2.request("/api/stream?topics=lobby", { headers: { cookie } });
+    const reading = open.text();
+    shutdown.begin();
+    // The body ends, so the text resolves. Without the shutdown it would wait for ever.
+    expect(await reading).toContain(": open");
+
+    const late = await app2.request("/api/stream?topics=lobby", { headers: { cookie } });
+    // It ends at once. It may have sent nothing, or only the first comment.
+    expect(typeof (await late.text())).toBe("string");
+    await db2.destroy();
   });
 });

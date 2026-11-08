@@ -514,6 +514,21 @@ describe("cache, hooks and rollback", () => {
     expect(seen).toHaveLength(1);
   });
 
+  test("drain waits for the actions in flight", async () => {
+    const pending = act(first, { type: "RollDice" });
+    await service.drain();
+    // The action is committed when drain resolves.
+    const row = await db
+      .selectFrom("games")
+      .select("version")
+      .where("id", "=", GAME_ID)
+      .executeTakeFirst();
+    expect(row?.version).toBe(1);
+    await pending;
+    // With nothing in flight it resolves at once.
+    await service.drain();
+  });
+
   test("a failing onCommitted hook does not fail the action", async () => {
     const { logger, lines } = createMemoryLogger();
     service = createGameService({

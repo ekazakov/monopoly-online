@@ -53,6 +53,8 @@ export interface StreamRoutesDeps extends AppDeps {
   bus: Bus<StreamEnvelope>;
   /** Counts the open streams of each controller of an `active` game. */
   presence: PresenceTracker;
+  /** Aborted when the server shuts down: every open stream ends. */
+  shutdownSignal?: AbortSignal;
   /** Interval of the heartbeat comment. Defaults to `HEARTBEAT_MS`. */
   heartbeatMs?: number;
   /** Largest version gap that is replayed. Defaults to `RESUME_MAX_GAP`. */
@@ -197,7 +199,13 @@ export function streamRoutes(deps: StreamRoutesDeps) {
         heartbeatMs,
       );
 
+      // A shutdown ends the stream like a client that left. The client reconnects to the next server.
+      const onShutdown = () => stream.abort();
+      if (deps.shutdownSignal?.aborted) onShutdown();
+      else deps.shutdownSignal?.addEventListener("abort", onShutdown, { once: true });
+
       await new Promise<void>((resolve) => stream.onAbort(resolve));
+      deps.shutdownSignal?.removeEventListener("abort", onShutdown);
       clearInterval(timer);
       connection.close();
       disconnect();

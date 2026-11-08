@@ -109,6 +109,8 @@ export interface GameService {
    * back.
    */
   saveUnattended(input: UnattendedSaveInput): Promise<RollbackResult | null>;
+  /** Resolves when no game has work in flight. For the shutdown: wait before the database closes. */
+  drain(): Promise<void>;
 }
 
 /** The compare-and-swap on `games.version` matched no row: another writer committed first. */
@@ -436,6 +438,11 @@ export function createGameService(options: GameServiceOptions): GameService {
           inTransaction: input.inTransaction,
         });
       }),
+
+    async drain() {
+      // A finished task can leave a queued one behind, so look again until the map is empty.
+      while (chains.size > 0) await Promise.all([...chains.values()]);
+    },
 
     async getState({ gameId, userId }) {
       const game = await requireGame(gameId);

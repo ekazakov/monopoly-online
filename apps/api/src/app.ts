@@ -8,6 +8,7 @@ import {
   type GoogleProvider,
 } from "./auth/index.ts";
 import { requestLog } from "./request-log.ts";
+import type { ShutdownHandle } from "./shutdown.ts";
 import { errorHandler, notFoundHandler, validationHook } from "./errors.ts";
 import {
   SESSION_COOKIE,
@@ -57,6 +58,8 @@ export type AppOptions = BaseAppOptions & {
   presence?: PresenceTracker;
   /** Grace time of the default tracker in ms. Defaults to 60 s. Ignored when `presence` is set. */
   presenceGraceMs?: number;
+  /** Shared with the shutdown in `index.ts`: the event streams close on its signal, and `drains` gets the work to wait for. */
+  shutdown?: ShutdownHandle;
   /**
    * The sign-in methods. Defaults to none: `POST /api/session` answers 404 and Google is off.
    * `index.ts` reads them from the environment with `readAuthConfig`.
@@ -112,6 +115,7 @@ export function createApp(db: Kysely<Database>, options?: AppOptions) {
       }
     },
   });
+  options?.shutdown?.drains.push(() => service.drain());
   const lifecycle = createLifecycleService({
     db,
     log: deps.log,
@@ -172,6 +176,7 @@ export function createApp(db: Kysely<Database>, options?: AppOptions) {
         loader,
         bus,
         presence,
+        shutdownSignal: options?.shutdown?.signal,
         heartbeatMs: options?.heartbeatMs,
         resumeMaxGap: options?.resumeMaxGap,
       }),
