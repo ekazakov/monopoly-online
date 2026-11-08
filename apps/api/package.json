@@ -9,9 +9,9 @@
     }
   },
   "scripts": {
-    "dev": "NODE_ENV=development GUEST_SIGN_IN_ENABLED=true node --watch src/index.ts",
+    "dev": "NODE_ENV=development GUEST_SIGN_IN_ENABLED=true node --env-file-if-exists=.env --watch src/index.ts",
     "build": "vp pack",
-    "start": "node dist/index.mjs",
+    "start": "node --env-file-if-exists=.env dist/index.mjs",
     "test": "vp test",
     "openapi": "node scripts/generate-openapi.ts",
     "db:purge": "node scripts/purge-db.ts"

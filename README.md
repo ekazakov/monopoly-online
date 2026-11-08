@@ -61,7 +61,8 @@ To set up Google sign-in on the local machine:
 1. In Google Cloud, create an OAuth client of type "Web application".
 2. Add `GOOGLE_REDIRECT_URI` as an authorized redirect address.
 3. If the consent screen is in "Testing", add your Google account as a test user.
-4. Put the three Google values in a local `.env` file. Do not commit this file.
+4. Put the three Google values in `apps/api/.env`. The API development and start commands load this file. Do not commit this file.
+5. Restart `pnpm dev` after you change the file. Open `/api/auth/methods` on the web server and check that `google` is `true`.
 
 Guest sign-in and Google sign-in make separate users. Local guest users continue to work.
 
