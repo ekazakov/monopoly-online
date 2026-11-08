@@ -93,7 +93,7 @@ Ask before you add or change a board. Sync the artifacts.
 ### F. Browser tests
 
 - [x] **Guest sign-in for browser tests (F1).** Set `GUEST_SIGN_IN_ENABLED=true` for the Playwright API server and for `pnpm dev`. The current scripts stay green.
-- [ ] **Remove player script (F2).** Two contexts: the host removes the guest, the guest sees the notice and goes to the lobby, and joins again with the link.
+- [x] **Remove player script (F2).** Two contexts: the host removes the guest, the guest sees the notice and goes to the lobby, and joins again with the link.
 
 ### G. Close
 
