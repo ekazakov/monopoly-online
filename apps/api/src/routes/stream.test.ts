@@ -56,7 +56,7 @@ describe("GET /api/stream", () => {
         return state;
       },
     };
-    app = createApp(db, { seed: () => SEED, bus, loader, ...options });
+    app = createApp(db, { auth: { guest: true }, seed: () => SEED, bus, loader, ...options });
   }
 
   beforeEach(async () => {

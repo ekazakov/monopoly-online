@@ -275,7 +275,11 @@ describe("watchActiveGames", () => {
     const db = createDb(":memory:");
     await migrateToLatest(db);
     try {
-      const first = createApp(db, { seed: () => 2, presence: idleTracker() });
+      const first = createApp(db, {
+        auth: { guest: true },
+        seed: () => 2,
+        presence: idleTracker(),
+      });
       const started = await startedGame(first, 2);
 
       const callbacks: (() => void)[] = [];
@@ -283,7 +287,7 @@ describe("watchActiveGames", () => {
         graceMs: GRACE,
         timers: { set: (callback) => callbacks.push(callback), clear: () => {} },
       });
-      createApp(db, { seed: () => 2, presence: restarted });
+      createApp(db, { auth: { guest: true }, seed: () => 2, presence: restarted });
       expect(await watchActiveGames(db, restarted)).toBe(1);
 
       // Both controllers wait out a new grace time. The owner also controls the hot-seat seat.
@@ -310,14 +314,18 @@ describe("watchActiveGames", () => {
     const db = createDb(":memory:");
     await migrateToLatest(db);
     try {
-      const first = createApp(db, { seed: () => 2, presence: idleTracker() });
+      const first = createApp(db, {
+        auth: { guest: true },
+        seed: () => 2,
+        presence: idleTracker(),
+      });
       const started = await startedGame(first, 2);
       const callbacks: (() => void)[] = [];
       const restarted = createPresenceTracker({
         graceMs: GRACE,
         timers: { set: (callback) => callbacks.push(callback), clear: () => {} },
       });
-      createApp(db, { seed: () => 2, presence: restarted });
+      createApp(db, { auth: { guest: true }, seed: () => 2, presence: restarted });
       await watchActiveGames(db, restarted);
 
       restarted.connect(started.game.id, started.guest.user.id);
@@ -340,7 +348,7 @@ describe("watchActiveGames", () => {
     const db = createDb(":memory:");
     await migrateToLatest(db);
     try {
-      const app = createApp(db, { seed: () => 2, presence: idleTracker() });
+      const app = createApp(db, { auth: { guest: true }, seed: () => 2, presence: idleTracker() });
       const started = await startedGame(app, 2);
       await db.updateTable("games").set({ status: "saved" }).execute();
       const tracker = createPresenceTracker();

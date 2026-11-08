@@ -79,10 +79,10 @@ Ask before you add or change a board. Sync the artifacts.
 
 ### D. Google sign-in API
 
-- [ ] **Sign-in configuration (D1).** Read `GUEST_SIGN_IN_ENABLED`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `GOOGLE_REDIRECT_URI` in `index.ts`, in the same pattern as `GAME_SEED`. The production guard and the start rule (see "Decisions"). `GET /api/auth/methods`. Tests for each configuration.
-- [ ] **Guest sign-in behind the variable (D2).** Register `POST /api/session` only when guest sign-in is on. Keep `createGuestSession`. `createTestApp` turns guest sign-in on, so the `signIn` helper and most API tests do not change. Test: 404 when it is off.
-- [ ] **Google start and callback (D3).** Check the current Arctic API first. `GET /api/auth/google/start` sets the `state` and PKCE cookies and goes to Google. It refuses a signed-in user with `already_signed_in`. `GET /api/auth/google/callback` checks `state`, gets the Google subject, and clears the cookies. Inject the Google provider, so that tests do not call Google.
-- [ ] **Google users and sessions (D4).** A known subject: a new session for its user. A new subject: a short pending sign-in, then `POST /api/auth/google/name` with the display name makes the user, the identity row and the session in one transaction. Reuse the cookie and session code in `apps/api/src/auth/`. Tests: new user, known user, bad `state`, name taken, already signed in.
+- [x] **Sign-in configuration (D1).** Read `GUEST_SIGN_IN_ENABLED`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `GOOGLE_REDIRECT_URI` in `index.ts`, in the same pattern as `GAME_SEED`. The production guard and the start rule (see "Decisions"). `GET /api/auth/methods`. Tests for each configuration.
+- [x] **Guest sign-in behind the variable (D2).** Register `POST /api/session` only when guest sign-in is on. Keep `createGuestSession`. `createTestApp` turns guest sign-in on, so the `signIn` helper and most API tests do not change. Test: 404 when it is off.
+- [x] **Google start and callback (D3).** Check the current Arctic API first. `GET /api/auth/google/start` sets the `state` and PKCE cookies and goes to Google. It refuses a signed-in user with `already_signed_in`. `GET /api/auth/google/callback` checks `state`, gets the Google subject, and clears the cookies. Inject the Google provider, so that tests do not call Google.
+- [x] **Google users and sessions (D4).** A known subject: a new session for its user. A new subject: a short pending sign-in, then `POST /api/auth/google/name` with the display name makes the user, the identity row and the session in one transaction. Reuse the cookie and session code in `apps/api/src/auth/`. Tests: new user, known user, bad `state`, name taken, already signed in.
 
 ### E. Web
 
@@ -92,7 +92,7 @@ Ask before you add or change a board. Sync the artifacts.
 
 ### F. Browser tests
 
-- [ ] **Guest sign-in for browser tests (F1).** Set `GUEST_SIGN_IN_ENABLED=true` for the Playwright API server and for `pnpm dev`. The current scripts stay green.
+- [x] **Guest sign-in for browser tests (F1).** Set `GUEST_SIGN_IN_ENABLED=true` for the Playwright API server and for `pnpm dev`. The current scripts stay green.
 - [ ] **Remove player script (F2).** Two contexts: the host removes the guest, the guest sees the notice and goes to the lobby, and joins again with the link.
 
 ### G. Close

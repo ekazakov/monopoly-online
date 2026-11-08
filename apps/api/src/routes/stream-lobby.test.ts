@@ -27,7 +27,7 @@ describe("GET /api/stream: lobby and user topics", () => {
     db = createDb(":memory:");
     await migrateToLatest(db);
     bus = createBus<StreamEnvelope>();
-    app = createApp(db, { seed: () => SEED, bus });
+    app = createApp(db, { auth: { guest: true }, seed: () => SEED, bus });
   });
 
   afterEach(async () => {

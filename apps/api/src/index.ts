@@ -2,12 +2,16 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { serve } from "@hono/node-server";
 import { createApp } from "./app.ts";
+import { createArcticGoogle, readAuthConfig } from "./auth/index.ts";
 import { createDb } from "./db/client.ts";
 import { migrateToLatest } from "./db/migrations.ts";
 import { createPresenceTracker, watchActiveGames } from "./realtime/presence.ts";
 
 const port = Number(process.env.PORT ?? 8787);
 const dbPath = process.env.DB_PATH ?? "data/monopoly.db";
+
+// A wrong sign-in setting stops the start here, before the database opens.
+const authConfig = readAuthConfig(process.env);
 
 mkdirSync(dirname(dbPath), { recursive: true });
 const db = createDb(dbPath);
@@ -38,7 +42,14 @@ if (graceMs !== undefined && !(Number.isInteger(graceMs) && graceMs > 0)) {
 // The tracker is in memory, so a restart forgets who was online. Every controller of an active game
 // gets a new grace time, and a game that nobody comes back to saves itself.
 const presence = createPresenceTracker(graceMs === undefined ? {} : { graceMs });
-const app = createApp(db, { presence, ...(seed === undefined ? {} : { seed: () => seed }) });
+const app = createApp(db, {
+  presence,
+  auth: {
+    guest: authConfig.guest,
+    ...(authConfig.google ? { google: createArcticGoogle(authConfig.google) } : {}),
+  },
+  ...(seed === undefined ? {} : { seed: () => seed }),
+});
 const watched = await watchActiveGames(db, presence);
 if (watched > 0) console.log(`Watching ${watched} active game(s) for returning players`);
 

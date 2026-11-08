@@ -27,7 +27,7 @@ describe("GET /api/games/{id}/result", () => {
     db = createDb(":memory:");
     await migrateToLatest(db);
     loader = createGameStateLoader(db);
-    app = createApp(db, { seed: () => SEED, loader });
+    app = createApp(db, { auth: { guest: true }, seed: () => SEED, loader });
   });
 
   afterEach(async () => {

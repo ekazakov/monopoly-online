@@ -42,7 +42,7 @@ describe("game lifecycle routes", () => {
     // The grace timers never run here. The players have streams open, as in a browser: a game
     // that nobody watches saves itself.
     tracker = createPresenceTracker({ timers: { set: () => null, clear: () => {} } });
-    app = createApp(db, { seed: () => SEED, bus, presence: tracker });
+    app = createApp(db, { auth: { guest: true }, seed: () => SEED, bus, presence: tracker });
     started = await startedGame(app, SEED);
     tracker.connect(started.game.id, started.owner.user.id);
     tracker.connect(started.game.id, started.guest.user.id);

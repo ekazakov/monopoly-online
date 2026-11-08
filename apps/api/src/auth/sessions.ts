@@ -1,7 +1,8 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type { User } from "@monopoly/shared";
 import type { AppDeps } from "../routes/common.ts";
-import type { User as UserRow } from "../db/schema.ts";
+import type { Database, User as UserRow } from "../db/schema.ts";
+import type { Kysely } from "kysely";
 
 /** A session ends after 30 days without use. The cookie has the same Max-Age. */
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -32,41 +33,107 @@ async function nameIsTaken({ db }: SessionDeps, key: string) {
   return row !== undefined;
 }
 
+type Trx = Kysely<Database>;
+
+/** Insert a user row and a session row. Returns the session token. Call inside a transaction. */
+async function insertUserWithSession(trx: Trx, row: UserRow, time: Date) {
+  const token = generateToken();
+  await trx.insertInto("users").values(row).execute();
+  await insertSession(trx, row.id, token, time);
+  return token;
+}
+
+async function insertSession(trx: Trx, userId: string, token: string, time: Date) {
+  await trx
+    .insertInto("sessions")
+    .values({
+      token_hash: hashToken(token),
+      user_id: userId,
+      expires_at: new Date(time.getTime() + SESSION_TTL_MS).toISOString(),
+      last_used_at: time.toISOString(),
+      created_at: time.toISOString(),
+    })
+    .execute();
+}
+
+const newUserRow = (name: string, time: Date): UserRow => ({
+  id: randomUUID(),
+  name,
+  name_key: nameKey(name),
+  created_at: time.toISOString(),
+});
+
 /** Create a guest user and a session. Returns null when the name is taken (case-insensitive). */
 export async function createGuestSession(deps: SessionDeps, name: string) {
   const { db, now } = deps;
   const key = nameKey(name);
   if (await nameIsTaken(deps, key)) return null;
 
-  const token = generateToken();
-  const time = now();
-  const row: UserRow = {
-    id: randomUUID(),
-    name,
-    name_key: key,
-    created_at: time.toISOString(),
-  };
+  const row = newUserRow(name, now());
   try {
-    await db.transaction().execute(async (trx) => {
-      await trx.insertInto("users").values(row).execute();
-      await trx
-        .insertInto("sessions")
-        .values({
-          token_hash: hashToken(token),
-          user_id: row.id,
-          expires_at: new Date(time.getTime() + SESSION_TTL_MS).toISOString(),
-          last_used_at: time.toISOString(),
-          created_at: time.toISOString(),
-        })
-        .execute();
-    });
+    const token = await db.transaction().execute((trx) => insertUserWithSession(trx, row, now()));
+    return { token, user: toApiUser(row) };
   } catch (error) {
     // Two requests with the same name can pass the first check together. The unique
     // index refuses the second insert. Checking again keeps the code database-neutral.
     if (await nameIsTaken(deps, key)) return null;
     throw error;
   }
-  return { token, user: toApiUser(row) };
+}
+
+export const GOOGLE_PROVIDER = "google";
+
+/** The user that a Google subject belongs to, or undefined for a subject we have not seen. */
+async function findGoogleUser({ db }: SessionDeps, subject: string) {
+  return db
+    .selectFrom("auth_identities")
+    .innerJoin("users", "users.id", "auth_identities.user_id")
+    .select(["users.id", "users.name", "users.name_key", "users.created_at"])
+    .where("auth_identities.provider", "=", GOOGLE_PROVIDER)
+    .where("auth_identities.subject", "=", subject)
+    .executeTakeFirst();
+}
+
+/** Start a new session for the user of a known Google subject. Returns null for an unknown subject. */
+export async function createSessionForGoogleSubject(deps: SessionDeps, subject: string) {
+  const found = await findGoogleUser(deps, subject);
+  if (!found) return null;
+  const token = generateToken();
+  await insertSession(deps.db, found.id, token, deps.now());
+  return { token, user: toApiUser(found) };
+}
+
+/**
+ * Create the user, the identity row and the session of a new Google subject in one transaction.
+ * The user chooses the name; the Google name is not used. Returns null when the name is taken.
+ */
+export async function createGoogleUserSession(deps: SessionDeps, subject: string, name: string) {
+  const { db, now } = deps;
+  const key = nameKey(name);
+  if (await nameIsTaken(deps, key)) return null;
+
+  const time = now();
+  const row = newUserRow(name, time);
+  try {
+    const token = await db.transaction().execute(async (trx) => {
+      const created = await insertUserWithSession(trx, row, time);
+      await trx
+        .insertInto("auth_identities")
+        .values({
+          id: randomUUID(),
+          provider: GOOGLE_PROVIDER,
+          subject,
+          user_id: row.id,
+          created_at: time.toISOString(),
+        })
+        .execute();
+      return created;
+    });
+    return { token, user: toApiUser(row) };
+  } catch (error) {
+    if (await nameIsTaken(deps, key)) return null;
+    throw error;
+  }
 }
 
 /**

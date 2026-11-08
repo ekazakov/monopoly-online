@@ -6,11 +6,14 @@ import { migrateToLatest } from "../db/migrations.ts";
 import type { Database } from "../db/schema.ts";
 import { SESSION_COOKIE } from "../routes/common.ts";
 
-/** An app on a fresh in-memory database. Call `db.destroy()` in `afterEach`. */
+/**
+ * An app on a fresh in-memory database. Guest sign-in is on, so `signIn` works; pass
+ * `auth: { guest: false }` to turn it off. Call `db.destroy()` in `afterEach`.
+ */
 export async function createTestApp(options?: AppOptions) {
   const db: Kysely<Database> = createDb(":memory:");
   await migrateToLatest(db);
-  return { app: createApp(db, options), db };
+  return { app: createApp(db, { ...options, auth: { guest: true, ...options?.auth } }), db };
 }
 
 type Requester = Pick<AppType, "request">;

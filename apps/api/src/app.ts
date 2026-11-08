@@ -1,7 +1,12 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { Kysely } from "kysely";
 import type { Database } from "./db/schema.ts";
-import { checkOrigin, parseOrigins } from "./auth/index.ts";
+import {
+  checkOrigin,
+  createPendingSignIns,
+  parseOrigins,
+  type GoogleProvider,
+} from "./auth/index.ts";
 import { errorHandler, notFoundHandler, validationHook } from "./errors.ts";
 import {
   SESSION_COOKIE,
@@ -21,6 +26,7 @@ import {
   type PresenceTracker,
 } from "./realtime/presence.ts";
 import { createRoomService, type RoomEvent } from "./rooms/service.ts";
+import { authRoutes } from "./routes/auth.ts";
 import { gameRoutes } from "./routes/games.ts";
 import { gameplayRoutes } from "./routes/gameplay.ts";
 import { healthRoutes } from "./routes/health.ts";
@@ -50,6 +56,16 @@ export type AppOptions = BaseAppOptions & {
   presence?: PresenceTracker;
   /** Grace time of the default tracker in ms. Defaults to 60 s. Ignored when `presence` is set. */
   presenceGraceMs?: number;
+  /**
+   * The sign-in methods. Defaults to none: `POST /api/session` answers 404 and Google is off.
+   * `index.ts` reads them from the environment with `readAuthConfig`.
+   */
+  auth?: {
+    /** Turns on guest sign-in (`POST /api/session`). */
+    guest?: boolean;
+    /** Turns on Google sign-in. Tests pass a fake provider. */
+    google?: GoogleProvider;
+  };
 };
 
 export function createApp(db: Kysely<Database>, options?: AppOptions) {
@@ -123,6 +139,8 @@ export function createApp(db: Kysely<Database>, options?: AppOptions) {
       .saveUnattended({ gameId, stillUnattended: () => nobodyOnline(gameId) })
       .catch((error: unknown) => console.error("Automatic save failed", error));
   });
+  const guest = options?.auth?.guest ?? false;
+  const pending = createPendingSignIns(deps.now);
   const api = new OpenAPIHono<AppEnv>({ defaultHook: validationHook }).basePath("/api");
   // Registered before every route, so later routes are covered too. `.use` returns a plain
   // Hono type, so it stays out of the chain that keeps the OpenAPI types.
@@ -131,7 +149,8 @@ export function createApp(db: Kysely<Database>, options?: AppOptions) {
     .notFound(notFoundHandler)
     .onError(errorHandler)
     .route("/", healthRoutes(deps))
-    .route("/", sessionRoutes(deps))
+    .route("/", sessionRoutes(deps, { guest }))
+    .route("/", authRoutes(deps, { guest, google: options?.auth?.google, pending }))
     .route("/", gameRoutes({ ...deps, rooms }))
     .route("/", inviteRoutes({ ...deps, rooms }))
     // After `gameRoutes`: its `/games/*` session middleware also covers these routes, and the

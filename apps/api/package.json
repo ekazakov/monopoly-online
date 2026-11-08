@@ -9,7 +9,7 @@
     }
   },
   "scripts": {
-    "dev": "NODE_ENV=development node --watch src/index.ts",
+    "dev": "NODE_ENV=development GUEST_SIGN_IN_ENABLED=true node --watch src/index.ts",
     "build": "vp pack",
     "start": "node dist/index.mjs",
     "test": "vp test",
@@ -22,6 +22,7 @@
     "@hono/zod-validator": "catalog:",
     "@monopoly/game-engine": "workspace:*",
     "@monopoly/shared": "workspace:*",
+    "arctic": "catalog:",
     "better-sqlite3": "catalog:",
     "hono": "catalog:",
     "kysely": "catalog:",

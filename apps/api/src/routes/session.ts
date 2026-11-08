@@ -27,11 +27,11 @@ const createSessionRoute = createRoute({
   method: "post",
   path: "/session",
   tags: ["session"],
-  summary: "Sign in as a guest with a display name",
+  summary: "Sign in as a guest with a display name. Answers 404 unless guest sign-in is on",
   request: { body: jsonBody(createSessionSchema) },
   responses: {
     201: jsonResponse("The new user. The session cookie is set", createSessionResponseSchema),
-    ...errorResponses(400, 403, 409),
+    ...errorResponses(400, 403, 404, 409),
   },
 });
 
@@ -59,7 +59,8 @@ const deleteSessionRoute = createRoute({
   },
 });
 
-export function sessionRoutes(deps: AppDeps) {
+/** `guest` is true when `GUEST_SIGN_IN_ENABLED=true`. When it is false, `POST /session` answers 404. */
+export function sessionRoutes(deps: AppDeps, { guest }: { guest: boolean }) {
   const auth = requireSession(deps);
   const routes = new OpenAPIHono<AppEnv>();
   // `.use` and `.on` return a plain Hono type, so they stay out of the typed chain below.
@@ -69,6 +70,7 @@ export function sessionRoutes(deps: AppDeps) {
 
   return routes
     .openapi(createSessionRoute, async (c) => {
+      if (!guest) return c.json(errorBody("not_found", "Guest sign-in is off"), 404);
       const token = readSessionToken(c);
       // An expired or unknown cookie does not block sign-in; the new cookie replaces it.
       if (token && (await resolveSession(deps, token))) {

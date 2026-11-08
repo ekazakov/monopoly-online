@@ -49,7 +49,7 @@ describe("automatic save", () => {
       },
     });
     const bus = createBus<StreamEnvelope>();
-    app = createApp(db, { seed: () => SEED, bus, presence: tracker });
+    app = createApp(db, { auth: { guest: true }, seed: () => SEED, bus, presence: tracker });
     started = await startedGame(app, SEED);
     seen = [];
     bus.subscribe(gameTopic(started.game.id), (message) => {

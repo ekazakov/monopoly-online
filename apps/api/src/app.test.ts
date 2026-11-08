@@ -32,7 +32,7 @@ describe("api", () => {
   beforeEach(async () => {
     db = createDb(":memory:");
     await migrateToLatest(db);
-    app = createApp(db);
+    app = createApp(db, { auth: { guest: true } });
     app.route("/", echoRoutes);
   });
 
