@@ -3,7 +3,7 @@
 |                |                                                                                                    |
 | -------------- | -------------------------------------------------------------------------------------------------- |
 | Companion docs | [implementation-roadmap.md](implementation-roadmap.md), [api-schema.md](api-schema.md) (section "Milestone 4"), [game-screen-2-gameplay.md](game-screen-2-gameplay.md) (Q25), [milestone-3-tasks.md](milestone-3-tasks.md), [e2e-test-plan.md](e2e-test-plan.md) |
-| Status         | In progress. Rematch removal (A1) is done. Last updated 2026-11-08                                 |
+| Status         | In progress. Rematch removal (A1) and Milestone 4 docs (A2) are done. Last updated 2026-11-08                                 |
 
 **Goal.** On production, a player signs in with Google and keeps one account in each browser. The host decides who stays in the room.
 
@@ -63,7 +63,7 @@ Mark a task `[x]` in the commit that completes it.
 Ask before you add or change a board. Sync the artifacts.
 
 - [x] **Rematch removal (A1).** Prototype game-over dialog, `Dialogs.dc.html`, `GameResult.dc.html`, `OwnerControls.dc.html`, the roadmap and the scope lines of the M1 to M3 task files. Commit `77c6d62`.
-- [ ] **Milestone 4 docs (A2).** This list. The M4 section of [api-schema.md](api-schema.md). The roadmap: M4 scope, the accessibility pass and WebSocket after M5, section 5 (Google sign-in, guest sign-in for test and development), and remove the idea in section 10 to link users from the Access email. The glossary: the two meanings of "guest", and the new environment variables. The README: the new environment variables and the Google client setup.
+- [x] **Milestone 4 docs (A2).** This list. The M4 section of [api-schema.md](api-schema.md). The roadmap: M4 scope, the accessibility pass and WebSocket after M5, section 5 (Google sign-in, guest sign-in for test and development), and remove the idea in section 10 to link users from the Access email. The glossary: the two meanings of "guest", and the new environment variables. The README: the new environment variables and the Google client setup.
 - [ ] **Remove player boards (A3).** A Remove control and a confirm step in the host view of `LobbyHost.dc.html` and `LobbyHostReady.dc.html`. The notice for the removed player.
 - [ ] **Sign-in board (A4).** `SignIn.dc.html`: the Google button, the name step for a new Google user, the guest name form only when guest sign-in is on, and the errors (Google refused, name taken).
 
@@ -106,7 +106,7 @@ The project owner must create a Google Cloud OAuth client, with the redirect add
 
 ## Order and dependencies
 
-- Rematch removal (A1) is done. Milestone 4 docs (A2) is next.
+- Rematch removal (A1) and Milestone 4 docs (A2) are done. Remove player boards (A3) is next.
 - Shared and database (B) → Host removes a player API (C) and Google sign-in API (D) → Web (E) → Browser tests (F) → Close (G).
 - C and D do not depend on each other after B, but both change `app.ts`, the shared schemas and `openapi.json`. Do them one after the other.
 - Guest sign-in for browser tests (F1) goes in the same change as Guest sign-in behind the variable (D2), so the Playwright scripts do not break.

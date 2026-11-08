@@ -14,8 +14,8 @@ This document is the plan from the current scaffold to a fully working online ga
 
 | Topic     | Decision                                                                                                  |
 | --------- | --------------------------------------------------------------------------------------------------------- |
-| Auth      | Guest name only for now. Google OAuth later                                                               |
-| Realtime  | SSE + HTTP POST now, behind a transport layer. WebSocket later, with a fallback from WebSocket to SSE + POST |
+| Auth      | Google sign-in in production. Guest name sign-in for test and development only (M4)                       |
+| Realtime  | SSE + HTTP POST now, behind a transport layer. WebSocket after M5, only if SSE has a problem, with a fallback from WebSocket to SSE + POST |
 | Database  | SQLite. All queries go through Kysely and stay portable, so a later change to Postgres needs only a new dialect in `db/client.ts` |
 | First goal | A playable game on the local machine: hot-seat on one device, and several browsers or browser profiles as separate devices |
 | Hosting   | Minimal cost, free tiers where possible                                                                   |
@@ -62,6 +62,7 @@ Migrations go in `apps/api/src/db/migrations.ts`, types in `apps/api/src/db/sche
 | ---------------- | --------------------------------------------------------------------------------------------- |
 | `users`          | Id, display name (unique, case-insensitive), created time                                      |
 | `sessions`       | Hash of the session token, user, expiry                                                       |
+| `auth_identities` | Provider, subject, user, created time. M4, Google only. Unique on provider and subject        |
 | `games`          | Extend the current table: owner, status (waiting, active, saved, finished), version. The seat limit is always 6 (`MAX_PLAYERS`) |
 | `seats`          | Game, order, name, player token (game piece, M2), the device user who controls it, the user (empty for hot-seat) |
 | `invites`        | Game, invited user, state. M2, for invite by name only. The game id link is the invite (no link token) |
@@ -74,8 +75,8 @@ The request and response schemas are zod schemas in `packages/shared`.
 
 | Area     | Endpoints                                                                                                                                                                                                                         |
 | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Session  | `POST /api/session` (guest name), `GET /api/me`, `PATCH /api/me`, `DELETE /api/session`                                                                                                                                        |
-| Lobby    | `GET /api/games?status=waiting`, `GET /api/me/games`, `POST /api/games`, `GET /api/games/:id`, `DELETE /api/games/:id` (cancel), join, leave, add and remove a hot-seat seat, `PUT /api/games/:id/seats/:seatId/token`, invite by name (`POST /api/games/:id/invites`, `GET /api/me/invites`, accept, decline), start. The game link (`/games/<id>`) is the invite |
+| Session  | `GET /api/auth/methods`, `GET /api/auth/google/start`, `GET /api/auth/google/callback`, `POST /api/auth/google/name` (M4), `POST /api/session` (guest name, only when `GUEST_SIGN_IN_ENABLED=true`), `GET /api/me`, `PATCH /api/me`, `DELETE /api/session` |
+| Lobby    | `GET /api/games?status=waiting`, `GET /api/me/games`, `POST /api/games`, `GET /api/games/:id`, `DELETE /api/games/:id` (cancel), join, leave, add and remove a hot-seat seat, `PUT /api/games/:id/seats/:seatId/token`, invite by name (`POST /api/games/:id/invites`, `GET /api/me/invites`, accept, decline), start, and `DELETE /api/games/:id/players/:userId` (the host removes a player, M4). The game link (`/games/<id>`) is the invite |
 | Game     | `POST /api/games/:id/actions` with `{ seatId, action, expectedVersion, clientActionId }`, `GET /api/games/:id/state`, owner `POST /api/games/:id/finish`, `/save`, `/restore`, and `POST /api/games/:id/claim`. Saved games are in `GET /api/me/games` |
 | Realtime | `GET /api/stream?topics=lobby,user:<id>,game:<id>` (SSE)                                                                                                                                                                                  |
 
@@ -99,7 +100,7 @@ The request and response schemas are zod schemas in `packages/shared`.
 ### 4.1 Server
 
 - **`Bus`**: publish and subscribe by topic, in memory in the API process.
-- **`Transport`**: connects one device. SSE now, WebSocket later.
+- **`Transport`**: connects one device. SSE now, WebSocket after M5 if needed.
 - **Envelope**: `{ topic, type, version, payload }`.
 - **SSE.** Hono `streamSSE`. The event id is the engine version; room, lobby and user messages have no id. A heartbeat every 15 seconds. On reconnect the browser sends `Last-Event-ID`: the server sends the events after that version, or a new snapshot when the gap is more than 100 versions (see [api-schema.md](api-schema.md)).
 - **Presence.** A device is online while it has an open stream (or WebSocket). When the stream closes, its players are "reconnecting". After 60 seconds they are "away" (gameplay 3.2). When all seated users are away, the game saves itself. The timers run in the API process. At start, each controller in an active game gets a new grace timer. Presence is not stored in the database.
@@ -108,17 +109,23 @@ The request and response schemas are zod schemas in `packages/shared`.
 
 - **`RealtimeClient`**: `subscribe(topic, handler)`, `send(action)`, `status`.
 - **`SseHttpClient`** (now): `EventSource` for events, POST for actions.
-- **`WsClient`** (later): the factory tries WebSocket first. If the connection fails or is blocked, it uses SSE + POST. The POST route for actions stays in all cases, so the fallback is always possible.
+- **`WsClient`** (after M5, only if needed): the factory tries WebSocket first. If the connection fails or is blocked, it uses SSE + POST. The POST route for actions stays in all cases, so the fallback is always possible.
 
 ---
 
 ## 5. Auth
 
-- **Now: guest name.** The player types a display name (2 to 16 characters, unique, case-insensitive). The server creates a user and a session.
+- **Production: Google sign-in (M4).** The player signs in with Google. The OAuth client is Arctic, with `state` and PKCE in short HttpOnly, SameSite=Lax cookies. The sessions stay ours.
+  - The table `auth_identities` (provider, subject, user id, created time) has a unique index on provider and subject. It keeps only the Google subject. It does not keep the email, the Google name or the Google tokens.
+  - A known subject signs in as its user. A new subject gives a short pending sign-in, and the player types a display name (2 to 16 characters, unique, case-insensitive). The server then makes the user, the identity row and the session in one transaction. The Google name is not used.
+  - A Google user and a guest user are always separate users. There is no link and no merge. `GET /api/auth/google/start` refuses a signed-in user with `already_signed_in`.
+  - The server needs `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `GOOGLE_REDIRECT_URI` in production. In other environments it needs at least one sign-in method, or it does not start.
+- **Test and development: guest name (M4).** The player types a display name. The server creates a user and a session. The route `POST /api/session` exists only when `GUEST_SIGN_IN_ENABLED=true`; without it the route is 404. The API does not start when `GUEST_SIGN_IN_ENABLED=true` and `NODE_ENV=production`.
+- **Sign-in methods.** `GET /api/auth/methods` returns `{ google, guest }`. The web app reads it at run time, so one build works in all environments.
+- **Sessions.**
   - The cookie is HttpOnly, Secure and SameSite=Lax. Secure is off when `NODE_ENV` is `development` or `test`, because local development uses plain HTTP. It holds a random token. The database keeps only the hash of the token.
-  - The session expires after 30 days without use.
+  - Each sign-in makes a new session token. The session expires after 30 days without use.
 - **Hot-seat players** are seats, not users. They belong to the device user who added them.
-- **Later: Google OAuth.** A table `auth_identities` (provider, subject, user). A guest who signs in with Google keeps the same user and their games. The OAuth client is Arctic. The sessions stay ours.
 - **Protection.** SameSite cookies and JSON-only POST requests protect against CSRF. Routes that change state also check the request origin.
 
 ---
@@ -126,7 +133,7 @@ The request and response schemas are zod schemas in `packages/shared`.
 ## 6. UI (`apps/web`)
 
 - **Routing.** TanStack Router: sign-in, lobby, game room, game, result.
-- **Screens.** Sign-in (guest name), lobby list, game room (host and guest: seats, invites, tokens), game screen, saved games (owner), result.
+- **Screens.** Sign-in (Google, and the guest name when it is on), lobby list, game room (host and guest: seats, invites, tokens), game screen, saved games (owner), result.
 - **Game screen.** Port `artifacts/game-screen` to React components, following [game-screen-2-spec.md](game-screen-2-spec.md): player rail, log, board, board-centre turn area, hand, and the dialogs (auction, trade, manage, card, bankruptcy, leave and resign, owner finish and save). Move the board logic of `board3d.js` into React Three Fiber in `apps/web/src/scene/`.
 - **State.** TanStack Query for REST data. A game store keeps the latest redacted state from the stream (no client reducer). The events in each message fill the log and start the animations. The static board and card data come from `packages/game-engine` (`board.ts`, `cards.ts`).
 - **Design tokens.** Colours, type and spacing from the design system, as CSS variables.
@@ -190,7 +197,7 @@ Only persons on an allow list can open the game. Cloudflare Access (Zero Trust, 
 - **Origin protection.**
   - Cloudflare Tunnel: the droplet has no open HTTP port (firewall allows only SSH).
   - Defence in depth: an API middleware checks the `Cf-Access-Jwt-Assertion` header (signature from the team's public keys, audience tag, expiry). A request without a valid token gets 403. The check is off in local development and in tests (environment flag).
-- **Relation to the guest name (section 5).** Access decides who may enter. The guest name stays the in-game identity. Later, the API can read the verified email from the Access token and fill in the name, or link it to the user.
+- **Relation to the guest name (section 5).** Access decides who may enter. The Google sign-in (section 5) gives the in-game identity. The API does not read the Access email and does not link it to a user.
 - **SSE through Cloudflare.** Cloudflare closes an idle connection after about 100 seconds. The 15-second heartbeat (section 4.1) keeps the stream open. When the Access session ends, the stream and POST requests fail with a redirect or 403: the client shows "Session ended" and reloads the page, so the person signs in again.
 - **Health check.** `/api/health` stays behind Access. The deploy checks it inside the droplet, not through Cloudflare.
 - **Managing access.** Add or remove a person in the Access policy in the dashboard. No deploy is necessary. Optional later: keep the policy in Terraform.

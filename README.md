@@ -44,6 +44,27 @@ The web dev server sends `/api` requests to the API.
 
 The API keeps its database in `apps/api/data/monopoly.db`. To change the path, set `DB_PATH`. To change the port, set `PORT`. The API applies the migrations when it starts.
 
+## Sign-in
+
+The API reads these environment variables:
+
+| Variable                                   | Purpose                                                                                                                                                                                                                                                  |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GUEST_SIGN_IN_ENABLED`                    | Set to `true` to turn on guest name sign-in (`POST /api/session`). For test and development only. When it is not set, the route is 404. The API does not start when it is `true` and `NODE_ENV` is `production`. `pnpm dev` and the browser tests set it |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | The Google OAuth client. Required in production                                                                                                                                                                                                          |
+| `GOOGLE_REDIRECT_URI`                      | The callback address of the API, for example `http://localhost:5173/api/auth/google/callback`                                                                                                                                                            |
+
+At least one sign-in method must be on, or the API does not start. `GET /api/auth/methods` shows the methods that are on.
+
+To set up Google sign-in on the local machine:
+
+1. In Google Cloud, create an OAuth client of type "Web application".
+2. Add `GOOGLE_REDIRECT_URI` as an authorized redirect address.
+3. If the consent screen is in "Testing", add your Google account as a test user.
+4. Put the three Google values in a local `.env` file. Do not commit this file.
+
+Guest sign-in and Google sign-in make separate users. Local guest users continue to work.
+
 To delete all data and start again, stop the API and run:
 
 ```bash

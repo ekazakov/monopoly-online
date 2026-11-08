@@ -1,11 +1,11 @@
-# Harborfront: API schema for milestones 1 to 3
+# Harborfront: API schema for milestones 1 to 4
 
 |                |                                                                                                   |
 | -------------- | ------------------------------------------------------------------------------------------------- |
-| Companion docs | [implementation-roadmap.md](implementation-roadmap.md), [milestone-1-tasks.md](milestone-1-tasks.md), [milestone-2-tasks.md](milestone-2-tasks.md), [milestone-3-tasks.md](milestone-3-tasks.md) |
-| Status         | Milestones 1 and 2 done. Milestone 3 is a plan. Last updated 2026-11-06                                                        |
+| Companion docs | [implementation-roadmap.md](implementation-roadmap.md), [milestone-1-tasks.md](milestone-1-tasks.md), [milestone-2-tasks.md](milestone-2-tasks.md), [milestone-3-tasks.md](milestone-3-tasks.md), [milestone-4-tasks.md](milestone-4-tasks.md) |
+| Status         | Milestones 1 and 2 done. Milestones 3 and 4 are plans. Last updated 2026-11-08                                                        |
 
-This document fixes the request and response schema of each API method in milestone 1. The section "Milestone 2" adds the lobby methods. The section "Milestone 3" adds Finish, Save, Restore and presence. The zod schemas live in `packages/shared`.
+This document fixes the request and response schema of each API method in milestone 1. The section "Milestone 2" adds the lobby methods. The section "Milestone 3" adds Finish, Save, Restore and presence. The section "Milestone 4" adds Remove player and Google sign-in. The zod schemas live in `packages/shared`.
 
 ## Decisions (user answers)
 - **State and events:** zod mirror of redacted state, events and the action union in `packages/shared`, plus a drift test against the engine.
@@ -16,7 +16,7 @@ This document fixes the request and response schema of each API method in milest
 
 ## Conventions
 - Ids are UUID text. Times are ISO 8601 text. JSON only. Bodies are strict objects (unknown keys refused).
-- All routes except `GET /api/health` and `POST /api/session` need the session cookie (401 `unauthorized`). State-changing routes also check `Origin` (403 `forbidden_origin`).
+- All routes except `GET /api/health`, `GET /api/auth/*` and `POST /api/session` need the session cookie (401 `unauthorized`). State-changing routes also check `Origin` (403 `forbidden_origin`).
 - **Engine player id = seat id.** The server sets `playerId` from `seatId`; clients never send `playerId`.
 - **Seat check and turn check.** The API checks only that the device controls `seatId` (403 `not_your_seat`). The engine checks the actor and the phase (422 `not_your_turn`, `wrong_phase`).
 - Error body stays `{ error: { code, message, issues? } }` (`apiErrorSchema`). Version conflicts add `currentVersion`.
@@ -199,6 +199,47 @@ All need the session cookie and check `Origin`.
 - **`presence.updated`** (new): `{ seats: { [seatId]: "online" | "reconnecting" | "away" } }` on `game:<id>`. No SSE id. Sent on each change and in each connect, also when a resume has nothing to send.
 - **Equal versions.** Restore keeps the version of the Save before it, so its `snapshot` repeats that version. A stream delivers a `snapshot` at the version it has already sent. Every other message must be newer. The client must also accept a `snapshot` at its own version.
 - **Resume.** A `Last-Event-ID` before a rollback finds a hole in the log and gets a `snapshot`. This is a normal path.
+
+## Milestone 4
+
+The plan for [milestone-4-tasks.md](milestone-4-tasks.md). The code does not have these methods yet.
+
+### Decisions (user answers)
+- **Remove a player.** Host only, `waiting` games only, never the host's own seat. It removes the seat of the player and the hot-seat seats that the player controls. There is no ban: the player can join again with the game link.
+- **Production sign-in.** Google only. `POST /api/session` is registered only when `GUEST_SIGN_IN_ENABLED=true`. When it is off, the route answers 404.
+- **Start rules.** The API does not start when `GUEST_SIGN_IN_ENABLED=true` and `NODE_ENV=production`. Google client values are required in production. In other environments at least one sign-in method must be on.
+- **Google data.** Only the Google subject is kept (`auth_identities`). A new Google user types a display name; the Google name is not used.
+- **Users.** A guest user and a Google user are always separate. `GET /api/auth/google/start` refuses a signed-in user with 409 `already_signed_in`.
+
+### New and changed schemas
+| Schema | Shape |
+| --- | --- |
+| `removePlayerResponseSchema` | `{ game }`: the game after the removal |
+| `authMethodsSchema` | `{ google: boolean, guest: boolean }` |
+| `googleNameRequestSchema` | `{ name: displayName }` |
+| `roomRemovedPayloadSchema` | `{ gameId }` |
+| `auth_identities` table | Migration `0008_auth_identities`: `provider`, `subject`, `user_id`, `created_at`. Unique index on `provider` and `subject` |
+
+### New error codes
+| Status | Codes |
+| --- | --- |
+| 409 | `cannot_remove_self` |
+| 502 | `oauth_failed` (the Google exchange failed; the callback sends the browser to the sign-in screen with this code) |
+
+### New and changed methods
+| # | Method and path | Request | Success | Errors |
+| --- | --- | --- | --- | --- |
+| 28 | `DELETE /api/games/:id/players/:userId` (session, Origin check) | – | 200 `{ game }` | 403 `not_game_owner`, 404 `not_found` (no game, or the user has no seat), 409 `game_not_waiting`, 409 `cannot_remove_self` |
+| 29 | `GET /api/auth/methods` (no session) | – | 200 `{ google, guest }` | – |
+| 30 | `GET /api/auth/google/start` (no session) | – | 302 to Google. Sets the `state` and PKCE cookies (HttpOnly, SameSite=Lax, short life) | 404 `not_found` (Google is off), 409 `already_signed_in` |
+| 31 | `GET /api/auth/google/callback` (no session) | `code` and `state` in the query | 302 to the web app. A known subject gets a session cookie. A new subject gets a short pending sign-in cookie and goes to the name step. The `state` and PKCE cookies are cleared | A bad `state` or a failed exchange: 302 to the sign-in screen with `oauth_failed` |
+| 32 | `POST /api/auth/google/name` (pending sign-in, Origin check) | `{ name }` | 200 `{ user }`. Makes the user, the identity row and the session in one transaction | 400 `validation_error`, 401 `unauthorized` (no pending sign-in), 409 `name_taken` |
+| 5 | `POST /api/session` | `{ name }` | As before | 404 when `GUEST_SIGN_IN_ENABLED` is not `true` |
+
+### Stream messages
+- **`room.removed`** (new): `{ gameId }` on `user:<removedUserId>`. The removed player gets a notice and goes to the lobby.
+- After a removal the other members get `room.updated` on `game:<id>`, and the open list gets `lobby.updated`.
+- Open decision (Remove player messages, C2): the server may also close the game subscription of the removed user.
 
 ## Debug edit (added 2026-11-03, not in a milestone)
 
