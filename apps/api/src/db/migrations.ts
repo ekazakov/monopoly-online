@@ -257,6 +257,21 @@ const migrations: Record<string, Migration> = {
   },
 };
 
+/**
+ * The names of the migrations of this version that have not run. Reads the migration table and
+ * writes nothing, so a readiness probe can call it. A database with no migration table has all of
+ * them pending.
+ */
+export async function pendingMigrations(db: Kysely<Database>): Promise<string[]> {
+  const names = Object.keys(migrations);
+  // Kysely hides its own tables unless asked.
+  const tables = await db.introspection.getTables({ withInternalKyselyTables: true });
+  if (!tables.some((table) => table.name === "kysely_migration")) return names;
+  const rows = await sql<{ name: string }>`select name from kysely_migration`.execute(db);
+  const done = new Set(rows.rows.map((row) => row.name));
+  return names.filter((name) => !done.has(name));
+}
+
 function createMigrator(db: Kysely<Database>): Migrator {
   return new Migrator({ db, provider: { getMigrations: async () => migrations } });
 }

@@ -35,6 +35,7 @@ import { gameplayRoutes } from "./routes/gameplay.ts";
 import { healthRoutes } from "./routes/health.ts";
 import { inviteRoutes } from "./routes/invites.ts";
 import { lifecycleRoutes } from "./routes/lifecycle.ts";
+import { readyRoutes } from "./routes/ready.ts";
 import { resultRoutes } from "./routes/result.ts";
 import { sessionRoutes } from "./routes/session.ts";
 import { streamRoutes } from "./routes/stream.ts";
@@ -166,6 +167,7 @@ export function createApp(db: Kysely<Database>, options?: AppOptions) {
     .notFound(notFoundHandler)
     .onError(errorHandler)
     .route("/", healthRoutes(deps))
+    .route("/", readyRoutes(deps))
     .route("/", sessionRoutes(deps, { guest }))
     .route("/", authRoutes(deps, { guest, google: options?.auth?.google, pending }))
     .route("/", gameRoutes({ ...deps, rooms }))

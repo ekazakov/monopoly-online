@@ -15,6 +15,14 @@ describe("hc client types", () => {
     expectTypeOf<Res["status"]>().toEqualTypeOf<200>();
   });
 
+  test("ready body is ready or not_ready, by status", async () => {
+    const client = hc<AppType>("/");
+    type Res = Awaited<ReturnType<typeof client.api.ready.$get>>;
+    expectTypeOf<Res["status"]>().toEqualTypeOf<200 | 503>();
+    type Body = Awaited<ReturnType<Res["json"]>>;
+    expectTypeOf<Body["status"]>().toEqualTypeOf<"ready" | "not_ready">();
+  });
+
   test("error responses keep their status and body types", async () => {
     const route = createRoute({
       method: "get",

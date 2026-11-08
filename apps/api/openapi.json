@@ -144,6 +144,81 @@
         }
       }
     },
+    "/api/ready": {
+      "get": {
+        "tags": ["health"],
+        "summary": "Check that the API can serve requests",
+        "description": "Readiness, for the container health check. 200 when a database query works and every migration has run, else 503 with the failed checks. `GET /api/health` only says that the process runs. The body of the 503 is not an `ApiError`: a probe reads the status code. No sign-in is needed.",
+        "responses": {
+          "200": {
+            "description": "The API is ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["ready"]
+                    },
+                    "checks": {
+                      "type": "object",
+                      "properties": {
+                        "database": {
+                          "type": "string",
+                          "enum": ["ok", "failed"]
+                        },
+                        "migrations": {
+                          "type": "string",
+                          "enum": ["ok", "pending", "failed"]
+                        }
+                      },
+                      "required": ["database", "migrations"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["status", "checks"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database or the migrations are not ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["not_ready"]
+                    },
+                    "checks": {
+                      "type": "object",
+                      "properties": {
+                        "database": {
+                          "type": "string",
+                          "enum": ["ok", "failed"]
+                        },
+                        "migrations": {
+                          "type": "string",
+                          "enum": ["ok", "pending", "failed"]
+                        }
+                      },
+                      "required": ["database", "migrations"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["status", "checks"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/session": {
       "post": {
         "tags": ["session"],

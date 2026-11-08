@@ -100,7 +100,7 @@ Mark a task `[x]` in the commit that completes it.
 - [x] **Traces (C2).** HTTP spans from a Hono OpenTelemetry middleware, with the route template. Remove the client IP and the user agent from the span attributes. A Kysely plugin makes query spans (Kysely and `better-sqlite3` have no official instrumentation). An `applyAction` span with the game id and version.
 - [x] **Logs bridge (C3).** pino lines go through OpenTelemetry with the trace and span ids. The stdout lines also have these ids.
 - [x] **Metrics (C4).** The metrics in "Metrics". The database file size is an observable gauge. Presence and SSE counts come from the existing tracker and stream code. Tests read the values with an in-memory metric reader.
-- [ ] **Readiness route (C5).** `GET /api/ready`: 200 when a database query works and the migrations are applied, or else 503. A shared schema in `packages/shared`, the route in the chain in `app.ts`, and `pnpm openapi`.
+- [x] **Readiness route (C5).** `GET /api/ready`: 200 when a database query works and the migrations are applied, or else 503. A shared schema in `packages/shared`, the route in the chain in `app.ts`, and `pnpm openapi`.
 
 ### D. Docker
 

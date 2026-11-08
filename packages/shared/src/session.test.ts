@@ -6,6 +6,8 @@ import {
   displayNameSchema,
   googleNameRequestSchema,
   healthResponseSchema,
+  notReadyResponseSchema,
+  readyResponseSchema,
   userSchema,
 } from "./index.ts";
 
@@ -61,6 +63,21 @@ describe("user responses", () => {
   test("the health response is ok", () => {
     expect(healthResponseSchema.parse({ status: "ok" })).toEqual({ status: "ok" });
     expect(healthResponseSchema.safeParse({ status: "down" }).success).toBe(false);
+  });
+
+  test("the readiness bodies carry the checks and no error text", () => {
+    const checks = { database: "ok", migrations: "pending" };
+    expect(notReadyResponseSchema.parse({ status: "not_ready", checks })).toEqual({
+      status: "not_ready",
+      checks,
+    });
+    expect(readyResponseSchema.safeParse({ status: "not_ready", checks }).success).toBe(false);
+    expect(
+      readyResponseSchema.safeParse({ status: "ready", checks: { ...checks, error: "x" } }).success,
+    ).toBe(false);
+    expect(
+      readyResponseSchema.safeParse({ status: "ready", checks: { database: "up" } }).success,
+    ).toBe(false);
   });
 
   test("the sign-in methods have two flags and no more", () => {

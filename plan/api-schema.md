@@ -16,7 +16,7 @@ This document fixes the request and response schema of each API method in milest
 
 ## Conventions
 - Ids are UUID text. Times are ISO 8601 text. JSON only. Bodies are strict objects (unknown keys refused).
-- All routes except `GET /api/health`, `GET /api/auth/*` and `POST /api/session` need the session cookie (401 `unauthorized`). State-changing routes also check `Origin` (403 `forbidden_origin`).
+- All routes except `GET /api/health`, `GET /api/ready`, `GET /api/auth/*` and `POST /api/session` need the session cookie (401 `unauthorized`). State-changing routes also check `Origin` (403 `forbidden_origin`).
 - **Engine player id = seat id.** The server sets `playerId` from `seatId`; clients never send `playerId`.
 - **Seat check and turn check.** The API checks only that the device controls `seatId` (403 `not_your_seat`). The engine checks the actor and the phase (422 `not_your_turn`, `wrong_phase`).
 - Error body stays `{ error: { code, message, issues? } }` (`apiErrorSchema`). Version conflicts add `currentVersion`.
@@ -55,6 +55,7 @@ The engine code `not_owner` means "does not own the property". Owner-only API ro
 | # | Method and path | Request | Success | Errors |
 | --- | --- | --- | --- | --- |
 | 1 | `GET /api/health` | – | 200 `{ status: "ok" }` | – |
+| 1a | `GET /api/ready` | – | 200 `{ status: "ready", checks }` when a query works and every migration has run | 503 `{ status: "not_ready", checks }` (not an `ApiError`; `checks` is `{ database: ok\|failed, migrations: ok\|pending\|failed }`) |
 | 2 | `POST /api/session` | body `{ name: displayName }` | 201 `{ user }` + `Set-Cookie` (HttpOnly, SameSite=Lax; Secure unless `NODE_ENV` is `development` or `test`) | 400 validation, 409 `already_signed_in`, 409 `name_taken` |
 | 3 | `GET /api/me` | – | 200 `{ user }` | 401 |
 | 4 | `DELETE /api/session` | – | 204, cookie cleared | 401 |

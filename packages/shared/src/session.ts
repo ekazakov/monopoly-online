@@ -26,6 +26,29 @@ export const googleNameResponseSchema = userResponseSchema;
 
 export const healthResponseSchema = z.strictObject({ status: z.literal("ok") });
 
+/**
+ * What `GET /api/ready` checks. `database`: a query works. `migrations`: every migration of this
+ * version has run (`pending`), and the migration table can be read (`failed`). No error text
+ * is in the body: the probe is public.
+ */
+export const readyChecksSchema = z.strictObject({
+  database: z.enum(["ok", "failed"]),
+  migrations: z.enum(["ok", "pending", "failed"]),
+});
+/** `GET /api/ready` answers 200 with this body when every check is `ok`. */
+export const readyResponseSchema = z.strictObject({
+  status: z.literal("ready"),
+  checks: readyChecksSchema,
+});
+/** `GET /api/ready` answers 503 with this body when a check is not `ok`. It is not an `ApiError`. */
+export const notReadyResponseSchema = z.strictObject({
+  status: z.literal("not_ready"),
+  checks: readyChecksSchema,
+});
+
+export type ReadyChecks = z.infer<typeof readyChecksSchema>;
+export type ReadyResponse = z.infer<typeof readyResponseSchema>;
+export type NotReadyResponse = z.infer<typeof notReadyResponseSchema>;
 export type User = z.infer<typeof userSchema>;
 export type AuthMethods = z.infer<typeof authMethodsSchema>;
 export type GoogleNameInput = z.infer<typeof googleNameRequestSchema>;
