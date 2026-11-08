@@ -33,10 +33,17 @@ Some documents describe work before it was built. Check the source and tests bef
 
 Use the JetBrains MCP tools for code work when they are available. The `webstorm` server in `.mcp.json` connects to the WebStorm IDE. WebStorm must be open with this project for the tools to work.
 
-- Use `get_symbol_info` to read the declaration and documentation of a symbol. Use `search_in_files_by_text`, `search_in_files_by_regex`, `find_files_by_name_keyword`, and `find_files_by_glob` to find code.
+- Discover the available `webstorm` tools before use. Some actions are available through `execute_tool` instead of a direct tool call. Check the action's parameters before calling it. Pass the repository root as `projectPath` when the tool accepts it.
+- Use `search_text` for text, `search_regex` for regular expressions, `search_file` for file paths with glob patterns, and `search_symbol` for symbols. Use project-relative glob patterns to limit searches.
+- Use `read_file` to read source files. It returns numbered lines and supports `offset` and `limit`. Use `get_symbol_info` to read the declaration and documentation of a symbol.
+- Use `analyze_calls` to find callers or called functions. Use `search_symbol` first when you need the fully qualified symbol name.
+- Use `list_directory_tree`, `get_project_modules`, and `get_project_dependencies` to inspect the project structure and dependencies. Use `get_all_open_file_paths` to find open files and `open_file_in_editor` to show a file in the IDE.
+- Use `apply_patch` to edit existing code and `create_new_file` to add a file.
 - Use `rename_refactoring` to rename a symbol. It updates all references; a text replace does not.
-- After an edit, use `get_file_problems` to find errors and warnings in the changed file.
-- Use `get_run_configurations` and `execute_run_configuration` to run the configurations in the IDE.
+- After an edit, use `get_file_problems` for one changed file or `lint_files` for several changed files. Use `build_project` to check compilation when applicable. These checks do not replace the required project checks and tests.
+- Use `get_run_configurations` to find configurations or test run points in a file. Use `execute_run_configuration` to run them. Apply temporary launch overrides only when the configuration reports support for them.
+- For database inspection, start with `list_database_connections` and `list_database_schemas`. Use `list_schema_object_kinds`, `list_schema_objects`, `get_database_object_description`, `introspect_schema`, and `preview_table_data` as needed. Use `execute_sql_query` for SQL, `fetch_query_result` for more result rows, and `list_recent_sql_queries` or `cancel_sql_query` to inspect or stop a query. Use `create_database_connection`, `edit_database_connection`, and `test_database_connection` when connection setup is part of the task.
+- Use `reformat_file` only when IDE formatting is needed. Follow the project's Vite+ formatting command below for project format fixes. `air_set_session_title` changes the IDE session title, not repository files.
 - Use normal file tools for Markdown, JSON, and configuration. If the JetBrains MCP server is unavailable or cannot do the job, state the reason and use the available file and shell tools. Prefer `rg` for text and file searches.
 
 <!-- groma:start -->
