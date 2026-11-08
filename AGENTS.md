@@ -31,12 +31,13 @@ Some documents describe work before it was built. Check the source and tests bef
 
 ## Tools
 
-Use Serena MCP tools for code work when they are available.
+Use the JetBrains MCP tools for code work when they are available. The `webstorm` server in `.mcp.json` connects to the WebStorm IDE. WebStorm must be open with this project for the tools to work.
 
-- At the start of a session with Serena, activate `monopoly-online` and read `initial_instructions` before code work.
-- Use `get_symbols_overview`, `find_symbol`, and `find_referencing_symbols` to find and read code. Avoid whole-file reads when a symbolic tool can answer.
-- Use symbolic edit tools such as `replace_symbol_body`, `insert_before_symbol`, `insert_after_symbol`, `rename_symbol`, and `safe_delete_symbol` when they fit.
-- Use normal file tools for Markdown, JSON, and configuration. If Serena is unavailable or cannot do the job, state the reason and use the available file and shell tools. Prefer `rg` for text and file searches.
+- Use `get_symbol_info` to read the declaration and documentation of a symbol. Use `search_in_files_by_text`, `search_in_files_by_regex`, `find_files_by_name_keyword`, and `find_files_by_glob` to find code.
+- Use `rename_refactoring` to rename a symbol. It updates all references; a text replace does not.
+- After an edit, use `get_file_problems` to find errors and warnings in the changed file.
+- Use `get_run_configurations` and `execute_run_configuration` to run the configurations in the IDE.
+- Use normal file tools for Markdown, JSON, and configuration. If the JetBrains MCP server is unavailable or cannot do the job, state the reason and use the available file and shell tools. Prefer `rg` for text and file searches.
 
 <!-- groma:start -->
 
