@@ -58,7 +58,7 @@ Each task is one small change. Each can go in its own commit.
 
 ### Dice fit in the turn area (BUG-4)
 
-- [ ] Give `.turn-area__dice` padding (about 12px top and bottom, 8px at the sides), or make the tumble stay inside the box (no `translateY`, a smaller rotation).
+- [x] Give `.turn-area__dice` padding (about 12px top and bottom, 8px at the sides), or make the tumble stay inside the box (no `translateY`, a smaller rotation).
 - Cause: the tumble animation (`TurnArea.css:43-60`) moves each die up 10px and turns it by -9° to +11°. A transform does not change the layout size. `.turn-area` has `overflow: hidden auto` (lines 6-21), so the top of the die is cut and a vertical scrollbar shows.
 - Do not remove the overflow on `.turn-area`. Long phase views need that scroll.
 - Check under reduced motion: no tumble, so no change.

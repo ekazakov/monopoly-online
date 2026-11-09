@@ -65,7 +65,7 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 
 ### BUG-4: Dice roll animation is cropped and a scrollbar shows
 
-- Status: open
+- Status: fixed (2026-11-09)
 - Reported: 2026-11-09
 - Area: web
 - Steps to reproduce:

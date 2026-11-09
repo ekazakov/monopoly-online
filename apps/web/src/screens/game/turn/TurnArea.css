@@ -24,9 +24,15 @@
   margin-block: 0;
 }
 
+/*
+ * The padding gives the tumble room: a transform does not change the layout size, and
+ * .turn-area clips its overflow. A die moves up 10px and turns up to 11 degrees (about
+ * 6px at each edge), and the shadow reaches about 10px below.
+ */
 .turn-area__dice {
   display: flex;
   gap: var(--hf-space-16);
+  padding: 16px 8px 12px;
   filter: drop-shadow(0 4px 6px rgba(23, 33, 27, 0.25));
 }
 
