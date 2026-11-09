@@ -26,7 +26,7 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 
 ### BUG-1: Station title deed shows a rent range, not all rent options
 
-- Status: open
+- Status: fixed (2026-11-09), checked in the browser
 - Reported: 2026-11-09
 - Area: web
 - Steps to reproduce:
@@ -39,7 +39,7 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 
 ### BUG-2: Auction is not in a modal dialog (change request)
 
-- Status: open
+- Status: fixed (2026-11-09), checked in the browser
 - Reported: 2026-11-09
 - Area: web
 - Type: change request
@@ -131,7 +131,7 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 
 ### BUG-9: Red bar on a board tile covers the property price
 
-- Status: fixed (2026-11-09), not yet checked in the browser
+- Status: fixed (2026-11-09), checked in the browser
 - Reported: 2026-11-09
 - Area: web
 - Steps to reproduce:
@@ -143,7 +143,7 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 
 ### BUG-10: Purchase dialog shows only price and base rent (change request)
 
-- Status: open
+- Status: fixed (2026-11-09), checked in the browser
 - Reported: 2026-11-09
 - Area: web
 - Type: change request

@@ -294,21 +294,6 @@ describe("GameScreen: actions", () => {
 describe("GameScreen: phase views", () => {
   const base = redact(fx.start);
 
-  const bid: RedactedGameState = {
-    ...base,
-    turn: { currentPlayerId: a.id, phase: "awaiting_bid", doubles: 0, dice: null },
-    auction: {
-      square: 1,
-      bidderOrder: [a.id, b.id, c.id],
-      passed: [],
-      highBid: 0,
-      highBidderId: null,
-      actorId: a.id,
-      then: "finish_roll",
-      queue: [],
-      returnPhase: "awaiting_buy_decision",
-    },
-  };
   const debt: RedactedGameState = {
     ...base,
     turn: { currentPlayerId: a.id, phase: "awaiting_debt", doubles: 0, dice: null },
@@ -326,13 +311,86 @@ describe("GameScreen: phase views", () => {
   };
 
   test.each([
-    ["the auction view", bid, ".auction", fx.ownerId],
     ["the debt view", debt, ".debt-view", fx.ownerId],
     ["the trade response view", tradeOffer, ".trade-flow--response", fx.guestId],
   ])("shows %s for its phase", async (_name, state, selector, userId) => {
     await setup({ state, userId });
     const centre = await region("Turn actions");
     await waitFor(() => expect(centre.querySelector(selector)).not.toBeNull());
+  });
+});
+
+describe("GameScreen: modal dialogs", () => {
+  const base = redact(fx.start);
+
+  test("the auction is a dialog outside the game regions, and the centre shows its status", async () => {
+    const bid: RedactedGameState = {
+      ...base,
+      turn: { currentPlayerId: a.id, phase: "awaiting_bid", doubles: 0, dice: null },
+      auction: {
+        square: 1,
+        bidderOrder: [a.id, b.id, c.id],
+        passed: [],
+        highBid: 0,
+        highBidderId: null,
+        actorId: a.id,
+        then: "finish_roll",
+        queue: [],
+        returnPhase: "awaiting_buy_decision",
+      },
+    };
+    const { container } = await setup({ state: bid, userId: fx.ownerId });
+    const dialog = await screen.findByRole("dialog", { name: "Auction: Driftwood Lane" });
+    expect(dialog.querySelector(".auction")).not.toBeNull();
+    expect(within(dialog).getByRole("heading", { name: "Auction: Driftwood Lane" })).toBeVisible();
+    expect(within(dialog).queryByRole("button", { name: "Menu" })).not.toBeInTheDocument();
+    expect(dialog.closest(".game-layout__regions")).toBeNull();
+    // The regions behind the dialog are inert. The top bar is not: the Menu works above it.
+    expect(container.querySelector(".game-layout__rail")).toHaveAttribute("inert");
+    expect(container.querySelector(".game-layout__centre")).toHaveAttribute("inert");
+    expect(container.querySelector(".game-layout__top")).not.toHaveAttribute("inert");
+    await userEvent.click(screen.getByRole("button", { name: "Menu" }));
+    expect(screen.getByRole("button", { name: "Save and exit" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Finish game" })).toBeInTheDocument();
+    expect(container.querySelector(".game-layout__regions .auction")).toBeNull();
+    expect(
+      within(await region("Turn actions")).getByText("Auction: Driftwood Lane"),
+    ).toBeInTheDocument();
+  });
+
+  test("a device with no seat to bid follows the auction in the centre and has no dialog", async () => {
+    const bid: RedactedGameState = {
+      ...base,
+      turn: { currentPlayerId: a.id, phase: "awaiting_bid", doubles: 0, dice: null },
+      auction: {
+        square: 1,
+        bidderOrder: [a.id, b.id, c.id],
+        passed: [b.id],
+        highBid: 10,
+        highBidderId: c.id,
+        actorId: a.id,
+        then: "finish_roll",
+        queue: [],
+        returnPhase: "awaiting_buy_decision",
+      },
+    };
+    await setup({ state: bid, userId: fx.guestId });
+    const centre = await region("Turn actions");
+    await waitFor(() => expect(centre.querySelector(".auction")).not.toBeNull());
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: /menu/i })).toBeInTheDocument();
+  });
+
+  test("the purchase is a dialog with the full title deed, on the device that decides", async () => {
+    const buy: RedactedGameState = {
+      ...base,
+      players: base.players.map((p) => (p.id === a.id ? { ...p, position: 1, cash: 500 } : p)),
+      turn: { currentPlayerId: a.id, phase: "awaiting_buy_decision", doubles: 0, dice: null },
+    };
+    await setup({ state: buy, userId: fx.ownerId });
+    const dialog = await screen.findByRole("dialog", { name: "Driftwood Lane is for sale" });
+    expect(within(dialog).getByText("House cost")).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Buy $60" })).toBeInTheDocument();
   });
 });
 

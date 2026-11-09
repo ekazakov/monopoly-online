@@ -14,7 +14,7 @@ type Auction = NonNullable<NonNullable<Turn["view"]["state"]>["auction"]>;
 
 // `awaiting_bid` (gameplay 5.1): the bidders take turns in seat order. A pass is final, a bid is
 // capped by cash, and there is no timer. The result of the auction shows in the log.
-export function AuctionView({ turn }: { turn: Turn }) {
+export function AuctionView({ turn, inDialog = false }: { turn: Turn; inDialog?: boolean }) {
   const { state, game } = turn.view;
   const auction = state?.auction ?? null;
   const square = auction ? SQUARES[auction.square] : undefined;
@@ -34,7 +34,8 @@ export function AuctionView({ turn }: { turn: Turn }) {
 
   return (
     <div className="auction" aria-busy={turn.pending || undefined}>
-      <Status title={square ? `Auction: ${square.name}` : "Auction"} />
+      {/* In the dialog, the dialog title says this. */}
+      {!inDialog && <Status title={square ? `Auction: ${square.name}` : "Auction"} />}
       <div className="auction__top">
         {square && isProperty(square) && <PropertyCard square={square} />}
         <div className="auction__high" aria-live="polite" aria-atomic="true">

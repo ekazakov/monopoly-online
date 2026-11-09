@@ -17,7 +17,7 @@ export function HandoffPrompt({ userId }: { userId: string }) {
   return <Handoff seat={pending} onConfirm={confirm} />;
 }
 
-function Handoff({ seat, onConfirm }: { seat: Seat; onConfirm: () => void }) {
+export function Handoff({ seat, onConfirm }: { seat: Seat; onConfirm: () => void }) {
   const root = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
   const look = tokenLook(seat.token);

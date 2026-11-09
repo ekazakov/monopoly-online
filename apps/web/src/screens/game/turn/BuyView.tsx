@@ -1,33 +1,28 @@
 import { SQUARES, isProperty } from "@monopoly/game-engine";
 import { ActionBar } from "./ActionBar.tsx";
-import { Dice } from "./Dice.tsx";
 import { formatMoney } from "./format.ts";
 import { PropertyCard } from "./PropertyCard.tsx";
-import { Status } from "./Status.tsx";
-import { lastRoll } from "./useTurn.ts";
 import type { Turn } from "./useTurn.ts";
 
+/** The property the player on turn stands on, when it is one that can be bought. */
+export function propertyForSale(turn: Turn) {
+  const square = turn.view.currentPlayer ? SQUARES[turn.view.currentPlayer.position] : undefined;
+  return square && isProperty(square) ? square : null;
+}
+
 // `awaiting_buy_decision`: buy at the listed price, or decline and send the property to auction.
-// A player who cannot pay cannot buy, so the property goes to auction (gameplay 2.1).
+// A player who cannot pay cannot buy, so the property goes to auction (gameplay 2.1). The view is
+// the content of the purchase dialog (`PhaseModal`) with the full title deed. The dialog title is
+// "<name> is for sale". The board centre shows only `BuyStatusView`.
 export function BuyView({ turn }: { turn: Turn }) {
-  const { state } = turn.view;
   const player = turn.view.currentPlayer;
-  const square = player ? SQUARES[player.position] : undefined;
-  if (!state || !player || !square || !isProperty(square)) {
-    const { dice, stale } = lastRoll(turn.view);
-    return (
-      <>
-        <Dice dice={dice} stale={stale} />
-        <ActionBar turn={turn} actions={[]} />
-      </>
-    );
-  }
+  const square = propertyForSale(turn);
+  if (!player || !square) return null;
 
   const short = player.cash < square.price;
   return (
     <>
       <PropertyCard square={square} />
-      <Status title={`${square.name} is for sale`} />
       <ActionBar
         turn={turn}
         actions={[

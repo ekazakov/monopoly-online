@@ -1,1 +1,1 @@
-export { HandoffPrompt } from "./HandoffPrompt.tsx";
+export { Handoff, HandoffPrompt } from "./HandoffPrompt.tsx";

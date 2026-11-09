@@ -102,7 +102,6 @@ describe("TurnArea: shell", () => {
   });
 
   test.each([
-    ["awaiting_bid", "Auction", "auction"] as const,
     ["awaiting_debt", "Debt to settle", "debt-view"] as const,
     ["awaiting_trade_response", "Trade offer", "trade-flow"] as const,
   ])("registers the %s view and not the neutral one", (phase, title, className) => {
@@ -171,39 +170,23 @@ describe("TurnArea: awaiting_roll", () => {
   });
 });
 
-describe("TurnArea: awaiting_buy_decision", () => {
-  const onDriftwood = { position: 1, cash: 500 };
-
-  test("offers Buy at the listed price and Auction, with the title deed", async () => {
-    const { send } = renderTurn({ phase: "awaiting_buy_decision", player: onDriftwood });
+describe("TurnArea: awaiting_buy_decision and awaiting_bid", () => {
+  test("the centre shows the status only: the deed and the buttons are in the dialog", () => {
+    renderTurn({ phase: "awaiting_buy_decision", player: { position: 1, cash: 500 } });
     expect(screen.getByText("Driftwood Lane is for sale")).toBeInTheDocument();
-    expect(screen.getByText("Title deed")).toBeInTheDocument();
-    expect(buttonNames()).toEqual(["Buy $60", "Auction"]);
-
-    await userEvent.click(screen.getByRole("button", { name: "Buy $60" }));
-    expect(send).toHaveBeenLastCalledWith({ type: "BuyProperty" }, { seatId: a.id });
-    await userEvent.click(screen.getByRole("button", { name: "Auction" }));
-    expect(send).toHaveBeenLastCalledWith({ type: "DeclineProperty" }, { seatId: a.id });
-    expect(send).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText("Title deed")).not.toBeInTheDocument();
+    expect(phaseButtons()).toEqual([]);
   });
 
-  test("disables Buy and says why when the cash is short, but Auction stays", async () => {
-    const { send } = renderTurn({
-      phase: "awaiting_buy_decision",
-      player: { position: 1, cash: 30 },
-    });
-    const buy = screen.getByRole("button", { name: "Buy $60" });
-    expect(buy).toBeDisabled();
-    expect(buy).toHaveAccessibleDescription(/Not enough cash: \$30 of \$60/);
-    await userEvent.click(buy);
-    expect(send).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: "Auction" })).toBeEnabled();
-  });
-
-  test("shows a station with its price", () => {
+  test("a station is for sale by its name", () => {
     renderTurn({ phase: "awaiting_buy_decision", player: { position: 5, cash: 500 } });
     expect(screen.getByText("North Station is for sale")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Buy $200" })).toBeEnabled();
+  });
+
+  test("a device that does not bid follows the auction in the centre, with no buttons", () => {
+    const { container } = renderTurn({ phase: "awaiting_bid", current: "b" });
+    expect(container.querySelector(".auction")).not.toBeNull();
+    expect(phaseButtons()).toEqual([]);
   });
 });
 
@@ -294,7 +277,7 @@ describe("TurnArea: a device that may not act", () => {
     expect(send).not.toHaveBeenCalled();
   });
 
-  test("keeps the title deed of the property for sale in view", () => {
+  test("keeps the status of the property for sale in view", () => {
     renderTurn(
       { phase: "awaiting_buy_decision", current: "b", player: { position: 1, cash: 500 } },
       fx.ownerId,

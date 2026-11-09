@@ -13,6 +13,7 @@ import {
   useGameActionsProvider,
   useGameSelector,
   useGameStore,
+  useHotSeatHandoff,
 } from "../game/index.ts";
 import { useRealtimeStatus, useTopic } from "../realtime/index.ts";
 import { BoardScene } from "../scene/BoardScene.tsx";
@@ -21,7 +22,8 @@ import { useSession } from "../session/index.ts";
 import { useReducedMotion } from "../styles/motionPreference.ts";
 import { ConnectionBanner } from "./game/ConnectionBanner.tsx";
 import { GameLayout } from "./game/GameLayout.tsx";
-import { HandoffPrompt } from "./game/handoff/index.ts";
+import { Handoff } from "./game/handoff/index.ts";
+import { PhaseModal } from "./game/modal/index.ts";
 import { CardNotice } from "./game/flows/card/index.ts";
 import { LeaveGameMenu } from "./game/flows/leave/index.ts";
 import { SavedNotice } from "./game/flows/saved/index.ts";
@@ -159,11 +161,19 @@ function GameRoute({ gameId }: { gameId: string }) {
               <LeaveGameMenu userId={userId} onLeft={() => void navigate({ to: "/" })} />
             </>
           }
-          overlay={<HandoffPrompt userId={userId} />}
+          overlay={<Overlay userId={userId} />}
         />
       </MotionProvider>
     </GameActionsContext>
   );
+}
+
+// Above the regions: the hot-seat handoff, or else the modal dialog of the phase. The dialog waits
+// for the handoff, so the next player does not see or answer it before they confirm.
+function Overlay({ userId }: { userId: string }) {
+  const { pending, confirm } = useHotSeatHandoff(userId);
+  if (pending) return <Handoff seat={pending} onConfirm={confirm} />;
+  return <PhaseModal userId={userId} />;
 }
 
 // The token of the seat decides the colour and the figure, the same as in the rail.

@@ -1,0 +1,80 @@
+/*
+ * Dialog over the game screen (spec 5.2; prototype `dialog.dlg`). Tokens only. It is a light card
+ * on a dark scrim, like the board centre, so the deed and the turn buttons keep their board
+ * colours. The scrim is below the top bar (z-index 5 in GameLayout.css), so the log and the Menu
+ * stay above it and work. No animation, so reduced motion needs no override.
+ */
+.modal__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--hf-space-16);
+  background: rgba(5, 10, 15, 0.7);
+}
+
+.modal {
+  position: static;
+  box-sizing: border-box;
+  width: min(520px, 100%);
+  max-height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--hf-board-ink);
+  border-radius: var(--hf-radius-dialog);
+  background: var(--hf-paper);
+  color: var(--hf-board-ink);
+}
+
+.modal__inner {
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
+}
+
+.modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--hf-space-12);
+  padding: var(--hf-space-12) var(--hf-space-24);
+  border-bottom: 1px solid var(--hf-edge);
+}
+
+.modal__title {
+  margin: 0;
+  font: var(--hf-type-display-m);
+  letter-spacing: var(--hf-track-display-m);
+  text-transform: uppercase;
+}
+
+.modal__close {
+  min-width: var(--hf-target);
+  min-height: var(--hf-target);
+  margin-right: calc(-1 * var(--hf-space-12));
+  border: 0;
+  border-radius: var(--hf-radius-control);
+  background: transparent;
+  color: inherit;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.modal__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: var(--hf-space-16) var(--hf-space-24) var(--hf-space-24);
+  overflow: hidden auto;
+  text-align: center;
+}
+
+.modal :focus-visible {
+  outline: 2px solid var(--hf-board-ink);
+  outline-offset: 2px;
+}

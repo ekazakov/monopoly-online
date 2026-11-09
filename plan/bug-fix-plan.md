@@ -12,8 +12,8 @@ File paths in the web app are relative to `apps/web/src/` unless the path starts
 | Focus ring around the bid field (BUG-3)      | Small           | 1     | none                    |
 | Dice fit in the turn area (BUG-4)            | Small           | 1     | none                    |
 | Owner marker clear of the price (BUG-9)      | Small           | 1     | none                    |
-| Station rent rows on the deed (BUG-1)        | Small           | 2     | none                    |
-| Full title deed (BUG-10)                     | Small to medium | 2     | BUG-1                   |
+| Station rent rows on the deed (BUG-1)        | Small           | 2     | Modal dialog            |
+| Full title deed (BUG-10)                     | Small to medium | 2     | BUG-1, Modal dialog     |
 | Auction in a modal dialog (BUG-2)            | Medium          | 3     | Modal dialog            |
 | Cards in a modal dialog (BUG-5)              | Medium          | 3     | Modal dialog            |
 | Hold the card move until OK (BUG-16)         | Medium          | 3     | BUG-5                   |
@@ -68,7 +68,7 @@ Each task is one small change. Each can go in its own commit.
 - The red bar is the **owner marker**, not a colour bar. The owner in the image has the red token (the dog, `#d9392f`). Lantern Row, Cobble Street and Saltmarsh Road are in the Sky group.
 - Cause: the marker (`scene/Tile.tsx:89-96`, `geometries.marker` in `scene/resources.ts:21`, `MARKER_Z = 0.625` in `scene/layout.ts:23`) covers the outer 9% of the square. `squareTexture()` (`scene/textures.ts:149-151`) draws the price at the same outer edge, at baseline `TILE_H - 28`.
 - [x] Decision (user, 2026-11-09): the owner marker is a deeper band (96px of the 560px texture, `MARKER_DEPTH` in `scene/layout.ts`) and the price is drawn on it, in the board ink or white by contrast (`markerInk` in `scene/colors.ts`). A mortgaged marker is an opaque, lighter colour. The prototype was not saved to `artifacts/`.
-- [ ] Check all four sides of the board and a square with houses (open: not yet checked in the browser).
+- [x] Check all four sides of the board and a square with houses (checked by the user).
 - Spec: R-B4 and open question 5 (colour collisions) in `game-screen-2-spec.md`.
 
 ## Phase 2: full title deed
@@ -82,12 +82,13 @@ Do both in one change. `screens/game/turn/PropertyCard.tsx` is the only deed com
   - street: `price`, `rent` (6 values: base, 1 to 4 houses, hotel), `buildPrice`, `mortgage`
   - `STATION_RENT = [25, 50, 100, 200]` and `UTILITY_MULTIPLIER = [4, 10]` (lines 33-34)
   - rent with a colour set = `rent[0] * 2` (`landing.ts:28`); hotel cost = `buildPrice` (`plan/game-rules-reference.md`)
-- [ ] Street rows: rent, rent with colour set, 1 to 4 houses, hotel, house cost, hotel cost, mortgage value.
-- [ ] Station rows: 1, 2, 3 and 4 stations owned, then mortgage value.
-- [ ] Utility rows: "4 × dice" with one utility, "10 × dice" with both, then mortgage value.
-- [ ] Add a `compact` variant and a `current` highlight (the row that applies now). The prototype has this layout: `deedHTML(i, {compact, current})` in `artifacts/game-screen/js/app.js:117-143`.
-- [ ] Check the height in the board centre. The centre is a size container, and the spec flags its density (open question 7). If the full deed does not fit, use it in the modal dialog (phase 3) and the compact deed in the centre.
-- [ ] Update `turn/TurnArea.test.tsx` and other tests that read the old rent text.
+- **Decisions (user, 2026-11-09):** the full deed shows in a modal dialog only, never in the board centre. The purchase decision is a modal dialog with the full deed and the Buy and Auction buttons. The centre shows only the status line. The modal, the full deed, the purchase dialog and the auction dialog are one change.
+- [x] Street rows: rent, rent with color set, 1 to 4 houses, hotel, house cost, hotel cost, mortgage value (`deedRows` in `turn/PropertyCard.tsx`).
+- [x] Station rows: 1, 2, 3 and 4 stations owned, then mortgage value.
+- [x] Utility rows: "4 × dice" with one utility, "10 × dice" with both, then mortgage value.
+- [x] Compact variant and `current` highlight: dropped. The centre has no deed, so nothing uses them. Add the highlight with BUG-13 if the square detail needs it.
+- [x] Height check: not needed, because the deed is in a dialog.
+- [x] Update `turn/TurnArea.test.tsx` and other tests that read the old rent text. New tests: `turn/PropertyCard.test.tsx`, `GameScreen.test.tsx` (dialogs).
 - Size: small to medium.
 
 ## Phase 3: modal dialog and card flow
@@ -95,20 +96,20 @@ Do both in one change. `screens/game/turn/PropertyCard.tsx` is the only deed com
 ### Modal dialog component
 
 - No modal exists in the web app and no dialog library is installed. `handoff/HandoffPrompt.tsx` is a `div role="dialog"` that sets `inert` by hand; it is not reusable.
-- [ ] Build one `Modal` on the native `<dialog>` with `showModal()`. Use the prototype as the reference: `dialog()` in `artifacts/game-screen/js/app.js:445-472` and `dialog.dlg`, `.narrow`, `::backdrop` in `artifacts/game-screen/styles.css:243-245`. Use the tokens in `styles/tokens.css`.
-- [ ] Mount it **outside** `.game-layout__regions`. The hot-seat handoff sets `inert` on that element. A dialog inside it is in the top layer but still inert.
-- [ ] Add a "not closable" option. A phase dialog (the auction) must not close on Esc: call `preventDefault` on the `cancel` event and show no close button.
-- [ ] Give focus to the first control on open and return it on close.
-- [ ] Check `showModal` in jsdom. Add a small test shim if jsdom does not support it.
+- [x] Build one `Modal` on a `<dialog>`. Changed (user, 2026-11-09): not `showModal()`, because the native modal makes the Menu inert and paints over the top bar. The Modal uses `show()` in a scrim below the top bar and sets `inert` on the other regions by hand. Use the prototype as the reference: `dialog()` in `artifacts/game-screen/js/app.js:445-472` and `dialog.dlg`, `.narrow`, `::backdrop` in `artifacts/game-screen/styles.css:243-245`. Use the tokens in `styles/tokens.css`.
+- [x] Mount it as a child of `.game-layout`, outside `.game-layout__regions`. The hot-seat handoff sets `inert` on that element, so a dialog inside it would be inert.
+- [x] Add a "not closable" option. A phase dialog (the auction) must not close on Esc: call `preventDefault` on the `cancel` event and show no close button.
+- [x] Give focus to the first control on open and return it on close (`showModal` and `close` do this; the dialog opens in a ref callback, so a child can take the focus in its effect).
+- [x] Check `showModal` in jsdom (jsdom 30 has none; the shim is in `testing/setup.ts`). Add a small test shim if jsdom does not support it.
 
 ### Auction in a modal dialog (BUG-2)
 
 - Now: `AuctionView` is the view of the `awaiting_bid` phase (`turn/centrePhases.ts:25`). `TurnArea` shows it in the board centre (`GameScreen.tsx:213`).
-- [ ] Show `AuctionView` in the modal dialog while the phase is `awaiting_bid`. Keep all content: title deed, current bid, bidders, bid input, quick-bid buttons, Bid and Pass.
-- [ ] Use the full deed from phase 2.
-- [ ] Check the `BidForm` autofocus (`AuctionView.tsx:117-119`) inside the dialog.
-- [ ] Check a hot-seat auction where the next bidder is on the same device.
-- [ ] Update the auction browser test T10.
+- [x] Show `AuctionView` in the modal dialog while the phase is `awaiting_bid`, on the device that has a seat to bid (user decision, 2026-11-09: a modal makes the Menu inert, so the other devices keep the read-only auction in the board centre). Keep all content: title deed, current bid, bidders, bid input, quick-bid buttons, Bid and Pass.
+- [x] Use the full deed from phase 2.
+- [x] Check the `BidForm` autofocus (`AuctionView.tsx:117-119`) inside the dialog.
+- [x] Check a hot-seat auction where the next bidder is on the same device (checked by the user).
+- [x] Update the auction browser test T10 (not run: ports 5173 and 8787 were in use). The top bar with the Menu stays above the phase dialog, so Save, Finish and Leave game stay reachable. T23 and the other browser tests that click Buy or Menu during a phase dialog are not run.
 
 ### Cards in a modal dialog (BUG-5)
 
@@ -138,7 +139,7 @@ The server sends the whole result in one action: roll, move to Chance, card, mov
 
 ### Spec
 
-- [x] Spec updated: modal dialogs are allowed for the auction, the drawn cards and the square detail (`game-screen-2-spec.md` 5.2, 8.7, open question 11).
+- [x] Spec updated: modal dialogs are allowed for the purchase, the auction, the drawn cards and the square detail (`game-screen-2-spec.md` 5.2, 8.7, open question 11).
 
 ## Phase 4: board centre
 

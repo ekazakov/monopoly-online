@@ -337,7 +337,7 @@ The board centre changes with each phase of the turn. The phase list and what ea
 - **Phases with no action** (rolling, moving): the centre shows only the animation, and nothing is clickable.
 - **Debt:** the centre shows the amount due and who it is owed to, with Pay disabled until cash covers it. Next turn is not shown. Raising cash happens in the expanded hand (4.6).
 - **Bankrupt:** the centre shows a short result ("<name> is out of the game") for one beat, then the turn moves on.
-- **Modal dialogs.** The auction (BUG-2), the drawn Chance and Chest card (BUG-5) and the square detail (BUG-13) show in a modal dialog. The other flows in 8.7 use the board centre, or the expanded hand for managing properties. A phase dialog, such as the auction, does not close on Esc. See [bug-fix-plan.md](bug-fix-plan.md), phase 3.
+- **Modal dialogs.** The purchase decision (BUG-10), the auction (BUG-2), the drawn Chance and Chest card (BUG-5) and the square detail (BUG-13) show in a modal dialog. The other flows in 8.7 use the board centre, or the expanded hand for managing properties. A phase dialog, such as the purchase or the auction, does not close on Esc and has no close button. The dialog title is the status of the phase ("<name> is for sale", "Auction: <name>"). The dialog sits over the board, rail, centre and hand, which are inert, but under the top bar: the log and the Menu stay above it and work, so Save, Finish and Leave game stay reachable. It is a non-modal `<dialog>` in a scrim, not `showModal()`, because a native modal dialog makes the whole page inert. The purchase and the auction show only on a device that has a seat to act. The other devices follow the auction in the board centre and see only the status of a purchase. The full title deed (price, every rent, house and hotel cost, mortgage value) is too tall for the board centre, so the centre never shows a deed. The dialog is a child of the game layout, outside the game regions, and waits for the end of the roll and move animation and for a hot-seat handoff. See [bug-fix-plan.md](bug-fix-plan.md), phase 3.
 - **Title deed.** The deed shows the full property data: for a street, rent, rent with a colour set, 1 to 4 houses, hotel, house cost, hotel cost and mortgage value; for a station, the rent for 1 to 4 stations; for a utility, 4 × dice and 10 × dice (BUG-1, BUG-10).
 - **Card hold.** When a card moves the token, the token stops on the Chance or Chest square. It moves on only after OK on this device (BUG-16).
 - **Current wireframe:** only the **Turn resolved** phase, with dice 4 + 3, then Next turn.
@@ -450,7 +450,7 @@ Rules:
 
 ### 8.7 Dialogs and other screens
 
-The rules behind each flow are in the gameplay doc, section 5. The auction (R-G4) and the card reveal (R-G6) show in a modal dialog (5.2). The other flows are shown in the board centre, except Manage properties, which lives in the expanded hand (4.6) and in the square detail dialog (R-B5). The "Dialog or screen" column is the flow's name only.
+The rules behind each flow are in the gameplay doc, section 5. The purchase decision, the auction (R-G4) and the card reveal (R-G6) show in a modal dialog (5.2). The other flows are shown in the board centre, except Manage properties, which lives in the expanded hand (4.6) and in the square detail dialog (R-B5). The "Dialog or screen" column is the flow's name only.
 
 | ID   | Level  | Status | Dialog or screen                                                                                                     |
 | ---- | ------ | ------ | -------------------------------------------------------------------------------------------------------------------- |
@@ -485,7 +485,7 @@ Gameplay questions (player limits, disconnects, trades, house rules, timer, bots
 8. **Inspecting other players.** There is no way yet to see an opponent's properties or cash, which trades and rent decisions need. Where does it live (tap an avatar on the rail)?
 9. **Tablet portrait strip.** The horizontal player strip doesn't fit 6 players at 768px.
 10. **Expanded hand overlap.** The expanded hand covers the lower board. Does it ever hide something the player needs, such as the centre during an auction?
-11. ~~**Modals.**~~ Closed: the auction, the card reveal and the square detail use a modal dialog (5.2).
+11. ~~**Modals.**~~ Closed: the purchase decision, the auction, the card reveal and the square detail use a modal dialog (5.2). The purchase and the auction show only on the device that has a seat to act (decided 2026-11-09, before the Menu was moved above the dialog; it could show on every device now). The top bar, with the Menu, stays above a phase dialog.
 12. **Wireframe data.** Marlow shows $1,500 cash yet holds about $1,210 of properties at purchase price. The sample data should be made consistent.
 
 ---

@@ -65,8 +65,8 @@ describe("dice roll animation", () => {
 
     act(() => void vi.advanceTimersByTime(total - ROLL_MS));
     expect(screen.queryByText("Moving…")).toBeNull();
-    // the phase view is back: the roll led to a property, so the title deed shows
-    expect(screen.getByText("Title deed")).toBeInTheDocument();
+    // the phase view is back: the roll led to a property, so its status shows
+    expect(screen.getByText(/is for sale/)).toBeInTheDocument();
   });
 
   test("under reduced motion a live roll shows its result at once, with no roll and no move", () => {
@@ -76,7 +76,7 @@ describe("dice roll animation", () => {
     expect(rolling()).toBeNull();
     expect(screen.queryByText("Rolling…")).toBeNull();
     expect(screen.queryByText("Moving…")).toBeNull();
-    expect(screen.getByText("Title deed")).toBeInTheDocument();
+    expect(screen.getByText(/is for sale/)).toBeInTheDocument();
   });
 
   test("a roll that is already in the store at mount does not animate", () => {
