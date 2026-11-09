@@ -46,8 +46,8 @@ Each task is one small change. Each can go in its own commit.
 
 ### Same pips on all dice faces (BUG-6)
 
-- [ ] Delete the special case for the value 1 in `screens/game/turn/Dice.tsx:42-44`: a circle with `r="13"` and the class `turn-area__pip--one`. Use `PIPS[1]` and `r="6"`, as the other faces do.
-- [ ] Delete `.turn-area__pip--one` in `screens/game/turn/TurnArea.css:72-74`.
+- [x] Delete the special case for the value 1 in `screens/game/turn/Dice.tsx:42-44`: a circle with `r="13"` and the class `turn-area__pip--one`. Use `PIPS[1]` and `r="6"`, as the other faces do.
+- [x] Delete `.turn-area__pip--one` in `screens/game/turn/TurnArea.css:72-74`.
 - Cause: a common style for the face with one pip. The spec (4.5) already says all pips are r 6 in `#1b1b1b`.
 - Other faces have no special case.
 

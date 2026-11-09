@@ -39,11 +39,7 @@ function Die({ value }: { value: number | null }) {
   return (
     <svg className="turn-area__die" viewBox="0 0 72 72" aria-hidden="true">
       <rect className="turn-area__die-face" x="2" y="2" width="68" height="68" rx="12" />
-      {value === 1 && (
-        <circle className="turn-area__pip turn-area__pip--one" cx="36" cy="36" r="13" />
-      )}
       {value !== null &&
-        value !== 1 &&
         (PIPS[value] ?? []).map(([x, y]) => (
           <circle key={`${x}-${y}`} className="turn-area__pip" cx={x} cy={y} r="6" />
         ))}

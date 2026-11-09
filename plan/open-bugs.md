@@ -91,7 +91,7 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 
 ### BUG-6: Dice pips are red and larger on the face with one pip
 
-- Status: open
+- Status: fixed (2026-11-09)
 - Reported: 2026-11-09
 - Area: web
 - Steps to reproduce:
