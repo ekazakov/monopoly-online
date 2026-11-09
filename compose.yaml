@@ -87,8 +87,9 @@ services:
       PORT: "8787"
       DB_PATH: /data/e2e.db
       GUEST_SIGN_IN_ENABLED: "true"
-      # E2E_SEED in apps/e2e/support/seed.ts, and the short grace time of the presence tests.
-      GAME_SEED: "7"
+      # The seed of the scenarios: Playwright passes E2E_SEED (apps/e2e/support/seed.ts). 7 is the same
+      # value, for a run by hand. The short grace time is for the presence tests.
+      GAME_SEED: ${E2E_SEED:-7}
       PRESENCE_GRACE_MS: "2500"
       LOG_PRETTY: "false"
       LOG_LEVEL: warn

@@ -75,7 +75,7 @@ Run these commands from the repository root:
 | `pnpm openapi`                                                   | Regenerate `apps/api/openapi.json` from the API routes.                                    |
 | `pnpm e2e`                                                       | Run the Playwright browser suite.                                                          |
 | `pnpm e2e:ui` / `pnpm e2e:video` / `pnpm e2e:report`             | Open the test UI, record videos, or open the last HTML report.                             |
-| `pnpm e2e:docker` (planned, M5)                                  | Run the Playwright suite against the prod Docker image.                                    |
+| `pnpm e2e:docker`                                                | Run the Playwright suite against the prod Docker image.                                    |
 | `docker compose up` / `docker compose --profile dev up dev lgtm` | Start the prod image and the local Grafana stack, or the dev target with hot reload.       |
 | `pnpm artifact:game-screen` / `pnpm artifact:design-system`      | Serve the local artifacts on ports 8791 and 8792.                                          |
 

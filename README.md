@@ -138,7 +138,7 @@ This starts `pnpm dev` in a container instead of the production image: the web a
 docker compose --profile e2e up --wait e2e
 ```
 
-This starts the production image with the settings of the browser tests on port 8787, with a new in-memory database. `pnpm e2e:docker` will use it (task D5). The tests flags are refused when `NODE_ENV` is `production`, so this profile does not test the production settings.
+This starts the production image with the settings of the browser tests on port 8787, with a new in-memory database. `pnpm e2e:docker` uses it: it builds the image, runs the whole browser suite against `http://localhost:8787` (one origin, no Vite), and removes the container. Stop the other servers first, because it needs port 8787. The test flags are refused when `NODE_ENV` is `production`, so this profile does not test the production settings.
 
 If you run the API on the host with `pnpm dev`, send its telemetry to the stack with `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318`.
 
