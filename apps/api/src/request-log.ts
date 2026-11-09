@@ -34,8 +34,9 @@ export function requestLog(log: Logger, metrics?: Metrics) {
     try {
       await next();
     } finally {
-      // The last matched route is the handler. When no handler matched, it is a wildcard.
-      const route = routePath(c, -1);
+      // The route that answered: the last handler that ran. Not the last route that matched, which
+      // is a wildcard of `serveWeb` that came after the API routes and did not run.
+      const route = routePath(c);
       const status = c.res.status;
       metrics?.httpRequest({
         method: c.req.method,

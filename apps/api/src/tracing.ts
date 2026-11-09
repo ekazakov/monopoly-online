@@ -70,8 +70,8 @@ export function httpTracing() {
           recordFault(span, error);
           throw error;
         } finally {
-          // The last matched route is the handler. When no handler matched, it is a wildcard.
-          const route = routePath(c, -1);
+          // The route that answered: the last handler that ran, as in `request-log.ts`.
+          const route = routePath(c);
           const status = c.res.status;
           span.updateName(`${method} ${route}`);
           span.setAttributes({

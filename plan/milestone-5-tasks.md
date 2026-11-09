@@ -106,7 +106,7 @@ Mark a task `[x]` in the commit that completes it.
 
 - [x] **Static web serving (D1).** `serveStatic` for the web build, and a fallback to `index.html` for app routes. Mount it after the typed route chain, so `AppType` does not change and an unknown `/api/*` path still gets the JSON 404 error. The path comes from `WEB_DIST_DIR`; when it is not set, the API serves no web files (as now). Tests: an app route gets `index.html`; `/api/unknown` gets the JSON error.
 - [x] **Dockerfile (D2).** The stages in "Decisions". pnpm through Corepack with the version from `package.json`. A `.dockerignore`: no `.env`, no databases, no `node_modules`, no `dist`, no test results and reports, no `.git`.
-- [ ] **Compose (D3).** `compose.yaml` with the three profiles. App: port 8787, the `/data` volume, an env file, the health check on `/api/ready`, `OTEL_EXPORTER_OTLP_ENDPOINT` to otel-lgtm. otel-lgtm: Grafana on port 3000 and the dashboard mount. `dev` profile: a `node_modules` volume in the container, because the macOS `better-sqlite3` build does not load on Linux, and Vite listens on `0.0.0.0`.
+- [x] **Compose (D3).** `compose.yaml` with the three profiles. App: port 8787, the `/data` volume, an env file, the health check on `/api/ready`, `OTEL_EXPORTER_OTLP_ENDPOINT` to otel-lgtm. otel-lgtm: Grafana on port 3000 and the dashboard mount. `dev` profile: a `node_modules` volume in the container, because the macOS `better-sqlite3` build does not load on Linux, and Vite listens on `0.0.0.0`.
 - [ ] **Dashboard (D4).** `ops/grafana/dashboards/harborfront.json` and its provisioning file. Panels: realtime, HTTP, runtime and database, and a log panel with links to traces.
 - [ ] **Browser suite on the image (D5).** `pnpm e2e:docker`. The Playwright config reads the server mode from an environment variable: one origin on port 8787 and no web server on 5173. The `e2e` profile runs the prod image with `NODE_ENV=development`, `GUEST_SIGN_IN_ENABLED=true`, `GAME_SEED`, `PRESENCE_GRACE_MS`, and a new database on each run (tmpfs). This tests the build and the static web serving, not the production settings: the production guards refuse these test flags. The image has no `pino-pretty` (a dev dependency), and `NODE_ENV=development` turns on pretty logs: D5 needs a way to keep JSON logs there, for example a `LOG_PRETTY=false` setting.
 
@@ -129,8 +129,8 @@ Docker Desktop (or another Docker engine) with compose v2. No accounts or keys: 
 
 ## Open questions
 
-- **Log retention on the local machine.** Docker keeps container logs with no limit by default. Decide in Compose (D3) if a log size limit is necessary.
-- **Grafana data.** Keep the local Grafana data in a volume, or start empty each time. Decide in Compose (D3).
+- **Log retention on the local machine.** Decided in Compose (D3): `json-file` with 3 files of 10 MB for each container.
+- **Grafana data.** Decided in Compose (D3): no volume. `docker compose down` clears the data and `stop` keeps it, so a history never grows or goes stale.
 
 ## Risks
 

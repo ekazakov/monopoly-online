@@ -1,0 +1,124 @@
+# The local stack: the app (the production image) and the Grafana stack for its telemetry.
+#
+#   docker compose up                          app on :8787, Grafana on :3000
+#   docker compose --profile dev up dev lgtm   dev server with hot reload on :5173, Grafana on :3000
+#   docker compose --profile e2e up e2e        the production image with the test settings on :8787
+#
+# `app`, `dev` and `e2e` use port 8787 or 5173 on the host: start one of them at a time. Name the
+# services in the `dev` and `e2e` commands, because a plain `--profile dev up` starts `app` too.
+name: harborfront
+
+# Docker keeps container logs without a limit by default. Three files of 10 MB for each container.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "3"
+
+x-build: &build
+  context: .
+  target: prod
+
+services:
+  app:
+    build: *build
+    image: harborfront:local
+    env_file:
+      - ops/local.env
+      - path: .env
+        required: false
+    environment:
+      PORT: "8787"
+      DB_PATH: /data/monopoly.db
+      # JSON lines for Loki. The image has no `pino-pretty`.
+      LOG_PRETTY: "false"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://lgtm:4318
+      # The default is 60 s, which is slow for a dashboard that you watch while you play.
+      OTEL_METRIC_EXPORT_INTERVAL: "10000"
+    ports:
+      - "8787:8787"
+    volumes:
+      - app-data:/data
+    depends_on:
+      - lgtm
+    # The API stops in about 1 s. The limit of the shutdown is 8 s (`SHUTDOWN_TIMEOUT_MS`).
+    stop_grace_period: 10s
+    logging: *logging
+
+  # `pnpm dev` in a container: Vite on 5173 and the API with `--watch`. The source is the host
+  # folder. `node_modules` is in volumes, because the macOS install does not run on Linux
+  # (the native `better-sqlite3` binary), and a volume that is new is filled from the image.
+  dev:
+    profiles: [dev]
+    build:
+      context: .
+      target: dev
+    image: harborfront-dev:local
+    environment:
+      # Vite listens on all addresses, so the published port reaches it.
+      VITE_DEV_HOST: 0.0.0.0
+      DB_PATH: /data/dev.db
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://lgtm:4318
+      OTEL_METRIC_EXPORT_INTERVAL: "10000"
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/repo
+      - dev-data:/data
+      - node-modules-root:/repo/node_modules
+      - node-modules-api:/repo/apps/api/node_modules
+      - node-modules-web:/repo/apps/web/node_modules
+      - node-modules-e2e:/repo/apps/e2e/node_modules
+      - node-modules-engine:/repo/packages/game-engine/node_modules
+      - node-modules-shared:/repo/packages/shared/node_modules
+    depends_on:
+      - lgtm
+    logging: *logging
+
+  # The production image with the settings of the browser tests (`pnpm e2e:docker`). The test flags
+  # are refused when `NODE_ENV` is `production`, so this tests the build and the web serving, not the
+  # production settings. The database is in memory and new each time. No telemetry.
+  e2e:
+    profiles: [e2e]
+    build: *build
+    image: harborfront:local
+    environment:
+      NODE_ENV: development
+      PORT: "8787"
+      DB_PATH: /data/e2e.db
+      GUEST_SIGN_IN_ENABLED: "true"
+      # E2E_SEED in apps/e2e/support/seed.ts, and the short grace time of the presence tests.
+      GAME_SEED: "7"
+      PRESENCE_GRACE_MS: "2500"
+      LOG_PRETTY: "false"
+      LOG_LEVEL: warn
+    ports:
+      - "8787:8787"
+    tmpfs:
+      - /data:uid=1000,gid=1000
+    logging: *logging
+
+  # Collector, Prometheus, Loki, Tempo and Grafana in one container, for development. Grafana
+  # opens on http://localhost:3000 (user admin, password admin). The data is not kept: `docker
+  # compose down` clears it, and `stop` keeps it. The dashboard files are in `ops/grafana`.
+  lgtm:
+    image: grafana/otel-lgtm:0.40.0
+    ports:
+      - "3000:3000"
+      # OTLP, for the API when it runs on the host (`OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318`).
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./ops/grafana/provisioning/harborfront.yaml:/otel-lgtm/grafana/conf/provisioning/dashboards/harborfront.yaml:ro
+      - ./ops/grafana/dashboards:/otel-lgtm/harborfront-dashboards:ro
+    logging: *logging
+
+volumes:
+  app-data:
+  dev-data:
+  node-modules-root:
+  node-modules-api:
+  node-modules-web:
+  node-modules-e2e:
+  node-modules-engine:
+  node-modules-shared:

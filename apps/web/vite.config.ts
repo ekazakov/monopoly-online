@@ -5,6 +5,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
+    // The dev container sets this to `0.0.0.0`, so the published port reaches Vite.
+    host: process.env.VITE_DEV_HOST || undefined,
     proxy: {
       "/api": "http://localhost:8787",
     },

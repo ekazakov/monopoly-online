@@ -114,14 +114,33 @@ pnpm --filter @monopoly/api start
 
 This command starts the built API from `apps/api/dist`.
 
-## Docker and telemetry (planned, M5)
+## Local stack with Docker Compose
 
-Milestone 5 adds a Docker image, docker compose and a local Grafana stack. See [milestone-5-tasks.md](plan/milestone-5-tasks.md). This section changes when the tasks are done.
+`compose.yaml` runs the app and a Grafana stack for its logs, metrics and traces. It needs Docker with Compose v2. The Grafana image is about 3.5 GB and uses much memory: stop it when you do not need it.
 
-- `docker compose up` starts the app on http://localhost:8787 and Grafana on http://localhost:3000.
-- `docker compose --profile dev up` starts the app with hot reload.
-- `pnpm e2e:docker` runs the browser suite against the prod image.
-- New environment variables: `LOG_LEVEL`, `WEB_DIST_DIR`, `OTEL_EXPORTER_OTLP_ENDPOINT` and the other standard `OTEL_*` variables. Telemetry is off when no OTLP endpoint is set.
+```bash
+docker compose up
+```
+
+- The app (the production image, in development mode) is on http://localhost:8787. It serves the web app and the API on one origin. Sign in with a guest name.
+- Grafana is on http://localhost:3000 (user `admin`, password `admin`). The data sources are Prometheus (metrics), Loki (logs) and Tempo (traces). The Harborfront dashboard comes with task D4.
+- `docker compose stop` stops the containers and keeps their data. The API stops in about a second, and its log shows each shutdown step. `docker compose down` removes the containers and clears the Grafana data; `down -v` also clears the game database.
+
+The settings of the app are in `ops/local.env`. Put your own values in `.env` (see `.env.example`): they win. For example, set the Google variables and `NODE_ENV=production` to sign in with Google.
+
+```bash
+docker compose --profile dev up dev lgtm
+```
+
+This starts `pnpm dev` in a container instead of the production image: the web app with hot reload on http://localhost:5173 (it proxies `/api`), and the API with `--watch`. The source is the host folder. `node_modules` is in Docker volumes, because the macOS install does not run on Linux. Name the services, because a plain `--profile dev up` also starts `app`.
+
+```bash
+docker compose --profile e2e up --wait e2e
+```
+
+This starts the production image with the settings of the browser tests on port 8787, with a new in-memory database. `pnpm e2e:docker` will use it (task D5). The tests flags are refused when `NODE_ENV` is `production`, so this profile does not test the production settings.
+
+If you run the API on the host with `pnpm dev`, send its telemetry to the stack with `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318`.
 
 ## Artifacts
 

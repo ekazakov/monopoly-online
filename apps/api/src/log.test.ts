@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import { createMemoryLogger } from "./log-test-helpers.ts";
-import { createSilentLogger, readLogLevel } from "./log.ts";
+import { createSilentLogger, readLogLevel, readLogPretty } from "./log.ts";
 
 const memoryLogger = (level: "info" | "debug" = "info") => createMemoryLogger(level);
 
@@ -18,6 +18,24 @@ describe("readLogLevel", () => {
 
   it("refuses an unknown level", () => {
     expect(() => readLogLevel({ LOG_LEVEL: "loud" })).toThrow(/LOG_LEVEL/);
+  });
+});
+
+describe("readLogPretty", () => {
+  it("is on in development and off elsewhere", () => {
+    expect(readLogPretty({})).toBe(false);
+    expect(readLogPretty({ NODE_ENV: "production" })).toBe(false);
+    expect(readLogPretty({ NODE_ENV: "development" })).toBe(true);
+  });
+
+  it("lets LOG_PRETTY win, so a development container can keep JSON lines", () => {
+    expect(readLogPretty({ NODE_ENV: "development", LOG_PRETTY: "false" })).toBe(false);
+    expect(readLogPretty({ NODE_ENV: "production", LOG_PRETTY: "true" })).toBe(true);
+    expect(readLogPretty({ NODE_ENV: "development", LOG_PRETTY: "" })).toBe(true);
+  });
+
+  it("refuses another value", () => {
+    expect(() => readLogPretty({ LOG_PRETTY: "yes" })).toThrow(/LOG_PRETTY/);
   });
 });
 

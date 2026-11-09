@@ -1,0 +1,11 @@
+# Loads the dashboard files of `ops/grafana/dashboards` into the Grafana of `grafana/otel-lgtm`.
+# `compose.yaml` mounts that folder at the path below. M6 imports the same files into Grafana Cloud.
+apiVersion: 1
+
+providers:
+  - name: Harborfront
+    type: file
+    allowUiUpdates: true
+    options:
+      path: /otel-lgtm/harborfront-dashboards
+      foldersFromFilesStructure: false

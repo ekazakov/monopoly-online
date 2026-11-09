@@ -49,7 +49,7 @@ export const REDACT_PATHS = [
 export type LoggerOptions = {
   /** Defaults to `LOG_LEVEL`, then `debug` in development, then `info`. */
   level?: LogLevel;
-  /** Human-readable output through `pino-pretty`. Defaults to `true` when `NODE_ENV` is `development`. */
+  /** Human-readable output through `pino-pretty`. Defaults to `LOG_PRETTY`, then to `true` when `NODE_ENV` is `development`. */
   pretty?: boolean;
   /** Where the JSON lines go. Defaults to stdout. Tests pass a stream to read the lines. Not used with `pretty`. */
   destination?: DestinationStream;
@@ -68,12 +68,26 @@ export function readLogLevel(env: NodeJS.ProcessEnv = process.env): LogLevel {
 }
 
 /**
+ * `LOG_PRETTY=true|false` turns the readable output on or off. Without it, it is on in development.
+ * The production image has no `pino-pretty`, so a container that runs with `NODE_ENV=development`
+ * (the browser tests) sets `LOG_PRETTY=false`.
+ */
+export function readLogPretty(env: NodeJS.ProcessEnv = process.env): boolean {
+  const value = env.LOG_PRETTY;
+  if (value === undefined || value === "") return env.NODE_ENV === "development";
+  if (value !== "true" && value !== "false") {
+    throw new Error(`LOG_PRETTY must be true or false, got "${value}"`);
+  }
+  return value === "true";
+}
+
+/**
  * The API logger. It writes JSON lines with a text `level`, an ISO `time` and the `service` name,
  * and it removes the fields in `REDACT_PATHS`. Make one in `index.ts` and pass it to `createApp`.
  */
 export function createLogger(options: LoggerOptions = {}): Logger {
   const level = options.level ?? readLogLevel();
-  const pretty = options.pretty ?? process.env.NODE_ENV === "development";
+  const pretty = options.pretty ?? readLogPretty();
   return pino(
     {
       level,

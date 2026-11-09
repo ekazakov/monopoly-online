@@ -9,6 +9,9 @@ import type { Kysely } from "kysely";
 import { createDb } from "./db/client.ts";
 import { migrateToLatest } from "./db/migrations.ts";
 import type { Database } from "./db/schema.ts";
+import { createMemoryLogger } from "./log-test-helpers.ts";
+import { createTestMeter } from "./metrics-test-helpers.ts";
+import { installTestTracing } from "./tracing-test-helpers.ts";
 import { serveWeb } from "./web.ts";
 
 const INDEX = '<!doctype html><html><body><div id="root"></div></body></html>';
@@ -85,6 +88,41 @@ describe("serveWeb", () => {
   test("an unknown /api path still has a request id", async () => {
     const res = await web.request("/api/unknown");
     expect(res.headers.get("X-Request-Id")).toBeTruthy();
+  });
+
+  test("the request log, the span and the metric name the API route, not a wildcard of the web app", async () => {
+    const memory = createMemoryLogger();
+    const meter = createTestMeter();
+    const tracing = installTestTracing();
+    try {
+      const traced = serveWeb(createApp(db, { logger: memory.logger, meter: meter.meter }), {
+        distDir: dist,
+      });
+      await traced.request("/api/health");
+      await traced.request("/api/nope");
+      await traced.request("/api/ready");
+
+      const routes = memory.lines.filter((line) => line.msg === "request").map((l) => l.route);
+      expect(routes).toEqual(["/api/health", "/api/*", "/api/ready"]);
+      // The probes are still quiet.
+      expect(memory.lines.find((line) => line.route === "/api/health")).toMatchObject({
+        level: "debug",
+      });
+      expect(tracing.spans().map((span) => span.name)).toEqual([
+        "GET /api/health",
+        "GET /api/*",
+        "GET /api/ready",
+      ]);
+      const points = (await meter.collect())["http.server.request.duration"] ?? [];
+      expect(
+        points
+          .map((point) => String(point.attributes["http.route"]))
+          .sort((a, b) => a.localeCompare(b)),
+      ).toEqual(["/api/*", "/api/health", "/api/ready"]);
+    } finally {
+      await tracing.uninstall();
+      await meter.shutdown();
+    }
   });
 
   test("the API routes work as before", async () => {
