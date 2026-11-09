@@ -53,7 +53,7 @@ Each task is one small change. Each can go in its own commit.
 
 ### Focus ring around the bid field (BUG-3)
 
-- [ ] In `screens/game/flows/auction/Auction.css`, move the ring from `.auction__input:focus-visible` (lines 143-146) to `.auction__input-wrap:has(.auction__input:focus-visible)`. Set `outline: none` on the input.
+- [x] In `screens/game/flows/auction/Auction.css`, move the ring from `.auction__input:focus-visible` (lines 143-146) to `.auction__input-wrap:has(.auction__input:focus-visible)`. Set `outline: none` on the input.
 - The wrapper already uses `:has([aria-invalid])` (line 148), so `:has()` is in use. `:focus-within` also works but shows the ring on a mouse click too.
 
 ### Dice fit in the turn area (BUG-4)

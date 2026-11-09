@@ -141,6 +141,11 @@
 }
 
 .auction__input:focus-visible {
+  outline: none;
+}
+
+/* The ring goes around the whole field, so the "$" sign is inside it. */
+.auction__input-wrap:has(.auction__input:focus-visible) {
   outline: 2px solid var(--hf-board-ink);
   outline-offset: 2px;
 }

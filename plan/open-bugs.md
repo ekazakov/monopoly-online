@@ -52,7 +52,7 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 
 ### BUG-3: Focus ring on the bid input shows around the inner input only
 
-- Status: open
+- Status: fixed (2026-11-09)
 - Reported: 2026-11-09
 - Area: web
 - Steps to reproduce:
