@@ -78,6 +78,7 @@ Rules for rows 8–10: the owner's own seat cannot be removed and the owner cann
 - SSE `id` = engine version. Only `snapshot` after start and `game.actions` set it. `room.updated` has no id, so the browser keeps the last id.
 - Types and payloads:
   - `snapshot`: `{ game, state: redactedState \| null }`. Sent on connect, at start (version 0), and on a resume that cannot replay. `state` null while `waiting`; set for `active` and `finished`.
+    - Planned change (BUG-14): an optional `events: [{ version, events: gameEvent[] }]` with the stored events of the game up to `state.version`, so the event log is full after a refresh. The device fills the log from it and does not replay animations. See [bug-fix-plan.md](bug-fix-plan.md).
   - `room.updated`: `{ game }`. Join, leave, seat add/remove. No SSE id. Start sends a `snapshot` instead.
   - `game.actions`: `{ events: gameEvent[], state }`. One message per accepted action.
 - Resume: when the gap from `Last-Event-ID` to the current version is 1–100 (`RESUME_MAX_GAP`), the missed `game.actions` are replayed from `game_events`. A larger gap, a missing id or an id that is not a valid version gets a `snapshot`. While `waiting`, every connect gets a `snapshot`. When the browser has closed an EventSource, the client creates a new one with an optional `lastEventId` query cursor (1–15 decimal digits, including `0`). The native `Last-Event-ID` header takes precedence over that query on later retries. A malformed query cursor is 400 `validation_error`. The client keeps the cursor only while retrying the same topic set, and only game actions and started-game snapshots advance it.
@@ -260,7 +261,8 @@ Rules that the first design did not fix, as the code does them:
 A debug panel on the game screen lets the player on turn edit the game state, to test the game logic. See [game-screen-2-spec.md](game-screen-2-spec.md) §4.7.
 
 ### Decisions (user answers)
-- **Access:** always on for now, in every game and every environment. Gating it before release is an open question ([game-screen-2-gameplay.md](game-screen-2-gameplay.md) §6).
+- **Access:** always on for now, in every game and every environment.
+  - Planned change (BUG-17, gameplay Q24): an API env variable turns debug mode on. It is off by default, and the API refuses to start with it on when `NODE_ENV` is `production`. With it off, `DebugEdit` is refused with a new error code. `GET /api/auth/methods` adds `debug: boolean`, and the web hides the debug panel when it is false. See [bug-fix-plan.md](bug-fix-plan.md).
 - **Token move:** a teleport. No landing, no rent, no card, no Start salary, no phase change.
 - **Free edits:** only the shape of a change is checked. Uneven building and buildings without the full group are allowed.
 

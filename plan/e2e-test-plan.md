@@ -243,7 +243,7 @@ T09 found that the API's public room metadata was shown to a stranger as a start
 | Scenario | Steps and checks | Priority | Status |
 | --- | --- | --- | --- |
 | Auction across devices (T10) | Two seats. Alice chooses Auction for Rope Walk. Alice bids $10, Bob $20, Alice $30, Bob passes. Both logs show the win; both rails show Alice with $1,470 and 1 property. Her hand shows Rope Walk | P1 | Built (F10) |
-| Hot-seat trade handoff (T11) | After five API rolls, Alice offers Lantern Row to Cara for $25 in the UI. "Pass to Cara" hides the hand and answer controls and makes the regions inert. Confirm, accept, then pass back to Alice. Both devices show the cash and property changes | P1 | Built (F10) |
+| Hot-seat trade handoff (T11) | After five API rolls, Alice offers Lantern Row to Cara for $25 in the UI. "Pass to Cara" hides the hand and answer controls and makes the regions inert. Confirm, accept, then pass back to Alice. Both devices show the cash and property changes. Planned change (BUG-15): the overlay is replaced by a toast, so T11 checks the toast and the answer with no confirm step | P1 | Built (F10) |
 | Jail (T12) | Teleport Bob to 19. Roll into Go to Jail. Cara and Alice play real API turns. On Bob's next turn, pay $50 in the UI. Both rails show $1,450 and no jail mark; Bob can roll | P1 | Built (F11) |
 | Card (T13) | Separate Chance and Chest scripts. Teleport, then roll in the UI. Both devices show the card, log and cash change. Dismissing on Alice's device leaves Bob's card open | P1 | Built (F11) |
 | Doubles (T14) | `playRolls` checks rolls 1 to 6. Bob rolls 3,3 on roll 7 in the UI. Dismiss the card: Bob has an enabled "Roll again", Alice waits, and the server state keeps Bob on turn with doubles 1 | P2 | Built (F11) |

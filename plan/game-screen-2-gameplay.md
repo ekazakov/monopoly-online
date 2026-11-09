@@ -23,7 +23,7 @@ At any moment the screen is in one of three situations:
 | Situation         | Who is on turn                                      | What the device can do                                                       |
 | ----------------- | --------------------------------------------------- | ---------------------------------------------------------------------------- |
 | **Local turn**    | A player seated on this device                      | Full controls: roll, buy, build, trade, next turn                            |
-| **Local handoff** | The turn moved to another player on the same device | Confirm the handoff, then it becomes a local turn                            |
+| **Local handoff** | The turn moved to another player on the same device | A turn-change toast shows; it becomes a local turn at once (BUG-15)          |
 | **Remote turn**   | A player on another device                          | Watch only: the board, log and dice update live and no actions are available |
 
 ---
@@ -40,7 +40,7 @@ A turn moves through these phases. Each phase offers one **primary** action and 
 | Moving                 | The token moves that many squares clockwise. Passing Start collects $200                                           | none                                                                | none                               |
 | On an unowned property | The player may buy at the listed price                                                                          | **Buy $X**                                                          | Auction                            |
 | On an owned property   | Rent is paid to the owner automatically, unless the property is mortgaged or the owner is the player on turn   | none: the centre shows the amount paid (Q9)                         | none                               |
-| On Chance or Chest     | The top card is drawn and resolved                                                                              | **OK** (closes the card on this device; it sends no action)         | none                               |
+| On Chance or Chest     | The top card is drawn and resolved                                                                              | **OK** (closes the card on this device and lets a held token move continue; it sends no action) | none                               |
 | On a tax square        | The tax is paid to the bank automatically                                                                       | none: the centre shows the amount paid                              | none                               |
 | Doubles                | The player rolls again. Three doubles in a row sends them to jail                                               | **Roll again**                                                      | none                               |
 | In jail                | The player tries to get out                                                                                     | **Roll for doubles**                                                | Pay $50, Use card                  |
@@ -73,13 +73,13 @@ The rules are in [game-rules-reference.md](game-rules-reference.md). Decisions t
 
 - **Seating.** Every player belongs to one device. One device can seat several players, and they share its screen in hot-seat.
 - **Turn order.** Turn order is the player order and doesn't depend on devices. Consecutive players can be on the same device or on different ones.
-- **Handoff.** When the next player is seated on the **same** device, a "Pass to <name>" confirmation is required before their turn's controls unlock. It isn't needed when the next player is on another device.
+- **Handoff.** When the turn moves to another player, every device in the game shows a toast "It is <name>'s turn". No confirmation is needed, also when the next player is on the same device. There is no privacy step on a shared device; this is on purpose (BUG-15).
 - **Remote turn.** When a player on another device is on turn, this device mirrors that player's phase without any controls. The board, dice and log update live.
 - **Which hand is shown:**
   - on a local turn, the properties of the local player on turn
   - on a remote turn, the hand of the last local player who played, labelled with their name
 - **Acting out of turn.** A player who is not on turn can only bid in an auction when it is their turn to bid, and settle a debt that has fallen due. Building, mortgaging and proposing a trade happen on a player's own turn (rules section 10), so a remote turn stays watch-only except for auction bids and answering a trade offer.
-- **Trades between devices.** A trade proposed from one device needs confirmation from the other player on their own device. A trade between two hot-seat players on one device needs a "Pass to <name>" handoff before the receiver answers.
+- **Trades between devices.** A trade proposed from one device needs confirmation from the other player on their own device. A trade between two hot-seat players on one device shows a toast for the receiver, who then answers on that device (BUG-15).
 - **Connection state.** Each remote player is online, reconnecting or away. See 3.2.
 - **Server.** The server runs the game engine and decides all dice rolls and deck shuffles. Devices send actions only. The state sent to devices does not include the random state or the deck order.
 - **No bots.** There are no bot players in v1. The autopilot is postponed, so nothing plays for away players (3.2).
@@ -163,7 +163,7 @@ The design spec lists these as screens (R-G4 to R-G8). **For now none of them is
 | Flow                       | Logic                                                                                                                                        | Still to define                                                                                          |
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | Auction | Written: rules section 11 | Nothing blocking |
-| Trade | Properties, cash and Get Out of Jail Free cards. No trades of properties in a group with buildings. Proposed on the proposer's own turn only. The receiver answers on their own device, or after a handoff on a shared device (section 3) | Countering |
+| Trade | Properties, cash and Get Out of Jail Free cards. No trades of properties in a group with buildings. Proposed on the proposer's own turn only. The receiver answers on their own device, or on a shared device after a toast (section 3) | Countering |
 | Manage properties          | Build, sell, mortgage and unmortgage, following rules sections 7 and 8. Opened from the expanded hand                                        | Nothing blocking                                                                                         |
 | Chance / Chest             | Written: rules Appendix C                                                                                                                    | Nothing blocking                                                                                         |
 | Bankruptcy and end of game | Written: rules sections 12 and 13, including resigning | Nothing blocking |
@@ -176,7 +176,7 @@ Questions 1 to 23 are closed. The decision for each one is below. Questions 24 a
 
 1. [x] Players: 2 to 6 in total, with any number on one device.
 2. [x] A disconnected player's turn: a 60-second grace time, then the player is away and the game waits for them (3.2). The autopilot is postponed.
-3. [x] Trades: a remote receiver confirms on their own device. On a shared device the receiver answers after a "Pass to <name>" handoff.
+3. [x] Trades: a remote receiver confirms on their own device. On a shared device the receiver answers after a toast (BUG-15; it replaced the "Pass to <name>" handoff).
 4. [x] House rules: no Free Parking pot. Jail stays capped at three attempts.
 5. [x] No turn timer in v1. The only timer is the 60-second grace time on a disconnect.
 6. [x] No bot players in v1. The autopilot is postponed, so nothing plays for away players.
@@ -196,8 +196,8 @@ Questions 1 to 23 are closed. The decision for each one is below. Questions 24 a
 20. [x] On restore, only the original controller can claim a seat. A player who does not come back is away, and the game waits for them (3.2). See Q25.
 21. [x] The owner saves or finishes during a remote turn: the device of the player on turn shows the same notice as all other devices.
 22. [x] A device disconnects: all its players are handled together, with a 60-second grace time, then the away rules (3.2). They return when their original browser opens the game again. See Q25.
-23. [x] Debug panel: the player on turn can edit the cash of any player, the deeds and buildings, and the token squares, to test the game logic. It is always on for now, in every game. Edits ignore the rules: a token move has no landing, and buildings need not be even. Each edit is a game action and a log line. UI: [game-screen-2-spec.md](game-screen-2-spec.md) 4.7.
-24. [ ] Before release: hide the debug panel behind a server flag, make it a per-game option for the owner, or remove it?
+23. [x] Debug panel: the player on turn can edit the cash of any player, the deeds and buildings, and the token squares, to test the game logic. It shows only when debug mode is on (Q24). Edits ignore the rules: a token move has no landing, and buildings need not be even. Each edit is a game action and a log line. UI: [game-screen-2-spec.md](game-screen-2-spec.md) 4.7.
+24. [x] Before release: debug mode is an API env variable, off by default. The API refuses to start with it on in production, refuses `DebugEdit` when it is off, and sends it to the web in `GET /api/auth/methods`. The web hides the panel when it is off (BUG-17, [bug-fix-plan.md](bug-fix-plan.md)).
 25. [ ] Claim from any device: guest sign-in refuses a name that exists, so a second browser cannot be the same user. For now only the original controller can claim a seat, from the browser with that user's session, and hot-seat groups do not change on restore. Review after all milestones: should a seat be claimable from another browser, and should hot-seat seats move to another user?
 
 ---
@@ -213,4 +213,5 @@ Questions 1 to 23 are closed. The decision for each one is below. Questions 24 a
 | 2026-10-30 | All open questions decided (section 6). Disconnect rules (3.2), server-side dice and decks, no bots or timers in v1, hot-seat trade handoff, resigning as a bankruptcy, jail cards always back to their decks, 2 to 6 players, GO renamed Start |
 | 2026-10-31 | Turn flow (section 2): rent and tax are paid automatically and have no Pay button; the card OK only closes the card on this device |
 | 2026-11-03 | Debug panel for the player on turn (Q23), always on for now. Open question 24: how to gate it before release |
+| 2026-11-09 | Bug review ([bug-fix-plan.md](bug-fix-plan.md)): a turn-change toast on every device replaces the "Pass to <name>" handoff (section 1 and 3, BUG-15); the card OK lets a held token move continue (BUG-16); Q24 decided: debug mode behind an API env variable (BUG-17). The code does not have these changes yet |
 | 2026-11-06 | Milestone 3 decisions. The autopilot is postponed: the game waits for an away player in all cases, and there is now a wait with no time limit. Return is automatic. When nobody is online, the game saves itself. Only the original controller can claim a seat. Open question 25: claim from any device |

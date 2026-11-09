@@ -25,7 +25,7 @@ This is the main in-game screen of Harborfront, a property-trading board game. P
 
 ### 1.2 Screen situations
 
-The screen has to be designed for three situations: **local turn** (full controls), **local handoff** (a "Pass to <name>" interstitial) and **remote turn** (watch only). The rules for when each one applies are in the gameplay doc, section 1. This spec covers how each one looks (5.3).
+The screen has to be designed for three situations: **local turn** (full controls), **local handoff** (a turn-change toast; it replaced the "Pass to <name>" interstitial, BUG-15) and **remote turn** (watch only). The rules for when each one applies are in the gameplay doc, section 1. This spec covers how each one looks (5.3).
 
 ### 1.3 Target devices
 
@@ -238,6 +238,7 @@ Each avatar has one fixed colour: dog red `#d9392f`, cat blue `#2f6fd0`, penguin
   A "·" is a non-property square (Chance, Chest, Tax, Station, Utility). These are blank in the wireframe.
 
 - **Corners:** blank in the wireframe. They will be Start, Jail, Free Parking and Go to Jail.
+- **Card stacks:** a stack of Community Chest cards and a stack of Chance cards lie in the board centre, at the two marked places, with the card back up. The stack height is fixed, because the device does not know the deck size (BUG-7).
 
 ### 4.5 Board centre: turn area
 
@@ -246,7 +247,8 @@ This is a flex column, centred both ways, with a **20px gap**.
 1. **Dice:**
    - two 72 × 72px dice, 16px apart
    - face `#f7f5ee`, a 2px `#3d5a4a` edge, radius 12
-   - pips r 6 in `#1b1b1b`
+   - pips r 6 in `#1b1b1b` on every face. The face with one pip has no red or larger pip (BUG-6)
+   - the dice stay fully visible during the roll animation, with no scrollbar (BUG-4)
    - the pair is a group with `role="img"` and `aria-label="Dice: 4 and 3"`
    - each die SVG is `aria-hidden`
 2. **Next turn button:**
@@ -257,6 +259,8 @@ This is a flex column, centred both ways, with a **20px gap**.
 This area is the agreed home for every turn action. 5.2 covers how it presents them, and the phases themselves are in the gameplay doc, section 2.
 
 ### 4.6 Property hand
+
+> **Planned change (BUG-8, BUG-11, BUG-12).** The hand header and the group labels are removed, and the layout is redesigned so that all properties fit with no scroll. A UI prototype comes first. This section and R-H1 to R-H6 are rewritten after the prototype is approved. See [bug-fix-plan.md](bug-fix-plan.md), phase 5.
 
 - **Stacks:** one per property group, in board order, centred with a 28px gap.
 - **Stack label:** 12px ink soft. It shows a "· N" count when the stack has more than one card, for example "Sky · 3".
@@ -292,7 +296,7 @@ The hand has two states. Cards don't pop up one at a time: the whole hand opens 
 
 ### 4.7 Debug panel
 
-A tool to test the game logic. It is not part of the game design. It is always on for now (gameplay doc, Q23 and Q24).
+A tool to test the game logic. It is not part of the game design. Planned change (BUG-17): it shows only when debug mode is on (gameplay doc, Q23 and Q24).
 
 - **Button:** "Debug", to the left of the Menu button, in the `menu` slot. The same size and type as the Menu button, with a **dashed** border and the soft ink, so that it does not look like a game control.
 - **Panel:** a disclosure in place under the button, not a modal, like the Menu panel (4.2). 340px wide, dashed border. Esc or a click outside closes it. Focus goes to the "Debug" heading when it opens.
@@ -333,7 +337,9 @@ The board centre changes with each phase of the turn. The phase list and what ea
 - **Phases with no action** (rolling, moving): the centre shows only the animation, and nothing is clickable.
 - **Debt:** the centre shows the amount due and who it is owed to, with Pay disabled until cash covers it. Next turn is not shown. Raising cash happens in the expanded hand (4.6).
 - **Bankrupt:** the centre shows a short result ("<name> is out of the game") for one beat, then the turn moves on.
-- **No modals for now.** Every flow in 8.7 uses the board centre, or the expanded hand for managing properties. This will be reviewed later.
+- **Modal dialogs.** The auction (BUG-2), the drawn Chance and Chest card (BUG-5) and the square detail (BUG-13) show in a modal dialog. The other flows in 8.7 use the board centre, or the expanded hand for managing properties. A phase dialog, such as the auction, does not close on Esc. See [bug-fix-plan.md](bug-fix-plan.md), phase 3.
+- **Title deed.** The deed shows the full property data: for a street, rent, rent with a colour set, 1 to 4 houses, hotel, house cost, hotel cost and mortgage value; for a station, the rent for 1 to 4 stations; for a utility, 4 × dice and 10 × dice (BUG-1, BUG-10).
+- **Card hold.** When a card moves the token, the token stops on the Chance or Chest square. It moves on only after OK on this device (BUG-16).
 - **Current wireframe:** only the **Turn resolved** phase, with dice 4 + 3, then Next turn.
 
 ### 5.3 Device and seat presentation
@@ -341,14 +347,15 @@ The board centre changes with each phase of the turn. The phase list and what ea
 - **Seat grouping:** the rail groups players by device.
   - local players carry a small "This device" marker
   - remote players show a connection dot: online, reconnecting or away
-- **Handoff interstitial:**
-  - full screen over the board
-  - shows the next player's avatar (large), "Pass to <name>" and one primary confirm button
+- **Turn-change toast** (replaces the handoff interstitial, BUG-15):
+  - a toast "It is <name>'s turn" shows on every device in the game, with no confirm button
+  - it closes by itself
+  - there is no privacy step: on a shared device the next player's properties and actions show at once. This is on purpose
 - **Remote turn:**
   - the board centre shows the same phase content but **read-only**
   - the action buttons are replaced by a status line, "<name> is deciding…"
   - the log and dice keep updating live
-- **Hand label:** always names whose hand is shown, for example "Marlow's properties".
+- **Hand label:** always names whose hand is shown, for example "Marlow's properties". Planned change (BUG-8): the hand header is removed; the hand redesign decides where the name goes.
 - **Debt badges:** a player in debt, or with a pending debt that falls due at the start of their next turn, carries a badge with the amount on the rail.
 - **Bankrupt players:** the row stays on the rail dimmed and struck through. That player watches the game as a spectator: the board, log and rail update, and no action is available.
 
@@ -414,8 +421,8 @@ Rules:
 - **R-B1 MUST** [Done] A 40-square loop with group colour bars on the inner edge.
 - **R-B2 MUST** [Gap] Show player tokens on their squares. More than one token on a square is offset or fanned.
 - **R-B3 MUST** [Gap] Show square names and prices, special-square icons (Chance, Chest, Tax, Station, Utility) and the four corners. Reuse the Game parts components.
-- **R-B4 MUST** [Gap] Show ownership as an owner-colour marker on each owned square, plus houses (1–4) and hotels.
-- **R-B5 SHOULD** [Gap] Highlight the last move path briefly, and let players tap a square to see its title deed.
+- **R-B4 MUST** [Gap] Show ownership as an owner-colour marker on each owned square, plus houses (1–4) and hotels. The marker must not cover the square's price (BUG-9).
+- **R-B5 SHOULD** [Gap] Highlight the last move path briefly, and let players tap a square to see its title deed. The square detail is a modal dialog with the full deed and, for the property owner, the property actions. Keyboard and no-WebGL users get the same dialog from a list of squares (BUG-13).
 
 ### 8.4 Turn actions (board centre)
 
@@ -423,7 +430,7 @@ Rules:
 - **R-T2 MUST** [Done] The Next turn button sits under the dice.
 - **R-T3 MUST** [Gap] Design the board centre for every phase in the gameplay doc, section 2 (including In debt and Bankrupt), following 5.2.
 - **R-T4 MUST** [Gap] Show the read-only remote-turn state (5.3).
-- **R-T5 MUST** [Gap] Design the "Pass to <name>" handoff interstitial.
+- **R-T5 MUST** [Gap] Show a turn-change toast on every device (5.3). It replaces the "Pass to <name>" handoff interstitial (BUG-15).
 - **R-T6 SHOULD** [Done] Animate the dice roll and the token movement, with reduced-motion fallbacks. Done. Reduced motion (device setting, or the switch in the Menu) turns off all animation: the result of a roll and the new token squares show at once.
 
 ### 8.5 Hand
@@ -443,7 +450,7 @@ Rules:
 
 ### 8.7 Dialogs and other screens
 
-The rules behind each flow are in the gameplay doc, section 5. **There are no modal dialogs for now**: each flow below is shown in the board centre, except Manage properties, which lives in the expanded hand (4.6). The "Dialog or screen" column is the flow's name only.
+The rules behind each flow are in the gameplay doc, section 5. The auction (R-G4) and the card reveal (R-G6) show in a modal dialog (5.2). The other flows are shown in the board centre, except Manage properties, which lives in the expanded hand (4.6) and in the square detail dialog (R-B5). The "Dialog or screen" column is the flow's name only.
 
 | ID   | Level  | Status | Dialog or screen                                                                                                     |
 | ---- | ------ | ------ | -------------------------------------------------------------------------------------------------------------------- |
@@ -456,11 +463,11 @@ The rules behind each flow are in the gameplay doc, section 5. **There are no mo
 
 ### 8.8 Debug panel
 
-- **R-D1 MUST** [Done] A "Debug" button next to Menu opens a panel in place (4.7). It is always on for now.
+- **R-D1 MUST** [Done] A "Debug" button next to Menu opens a panel in place (4.7). Planned change (BUG-17): the button shows only when the API has debug mode on.
 - **R-D2 MUST** [Done] The player on turn can set the cash of any player, give any deed with buildings and a mortgage to any player or to the bank, and move any player token to any square with no landing.
 - **R-D3 MUST** [Done] Off turn, and during a buy offer, an auction or a trade, the controls are disabled and say why.
 - **R-D4 MUST** [Done] Each edit is a game action that the log shows as a "(debug)" line and that stays after a reload.
-- **R-D5 SHOULD** [Gap] Hide or limit the panel before release (gameplay Q24).
+- **R-D5 SHOULD** [Gap] Hide the panel unless debug mode is on. Debug mode is an API env variable, off by default and refused in production. The web reads it from `GET /api/auth/methods` (gameplay Q24, BUG-17).
 
 ---
 
@@ -478,7 +485,7 @@ Gameplay questions (player limits, disconnects, trades, house rules, timer, bots
 8. **Inspecting other players.** There is no way yet to see an opponent's properties or cash, which trades and rent decisions need. Where does it live (tap an avatar on the rail)?
 9. **Tablet portrait strip.** The horizontal player strip doesn't fit 6 players at 768px.
 10. **Expanded hand overlap.** The expanded hand covers the lower board. Does it ever hide something the player needs, such as the centre during an auction?
-11. **Modals.** Revisit the decision to avoid modal dialogs once the board-centre flows are drawn.
+11. ~~**Modals.**~~ Closed: the auction, the card reveal and the square detail use a modal dialog (5.2).
 12. **Wireframe data.** Marlow shows $1,500 cash yet holds about $1,210 of properties at purchase price. The sample data should be made consistent.
 
 ---
@@ -495,3 +502,4 @@ Gameplay questions (player limits, disconnects, trades, house rules, timer, bots
 | 2026-11-03 | Debug panel added (4.7, R-D1 to R-D5): the player on turn edits cash, deeds and token squares to test the game logic. It is not part of the game design |
 | 2026-11-03 | Debug panel: the Deeds list is a multi-select in three groups (Streets, Stations, Utilities), and one edit can hold a batch of changes (4.7) |
 | 2026-11-03 | Horse and duck outline icons and 3D figures added, with the purple and teal pawn colours (4.3, R-P7)                                                                                    |
+| 2026-11-09 | Bug review ([bug-fix-plan.md](bug-fix-plan.md)): modal dialogs for the auction, card reveal and square detail (5.2, 8.7, R-B5, question 11 closed); full title deed; card hold; turn-change toast replaces the handoff interstitial (1.2, 5.3, R-T5); same pips on all faces (4.5); card stacks (4.4); owner marker clear of the price (R-B4); debug mode behind an API flag (4.7, R-D1, R-D5); planned hand redesign (4.6) |

@@ -2,6 +2,8 @@
 
 This file records bugs that are reported but not fixed. Do not fix a bug when you record it.
 
+The fix approach, size and order for each bug are in [bug-fix-plan.md](bug-fix-plan.md).
+
 Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ext>`.
 
 ## Entry format
