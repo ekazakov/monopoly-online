@@ -20,8 +20,6 @@
     "@hono/node-server": "catalog:",
     "@hono/zod-openapi": "catalog:",
     "@hono/zod-validator": "catalog:",
-    "@monopoly/game-engine": "workspace:*",
-    "@monopoly/shared": "workspace:*",
     "@opentelemetry/api": "catalog:",
     "@opentelemetry/instrumentation": "catalog:",
     "@opentelemetry/instrumentation-pino": "catalog:",
@@ -36,6 +34,8 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@monopoly/game-engine": "workspace:*",
+    "@monopoly/shared": "workspace:*",
     "@opentelemetry/context-async-hooks": "catalog:",
     "@opentelemetry/core": "catalog:",
     "@opentelemetry/sdk-metrics": "catalog:",

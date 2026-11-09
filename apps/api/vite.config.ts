@@ -8,8 +8,9 @@ export default defineConfig({
     platform: "node",
     dts: false,
     deps: {
-      // Shared code is TypeScript source. Bundle it so dist does not import .ts files.
-      alwaysBundle: ["@monopoly/shared"],
+      // The workspace packages are TypeScript source. Bundle them so dist does not import .ts
+      // files: Node does not strip types in `node_modules`, where `pnpm deploy` puts them.
+      alwaysBundle: ["@monopoly/shared", "@monopoly/game-engine"],
     },
   },
   test: {

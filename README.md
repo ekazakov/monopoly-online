@@ -46,6 +46,20 @@ The API keeps its database in `apps/api/data/monopoly.db`. To change the path, s
 
 ## Sign-in
 
+## Docker image
+
+One `Dockerfile` makes the image that runs locally, in the browser tests and on the droplet. The default target is `prod`: Node 26, the API bundle, its production dependencies and the web build, as the user `node`. It listens on port 8787, keeps the database in the `/data` volume and has a health check on `/api/ready`. The `dev` target has all dependencies for `pnpm dev`; its source comes from the host.
+
+```bash
+docker build -t harborfront .
+```
+
+```bash
+docker run --rm -p 8787:8787 -v harborfront-data:/data -e GOOGLE_CLIENT_ID=... -e GOOGLE_CLIENT_SECRET=... -e GOOGLE_REDIRECT_URI=http://localhost:8787/api/auth/google/callback harborfront
+```
+
+The production image needs a sign-in method: the Google variables below. `NODE_ENV` is `production` in the image, so guest sign-in is refused. The image has no `pino-pretty`, so do not set `NODE_ENV=development` on it; the compose file and the browser tests (D3, D5) handle this.
+
 The API reads these environment variables:
 
 | Variable                                   | Purpose                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
