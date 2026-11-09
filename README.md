@@ -123,7 +123,7 @@ docker compose up
 ```
 
 - The app (the production image, in development mode) is on http://localhost:8787. It serves the web app and the API on one origin. Sign in with a guest name.
-- Grafana is on http://localhost:3000 (user `admin`, password `admin`). The data sources are Prometheus (metrics), Loki (logs) and Tempo (traces). The Harborfront dashboard comes with task D4.
+- Grafana is on http://localhost:3000 (user `admin`, password `admin`). The data sources are Prometheus (metrics), Loki (logs) and Tempo (traces). The **Harborfront** dashboard (Dashboards menu) loads by itself from `ops/grafana/dashboards/harborfront.json`. It has the realtime, HTTP, runtime and database metrics, the logs (a line has a link to its trace) and lists of recent, slow and failed requests. Its "Rate window" variable is 1 minute for the 10 s export interval of the local stack; use 5 minutes for a 60 s interval.
 - `docker compose stop` stops the containers and keeps their data. The API stops in about a second, and its log shows each shutdown step. `docker compose down` removes the containers and clears the Grafana data; `down -v` also clears the game database.
 
 The settings of the app are in `ops/local.env`. Put your own values in `.env` (see `.env.example`): they win. For example, set the Google variables and `NODE_ENV=production` to sign in with Google.

@@ -19,7 +19,7 @@ This is a pnpm workspace for a browser property-trading game. It supports remote
 | `apps/e2e`             | Playwright browser tests with a dedicated database and seeded API server.                                        |
 | `artifacts`            | Standalone copies of the design system and game screen prototype.                                                |
 | `plan`                 | Game rules, API contracts, design specifications, and milestone task lists.                                      |
-| `ops` (planned, M5)    | Grafana dashboard and provisioning files for the local telemetry stack.                                          |
+| `ops`                  | Compose settings (`local.env`) and the Grafana dashboard and provisioning files for the local telemetry stack.   |
 
 Read the relevant documents before a change:
 
