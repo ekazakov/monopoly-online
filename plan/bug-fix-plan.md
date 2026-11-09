@@ -67,8 +67,8 @@ Each task is one small change. Each can go in its own commit.
 
 - The red bar is the **owner marker**, not a colour bar. The owner in the image has the red token (the dog, `#d9392f`). Lantern Row, Cobble Street and Saltmarsh Road are in the Sky group.
 - Cause: the marker (`scene/Tile.tsx:89-96`, `geometries.marker` in `scene/resources.ts:21`, `MARKER_Z = 0.625` in `scene/layout.ts:23`) covers the outer 9% of the square. `squareTexture()` (`scene/textures.ts:149-151`) draws the price at the same outer edge, at baseline `TILE_H - 28`.
-- [ ] Move the price up on the texture (for example to `TILE_H - 90`), or make the marker thinner, or move the marker to the side edges. See open decision 2.
-- [ ] Check all four sides of the board and a square with houses.
+- [x] Decision (user, 2026-11-09): the owner marker is a deeper band (96px of the 560px texture, `MARKER_DEPTH` in `scene/layout.ts`) and the price is drawn on it, in the board ink or white by contrast (`markerInk` in `scene/colors.ts`). A mortgaged marker is an opaque, lighter colour. The prototype was not saved to `artifacts/`.
+- [ ] Check all four sides of the board and a square with houses (open: not yet checked in the browser).
 - Spec: R-B4 and open question 5 (colour collisions) in `game-screen-2-spec.md`.
 
 ## Phase 2: full title deed
@@ -269,7 +269,7 @@ Tasks:
 ## Open decisions
 
 1. **Debug variable name (BUG-17).** For example `DEBUG_MODE_ENABLED`, in the style of `GUEST_SIGN_IN_ENABLED`.
-2. **Owner marker or price (BUG-9).** Move the price, make the marker thinner, or put the marker at the side edges. Spec open question 5 (owner marker that does not rely on colour) is related.
+2. **Owner marker or price (BUG-9).** Decided: price on a deeper marker. Spec open question 5 (owner marker that does not rely on colour) is related.
 3. **Toast text for other handoffs (BUG-15).** The text for an auction bid or a trade answer between hot-seat seats, for example "Cara, answer the trade".
 4. **Event limit in the snapshot message (BUG-14).** All events of the game, or the last N. The log store keeps at most 2000 events (`game/store.ts:11`).
 

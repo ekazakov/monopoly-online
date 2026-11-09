@@ -3,7 +3,7 @@ import { useCursor } from "@react-three/drei";
 import type { ThreeEvent } from "@react-three/fiber";
 import { memo, useState } from "react";
 import * as THREE from "three";
-import { HIGHLIGHT_COLOR, MORTGAGED_TINT, groupColor } from "./colors.ts";
+import { HIGHLIGHT_COLOR, MORTGAGED_TINT, groupColor, markerColor, markerInk } from "./colors.ts";
 import { BAR_Z, CELL_H, MARKER_Z, buildingSlots, squareCell } from "./layout.ts";
 import type { DeedModel } from "./model.ts";
 import type { Resources } from "./resources.ts";
@@ -14,6 +14,8 @@ const CLICK_SLOP = 5;
 interface TileProps {
   square: number;
   texture: THREE.Texture;
+  /** The price in white, drawn on the owner marker. */
+  priceTexture?: THREE.Texture;
   resources: Resources;
   deed?: DeedModel;
   highlighted: boolean;
@@ -23,6 +25,7 @@ interface TileProps {
 export const Tile = memo(function Tile({
   square,
   texture,
+  priceTexture,
   resources,
   deed,
   highlighted,
@@ -93,6 +96,20 @@ export const Tile = memo(function Tile({
           position={[0, CELL_H + 0.009, MARKER_Z]}
           receiveShadow
         />
+      )}
+      {deed && priceTexture && (
+        <mesh
+          geometry={resources.geometries.markerPrice}
+          position={[0, CELL_H + 0.0185, MARKER_Z]}
+          rotation-x={-Math.PI / 2}
+        >
+          <meshBasicMaterial
+            map={priceTexture}
+            color={markerInk(markerColor(deed.ownerColor, mortgaged))}
+            transparent
+            toneMapped={false}
+          />
+        </mesh>
       )}
       {slots.map((slot, i) =>
         slot.kind === "hotel" ? (

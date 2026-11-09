@@ -118,3 +118,45 @@ export const SURFACE = {
 export const MORTGAGED_TINT = "#a7ada3";
 /** Colour of the glow on a highlighted square. */
 export const HIGHLIGHT_COLOR = "#e2574c";
+
+const channel = (hex: string, i: number) => Number.parseInt(hex.slice(i, i + 2), 16);
+
+function luminance(hex: string): number {
+  const [r, g, b] = [1, 3, 5].map((i) => {
+    const v = channel(hex, i) / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  }) as [number, number, number];
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** WCAG contrast ratio of two `#rrggbb` colours. */
+export const contrastRatio = (a: string, b: string) => {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x) as [number, number];
+  return (hi + 0.05) / (lo + 0.05);
+};
+
+/** How much of the owner colour stays on the marker of a mortgaged deed. */
+const MORTGAGED_MARKER_SHARE = 0.45;
+
+/**
+ * Colour of the owner marker. A mortgaged deed is dimmed by mixing the colour with the paper, so the
+ * marker stays opaque and hides the price drawn on the square under it.
+ */
+export function markerColor(hex: string, mortgaged: boolean): string {
+  if (!mortgaged) return hex;
+  const mix = (i: number) =>
+    Math.round(
+      channel(hex, i) * MORTGAGED_MARKER_SHARE +
+        channel(SURFACE.paper, i) * (1 - MORTGAGED_MARKER_SHARE),
+    )
+      .toString(16)
+      .padStart(2, "0");
+  return `#${mix(1)}${mix(3)}${mix(5)}`;
+}
+
+/** Colour of the price on a marker: the board ink or white, whichever reads better on `background`. */
+export function markerInk(background: string): string {
+  return contrastRatio(background, SURFACE.ink) >= contrastRatio(background, "#ffffff")
+    ? SURFACE.ink
+    : "#ffffff";
+}

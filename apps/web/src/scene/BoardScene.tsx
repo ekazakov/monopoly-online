@@ -224,6 +224,7 @@ function Scene({
           key={i}
           square={i}
           texture={textures.squares[i]!}
+          priceTexture={textures.prices[i]}
           resources={resources}
           deed={deeds.get(i)}
           highlighted={highlightSquare === i}

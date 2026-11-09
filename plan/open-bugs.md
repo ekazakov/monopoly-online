@@ -131,7 +131,7 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 
 ### BUG-9: Red bar on a board tile covers the property price
 
-- Status: open
+- Status: fixed (2026-11-09), not yet checked in the browser
 - Reported: 2026-11-09
 - Area: web
 - Steps to reproduce:

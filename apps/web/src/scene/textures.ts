@@ -9,6 +9,9 @@ const TILE_W = 320;
 const TILE_H = 560;
 const CORNER_PX = 560;
 const CENTRE_PX = 1024;
+/** Depth of the owner marker on the square texture: the price sits in this band (BUG-9). */
+const PRICE_BAND_PX = 96;
+const PRICE_PX = 46;
 
 /** The price line under a square name, or an empty string when the square has none. */
 export function priceLabel(square: Square): string {
@@ -146,9 +149,25 @@ export function squareTexture(square: Square, anisotropy: number): THREE.CanvasT
       y += 56;
     }
     if (!street) drawIcon(g, square, TILE_W / 2, 350);
-    g.font = `600 46px ${BODY}`;
+    g.font = `600 ${PRICE_PX}px ${BODY}`;
     const price = priceLabel(square);
-    if (price) g.fillText(price, TILE_W / 2, TILE_H - 28);
+    if (price) g.fillText(price, TILE_W / 2, priceBaseline(TILE_H));
+  });
+}
+
+/** Baseline that centres the price in the marker band at the outer edge of a texture `height` high. */
+function priceBaseline(height: number): number {
+  return height - PRICE_BAND_PX / 2 + PRICE_PX * 0.35;
+}
+
+/** The price in white on a transparent canvas, for the plane on top of the owner marker. */
+function priceTexture(label: string, anisotropy: number): THREE.CanvasTexture {
+  return makeTexture(TILE_W, PRICE_BAND_PX, anisotropy, (g) => {
+    g.fillStyle = "#ffffff";
+    g.textAlign = "center";
+    g.textBaseline = "alphabetic";
+    g.font = `600 ${PRICE_PX}px ${BODY}`;
+    g.fillText(label, TILE_W / 2, priceBaseline(PRICE_BAND_PX));
   });
 }
 
@@ -305,6 +324,8 @@ export async function whenBoardFontsReady(timeoutMs = 1500): Promise<void> {
 export interface BoardTextures {
   /** Top face texture per square index. */
   squares: THREE.CanvasTexture[];
+  /** White price text for the owner marker, per square index. Squares with no price have none. */
+  prices: (THREE.CanvasTexture | undefined)[];
   centre: THREE.CanvasTexture;
   dispose(): void;
 }
@@ -322,12 +343,22 @@ export function createBoardTextures(squares: readonly Square[], anisotropy: numb
         return squareTexture(square, anisotropy);
     }
   });
+  const byLabel = new Map<string, THREE.CanvasTexture>();
+  const prices = squares.map((square) => {
+    const label = square.kind === "tax" ? "" : priceLabel(square);
+    if (!label) return undefined;
+    let t = byLabel.get(label);
+    if (!t) byLabel.set(label, (t = priceTexture(label, anisotropy)));
+    return t;
+  });
   const centre = centreTexture(anisotropy);
   return {
     squares: faces,
+    prices,
     centre,
     dispose() {
       for (const t of faces) t.dispose();
+      for (const t of byLabel.values()) t.dispose();
       centre.dispose();
     },
   };

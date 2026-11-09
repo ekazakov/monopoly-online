@@ -9,7 +9,10 @@ import {
   SURFACE,
   TOKEN_LOOKS,
   UNKNOWN_OWNER_COLOR,
+  contrastRatio,
   groupColor,
+  markerColor,
+  markerInk,
   tokenLook,
 } from "./colors.ts";
 
@@ -79,5 +82,33 @@ describe("board surface colours", () => {
     expect(token("hotel")).toBe(SURFACE.hotel);
     expect(token("hotel-roof")).toBe(SURFACE.hotelRoof);
     expect(UNKNOWN_OWNER_COLOR).toBe(token("ink-soft"));
+  });
+});
+
+describe("owner marker colours", () => {
+  test("a marker that is not mortgaged keeps the owner colour", () => {
+    expect(markerColor("#d9392f", false)).toBe("#d9392f");
+  });
+
+  test("a mortgaged marker is opaque and lighter, so it still hides the square price", () => {
+    expect(markerColor("#000000", true)).toBe("#838680");
+    expect(markerColor("#d9392f", true)).toMatch(/^#[0-9a-f]{6}$/);
+  });
+
+  test("the price is white on dark colours and ink on light colours", () => {
+    expect(markerInk(TOKEN_LOOKS.horse.hex)).toBe("#ffffff");
+    expect(markerInk(TOKEN_LOOKS.cat.hex)).toBe("#ffffff");
+    expect(markerInk(TOKEN_LOOKS.car.hex)).toBe(SURFACE.ink);
+    expect(markerInk(UNKNOWN_OWNER_COLOR)).toBe(SURFACE.ink);
+  });
+
+  test("every price has a contrast of at least 3 on every owner colour, mortgaged or not", () => {
+    for (const { hex } of Object.values(TOKEN_LOOKS)) {
+      for (const mortgaged of [false, true]) {
+        const bg = markerColor(hex, mortgaged);
+        const ink = markerInk(bg);
+        expect(contrastRatio(bg, ink)).toBeGreaterThanOrEqual(3);
+      }
+    }
   });
 });

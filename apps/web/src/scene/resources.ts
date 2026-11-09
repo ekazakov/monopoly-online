@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import { SURFACE } from "./colors.ts";
-import { CELL_D, CELL_H, CELL_W, CORNER_SIZE, SLAB_SIZE } from "./layout.ts";
+import { SURFACE, markerColor } from "./colors.ts";
+import { CELL_D, CELL_H, CELL_W, CORNER_SIZE, MARKER_DEPTH, SLAB_SIZE } from "./layout.ts";
 
 const standard = (color: THREE.ColorRepresentation, roughness = 0.6) =>
   new THREE.MeshStandardMaterial({ color, roughness, metalness: 0.02 });
@@ -18,7 +18,9 @@ export function createResources() {
     side: new THREE.BoxGeometry(CELL_W, CELL_H, CELL_D),
     corner: new THREE.BoxGeometry(CORNER_SIZE, CELL_H, CORNER_SIZE),
     bar: new THREE.BoxGeometry(CELL_W, 0.05, 0.3),
-    marker: new THREE.BoxGeometry(CELL_W, 0.018, 0.12),
+    marker: new THREE.BoxGeometry(CELL_W, 0.018, MARKER_DEPTH),
+    /** The price on top of the marker. */
+    markerPrice: new THREE.PlaneGeometry(CELL_W, MARKER_DEPTH),
     houseBody: new THREE.BoxGeometry(0.15, 0.13, 0.15),
     houseRoof: new THREE.ConeGeometry(0.13, 0.1, 4),
     hotelBody: new THREE.BoxGeometry(0.5, 0.2, 0.2),
@@ -51,12 +53,7 @@ export function createResources() {
       const key = `${hex}${dim ? "-dim" : ""}`;
       let m = markerMaterials.get(key);
       if (!m) {
-        m = new THREE.MeshStandardMaterial({
-          color: hex,
-          roughness: 0.45,
-          transparent: dim,
-          opacity: dim ? 0.45 : 1,
-        });
+        m = new THREE.MeshStandardMaterial({ color: markerColor(hex, dim), roughness: 0.45 });
         markerMaterials.set(key, m);
       }
       return m;
