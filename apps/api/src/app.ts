@@ -63,6 +63,11 @@ export type AppOptions = BaseAppOptions & {
   /** Shared with the shutdown in `index.ts`: the event streams close on its signal, and `drains` gets the work to wait for. */
   shutdown?: ShutdownHandle;
   /**
+   * Debug mode: `DebugEdit` actions are accepted and the methods response says so. Defaults to off.
+   * `index.ts` reads it with `readDebugMode`.
+   */
+  debug?: boolean;
+  /**
    * The sign-in methods. Defaults to none: `POST /api/session` answers 404 and Google is off.
    * `index.ts` reads them from the environment with `readAuthConfig`.
    */
@@ -110,6 +115,7 @@ export function createApp(db: Kysely<Database>, options?: AppOptions) {
     loader,
     log: deps.log,
     now: deps.now,
+    debug: options?.debug ?? false,
     onCommitted: (committed) => {
       publish.onCommitted(committed);
       if (committed.events.some((event) => event.type === "GameEnded")) {
@@ -169,7 +175,15 @@ export function createApp(db: Kysely<Database>, options?: AppOptions) {
     .route("/", healthRoutes(deps))
     .route("/", readyRoutes(deps))
     .route("/", sessionRoutes(deps, { guest }))
-    .route("/", authRoutes(deps, { guest, google: options?.auth?.google, pending }))
+    .route(
+      "/",
+      authRoutes(deps, {
+        guest,
+        google: options?.auth?.google,
+        pending,
+        debug: options?.debug ?? false,
+      }),
+    )
     .route("/", gameRoutes({ ...deps, rooms }))
     .route("/", inviteRoutes({ ...deps, rooms }))
     // After `gameRoutes`: its `/games/*` session middleware also covers these routes, and the

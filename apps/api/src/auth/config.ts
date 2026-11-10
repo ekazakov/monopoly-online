@@ -61,3 +61,20 @@ export function readAuthConfig(env: Record<string, string | undefined>): AuthCon
   }
   return google ? { guest, google } : { guest };
 }
+
+/**
+ * Read the debug mode flag from `DEBUG_MODE_ENABLED`. It is off when the variable is unset. The
+ * start stops when the value is not `true` or `false`, or when it is `true` and `NODE_ENV` is
+ * `production`.
+ */
+export function readDebugMode(env: Record<string, string | undefined>): boolean {
+  const value = env.DEBUG_MODE_ENABLED ?? "";
+  if (value !== "" && value !== "true" && value !== "false") {
+    throw new Error(`DEBUG_MODE_ENABLED must be "true" or "false", got "${value}"`);
+  }
+  const debug = value === "true";
+  if (debug && env.NODE_ENV === "production") {
+    throw new Error("DEBUG_MODE_ENABLED=true is not allowed when NODE_ENV is production");
+  }
+  return debug;
+}

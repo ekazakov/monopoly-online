@@ -1,5 +1,32 @@
 import { describe, expect, test } from "vite-plus/test";
-import { readAuthConfig } from "./config.ts";
+import { readAuthConfig, readDebugMode } from "./config.ts";
+
+describe("readDebugMode", () => {
+  test("is off when the variable is unset or empty", () => {
+    expect(readDebugMode({})).toBe(false);
+    expect(readDebugMode({ DEBUG_MODE_ENABLED: "" })).toBe(false);
+    expect(readDebugMode({ DEBUG_MODE_ENABLED: "false" })).toBe(false);
+  });
+
+  test("is on when the variable is true, also in development", () => {
+    expect(readDebugMode({ DEBUG_MODE_ENABLED: "true" })).toBe(true);
+    expect(readDebugMode({ DEBUG_MODE_ENABLED: "true", NODE_ENV: "development" })).toBe(true);
+  });
+
+  test("refuses any other value", () => {
+    for (const bad of ["1", "yes", "TRUE", " true"]) {
+      expect(() => readDebugMode({ DEBUG_MODE_ENABLED: bad })).toThrow(
+        "DEBUG_MODE_ENABLED must be",
+      );
+    }
+  });
+
+  test("refuses to start with debug mode on in production", () => {
+    expect(() => readDebugMode({ DEBUG_MODE_ENABLED: "true", NODE_ENV: "production" })).toThrow(
+      "not allowed when NODE_ENV is production",
+    );
+  });
+});
 
 const google = {
   GOOGLE_CLIENT_ID: "id",

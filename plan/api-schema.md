@@ -217,7 +217,7 @@ The plan for [milestone-4-tasks.md](milestone-4-tasks.md). The code has these me
 | Schema | Shape |
 | --- | --- |
 | `removePlayerResponseSchema` | `{ game }`: the game after the removal |
-| `authMethodsSchema` | `{ google: boolean, guest: boolean }` |
+| `authMethodsSchema` | `{ google: boolean, guest: boolean, debug: boolean }` |
 | `googleNameRequestSchema` | `{ name: displayName }` |
 | `roomRemovedPayloadSchema` | `{ gameId }` |
 | `auth_identities` table | Migration `0008_auth_identities`: `provider`, `subject`, `user_id`, `created_at`. Unique index on `provider` and `subject` |
@@ -261,8 +261,7 @@ Rules that the first design did not fix, as the code does them:
 A debug panel on the game screen lets the player on turn edit the game state, to test the game logic. See [game-screen-2-spec.md](game-screen-2-spec.md) §4.7.
 
 ### Decisions (user answers)
-- **Access:** always on for now, in every game and every environment.
-  - Planned change (BUG-17, gameplay Q24): an API env variable turns debug mode on. It is off by default, and the API refuses to start with it on when `NODE_ENV` is `production`. With it off, `DebugEdit` is refused with a new error code. `GET /api/auth/methods` adds `debug: boolean`, and the web hides the debug panel when it is false. See [bug-fix-plan.md](bug-fix-plan.md).
+- **Access:** the API env variable `DEBUG_MODE_ENABLED` turns debug mode on. It is off when unset. The API does not start with it `true` when `NODE_ENV` is `production`. With it off, `DebugEdit` is refused with `debug_disabled` (403). `GET /api/auth/methods` returns `debug: boolean`, and the web shows the debug panel only when it is `true`. See [bug-fix-plan.md](bug-fix-plan.md) (BUG-17, gameplay Q24).
 - **Token move:** a teleport. No landing, no rent, no card, no Start salary, no phase change.
 - **Free edits:** only the shape of a change is checked. Uneven building and buildings without the full group are allowed.
 

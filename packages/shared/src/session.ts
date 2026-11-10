@@ -17,8 +17,15 @@ export const createSessionResponseSchema = userResponseSchema;
 /** `GET /api/me` answers 200 with the signed-in user. */
 export const meResponseSchema = userResponseSchema;
 
-/** `GET /api/auth/methods`: which sign-in buttons the server offers. No session is needed. */
-export const authMethodsSchema = z.strictObject({ google: z.boolean(), guest: z.boolean() });
+/**
+ * `GET /api/auth/methods`: which sign-in buttons the server offers, and whether debug mode is on
+ * (the web shows the debug panel only then). No session is needed.
+ */
+export const authMethodsSchema = z.strictObject({
+  google: z.boolean(),
+  guest: z.boolean(),
+  debug: z.boolean(),
+});
 
 /** `POST /api/auth/google/name`: the display name of a new Google user. Answers 200 with the user. */
 export const googleNameRequestSchema = z.strictObject({ name: displayNameSchema });

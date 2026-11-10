@@ -3,7 +3,7 @@ import type { Server } from "node:http";
 import { dirname } from "node:path";
 import { serve } from "@hono/node-server";
 import { createApp } from "./app.ts";
-import { createArcticGoogle, readAuthConfig } from "./auth/index.ts";
+import { createArcticGoogle, readAuthConfig, readDebugMode } from "./auth/index.ts";
 import { createDb } from "./db/client.ts";
 import { createQueryObserver } from "./db/query-telemetry.ts";
 import { getMeter, registerProcessMetrics } from "./metrics.ts";
@@ -33,6 +33,8 @@ const dbPath = process.env.DB_PATH ?? "data/monopoly.db";
 
 // A wrong sign-in setting stops the start here, before the database opens.
 const authConfig = readAuthConfig(process.env);
+// Debug mode is off unless DEBUG_MODE_ENABLED=true. It stops the start in production.
+const debugMode = readDebugMode(process.env);
 const shutdownTimeoutMs = readShutdownTimeout(process.env);
 // The web build is served by the API only when this is set. Without it the API serves no web files.
 const webDistDir = process.env.WEB_DIST_DIR || undefined;
@@ -72,6 +74,7 @@ logger.info(
     dbPath,
     logLevel: logger.level,
     signIn: { guest: authConfig.guest, google: Boolean(authConfig.google) },
+    debugMode,
     telemetry: getTelemetry() !== undefined,
     fixedSeed: seed !== undefined,
     presenceGraceMs: graceMs ?? null,
@@ -94,6 +97,7 @@ const app = createApp(db, {
     ...(authConfig.google ? { google: createArcticGoogle(authConfig.google) } : {}),
   },
   ...(seed === undefined ? {} : { seed: () => seed }),
+  debug: debugMode,
 });
 const watched = await watchActiveGames(db, presence);
 if (watched > 0) logger.info({ games: watched }, "watching active games for returning players");

@@ -80,14 +80,19 @@ describe("user responses", () => {
     ).toBe(false);
   });
 
-  test("the sign-in methods have two flags and no more", () => {
-    expect(authMethodsSchema.parse({ google: true, guest: false })).toEqual({
+  test("the sign-in methods have the google, guest and debug flags and no more", () => {
+    expect(authMethodsSchema.parse({ google: true, guest: false, debug: true })).toEqual({
       google: true,
       guest: false,
+      debug: true,
     });
-    expect(authMethodsSchema.safeParse({ google: true }).success).toBe(false);
-    expect(authMethodsSchema.safeParse({ google: true, guest: 1 }).success).toBe(false);
-    expect(authMethodsSchema.safeParse({ google: true, guest: true, x: 1 }).success).toBe(false);
+    expect(authMethodsSchema.safeParse({ google: true, guest: false }).success).toBe(false);
+    expect(authMethodsSchema.safeParse({ google: true, guest: 1, debug: false }).success).toBe(
+      false,
+    );
+    expect(
+      authMethodsSchema.safeParse({ google: true, guest: true, debug: false, x: 1 }).success,
+    ).toBe(false);
   });
 
   test("the Google name step uses the display name rule", () => {

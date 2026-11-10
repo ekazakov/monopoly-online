@@ -30,6 +30,7 @@
                   "not_a_member",
                   "not_your_seat",
                   "forbidden_topic",
+                  "debug_disabled",
                   "not_found",
                   "user_not_found",
                   "already_signed_in",
@@ -428,9 +429,12 @@
                     },
                     "guest": {
                       "type": "boolean"
+                    },
+                    "debug": {
+                      "type": "boolean"
                     }
                   },
-                  "required": ["google", "guest"],
+                  "required": ["google", "guest", "debug"],
                   "additionalProperties": false
                 }
               }

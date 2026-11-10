@@ -293,7 +293,7 @@ The hand has two states. The whole hand opens at once and every property is show
 
 ### 4.7 Debug panel
 
-A tool to test the game logic. It is not part of the game design. Planned change (BUG-17): it shows only when debug mode is on (gameplay doc, Q23 and Q24).
+A tool to test the game logic. It is not part of the game design. It shows only when debug mode is on (gameplay doc, Q23 and Q24; BUG-17).
 
 - **Button:** "Debug", to the left of the Menu button, in the `menu` slot. The same size and type as the Menu button, with a **dashed** border and the soft ink, so that it does not look like a game control.
 - **Panel:** a disclosure in place under the button, not a modal, like the Menu panel (4.2). 340px wide, dashed border. Esc or a click outside closes it. Focus goes to the "Debug" heading when it opens.
@@ -462,11 +462,11 @@ The rules behind each flow are in the gameplay doc, section 5. The purchase deci
 
 ### 8.8 Debug panel
 
-- **R-D1 MUST** [Done] A "Debug" button next to Menu opens a panel in place (4.7). Planned change (BUG-17): the button shows only when the API has debug mode on.
+- **R-D1 MUST** [Done] A "Debug" button next to Menu opens a panel in place (4.7). The button shows only when the API has debug mode on (BUG-17).
 - **R-D2 MUST** [Done] The player on turn can set the cash of any player, give any deed with buildings and a mortgage to any player or to the bank, and move any player token to any square with no landing.
 - **R-D3 MUST** [Done] Off turn, and during a buy offer, an auction or a trade, the controls are disabled and say why.
 - **R-D4 MUST** [Done] Each edit is a game action that the log shows as a "(debug)" line and that stays after a reload.
-- **R-D5 SHOULD** [Gap] Hide the panel unless debug mode is on. Debug mode is an API env variable, off by default and refused in production. The web reads it from `GET /api/auth/methods` (gameplay Q24, BUG-17).
+- **R-D5 SHOULD** [Done] Hide the panel unless debug mode is on. Debug mode is an API env variable, off by default and refused in production. The web reads it from `GET /api/auth/methods` (gameplay Q24, BUG-17).
 
 ---
 

@@ -236,14 +236,14 @@ Why this is not a one-line change:
 
 Tasks:
 
-- [ ] API config: read the variable (name: open decision 1). Default off. Refuse to start when it is on and `NODE_ENV` is `production`. Log it in the start settings line (`apps/api/src/index.ts:69`).
-- [ ] Pass `debug: boolean` through `AppOptions` / `resolveDeps` (`apps/api/src/routes/common.ts:25-55`) to the game service.
-- [ ] Refuse `DebugEdit` in `service.submit` when the flag is off, with a new error code in the shared error schema (not 404; the route stays).
-- [ ] Add `debug` to `GET /api/auth/methods` (`apps/api/src/routes/auth.ts:34`, `authMethodsSchema` in `packages/shared`): `{google, guest, debug}`.
-- [ ] Web: read `debug` from the methods query (`session/queries.ts:38-48`, `staleTime: Infinity`). Do not mount `DebugPanel` (`GameScreen.tsx:28, 158`) when it is false. Keep the "(debug)" log lines for earlier edits.
-- [ ] Turn the flag on in: `apps/api/package.json` `dev` script, `apps/e2e/playwright.config.ts` webServer env (lines 79-86), `compose.yaml` `e2e` and `dev` services, `ops/local.env`, `.env.example`.
-- [ ] Tests: `apps/api/src/game/service.test.ts` (flag on and flag off), the methods route test, `DebugPanel.test.tsx` or `GameScreen.test.tsx` (hidden when off).
-- [ ] Run `pnpm openapi`. Update README (env table), `plan/api-schema.md`, the spec R-D1 and R-D5, and the gameplay doc question 24.
+- [x] API config: read the variable (name: open decision 1). Default off. Refuse to start when it is on and `NODE_ENV` is `production`. Log it in the start settings line (`apps/api/src/index.ts:69`).
+- [x] Pass `debug: boolean` through `AppOptions` / `resolveDeps` (`apps/api/src/routes/common.ts:25-55`) to the game service.
+- [x] Refuse `DebugEdit` in `service.submit` when the flag is off, with a new error code in the shared error schema (not 404; the route stays).
+- [x] Add `debug` to `GET /api/auth/methods` (`apps/api/src/routes/auth.ts:34`, `authMethodsSchema` in `packages/shared`): `{google, guest, debug}`.
+- [x] Web: read `debug` from the methods query (`session/queries.ts:38-48`, `staleTime: Infinity`). Do not mount `DebugPanel` (`GameScreen.tsx:28, 158`) when it is false. Keep the "(debug)" log lines for earlier edits.
+- [x] Turn the flag on in: `apps/api/package.json` `dev` script, `apps/e2e/playwright.config.ts` webServer env (lines 79-86), `compose.yaml` `e2e` and `dev` services, `ops/local.env`, `.env.example`.
+- [x] Tests: `apps/api/src/game/service.test.ts` (flag on and flag off), the methods route test, `DebugPanel.test.tsx` or `GameScreen.test.tsx` (hidden when off).
+- [x] Run `pnpm openapi`. Update README (env table), `plan/api-schema.md`, the spec R-D1 and R-D5, and the gameplay doc question 24.
 
 ### Turn-change toast for hot-seat (BUG-15)
 

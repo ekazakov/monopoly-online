@@ -81,6 +81,7 @@ export default defineConfig({
             PORT: String(API_PORT),
             DB_PATH: "../e2e/.data/e2e.db",
             GUEST_SIGN_IN_ENABLED: "true",
+            DEBUG_MODE_ENABLED: "true",
             GAME_SEED: String(E2E_SEED),
             PRESENCE_GRACE_MS: "2500",
           },

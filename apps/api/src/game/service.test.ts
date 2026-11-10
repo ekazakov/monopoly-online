@@ -47,7 +47,7 @@ beforeEach(async () => {
   await migrateToLatest(db);
   ({ controllers } = await insertActiveGame(db, initial));
   loader = createGameStateLoader(db);
-  service = createGameService({ db, loader });
+  service = createGameService({ db, loader, debug: true });
   version = 0;
 });
 
@@ -205,6 +205,24 @@ describe("submitAction: replay", () => {
     expect(error.code).toBe("not_a_street");
     expect(await counts()).toEqual(before);
     expect((await loader.load(GAME_ID))?.ownership["39"]).toBeUndefined();
+  });
+
+  test("debug edits are refused when debug mode is off, and store nothing", async () => {
+    const off = createGameService({ db, loader, debug: false });
+    const before = await counts();
+    const error = await failure(
+      off.submitAction({
+        gameId: GAME_ID,
+        userId: controllers[first] as string,
+        seatId: first,
+        action: { type: "DebugEdit", changes: [{ kind: "cash", targetId: first, cash: 1 }] },
+        expectedVersion: version,
+        clientActionId: crypto.randomUUID(),
+      }),
+    );
+    expect(error.code).toBe("debug_disabled");
+    expect(error.status).toBe(403);
+    expect(await counts()).toEqual(before);
   });
 
   test("the server sets playerId from the seat", async () => {

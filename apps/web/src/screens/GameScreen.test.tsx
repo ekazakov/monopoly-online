@@ -13,8 +13,8 @@ import {
   withStatus,
 } from "../game/fixtures.ts";
 import { ActionApiError } from "../realtime/index.ts";
-import { sessionKey } from "../session/index.ts";
-import { errorReply, mockApi, userFixture } from "../testing/fakeApi.ts";
+import { authMethodsQuery, sessionKey } from "../session/index.ts";
+import { errorReply, mockApi, methodsFixture, userFixture } from "../testing/fakeApi.ts";
 import { FakeRealtimeClient } from "../testing/fakeRealtime.ts";
 import { createTestQueryClient, renderRoute } from "../testing/render.tsx";
 
@@ -34,6 +34,8 @@ interface Options {
   userId?: string;
   room?: Response;
   stateReply?: Response;
+  /** The `GET /api/auth/methods` answer. Defaults to `methodsFixture` (debug mode off). */
+  methods?: Response;
 }
 
 async function setup({
@@ -42,18 +44,20 @@ async function setup({
   userId = fx.guestId,
   room,
   stateReply,
+  methods,
 }: Options = {}) {
   const calls = mockApi({
     [`GET /api/games/${game.id}`]: room ?? Response.json({ game }),
     [`GET /api/games/${game.id}/state`]:
       stateReply ?? Response.json({ version: state.version, state }),
+    "GET /api/auth/methods": methods ?? Response.json(methodsFixture),
   });
   const realtime = new FakeRealtimeClient();
   const queryClient = createTestQueryClient();
   queryClient.setQueryData(sessionKey, { ...userFixture, id: userId });
   const view = await renderRoute(`/games/${game.id}/play`, queryClient, { realtime });
   const stateCalls = () => calls.filter((call) => call.path.endsWith("/state")).length;
-  return { ...view, calls, realtime, stateCalls };
+  return { ...view, calls, realtime, stateCalls, queryClient };
 }
 
 const region = (name: string) => screen.findByRole("region", { name });
@@ -83,6 +87,22 @@ describe("GameScreen: loading", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Menu" })).toBeInTheDocument();
     expect(realtime.subscribed(`game:${gameId}`)).toBe(true);
+  });
+
+  test("hides the debug panel when debug mode is off", async () => {
+    const { queryClient } = await setup({
+      methods: Response.json({ google: false, guest: true, debug: false }),
+    });
+    await screen.findByRole("button", { name: "Menu" });
+    await waitFor(() =>
+      expect(queryClient.getQueryState(authMethodsQuery.queryKey)?.status).toBe("success"),
+    );
+    expect(screen.queryByRole("button", { name: "Debug" })).not.toBeInTheDocument();
+  });
+
+  test("shows the debug panel when debug mode is on", async () => {
+    await setup({ methods: Response.json({ google: false, guest: true, debug: true }) });
+    expect(await screen.findByRole("button", { name: "Debug" })).toBeInTheDocument();
   });
 
   test("shows a loading message first", async () => {

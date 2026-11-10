@@ -46,6 +46,8 @@ export interface GameServiceOptions {
   loader: GameStateLoader;
   /** Clock for `created_at` of the rows the service writes. */
   now?: () => Date;
+  /** Debug mode. With it off, `DebugEdit` is refused with `debug_disabled`. Defaults to off. */
+  debug?: boolean;
   /** Called after an action has been committed (the realtime layer publishes from here). */
   onCommitted?: (committed: CommittedAction) => void;
   snapshot?: SnapshotOptions;
@@ -121,6 +123,7 @@ const notFound = (what: string) => new GameServiceError("not_found", `${what} no
 
 export function createGameService(options: GameServiceOptions): GameService {
   const { db, loader, onCommitted } = options;
+  const debug = options.debug ?? false;
   const log = (options.log ?? createSilentLogger()).child({ component: "game-service" });
   const now = options.now ?? (() => new Date());
   // The tail of the promise chain of each game with work in flight.
@@ -281,6 +284,10 @@ export function createGameService(options: GameServiceOptions): GameService {
 
     if (game.status !== "active") {
       throw new GameServiceError("game_not_active", "The game is not active");
+    }
+    // The server decides: debug edits are refused unless debug mode is on. The engine is not changed.
+    if (input.action.type === "DebugEdit" && !debug) {
+      throw new GameServiceError("debug_disabled", "Debug mode is off");
     }
     const prev = await currentState(gameId);
     if (input.expectedVersion !== prev.version) {

@@ -7,7 +7,7 @@ export {
   setGoogleCookie,
   setSessionCookie,
 } from "./cookie.ts";
-export { readAuthConfig, type AuthConfig, type GoogleConfig } from "./config.ts";
+export { readAuthConfig, readDebugMode, type AuthConfig, type GoogleConfig } from "./config.ts";
 export { createArcticGoogle, type GoogleProvider } from "./google.ts";
 export { createPendingSignIns, PENDING_TTL_MS, type PendingSignIns } from "./pending.ts";
 export { checkOrigin, parseOrigins, requireSession } from "./middleware.ts";

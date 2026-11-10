@@ -65,7 +65,11 @@ describe("sign-in methods", () => {
     ({ app, db } = await createTestApp());
     const res = await sendAs(app, "GET", "/api/auth/methods");
     expect(res.status).toBe(200);
-    expect(authMethodsSchema.parse(await res.json())).toEqual({ google: false, guest: true });
+    expect(authMethodsSchema.parse(await res.json())).toEqual({
+      google: false,
+      guest: true,
+      debug: false,
+    });
   });
 
   test("reports Google only", async () => {
@@ -74,14 +78,29 @@ describe("sign-in methods", () => {
       auth: { guest: false, google: fakeGoogle().provider },
     }));
     const res = await sendAs(app, "GET", "/api/auth/methods");
-    expect(authMethodsSchema.parse(await res.json())).toEqual({ google: true, guest: false });
+    expect(authMethodsSchema.parse(await res.json())).toEqual({
+      google: true,
+      guest: false,
+      debug: false,
+    });
   });
 
   test("reports both", async () => {
     let app;
     ({ app, db } = await createTestApp({ auth: { google: fakeGoogle().provider } }));
     const res = await sendAs(app, "GET", "/api/auth/methods");
-    expect(authMethodsSchema.parse(await res.json())).toEqual({ google: true, guest: true });
+    expect(authMethodsSchema.parse(await res.json())).toEqual({
+      google: true,
+      guest: true,
+      debug: false,
+    });
+  });
+
+  test("reports debug mode when it is on", async () => {
+    let app;
+    ({ app, db } = await createTestApp({ debug: true }));
+    const res = await sendAs(app, "GET", "/api/auth/methods");
+    expect(authMethodsSchema.parse(await res.json())).toMatchObject({ debug: true });
   });
 });
 

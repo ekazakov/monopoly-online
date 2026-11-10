@@ -18,7 +18,7 @@ import {
 import { useRealtimeStatus, useTopic } from "../realtime/index.ts";
 import { BoardScene } from "../scene/BoardScene.tsx";
 import type { ScenePlayer } from "../scene/model.ts";
-import { useSession } from "../session/index.ts";
+import { useAuthMethods, useSession } from "../session/index.ts";
 import { useReducedMotion } from "../styles/motionPreference.ts";
 import { ConnectionBanner } from "./game/ConnectionBanner.tsx";
 import { GameLayout } from "./game/GameLayout.tsx";
@@ -61,6 +61,8 @@ function GameRoute({ gameId }: { gameId: string }) {
   const store = useGameStore();
   const navigate = useNavigate();
   const { data: user } = useSession();
+  // Debug mode is set on the server (DEBUG_MODE_ENABLED). The panel shows only when it is on.
+  const { data: methods } = useAuthMethods();
   const userId = user?.id ?? null;
 
   const room = useQuery(gameRoomQuery(store, gameId));
@@ -157,7 +159,7 @@ function GameRoute({ gameId }: { gameId: string }) {
           hand={<PropertyHand userId={userId} />}
           menu={
             <>
-              <DebugPanel userId={userId} />
+              {methods?.debug === true && <DebugPanel userId={userId} />}
               <LeaveGameMenu userId={userId} onLeft={() => void navigate({ to: "/" })} />
             </>
           }

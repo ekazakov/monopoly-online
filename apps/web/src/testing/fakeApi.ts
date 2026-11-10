@@ -78,7 +78,7 @@ export function errorReply(status: number, code: string, message = code, issues?
 export const noContent = () => new Response(null, { status: 204 });
 
 /** The sign-in methods that `mockApi` answers by default: guest sign-in only, as in development. */
-export const methodsFixture = { google: false, guest: true };
+export const methodsFixture = { google: false, guest: true, debug: false };
 
 // Replaces `fetch` with a table of "METHOD /path" -> reply. An unlisted call answers 404, except
 // `GET /api/auth/methods`, which answers `methodsFixture` unless a test sets it.

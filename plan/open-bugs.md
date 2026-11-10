@@ -199,7 +199,7 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 
 ### BUG-14: Event log is empty after a page refresh or reconnect
 
-- Status: open
+- Status: fixed (2026-11-10)
 - Reported: 2026-11-09
 - Area: web (and possibly api)
 - Steps to reproduce:
@@ -242,7 +242,7 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 
 ### BUG-17: Add a separate env variable to turn debug mode on and off (change request)
 
-- Status: open
+- Status: fixed (2026-11-10)
 - Reported: 2026-11-09
 - Area: web, api
 - Type: change request

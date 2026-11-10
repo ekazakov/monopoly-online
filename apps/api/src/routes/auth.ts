@@ -99,9 +99,11 @@ type AuthRoutesOptions = {
   /** Undefined when Google sign-in is off. */
   google: GoogleProvider | undefined;
   pending: PendingSignIns;
+  /** Debug mode, reported to the web app so it shows the debug panel only when it is on. */
+  debug: boolean;
 };
 
-export function authRoutes(deps: AppDeps, { guest, google, pending }: AuthRoutesOptions) {
+export function authRoutes(deps: AppDeps, { guest, google, pending, debug }: AuthRoutesOptions) {
   const routes = new OpenAPIHono<AppEnv>();
   const signedIn = async (c: Parameters<typeof readSessionToken>[0]) => {
     const token = readSessionToken(c);
@@ -110,7 +112,7 @@ export function authRoutes(deps: AppDeps, { guest, google, pending }: AuthRoutes
   const googleOff = () => errorBody("not_found", "Google sign-in is off");
 
   return routes
-    .openapi(methodsRoute, (c) => c.json({ google: google !== undefined, guest }, 200))
+    .openapi(methodsRoute, (c) => c.json({ google: google !== undefined, guest, debug }, 200))
     .openapi(startRoute, async (c) => {
       if (!google) return c.json(googleOff(), 404);
       if (await signedIn(c)) {
