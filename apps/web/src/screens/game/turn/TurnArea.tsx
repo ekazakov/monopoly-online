@@ -27,7 +27,7 @@ export function TurnArea({ userId }: { userId: string }) {
   // example Buy for the utility the token has not reached yet) wait for OK.
   if (motion?.kind === "roll") {
     return (
-      <div className="turn-area" aria-busy="true">
+      <div className="turn-area turn-area--motion" aria-busy="true">
         <Dice dice={null} rolling />
         <Status title="Rolling…" />
       </div>
@@ -36,7 +36,7 @@ export function TurnArea({ userId }: { userId: string }) {
   if (motion) {
     const { dice, stale } = lastRoll(turn.view);
     return (
-      <div className="turn-area" aria-busy="true">
+      <div className="turn-area turn-area--motion" aria-busy="true">
         {dice && !stale && <Dice dice={dice} />}
         <Status title={motion.kind === "hold" ? "Drew a card" : "Moving…"} />
       </div>
