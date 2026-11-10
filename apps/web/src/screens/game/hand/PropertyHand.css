@@ -256,7 +256,9 @@
 
 /* The Manage panel rises above the collapsed hand without changing the board size. */
 .property-hand__surface[data-open="true"] {
-  bottom: calc(var(--hand-peek) + 12px);
+  /* Cancel the hand slot's negative margin so the panel ends at the window edge. */
+  bottom: var(--hand-peek);
+  min-width: 680px;
   width: min(920px, calc(100cqw - 32px));
   max-height: min(720px, calc(100dvh - 120px));
   border: 1px solid var(--hf-panel-line);
@@ -268,6 +270,8 @@
 
 .property-hand__surface[data-open="true"] .property-hand__tab {
   top: 12px;
+  opacity: 0;
+  color: transparent;
   right: 12px;
   bottom: auto;
   min-width: 44px;
@@ -281,15 +285,9 @@
   overflow: hidden;
 }
 
-.property-hand__manage-header,
-.property-hand__manage-footer {
+.property-hand__manage-header {
   flex: 0 0 auto;
   padding: var(--hf-space-16) var(--hf-space-24);
-}
-
-.property-hand__manage-header {
-  padding-right: 64px;
-  border-bottom: 1px solid var(--hf-panel-line);
 }
 
 .property-hand__manage-header h2 {
@@ -299,8 +297,7 @@
   text-transform: uppercase;
 }
 
-.property-hand__manage-header p,
-.property-hand__manage-footer > span {
+.property-hand__manage-header p {
   margin: var(--hf-space-4) 0 0;
   color: var(--hf-ink-soft);
   font: var(--hf-type-body-small);
@@ -341,9 +338,8 @@
   display: grid;
   grid-template-columns: minmax(180px, 1fr) auto;
   align-items: center;
-  gap: var(--hf-space-12);
+  gap: calc(var(--hf-space-12) * 0.6);
   padding: var(--hf-space-8) 0;
-  border-bottom: 1px solid var(--hf-panel-line);
 }
 
 .property-hand__property {
@@ -354,7 +350,6 @@
   padding: var(--hf-space-4) var(--hf-space-12);
   border: 0;
   border-left: 6px solid var(--group-color);
-  border-radius: 0;
   background: transparent;
   color: var(--hf-ink);
   text-align: left;
@@ -380,7 +375,6 @@
 }
 
 .property-hand__manage-row .property-hand__detail {
-  display: block;
   min-width: 0;
 }
 
@@ -427,19 +421,6 @@
 .property-hand__manage-row .property-hand__action:hover .property-hand__reason,
 .property-hand__manage-row .property-hand__action:focus-within .property-hand__reason {
   visibility: visible;
-}
-
-.property-hand__manage-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--hf-space-12);
-  border-top: 1px solid var(--hf-panel-line);
-}
-
-.property-hand__manage-footer .property-hand__button {
-  min-height: 44px;
-  background: var(--hf-accent);
 }
 
 @container (max-width: 700px) {

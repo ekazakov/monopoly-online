@@ -77,7 +77,7 @@ function CardFace({ card, color, complete }: { card: HandCard; color: string; co
   return (
     <>
       <span className="property-hand__band" style={{ background: color }}>
-        {complete ? (
+        {complete && !open ? (
           <span className="property-hand__set">
             <Tick />
           </span>
@@ -317,9 +317,7 @@ export function PropertyHand({ userId }: PropertyHandProps) {
             if (tabWasOpen.current || mode === "pinned") close();
             else setMode("pinned");
           }}
-        >
-          {open ? <span aria-hidden="true">×</span> : null}
-        </button>
+        ></button>
         <div id={panelId} className="property-hand__body">
           {open ? (
             <>
@@ -397,14 +395,6 @@ export function PropertyHand({ userId }: PropertyHandProps) {
                   </section>
                 ))}
               </div>
-              <footer className="property-hand__manage-footer">
-                <span>
-                  {hand.count} properties · {money(hand.value)} value
-                </span>
-                <button type="button" className="property-hand__button" onClick={close}>
-                  Done
-                </button>
-              </footer>
             </>
           ) : hand.count > 0 ? (
             <Grid groups={hand.groups} onPin={togglePinned} />
