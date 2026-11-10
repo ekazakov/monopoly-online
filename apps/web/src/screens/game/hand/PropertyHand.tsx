@@ -1,8 +1,9 @@
-import { outstanding } from "@monopoly/game-engine";
-import type { ActionType, GameState } from "@monopoly/game-engine";
+import type { ActionType } from "@monopoly/game-engine";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { CSSProperties, FocusEvent, ReactNode } from "react";
 import { mayActWith, useGame, useGameActions } from "../../../game/index.ts";
+import { tokenLook } from "../../../scene/colors.ts";
+import { AvatarIcon } from "../rail/avatars.tsx";
 import { buildingText, handOf, money } from "./handModel.ts";
 import type { HandCard, HandGroup } from "./handModel.ts";
 import { ACTION_OF, propertyActions } from "./propertyActions.ts";
@@ -17,15 +18,15 @@ export interface PropertyHandProps {
 export const HOVER_OPEN_MS = 150;
 export const HOVER_CLOSE_MS = 300;
 
-/** Card height and the step between the cards of a collapsed stack (spec 4.6). */
-const CARD_H = 72;
-const CARD_STEP = 25;
+/** Height of a collapsed card and the step between the cards of a column (spec 4.6). */
+const CARD_H = 60;
+const CARD_STEP = 22;
 
 // closed: peeking stacks. open: opened by hover or focus, it closes when they go. pinned: opened
 // by a click or a tap, it closes by a second click or Esc.
 type Mode = "closed" | "open" | "pinned";
 
-const stackHeight = (count: number) => CARD_H + CARD_STEP * (count - 1);
+const columnHeight = (count: number) => CARD_H + CARD_STEP * (count - 1);
 
 function HouseIcon() {
   return (
@@ -49,8 +50,8 @@ function Tick() {
   return (
     <svg
       className="property-hand__tick"
-      width="14"
-      height="14"
+      width="9"
+      height="9"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -64,41 +65,10 @@ function Tick() {
   );
 }
 
-function Chevron() {
-  return (
-    <svg
-      className="property-hand__chevron"
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M6 15l6-6 6 6" />
-    </svg>
-  );
-}
+const groupName = (group: HandGroup) =>
+  `${group.label}${group.cards.length > 1 ? ` · ${group.cards.length}` : ""}${group.complete ? ", set complete" : ""}`;
 
-function StackLabel({ group, id }: { group: HandGroup; id?: string }) {
-  return (
-    <span className="property-hand__label" id={id}>
-      {group.label}
-      {group.cards.length > 1 ? ` · ${group.cards.length}` : ""}
-      {group.complete ? (
-        <>
-          <Tick />
-          <span className="property-hand__sr">, set complete</span>
-        </>
-      ) : null}
-    </span>
-  );
-}
-
-function CardFace({ card, color }: { card: HandCard; color: string }) {
+function CardFace({ card, color, complete }: { card: HandCard; color: string; complete: boolean }) {
   const pips =
     card.houses === 5 ? (
       <HotelIcon />
@@ -107,16 +77,19 @@ function CardFace({ card, color }: { card: HandCard; color: string }) {
     );
   return (
     <>
-      <span className="property-hand__band" style={{ background: color }} />
+      <span className="property-hand__band" style={{ background: color }}>
+        {complete ? (
+          <span className="property-hand__set">
+            <Tick />
+          </span>
+        ) : null}
+      </span>
       <span className="property-hand__row">
         <span className="property-hand__name">{card.name}</span>
         <span className="property-hand__price">{money(card.price)}</span>
       </span>
-      <span className="property-hand__row property-hand__row--state">
-        <span className="property-hand__pips">
-          {card.mortgaged ? <span className="property-hand__tag">Mortgaged</span> : pips}
-        </span>
-        <span className="property-hand__rent">{card.rent}</span>
+      <span className="property-hand__pips">
+        {card.mortgaged ? <span className="property-hand__tag">Mortgaged</span> : pips}
       </span>
     </>
   );
@@ -244,31 +217,60 @@ function Detail({ id, card, actions, may, busy, onAction }: DetailProps) {
   );
 }
 
-// A click on the peek pins the hand open (spec 4.6). The keyboard has the toggle button instead.
-function Peek({ groups, onClick }: { groups: HandGroup[]; onClick: () => void }) {
+interface GridProps {
+  groups: HandGroup[];
+  open: boolean;
+  selected: number | undefined;
+  detailId: string;
+  onSelect: (square: number) => void;
+  onPin: () => void;
+}
+
+// One grid with a column per group, in both states (spec 4.6). Collapsed: the cards overlap and are
+// a peek only (hidden from assistive technology, no buttons); a click pins the hand open, and the
+// keyboard has the tab instead. Open: the same columns, flat, with a button for each card.
+function Grid({ groups, open, selected, detailId, onSelect, onPin }: GridProps) {
   return (
-    <div className="property-hand__peek" aria-hidden="true" onClick={onClick}>
+    <div
+      className="property-hand__grid"
+      aria-hidden={open ? undefined : true}
+      onClick={open ? undefined : onPin}
+    >
       {groups.map((group) => {
         const count = group.cards.length;
         return (
-          <div className="property-hand__stack" key={group.group}>
-            <StackLabel group={group} />
-            <div
-              className="property-hand__stack-cards"
-              style={{ height: stackHeight(count), "--n": count } as CSSProperties}
-            >
-              {group.cards.map((card, i) => (
-                <div
-                  key={card.square}
-                  className="property-hand__card"
-                  data-mortgaged={card.mortgaged || undefined}
-                  style={{ "--i": i } as CSSProperties}
-                >
-                  <CardFace card={card} color={group.color} />
-                </div>
-              ))}
-            </div>
-          </div>
+          <ul
+            className="property-hand__col"
+            key={group.group}
+            aria-label={groupName(group)}
+            style={{ "--n": count } as CSSProperties}
+          >
+            {group.cards.map((card, i) => (
+              <li
+                key={card.square}
+                className="property-hand__slot"
+                style={{ "--i": i } as CSSProperties}
+              >
+                {open ? (
+                  <button
+                    type="button"
+                    className="property-hand__card property-hand__card--button"
+                    data-mortgaged={card.mortgaged || undefined}
+                    aria-label={cardName(card)}
+                    aria-expanded={selected === card.square}
+                    aria-controls={selected === card.square ? detailId : undefined}
+                    onClick={() => onSelect(card.square)}
+                  >
+                    <CardFace card={card} color={group.color} complete={group.complete} />
+                  </button>
+                ) : (
+                  <div className="property-hand__card" data-mortgaged={card.mortgaged || undefined}>
+                    <CardFace card={card} color={group.color} complete={group.complete} />
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
         );
       })}
     </div>
@@ -365,11 +367,8 @@ export function PropertyHand({ userId }: PropertyHandProps) {
     open && selection?.seatId === seat.id
       ? hand.groups.flatMap((g) => g.cards).find((c) => c.square === selection.square)
       : undefined;
-  const owes = outstanding(state as unknown as GameState, seat.id);
-  const peekHeight = hand.groups.reduce(
-    (tallest, g) => Math.max(tallest, stackHeight(g.cards.length)),
-    0,
-  );
+  const tallest = hand.groups.reduce((most, g) => Math.max(most, g.cards.length), 0);
+  const firstColumn = hand.groups[0]?.cards.length;
 
   const onMouseEnter = () => {
     hovered.current = true;
@@ -428,10 +427,31 @@ export function PropertyHand({ userId }: PropertyHandProps) {
       </div>
     ) : null;
 
+  const look = tokenLook(seat.token);
+  const detail =
+    selected && state ? (
+      <Detail
+        id={detailId}
+        card={selected}
+        actions={propertyActions(state, seat.id, selected.square)}
+        may={may}
+        busy={pending}
+        onAction={(type) => run(type, selected.square)}
+      />
+    ) : (
+      <p className="property-hand__hint">Select a card to see its rent and actions.</p>
+    );
+
   return (
     <div
       className="property-hand"
-      style={{ "--hand-h": `${peekHeight}px` } as CSSProperties}
+      style={
+        {
+          "--hand-h": tallest > 0 ? `${columnHeight(tallest)}px` : "0px",
+          "--first-h": firstColumn ? `${columnHeight(firstColumn)}px` : undefined,
+          "--player-color": look.cssColor,
+        } as CSSProperties
+      }
       data-seat={seat.id}
     >
       <div
@@ -446,78 +466,56 @@ export function PropertyHand({ userId }: PropertyHandProps) {
         <p className="property-hand__status" role="status" aria-live="polite" aria-atomic="true">
           {error && errorSource === "hand" ? error.message : ""}
         </p>
-        <div className="property-hand__head">
-          <button
-            ref={toggleRef}
-            type="button"
-            className="property-hand__toggle"
-            aria-expanded={open}
-            aria-controls={open ? panelId : undefined}
-            aria-label={`${title}, ${hand.count} ${hand.count === 1 ? "property" : "properties"}, ${money(hand.value)}`}
-            onClick={togglePinned}
-          >
-            <span className="property-hand__title">{title}</span>
-            <span className="property-hand__meta">
-              {hand.count} · {money(hand.value)}
-            </span>
-            <Chevron />
-          </button>
-          {owes > 0 ? <span className="property-hand__owes">Owes {money(owes)}</span> : null}
-          {switcher}
-        </div>
-        {open ? (
-          <div id={panelId} className="property-hand__panel">
-            {hand.count === 0 ? (
+        <button
+          ref={toggleRef}
+          type="button"
+          className="property-hand__tab"
+          aria-expanded={open}
+          aria-controls={open ? panelId : undefined}
+          aria-label={`${title}, ${hand.count} ${hand.count === 1 ? "property" : "properties"}, ${money(hand.value)}`}
+          onClick={togglePinned}
+        >
+          <span className="property-hand__token" aria-hidden="true">
+            <AvatarIcon kind={look.avatar} size={20} />
+          </span>
+          <span className="property-hand__count">{hand.count}</span>
+        </button>
+        <div id={panelId} className="property-hand__body">
+          {hand.count === 0 ? (
+            open ? (
               <p className="property-hand__empty">No properties yet.</p>
-            ) : (
-              <ul className="property-hand__groups" aria-label="Properties by colour">
-                {hand.groups.map((group) => (
-                  <li key={group.group} className="property-hand__group">
-                    <StackLabel group={group} id={`${panelId}-${group.group}`} />
-                    <ul
-                      className="property-hand__cards"
-                      aria-labelledby={`${panelId}-${group.group}`}
-                    >
-                      {group.cards.map((card) => (
-                        <li key={card.square}>
-                          <button
-                            type="button"
-                            className="property-hand__card property-hand__card--button"
-                            data-mortgaged={card.mortgaged || undefined}
-                            aria-label={cardName(card)}
-                            aria-expanded={selected?.square === card.square}
-                            aria-controls={selected?.square === card.square ? detailId : undefined}
-                            onClick={() =>
-                              setSelection(
-                                selected?.square === card.square
-                                  ? null
-                                  : { seatId: seat.id, square: card.square },
-                              )
-                            }
-                          >
-                            <CardFace card={card} color={group.color} />
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {selected ? (
-              <Detail
-                id={detailId}
-                card={selected}
-                actions={propertyActions(state, seat.id, selected.square)}
-                may={may}
-                busy={pending}
-                onAction={(type) => run(type, selected.square)}
-              />
-            ) : null}
-          </div>
-        ) : (
-          <Peek groups={hand.groups} onClick={togglePinned} />
-        )}
+            ) : null
+          ) : (
+            <Grid
+              groups={hand.groups}
+              open={open}
+              selected={selected?.square}
+              detailId={detailId}
+              onPin={togglePinned}
+              onSelect={(square) =>
+                setSelection(selected?.square === square ? null : { seatId: seat.id, square })
+              }
+            />
+          )}
+          {open ? (
+            <aside className="property-hand__side" aria-label="Property details">
+              <div className="property-hand__owner">
+                <span className="property-hand__token" aria-hidden="true">
+                  <AvatarIcon kind={look.avatar} size={20} />
+                </span>
+                <div>
+                  <p className="property-hand__owner-name">{seat.name}</p>
+                  <p className="property-hand__owner-sub">
+                    {hand.count} {hand.count === 1 ? "property" : "properties"} ·{" "}
+                    {money(hand.value)}
+                  </p>
+                </div>
+              </div>
+              {switcher}
+              {detail}
+            </aside>
+          ) : null}
+        </div>
       </div>
     </div>
   );

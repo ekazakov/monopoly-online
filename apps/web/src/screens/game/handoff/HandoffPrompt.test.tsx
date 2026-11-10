@@ -135,11 +135,11 @@ describe("HandoffPrompt", () => {
   test("the next hand stays behind the opaque prompt and inert until confirm", async () => {
     const { turnTo, user } = setup();
     turnTo("c");
-    const title = () => document.querySelector(".property-hand__title");
+    const title = () => document.querySelector(".property-hand__tab");
     expect(title()?.closest("[inert]")).not.toBeNull();
     expect(title()?.closest(".game-layout__regions")).not.toContainElement(prompt());
     await user.click(confirm("Cy"));
-    expect(title()).toHaveTextContent("Cy's properties");
+    expect(title()).toHaveAccessibleName(/^Cy's properties/);
     expect(title()?.closest("[inert]")).toBeNull();
   });
 

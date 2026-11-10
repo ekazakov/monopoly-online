@@ -76,9 +76,11 @@ describe("GameScreen: loading", () => {
       screen.getByRole("region", { name: "Board" }).querySelector(".game-board"),
     ).not.toBeNull();
     expect(screen.getByRole("region", { name: "Turn actions" })).toHaveTextContent("Bo");
-    expect(screen.getByRole("region", { name: "Property hand" })).toHaveTextContent(
-      "Bo's properties",
-    );
+    expect(
+      within(screen.getByRole("region", { name: "Property hand" })).getByRole("button", {
+        name: /^Bo's properties/,
+      }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Menu" })).toBeInTheDocument();
     expect(realtime.subscribed(`game:${gameId}`)).toBe(true);
   });

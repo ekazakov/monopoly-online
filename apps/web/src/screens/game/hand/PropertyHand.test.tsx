@@ -91,13 +91,28 @@ describe("PropertyHand: collapsed", () => {
     expect(toggle()).not.toHaveAttribute("aria-controls");
   });
 
-  test("shows the stacks with their counts but no card buttons", () => {
-    setup();
-    expect(screen.getByText("Sky · 3")).toBeInTheDocument();
-    expect(screen.getByText("Brown · 2")).toBeInTheDocument();
-    expect(screen.getByText("Red")).toBeInTheDocument();
-    expect(screen.getByText("Stations")).toBeInTheDocument();
+  test("shows one column per group, with no header, no group labels and no card buttons", () => {
+    const { view } = setup();
+    // The peek is hidden from assistive technology; the tab is the way in.
+    const names = screen
+      .getAllByRole("list", { hidden: true })
+      .map((l) => l.getAttribute("aria-label"));
+    expect(names).toEqual([
+      "Brown · 2, set complete",
+      "Sky · 3, set complete",
+      "Red",
+      "Stations",
+      "Utilities",
+    ]);
+    expect(screen.queryByText("Sky · 3")).not.toBeInTheDocument();
+    expect(screen.queryByText(/'s properties/)).not.toBeInTheDocument();
+    expect(view.container.querySelectorAll(".property-hand__set")).toHaveLength(5);
     expect(screen.queryByRole("button", { name: /Lantern Row/ })).not.toBeInTheDocument();
+  });
+
+  test("the tab shows the property count", () => {
+    setup();
+    expect(toggle()).toHaveTextContent("8");
   });
 
   test("a hand with no property says so when opened", async () => {
@@ -134,11 +149,7 @@ describe("PropertyHand: expanded", () => {
     const sky = screen.getByRole("list", { name: /Sky · 3, set complete/ });
     expect(within(sky).getAllByRole("button")).toHaveLength(3);
     // Stack order: brown, sky, red, stations, utilities.
-    const order = screen
-      .getAllByRole("list")
-      .map((l) => l.getAttribute("aria-labelledby"))
-      .filter(Boolean)
-      .map((id) => document.getElementById(id as string)?.textContent);
+    const order = screen.getAllByRole("list").map((l) => l.getAttribute("aria-label"));
     expect(order).toEqual([
       "Brown · 2, set complete",
       "Sky · 3, set complete",
@@ -464,6 +475,7 @@ describe("PropertyHand: whose hand", () => {
   test("on a remote turn a switcher picks the seat, and actions use the picked seat", async () => {
     const t = setup({ deeds: both, current: "b" });
     expect(toggle()).toHaveAccessibleName(/^Ann's properties, 3 properties/);
+    await openHand(t);
     const switcher = screen.getByRole("group", { name: "Show properties of" });
     expect(
       within(switcher)
@@ -521,10 +533,11 @@ describe("PropertyHand: whose hand", () => {
     expect(screen.queryByRole("group", { name: "Show properties of" })).not.toBeInTheDocument();
   });
 
-  test("a debt opens the hand by itself and shows what is owed", () => {
+  test("a debt opens the hand by itself and has no debt controls: the centre handles it", () => {
     setup({ deeds: skyWith([1, 1, 1]), phase: "awaiting_debt", owes: { a: 320 } });
     expect(toggle()).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByText("Owes $320")).toBeInTheDocument();
+    expect(screen.queryByText(/Owes/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Pay/ })).not.toBeInTheDocument();
   });
 
   test("an empty root renders when the user has no seat", () => {

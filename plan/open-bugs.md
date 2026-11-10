@@ -117,7 +117,7 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 
 ### BUG-8: Remove the properties header block and the group labels above property stacks (change request)
 
-- Status: open
+- Status: fixed (2026-11-10)
 - Reported: 2026-11-09
 - Area: web
 - Type: change request
@@ -157,7 +157,7 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 
 ### BUG-11: Property card stacks do not fit when a player owns many properties (change request, needs a plan)
 
-- Status: open
+- Status: fixed (2026-11-10)
 - Reported: 2026-11-09
 - Area: web
 - Type: change request
@@ -171,7 +171,7 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 
 ### BUG-12: Expanded properties panel needs a scroll; show all properties without scroll (change request)
 
-- Status: open
+- Status: fixed (2026-11-10)
 - Reported: 2026-11-09
 - Area: web
 - Type: change request

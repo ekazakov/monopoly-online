@@ -1,15 +1,23 @@
 /*
- * Property hand (spec 4.6). Tokens only.
- * The root keeps the height of the tallest collapsed stack and lets the pointer through. The
- * surface hangs from its bottom edge, so the open panel rises over the board and never resizes it.
+ * Property hand (spec 4.6, redesign for BUG-8, BUG-11, BUG-12). Tokens only.
+ * One grid with a column per group serves both states. The root keeps the height of the tallest
+ * collapsed column and lets the pointer through. The surface hangs from its bottom edge, so the
+ * open panel rises over the board and never resizes it. The root is a size container: the column
+ * width follows its width, not the window.
  */
 .property-hand {
-  --hand-card-w: var(--game-card-w, 156px);
-  --hand-cut: min(var(--hf-space-48), var(--hand-h, 0px));
+  --hand-gap: 6px;
+  --hand-card-h: 60px;
+  --hand-step: 22px;
+  /* The part of the collapsed hand that lies below the window edge (GameLayout.css). */
+  --hand-peek: var(--game-hand-peek, 38px);
+  /* Up to 10 columns: the ten groups. */
+  --hand-col-w: clamp(70px, calc((100cqw - 32px - 9 * var(--hand-gap)) / 10), 112px);
 
   position: relative;
   width: 100%;
   height: var(--hand-h, 0px);
+  container-type: inline-size;
   pointer-events: none;
 }
 
@@ -26,18 +34,7 @@
   flex-direction: column;
   max-width: 100%;
   transform: translateX(-50%);
-  pointer-events: auto;
-}
-
-.property-hand__surface[data-open="true"] {
-  width: min(960px, 100%);
-  max-height: 60vh;
-  padding-bottom: var(--hand-cut);
-  border: 1px solid var(--hf-panel-line);
-  border-bottom: 0;
-  border-radius: var(--hf-radius-panel) var(--hf-radius-panel) 0 0;
-  background: var(--hf-panel-glass);
-  backdrop-filter: blur(var(--hf-blur-panel));
+  pointer-events: none;
 }
 
 .property-hand__sr {
@@ -58,6 +55,7 @@
   background: var(--hf-panel);
   color: var(--hf-ink);
   font: var(--hf-type-body-small);
+  pointer-events: auto;
 }
 
 /* Not display: none. An empty box stays in the accessibility tree, so a new message is announced. */
@@ -66,145 +64,93 @@
   border: 0;
 }
 
-.property-hand__head {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--hf-space-12);
-}
-
-.property-hand__surface[data-open="true"] .property-hand__head {
-  padding: var(--hf-space-4) var(--hf-space-12);
-  border-bottom: 1px solid var(--hf-panel-line);
-}
-
-.property-hand__toggle {
+/* The tab: the token and the count. Collapsed, it sits on the first column; open, on the panel. */
+.property-hand__tab {
+  position: absolute;
+  left: var(--hf-gutter);
+  bottom: calc(var(--first-h, var(--hand-peek)) + 4px);
+  z-index: 2;
   display: inline-flex;
   align-items: center;
-  gap: var(--hf-space-12);
-  padding: 0 var(--hf-space-12);
+  gap: var(--hf-space-8);
+  min-height: 36px;
+  padding: 0 var(--hf-space-12) 0 var(--hf-space-4);
   border: 1px solid var(--hf-panel-line);
-  border-radius: var(--hf-radius-control);
+  border-bottom: 0;
+  border-radius: 18px 18px 0 0;
   background: var(--hf-panel);
   color: var(--hf-ink);
   cursor: pointer;
+  pointer-events: auto;
 }
 
-.property-hand__surface[data-open="true"] .property-hand__toggle {
-  flex: 1 1 auto;
-  border-color: transparent;
-  background: transparent;
-}
-
-.property-hand__toggle:hover {
+.property-hand__tab:hover {
   background: var(--hf-hover);
 }
 
-.property-hand__title {
-  font: var(--hf-type-label);
-  letter-spacing: var(--hf-track-label);
-  text-transform: uppercase;
+.property-hand__surface[data-open="true"] .property-hand__tab {
+  bottom: 100%;
+  margin-bottom: -1px;
 }
 
-.property-hand__meta {
-  margin-left: auto;
+.property-hand__token {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--player-color, var(--hf-ink-soft));
+  border-radius: 50%;
   color: var(--hf-ink-soft);
-  font: var(--hf-type-body-small);
+}
+
+.property-hand__count {
+  font: var(--hf-type-display-s);
+  font-size: 18px;
   font-variant-numeric: tabular-nums;
 }
 
-.property-hand__chevron {
-  flex: 0 0 auto;
-}
-
-.property-hand__toggle[aria-expanded="true"] .property-hand__chevron {
-  transform: rotate(180deg);
-}
-
-.property-hand__owes {
-  padding: var(--hf-space-4) var(--hf-space-12);
-  border: 1px solid var(--hf-accent);
-  border-radius: var(--hf-radius-pill);
-  color: var(--hf-ink);
-  font: var(--hf-type-label);
-  white-space: nowrap;
-}
-
-.property-hand__switcher {
+.property-hand__body {
   display: flex;
-  gap: var(--hf-space-4);
+  min-width: 0;
 }
 
-.property-hand__seat {
-  padding: 0 var(--hf-space-12);
-  border: 1px solid var(--hf-panel-line);
-  border-radius: var(--hf-radius-control);
-  background: transparent;
-  color: var(--hf-ink-soft);
-  font: var(--hf-type-label);
-  cursor: pointer;
-}
-
-.property-hand__seat:hover {
-  background: var(--hf-hover);
-}
-
-.property-hand__seat[aria-pressed="true"] {
-  border-color: var(--hf-ink);
-  color: var(--hf-ink);
-}
-
-/* Collapsed: stacks that overlap sideways when they do not fit, 56px of each stack stays (spec 4.6). */
-.property-hand__peek {
+.property-hand__grid {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  gap: 28px;
+  gap: var(--hand-gap);
   padding: 0 var(--hf-gutter);
   min-width: 0;
   cursor: pointer;
+  pointer-events: auto;
 }
 
-.property-hand__stack {
-  display: flex;
-  flex: 0 1 var(--hand-card-w);
-  flex-direction: column;
-  gap: var(--hf-space-4);
-  min-width: 56px;
-}
-
-.property-hand__label {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--hf-space-4);
-  min-height: 16px;
-  color: var(--hf-ink-soft);
-  font: var(--hf-type-caption);
-  white-space: nowrap;
-}
-
-.property-hand__tick {
-  color: var(--hf-house);
-}
-
-.property-hand__stack-cards {
+.property-hand__col {
   position: relative;
-  width: var(--hand-card-w);
+  flex: 0 0 var(--hand-col-w);
+  width: var(--hand-col-w);
+  height: calc(var(--hand-card-h) + var(--hand-step) * (var(--n) - 1));
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.property-hand__stack-cards > .property-hand__card {
+/* Collapsed: the cards overlap downward, so the band, the name and the price of each one show. */
+.property-hand__slot {
   position: absolute;
   left: 0;
-  bottom: calc((var(--n) - 1 - var(--i)) * 25px);
+  bottom: calc((var(--n) - 1 - var(--i)) * var(--hand-step));
+  width: 100%;
+  height: var(--hand-card-h);
 }
 
-/* The card face, shared by the collapsed stacks and the open panel. */
 .property-hand__card {
   display: flex;
   flex-direction: column;
-  width: var(--hand-card-w);
-  height: 72px;
+  width: 100%;
+  height: 100%;
   min-width: 0;
   min-height: 0;
   padding: 0;
@@ -217,7 +163,6 @@
 }
 
 .property-hand__card--button {
-  min-height: var(--hf-target);
   cursor: pointer;
 }
 
@@ -240,22 +185,37 @@
 }
 
 .property-hand__band {
+  position: relative;
   display: block;
-  flex: 0 0 8px;
+  flex: 0 0 6px;
   border-bottom: 1px solid var(--hf-board-ink);
+}
+
+/* Set complete: a tick on the colour band, the part of a card that always shows. */
+.property-hand__set {
+  position: absolute;
+  top: -3px;
+  right: 2px;
+  display: grid;
+  place-items: center;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--hf-board-ink);
+  border-radius: 50%;
+  background: var(--hf-paper);
+}
+
+.property-hand__tick {
+  color: var(--hf-house-roof);
 }
 
 .property-hand__row {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
-  gap: var(--hf-space-6);
-  min-height: 17px;
-  padding: 0 var(--hf-space-8);
-}
-
-.property-hand__row--state {
-  justify-content: space-between;
-  padding-top: var(--hf-space-4);
+  gap: 3px;
+  height: 15px;
+  padding: 0 4px 0 5px;
 }
 
 .property-hand__name {
@@ -263,16 +223,17 @@
   min-width: 0;
   overflow: hidden;
   font: var(--hf-type-display-s);
-  font-size: 13px;
-  line-height: 16px;
-  letter-spacing: 0.04em;
+  font-size: 11px;
+  line-height: 14px;
+  letter-spacing: 0.03em;
   text-overflow: ellipsis;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
 .property-hand__price {
-  font: 600 13px/1 var(--hf-font-body);
+  flex: 0 0 auto;
+  font: 600 10px/1 var(--hf-font-body);
   font-variant-numeric: tabular-nums;
 }
 
@@ -281,73 +242,165 @@
   align-items: center;
   gap: var(--hf-space-2);
   min-height: 14px;
+  padding: 3px 5px 0;
 }
 
 .property-hand__tag {
-  font: 600 10px/1 var(--hf-font-body);
+  font: 600 9px/1 var(--hf-font-body);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-.property-hand__rent {
-  font: 500 12px/1 var(--hf-font-body);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+/* Open: a panel over the lower part of the board, the same columns flat, a side column on the right. */
+.property-hand__surface[data-open="true"] {
+  --hand-col-w: clamp(
+    70px,
+    calc((100cqw - 32px - 32px - 208px - 16px - 10 * 8px - 4px) / 11),
+    124px
+  );
+
+  bottom: calc(var(--hand-peek) + 12px);
+  width: min(1280px, calc(100cqw - 32px));
+  max-height: calc(100cqh - 24px);
+  padding: var(--hf-space-16);
+  border: 1px solid var(--hf-panel-line);
+  border-radius: var(--hf-radius-panel);
+  background: var(--hf-panel-glass);
+  backdrop-filter: blur(var(--hf-blur-panel));
+  box-shadow: 0 -8px 28px rgb(0 0 0 / 45%);
+  pointer-events: auto;
 }
 
-/* Expanded: every card at full size, grouped, wrapping into rows. The groups scroll, the detail stays. */
-.property-hand__panel {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  min-height: 0;
+.property-hand__surface[data-open="true"] .property-hand__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 208px;
+  gap: var(--hf-space-16);
 }
 
-.property-hand__groups {
-  display: flex;
-  flex: 1 1 auto;
-  flex-wrap: wrap;
-  align-content: flex-start;
-  justify-content: center;
-  gap: var(--hf-space-16) 28px;
-  min-height: 0;
-  margin: 0;
-  padding: var(--hf-space-12) var(--hf-space-16);
-  overflow-y: auto;
-  list-style: none;
-}
-
-.property-hand__group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--hf-space-4);
-}
-
-.property-hand__cards {
-  display: flex;
-  gap: var(--hf-space-4);
-  margin: 0;
+.property-hand__surface[data-open="true"] .property-hand__grid {
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 8px;
   padding: 0;
-  list-style: none;
+  cursor: auto;
+}
+
+.property-hand__surface[data-open="true"] .property-hand__col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hf-space-4);
+  height: auto;
+}
+
+.property-hand__surface[data-open="true"] .property-hand__slot {
+  position: static;
+  height: 64px;
+}
+
+.property-hand__surface[data-open="true"] .property-hand__card {
+  border-radius: 4px;
+}
+
+.property-hand__surface[data-open="true"] .property-hand__row {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  height: auto;
+  min-height: 26px;
+  padding: 2px 5px 0;
+}
+
+.property-hand__surface[data-open="true"] .property-hand__name {
+  display: -webkit-box;
+  width: 100%;
+  max-height: 24px;
+  line-height: 12px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+}
+
+.property-hand__surface[data-open="true"] .property-hand__price {
+  font-size: 11px;
+}
+
+.property-hand__surface[data-open="true"] .property-hand__pips {
+  min-height: 13px;
+  padding-top: 1px;
+}
+
+.property-hand__empty,
+.property-hand__hint {
+  margin: 0;
+  color: var(--hf-ink-soft);
+  font: var(--hf-type-body-small);
 }
 
 .property-hand__empty {
-  margin: 0;
   padding: var(--hf-space-16);
+  text-align: center;
+}
+
+.property-hand__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hf-space-12);
+  min-width: 0;
+  padding-left: var(--hf-space-16);
+  border-left: 1px solid var(--hf-panel-line);
+}
+
+.property-hand__owner {
+  display: flex;
+  align-items: center;
+  gap: var(--hf-space-12);
+}
+
+.property-hand__owner > div > p {
+  margin: 0;
+}
+
+.property-hand__owner-name {
+  font: var(--hf-type-display-s);
+  letter-spacing: var(--hf-track-label);
+  text-transform: uppercase;
+}
+
+.property-hand__owner-sub {
   color: var(--hf-ink-soft);
   font: var(--hf-type-body-small);
-  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.property-hand__switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hf-space-4);
+}
+
+.property-hand__seat {
+  padding: 0 var(--hf-space-12);
+  border: 1px solid var(--hf-panel-line);
+  border-radius: var(--hf-radius-control);
+  background: transparent;
+  color: var(--hf-ink-soft);
+  font: var(--hf-type-label);
+  cursor: pointer;
+}
+
+.property-hand__seat:hover {
+  background: var(--hf-hover);
+}
+
+.property-hand__seat[aria-pressed="true"] {
+  border-color: var(--hf-ink);
+  color: var(--hf-ink);
 }
 
 .property-hand__detail {
   display: flex;
-  flex: 0 0 auto;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--hf-space-8) var(--hf-space-16);
-  padding: var(--hf-space-12) var(--hf-space-16);
-  border-top: 1px solid var(--hf-panel-line);
+  flex-direction: column;
+  gap: var(--hf-space-8);
 }
 
 .property-hand__info,
@@ -358,27 +411,30 @@
 }
 
 .property-hand__info strong {
+  display: block;
   color: var(--hf-ink);
+  font: var(--hf-type-display-s);
+  letter-spacing: var(--hf-track-label);
+  text-transform: uppercase;
 }
 
 .property-hand__actions {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: var(--hf-space-8);
+  flex-direction: column;
+  gap: var(--hf-space-4);
 }
 
 .property-hand__action {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
   gap: var(--hf-space-2);
-  max-width: 180px;
 }
 
 .property-hand__button {
   display: inline-flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--hf-space-8);
   padding: 0 var(--hf-space-12);
   border: 1px solid var(--hf-panel-line);
@@ -408,4 +464,50 @@
 .property-hand__reason {
   color: var(--hf-ink-soft);
   font: var(--hf-type-caption);
+}
+
+/* Below 1280px the side column moves under the grid, so the columns keep their width. */
+@container (max-width: 1279px) {
+  .property-hand__surface[data-open="true"] {
+    --hand-col-w: clamp(70px, calc((100cqw - 32px - 32px - 10 * 8px - 4px) / 11), 124px);
+  }
+
+  .property-hand__surface[data-open="true"] .property-hand__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .property-hand__side {
+    flex-flow: row wrap;
+    align-items: flex-start;
+    gap: var(--hf-space-12) var(--hf-space-24);
+    padding: var(--hf-space-12) 0 0;
+    border-top: 1px solid var(--hf-panel-line);
+    border-left: 0;
+  }
+
+  .property-hand__detail {
+    flex-flow: row wrap;
+    align-items: center;
+  }
+
+  .property-hand__actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}
+
+/* Narrow screens: ten columns of at least 70px do not fit, so the grid scrolls sideways. */
+@media (max-width: 1023px) {
+  .property-hand {
+    --hand-col-w: 84px;
+  }
+
+  .property-hand__surface {
+    width: 100%;
+  }
+
+  .property-hand__grid {
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
 }

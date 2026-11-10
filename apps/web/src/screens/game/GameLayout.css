@@ -1,13 +1,13 @@
 /*
  * Game screen shell (spec 3.1, 7). Tokens only.
  * Layers: board 0, rail 1, centre 2, hand 3, top bar 5. The handoff overlay (H8, z-index 10) sits above these.
- * --game-card-w is the property card width the hand (H6) reads: 156px, 132px on tablet landscape.
+ * --game-hand-peek is the part of the collapsed hand below the window edge (spec 4.6).
  */
 .game-layout {
   --game-side: 168px;
   --game-spacer: 168px;
   --game-top-h: 44px;
-  --game-card-w: 156px;
+  --game-hand-peek: 38px;
 
   position: relative;
   display: grid;
@@ -115,7 +115,7 @@
   z-index: 3;
   display: flex;
   justify-content: center;
-  margin-bottom: calc(-1 * var(--hf-space-48));
+  margin-bottom: calc(-1 * var(--game-hand-peek));
   pointer-events: none;
 }
 
@@ -162,7 +162,6 @@
 @media (max-width: 1279px) {
   .game-layout {
     --game-spacer: clamp(0px, calc((100vw - 1024px) * 0.31), 80px);
-    --game-card-w: 132px;
   }
 }
 

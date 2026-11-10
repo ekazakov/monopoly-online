@@ -162,10 +162,10 @@ The server sends the whole result in one action: roll, move to Chance, card, mov
 
 **Make a UI prototype first.** Do not change `screens/game/hand/` before the user approves the prototype.
 
-1. [ ] Make the new hand layout in the game screen prototype (`artifacts/game-screen`). Ask the user before you save the artifact.
-2. [ ] Get the user's approval of the prototype.
-3. [ ] Update `game-screen-2-spec.md` 4.6 and R-H1 to R-H6 to the approved design.
-4. [ ] Then change the code (BUG-8, BUG-11, BUG-12).
+1. [x] Make the new hand layout in the game screen prototype (`artifacts/game-screen`). Ask the user before you save the artifact. Done 2026-11-10 in the local copy only (not committed, not saved as a new artifact). Run `pnpm artifact:game-screen` and press "Marlow owns all 28" in the Prototype panel.
+2. [x] Get the user's approval of the prototype (2026-11-10). Decided with the user: no debt controls in the hand (the board centre handles debt), no "Owes" pill, and the debt auto-open stays.
+3. [x] Update `game-screen-2-spec.md` 4.6 and R-H1 to R-H6 to the approved design.
+4. [x] Then change the code (BUG-8, BUG-11, BUG-12).
 
 Proposed direction for the prototype:
 
@@ -176,29 +176,29 @@ Proposed direction for the prototype:
 ### No hand header and group labels (BUG-8)
 
 - Now: the header (`hand/PropertyHand.tsx:449-467`) is the `property-hand__toggle` button with "<name>'s properties", "count · $value" and an arrow. The same row holds the "Owes $X" pill and the hot-seat seat switcher. `StackLabel` (lines 86-99) shows "Sky · 3" and a tick for a full set.
-- [ ] Remove the header block and the group labels.
-- [ ] Find a new place for:
+- [x] Remove the header block and the group labels.
+- [x] Find a new place for (done: the tab above the hand holds the token and the count and is the keyboard entry; the seat switcher is in the side column; there is no "Owes" pill and no Pay in the hand; the tick is on the colour band):
   - the keyboard entry. The peek is `aria-hidden` and has no focusable element (lines 247-250).
   - the "Owes $X" pill and the Pay button
   - the seat switcher on a hot-seat device
   - the "set complete" tick (for example on the card colour band)
-- [ ] Keep an `aria-label` on each group list. Now each list uses `aria-labelledby` on the label.
-- [ ] Update about 10 assertions in `PropertyHand.test.tsx` (lines 89, 96, 105, 134, 144, 460-520).
+- [x] Keep an `aria-label` on each group list. Now each list uses `aria-labelledby` on the label.
+- [x] Update about 10 assertions (done) in `PropertyHand.test.tsx` (lines 89, 96, 105, 134, 144, 460-520).
 - Spec conflict: R-H1 (count labels) and R-H3 (hand label and total value). The spec note says they change with this task.
 
 ### Many properties fit the hand (BUG-11)
 
 - Now: the peek (`PropertyHand.css:159-200`) is one flex row with no wrap and a 28px gap. Each stack is `flex: 0 1 156px` with `min-width: 56px`. Cards are 156px boxes with a 25px offset. 10 groups need at least 812px plus labels, and the labels do not shrink. The centred row goes off both edges.
-- [ ] Use the approved prototype layout.
+- [x] Use the approved prototype layout.
 - Spec: 4.6 says the collapsed hand fits up to 10 stacks with no scroll.
 
 ### Expanded hand with no scroll (BUG-12)
 
 - Now: the surface is `width: min(960px, 100%)` and `max-height: 60vh`. `.property-hand__groups` (CSS lines 306-318) is a centred wrapping flex row with `overflow-y: auto`. At 960px only 1 or 2 groups fit in a row, so 28 cards need about 6 rows.
 - The inline `Detail` actions panel (lines 180-245) also takes height.
-- [ ] Use the approved prototype layout. All properties show with no scroll. The panel can be bigger.
-- [ ] Keep the open and close behaviour (hover, click to pin, focus, Esc, and open by itself while this device settles a debt; lines 329-400).
-- [ ] Keep reduced motion: no animation.
+- [x] Use the approved prototype layout. All properties show with no scroll. The panel can be bigger.
+- [x] Keep the open and close behaviour (hover, click to pin, focus, Esc, and open by itself while this device settles a debt; lines 329-400).
+- [x] Keep reduced motion: no animation.
 
 ## Phase 6: data and platform
 
