@@ -20,6 +20,11 @@
   text-align: center;
 }
 
+/* The animation only shows short content. Keep its transformed dice from creating a scrollbar. */
+.turn-area--motion {
+  overflow: hidden;
+}
+
 .turn-area > :where(*) {
   margin-block: 0;
 }
