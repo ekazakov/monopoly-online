@@ -266,7 +266,6 @@ describe("GameScreen: actions", () => {
     realtime.send.mockRejectedValue(new ActionApiError(409, "wrong_phase", "Mortgage refused"));
     const hand = screen.getByRole("region", { name: "Property hand" });
     await userEvent.click(within(hand).getByRole("button", { name: /Bo's properties/ }));
-    await userEvent.click(await within(hand).findByRole("button", { name: /Driftwood Lane/ }));
     await userEvent.click(await within(hand).findByRole("button", { name: /^Mortgage/ }));
     await waitFor(() => expect(realtime.send).toHaveBeenCalled());
     expect(await screen.findAllByText("Mortgage refused")).toHaveLength(1);

@@ -2,8 +2,6 @@ import type { ActionType } from "@monopoly/game-engine";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { CSSProperties, FocusEvent, ReactNode } from "react";
 import { mayActWith, useGame, useGameActions } from "../../../game/index.ts";
-import { tokenLook } from "../../../scene/colors.ts";
-import { AvatarIcon } from "../rail/avatars.tsx";
 import { buildingText, handOf, money } from "./handModel.ts";
 import type { HandCard, HandGroup } from "./handModel.ts";
 import { PropertyDetail } from "./PropertyDetail.tsx";
@@ -101,23 +99,13 @@ const cardName = (card: HandCard) =>
 
 interface GridProps {
   groups: HandGroup[];
-  open: boolean;
-  selected: number | undefined;
-  detailId: string;
-  onSelect: (square: number) => void;
   onPin: () => void;
 }
 
-// One grid with a column per group, in both states (spec 4.6). Collapsed: the cards overlap and are
-// a peek only (hidden from assistive technology, no buttons); a click pins the hand open, and the
-// keyboard has the tab instead. Open: the same columns, flat, with a button for each card.
-function Grid({ groups, open, selected, detailId, onSelect, onPin }: GridProps) {
+// Collapsed cards are a visual preview; the invisible hand control handles keyboard access.
+function Grid({ groups, onPin }: GridProps) {
   return (
-    <div
-      className="property-hand__grid"
-      aria-hidden={open ? undefined : true}
-      onClick={open ? undefined : onPin}
-    >
+    <div className="property-hand__grid" aria-hidden="true" onClick={onPin}>
       {groups.map((group) => {
         const count = group.cards.length;
         return (
@@ -133,23 +121,9 @@ function Grid({ groups, open, selected, detailId, onSelect, onPin }: GridProps) 
                 className="property-hand__slot"
                 style={{ "--i": i } as CSSProperties}
               >
-                {open ? (
-                  <button
-                    type="button"
-                    className="property-hand__card property-hand__card--button"
-                    data-mortgaged={card.mortgaged || undefined}
-                    aria-label={cardName(card)}
-                    aria-expanded={selected === card.square}
-                    aria-controls={selected === card.square ? detailId : undefined}
-                    onClick={() => onSelect(card.square)}
-                  >
-                    <CardFace card={card} color={group.color} complete={group.complete} />
-                  </button>
-                ) : (
-                  <div className="property-hand__card" data-mortgaged={card.mortgaged || undefined}>
-                    <CardFace card={card} color={group.color} complete={group.complete} />
-                  </div>
-                )}
+                <div className="property-hand__card" data-mortgaged={card.mortgaged || undefined}>
+                  <CardFace card={card} color={group.color} complete={group.complete} />
+                </div>
               </li>
             ))}
           </ul>
@@ -157,11 +131,6 @@ function Grid({ groups, open, selected, detailId, onSelect, onPin }: GridProps) 
       })}
     </div>
   );
-}
-
-interface Selection {
-  seatId: string;
-  square: number;
 }
 
 // The hand shows the acting seat when it belongs to this device. Otherwise it shows the seat
@@ -175,7 +144,6 @@ export function PropertyHand({ userId }: PropertyHandProps) {
   const detailId = useId();
 
   const [mode, setMode] = useState<Mode>("closed");
-  const [selection, setSelection] = useState<Selection | null>(null);
   const [lastActing, setLastActing] = useState<string | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
   const [prevDebt, setPrevDebt] = useState(false);
@@ -187,6 +155,7 @@ export function PropertyHand({ userId }: PropertyHandProps) {
   const hovered = useRef(false);
   const focusWithin = useRef(false);
   const skipFocusOpen = useRef(false);
+  const tabWasOpen = useRef(false);
 
   const live = state
     ? view.mySeats.filter((s) => state.players.some((p) => p.id === s.id && p.active))
@@ -240,17 +209,10 @@ export function PropertyHand({ userId }: PropertyHandProps) {
     return () => document.removeEventListener("keydown", onKey);
   }, [mode]);
 
-  if (mode === "closed" && selection) setSelection(null);
-
   if (!state || !seat || !hand) return <div className="property-hand" />;
 
   const open = mode !== "closed";
-  const selected =
-    open && selection?.seatId === seat.id
-      ? hand.groups.flatMap((g) => g.cards).find((c) => c.square === selection.square)
-      : undefined;
   const tallest = hand.groups.reduce((most, g) => Math.max(most, g.cards.length), 0);
-  const firstColumn = hand.groups[0]?.cards.length;
 
   const onMouseEnter = () => {
     hovered.current = true;
@@ -279,7 +241,18 @@ export function PropertyHand({ userId }: PropertyHandProps) {
     focusWithin.current = false;
     setMode((m) => (m === "open" && !hovered.current ? "closed" : m));
   };
-  const togglePinned = () => setMode((m) => (m === "pinned" ? "closed" : "pinned"));
+  const close = () => {
+    window.clearTimeout(openTimer.current);
+    window.clearTimeout(closeTimer.current);
+    setMode("closed");
+    skipFocusOpen.current = true;
+    toggleRef.current?.focus();
+    skipFocusOpen.current = false;
+  };
+  const togglePinned = () => {
+    if (mode === "pinned") close();
+    else setMode("pinned");
+  };
 
   const run = (type: ManageAction, square: number) => {
     actions.send({ type, square }, { seatId: seat.id, source: "hand" }).catch(() => {
@@ -300,7 +273,6 @@ export function PropertyHand({ userId }: PropertyHandProps) {
             aria-pressed={s.id === seat.id}
             onClick={() => {
               setPicked(s.id);
-              setSelection(null);
             }}
           >
             {s.name}
@@ -309,29 +281,12 @@ export function PropertyHand({ userId }: PropertyHandProps) {
       </div>
     ) : null;
 
-  const look = tokenLook(seat.token);
-  const detail =
-    selected && state ? (
-      <PropertyDetail
-        id={detailId}
-        card={selected}
-        actions={propertyActions(state, seat.id, selected.square)}
-        may={may}
-        busy={pending}
-        onAction={(type) => run(type, selected.square)}
-      />
-    ) : (
-      <p className="property-hand__hint">Select a card to see its rent and actions.</p>
-    );
-
   return (
     <div
       className="property-hand"
       style={
         {
           "--hand-h": tallest > 0 ? `${columnHeight(tallest)}px` : "0px",
-          "--first-h": firstColumn ? `${columnHeight(firstColumn)}px` : undefined,
-          "--player-color": look.cssColor,
         } as CSSProperties
       }
       data-seat={seat.id}
@@ -354,58 +309,105 @@ export function PropertyHand({ userId }: PropertyHandProps) {
           className="property-hand__tab"
           aria-expanded={open}
           aria-controls={open ? panelId : undefined}
-          aria-label={
-            open
-              ? "Close property hand"
-              : `${title}, ${hand.count} ${hand.count === 1 ? "property" : "properties"}, ${money(hand.value)}`
-          }
-          onClick={togglePinned}
+          aria-label={`${title}, ${hand.count} ${hand.count === 1 ? "property" : "properties"}, ${money(hand.value)}`}
+          onMouseDown={() => {
+            tabWasOpen.current = open;
+          }}
+          onClick={() => {
+            if (tabWasOpen.current || mode === "pinned") close();
+            else setMode("pinned");
+          }}
         >
-          {open ? (
-            <span aria-hidden="true">×</span>
-          ) : (
-            <>
-              <span className="property-hand__token" aria-hidden="true">
-                <AvatarIcon kind={look.avatar} size={20} />
-              </span>
-              <span className="property-hand__count">{hand.count}</span>
-            </>
-          )}
+          {open ? <span aria-hidden="true">×</span> : null}
         </button>
         <div id={panelId} className="property-hand__body">
-          {hand.count === 0 ? (
-            open ? (
-              <p className="property-hand__empty">No properties yet.</p>
-            ) : null
-          ) : (
-            <Grid
-              groups={hand.groups}
-              open={open}
-              selected={selected?.square}
-              detailId={detailId}
-              onPin={togglePinned}
-              onSelect={(square) =>
-                setSelection(selected?.square === square ? null : { seatId: seat.id, square })
-              }
-            />
-          )}
           {open ? (
-            <aside className="property-hand__side" aria-label="Property details">
-              <div className="property-hand__owner">
-                <span className="property-hand__token" aria-hidden="true">
-                  <AvatarIcon kind={look.avatar} size={20} />
-                </span>
-                <div>
-                  <p className="property-hand__owner-name">{seat.name}</p>
-                  <p className="property-hand__owner-sub">
-                    {hand.count} {hand.count === 1 ? "property" : "properties"} ·{" "}
-                    {money(hand.value)}
-                  </p>
-                </div>
+            <>
+              <header className="property-hand__manage-header">
+                <h2>Manage properties · {seat.name}</h2>
+                <p>
+                  Cash {money(state.players.find((player) => player.id === seat.id)?.cash ?? 0)} ·{" "}
+                  {hand.count} properties
+                </p>
+                {switcher}
+              </header>
+              <div
+                className="property-hand__manage-list"
+                role="region"
+                aria-label={title}
+                tabIndex={0}
+              >
+                {hand.count === 0 ? (
+                  <p className="property-hand__empty">No properties yet.</p>
+                ) : null}
+                {hand.groups.map((group) => (
+                  <section key={group.group} className="property-hand__manage-group">
+                    <h3>
+                      {group.label}{" "}
+                      {group.complete ? (
+                        <span>
+                          <Tick /> Set complete
+                        </span>
+                      ) : null}
+                    </h3>
+                    <ul aria-label={groupName(group)}>
+                      {group.cards.map((card) => {
+                        const rowId = `${detailId}-${card.square}`;
+                        return (
+                          <li
+                            key={card.square}
+                            className="property-hand__manage-row"
+                            style={{ "--group-color": group.color } as CSSProperties}
+                          >
+                            <div
+                              className="property-hand__property"
+                              role="group"
+                              aria-label={cardName(card)}
+                            >
+                              <strong>{card.name}</strong>
+                              <span>
+                                {card.mortgaged ? "Mortgaged" : buildingText(card.houses)} ·{" "}
+                                {card.rent}
+                              </span>
+                              <span className="property-hand__buildings" aria-hidden="true">
+                                {card.houses === 5 ? (
+                                  <HotelIcon />
+                                ) : (
+                                  Array.from({ length: card.houses }, (_, i) => (
+                                    <HouseIcon key={i} />
+                                  ))
+                                )}
+                              </span>
+                            </div>
+                            <PropertyDetail
+                              id={rowId}
+                              card={card}
+                              actions={propertyActions(state, seat.id, card.square)}
+                              may={may}
+                              busy={pending}
+                              onAction={(type) => {
+                                setMode("pinned");
+                                run(type, card.square);
+                              }}
+                            />
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </section>
+                ))}
               </div>
-              {switcher}
-              {detail}
-            </aside>
+              <footer className="property-hand__manage-footer">
+                <span>
+                  {hand.count} properties · {money(hand.value)} value
+                </span>
+                <button type="button" className="property-hand__button" onClick={close}>
+                  Done
+                </button>
+              </footer>
+            </>
+          ) : hand.count > 0 ? (
+            <Grid groups={hand.groups} onPin={togglePinned} />
           ) : null}
         </div>
       </div>

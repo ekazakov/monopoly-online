@@ -71,7 +71,11 @@ const toggle = () => screen.getByRole("button", { name: /properties,/ });
 const openHand = async (t: ReturnType<typeof setup>) => {
   await t.user.click(toggle());
 };
-const cardButton = (name: RegExp) => screen.getByRole("button", { name });
+const propertyInfo = (name: RegExp) =>
+  screen.getByRole("group", { name: new RegExp(name.source + ",") });
+
+const actionsFor = (name = "Lantern Row") =>
+  within(screen.getByRole("group", { name: `${name} actions` }));
 
 const tick = (ms: number) =>
   act(() => {
@@ -110,9 +114,10 @@ describe("PropertyHand: collapsed", () => {
     expect(screen.queryByRole("button", { name: /Lantern Row/ })).not.toBeInTheDocument();
   });
 
-  test("the tab shows the property count", () => {
+  test("the closed hand has no visible pill or count", () => {
     setup();
-    expect(toggle()).toHaveTextContent("8");
+    expect(toggle()).toBeEmptyDOMElement();
+    expect(toggle()).toHaveAccessibleName("Ann's properties, 8 properties, $1,010");
   });
 
   test("a hand with no property says so when opened", async () => {
@@ -134,20 +139,21 @@ describe("PropertyHand: expanded", () => {
     expect(toggle()).toHaveAttribute("aria-expanded", "false");
   });
 
-  test("the cards are buttons in lists grouped by colour, in board order", async () => {
+  test("property details are static and grouped by colour, in board order", async () => {
     const t = setup();
     await openHand(t);
     const brown = screen.getByRole("list", { name: /Brown · 2/ });
     expect(
       within(brown)
-        .getAllByRole("button")
+        .getAllByRole("group")
+        .filter((group) => group.classList.contains("property-hand__property"))
         .map((b) => b.getAttribute("aria-label")),
     ).toEqual([
       "Driftwood Lane, $60, no buildings, Rent $4",
       "Kelp Court, $60, no buildings, Rent $8",
     ]);
     const sky = screen.getByRole("list", { name: /Sky · 3, set complete/ });
-    expect(within(sky).getAllByRole("button")).toHaveLength(3);
+    expect(within(sky).getAllByRole("group", { name: /, \$/ })).toHaveLength(3);
     // Stack order: brown, sky, red, stations, utilities.
     const order = screen.getAllByRole("list").map((l) => l.getAttribute("aria-label"));
     expect(order).toEqual([
@@ -170,11 +176,13 @@ describe("PropertyHand: expanded", () => {
       ],
     });
     await openHand(t);
-    expect(cardButton(/Lantern Row/)).toHaveAccessibleName("Lantern Row, $100, 2 houses, Rent $90");
-    expect(cardButton(/North Station/)).toHaveAccessibleName(
+    expect(propertyInfo(/Lantern Row/)).toHaveAccessibleName(
+      "Lantern Row, $100, 2 houses, Rent $90",
+    );
+    expect(propertyInfo(/North Station/)).toHaveAccessibleName(
       "North Station, $200, mortgaged, No rent",
     );
-    expect(cardButton(/Power Works/)).toHaveAccessibleName(
+    expect(propertyInfo(/Power Works/)).toHaveAccessibleName(
       "Power Works, $150, no buildings, 4× dice",
     );
   });
@@ -182,7 +190,7 @@ describe("PropertyHand: expanded", () => {
   test("a hotel is named", async () => {
     const t = setup({ deeds: skyWith([5, 5, 5]) });
     await openHand(t);
-    expect(cardButton(/Lantern Row/)).toHaveAccessibleName("Lantern Row, $100, hotel, Rent $550");
+    expect(propertyInfo(/Lantern Row/)).toHaveAccessibleName("Lantern Row, $100, hotel, Rent $550");
   });
 
   test("focus entering the hand opens it, Esc closes it and keeps the focus on the toggle", async () => {
@@ -191,8 +199,18 @@ describe("PropertyHand: expanded", () => {
     expect(toggle()).toHaveFocus();
     expect(toggle()).toHaveAttribute("aria-expanded", "true");
     await t.user.tab();
-    expect(cardButton(/Driftwood Lane/)).toHaveFocus();
+    expect(screen.getByRole("region", { name: "Ann's properties" })).toHaveFocus();
+    await t.user.tab();
+    expect(actionsFor("Driftwood Lane").getByRole("button", { name: "Build $50" })).toHaveFocus();
     await t.user.keyboard("{Escape}");
+    expect(toggle()).toHaveAttribute("aria-expanded", "false");
+    expect(toggle()).toHaveFocus();
+  });
+
+  test("Done closes the panel and returns focus to the tab", async () => {
+    const t = setup();
+    await openHand(t);
+    await t.user.click(screen.getByRole("button", { name: "Done" }));
     expect(toggle()).toHaveAttribute("aria-expanded", "false");
     expect(toggle()).toHaveFocus();
   });
@@ -245,15 +263,20 @@ describe("PropertyHand: expanded", () => {
 });
 
 describe("PropertyHand: managing", () => {
-  test("selecting a card shows its actions with the costs", async () => {
+  test("property names have no click behavior and all rows show action costs", async () => {
     const t = setup();
     await openHand(t);
-    const card = cardButton(/Lantern Row/);
-    expect(card).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("heading", { name: "Manage properties · Ann" })).toBeInTheDocument();
+    expect(screen.getAllByRole("group", { name: / actions$/ })).toHaveLength(8);
+    const card = propertyInfo(/Lantern Row/);
+    expect(card.tagName).toBe("DIV");
+    expect(card).not.toHaveAttribute("tabindex");
     await t.user.click(card);
-    expect(card).toHaveAttribute("aria-expanded", "true");
+    expect(card).not.toHaveAttribute("aria-expanded");
+    expect(card.closest("li")).not.toHaveAttribute("data-selected");
+    expect(t.send).not.toHaveBeenCalled();
     const actions = screen.getByRole("group", { name: "Lantern Row actions" });
-    expect(card).toHaveAttribute("aria-controls", actions.id);
+    expect(card).not.toHaveAttribute("aria-controls");
     expect(within(actions).getByRole("button", { name: "Build $50" })).toHaveAttribute(
       "aria-disabled",
       "false",
@@ -270,14 +293,13 @@ describe("PropertyHand: managing", () => {
     expect(within(actions).queryByRole("button", { name: /Unmortgage/ })).not.toBeInTheDocument();
 
     await t.user.click(card);
-    expect(screen.queryByRole("group", { name: "Lantern Row actions" })).not.toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Lantern Row actions" })).toBeInTheDocument();
   });
 
   test("Build sends Build with the square for the shown seat", async () => {
     const t = setup();
     await openHand(t);
-    await t.user.click(cardButton(/Cobble Street/));
-    await t.user.click(screen.getByRole("button", { name: "Build $50" }));
+    await t.user.click(actionsFor("Cobble Street").getByRole("button", { name: "Build $50" }));
     expect(t.send).toHaveBeenCalledExactlyOnceWith(
       { type: "Build", square: 8 },
       { seatId: t.id("a"), source: "hand" },
@@ -294,21 +316,18 @@ describe("PropertyHand: managing", () => {
     });
     await openHand(t);
 
-    await t.user.click(cardButton(/Lantern Row/));
     await t.user.click(screen.getByRole("button", { name: "Sell building +$25" }));
     expect(t.send).toHaveBeenLastCalledWith(
       { type: "SellBuilding", square: 6 },
       { seatId: t.id("a"), source: "hand" },
     );
 
-    await t.user.click(cardButton(/Beacon Hill/));
     await t.user.click(screen.getByRole("button", { name: "Mortgage +$110" }));
     expect(t.send).toHaveBeenLastCalledWith(
       { type: "Mortgage", square: 21 },
       { seatId: t.id("a"), source: "hand" },
     );
 
-    await t.user.click(cardButton(/North Station/));
     await t.user.click(screen.getByRole("button", { name: "Unmortgage $110" }));
     expect(t.send).toHaveBeenLastCalledWith(
       { type: "Unmortgage", square: 5 },
@@ -320,7 +339,6 @@ describe("PropertyHand: managing", () => {
   test("a station has no Build or Sell button", async () => {
     const t = setup();
     await openHand(t);
-    await t.user.click(cardButton(/North Station/));
     const actions = screen.getByRole("group", { name: "North Station actions" });
     expect(within(actions).getAllByRole("button")).toHaveLength(1);
     expect(within(actions).getByRole("button", { name: "Mortgage +$100" })).toHaveAttribute(
@@ -332,8 +350,7 @@ describe("PropertyHand: managing", () => {
   test("the last step to a hotel is named", async () => {
     const t = setup({ deeds: skyWith([4, 4, 4]) });
     await openHand(t);
-    await t.user.click(cardButton(/Lantern Row/));
-    expect(screen.getByRole("button", { name: "Build hotel $50" })).toHaveAttribute(
+    expect(actionsFor().getByRole("button", { name: "Build hotel $50" })).toHaveAttribute(
       "aria-disabled",
       "false",
     );
@@ -342,15 +359,14 @@ describe("PropertyHand: managing", () => {
   test("a refused action is disabled and says why", async () => {
     const t = setup({ deeds: skyWith([1, 0, 0]) });
     await openHand(t);
-    await t.user.click(cardButton(/Lantern Row/));
-    const build = screen.getByRole("button", { name: "Build $50" });
+    const build = actionsFor().getByRole("button", { name: "Build $50" });
     expect(build).toHaveAttribute("aria-disabled", "true");
     expect(build).toHaveAccessibleDescription("Build on a street with fewer buildings first");
-    expect(screen.getByRole("button", { name: "Mortgage +$50" })).toHaveAttribute(
+    expect(actionsFor().getByRole("button", { name: "Mortgage +$50" })).toHaveAttribute(
       "aria-disabled",
       "true",
     );
-    expect(screen.getByText("Sell the buildings first")).toBeInTheDocument();
+    expect(actionsFor().getByText("Sell the buildings first")).toBeInTheDocument();
     await t.user.click(build);
     expect(t.send).not.toHaveBeenCalled();
   });
@@ -358,34 +374,30 @@ describe("PropertyHand: managing", () => {
   test("an incomplete set says which set is needed", async () => {
     const t = setup();
     await openHand(t);
-    await t.user.click(cardButton(/Beacon Hill/));
-    expect(screen.getByText("Needs the full Red set")).toBeInTheDocument();
+    expect(actionsFor("Beacon Hill").getByText("Needs the full Red set")).toBeInTheDocument();
   });
 
   test("not enough cash", async () => {
     const t = setup({ deeds: skyWith([0, 0, 0]), cash: { a: 20 } });
     await openHand(t);
-    await t.user.click(cardButton(/Lantern Row/));
-    expect(screen.getByRole("button", { name: "Build $50" })).toHaveAttribute(
+    expect(actionsFor().getByRole("button", { name: "Build $50" })).toHaveAttribute(
       "aria-disabled",
       "true",
     );
-    expect(screen.getByText("Needs $50")).toBeInTheDocument();
+    expect(actionsFor().getByText("Needs $50")).toBeInTheDocument();
   });
 
-  test("selection ends when the hand closes", async () => {
+  test("property names remain static after the hand closes and opens", async () => {
     const t = setup();
     await openHand(t);
-    await t.user.click(cardButton(/Lantern Row/));
     await t.user.keyboard("{Escape}");
     await openHand(t);
-    expect(cardButton(/Lantern Row/)).toHaveAttribute("aria-expanded", "false");
+    expect(propertyInfo(/Lantern Row/)).not.toHaveAttribute("aria-expanded");
   });
 
   test("it is view-only outside a manage window", async () => {
     const t = setup({ deeds: handDeeds, phase: "awaiting_buy_decision" });
     await openHand(t);
-    await t.user.click(cardButton(/Lantern Row/));
     const actions = screen.getByRole("group", { name: "Lantern Row actions" });
     expect(within(actions).queryByRole("button")).not.toBeInTheDocument();
     expect(
@@ -398,7 +410,6 @@ describe("PropertyHand: pending and errors", () => {
   test("every action is disabled while an action is on its way", async () => {
     const t = setup({ deeds: skyWith([0, 0, 0]) }, { pending: true });
     await openHand(t);
-    await t.user.click(cardButton(/Lantern Row/));
     const actions = screen.getByRole("group", { name: "Lantern Row actions" });
     for (const button of within(actions).getAllByRole("button"))
       expect(button).toHaveAttribute("aria-disabled", "true");
@@ -408,8 +419,7 @@ describe("PropertyHand: pending and errors", () => {
   test("a button keeps the keyboard focus when the action goes pending", async () => {
     const t = setup({ deeds: skyWith([0, 0, 0]) });
     await openHand(t);
-    await t.user.click(cardButton(/Lantern Row/));
-    const build = screen.getByRole("button", { name: "Build $50" });
+    const build = actionsFor().getByRole("button", { name: "Build $50" });
     build.focus();
     t.rerender({ pending: true });
     expect(build).toHaveFocus();
@@ -450,8 +460,7 @@ describe("PropertyHand: pending and errors", () => {
       .mockRejectedValue(new ApiError(409, "not_your_turn", "no"));
     const t = setup(undefined, { send });
     await openHand(t);
-    await t.user.click(cardButton(/Lantern Row/));
-    await t.user.click(screen.getByRole("button", { name: "Build $50" }));
+    await t.user.click(actionsFor().getByRole("button", { name: "Build $50" }));
     expect(send).toHaveBeenCalledOnce();
     expect(toggle()).toBeInTheDocument();
   });
@@ -498,8 +507,7 @@ describe("PropertyHand: whose hand", () => {
   test("on a remote turn the cards are view-only", async () => {
     const t = setup({ deeds: both, current: "b" });
     await openHand(t);
-    await t.user.click(cardButton(/Lantern Row/));
-    expect(screen.getByText("View only: wait for your turn")).toBeInTheDocument();
+    expect(actionsFor().getByText("View only: wait for your turn")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Build/ })).not.toBeInTheDocument();
   });
 
@@ -519,8 +527,7 @@ describe("PropertyHand: whose hand", () => {
       current: "c",
     });
     await openHand(t);
-    await t.user.click(cardButton(/Lantern Row/));
-    await t.user.click(screen.getByRole("button", { name: "Build $50" }));
+    await t.user.click(actionsFor().getByRole("button", { name: "Build $50" }));
     expect(t.send).toHaveBeenCalledExactlyOnceWith(
       { type: "Build", square: 6 },
       { seatId: t.id("c"), source: "hand" },

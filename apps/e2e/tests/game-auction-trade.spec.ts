@@ -36,7 +36,7 @@ test("T10: bids cross devices and the winner pays for the auctioned deed", async
   await alice.page
     .getByRole("button", { name: new RegExp(`^${alice.name}'s properties,`) })
     .click();
-  await expect(alice.page.getByRole("button", { name: /^Rope Walk, \$140,/ })).toBeVisible();
+  await expect(alice.page.getByRole("group", { name: /^Rope Walk, \$140,/ })).toBeVisible();
 });
 
 test("T11: a trade on one device shows the offer to the recipient at once, with no pass step", async ({

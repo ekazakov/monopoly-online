@@ -1,6 +1,6 @@
 /*
  * Property hand (spec 4.6, redesign for BUG-8, BUG-11, BUG-12). Tokens only.
- * One grid with a column per group serves both states. The root keeps the height of the tallest
+ * The collapsed grid has one column per group. The root keeps the height of the tallest
  * collapsed column and lets the pointer through. The surface hangs from its bottom edge, so the
  * open panel rises over the board and never resizes it. The root is a size container: the column
  * width follows its width, not the window.
@@ -64,34 +64,32 @@
   border: 0;
 }
 
-/* The tab: the token and the count. Collapsed, it sits on the first column; open, on the panel. */
+/* The closed hand has an invisible keyboard/click target over the cards, with no pill. */
 .property-hand__tab {
   position: absolute;
-  left: var(--hf-gutter);
-  bottom: calc(var(--first-h, var(--hand-peek)) + 4px);
+  inset: 0;
   z-index: 2;
   display: inline-flex;
   align-items: center;
-  gap: var(--hf-space-8);
-  min-height: 36px;
-  padding: 0 var(--hf-space-12) 0 var(--hf-space-4);
-  border: 1px solid var(--hf-panel-line);
-  border-bottom: 0;
-  border-radius: 18px 18px 0 0;
-  background: var(--hf-panel);
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--hf-ink);
   cursor: pointer;
   pointer-events: auto;
-}
-
-.property-hand__tab:hover {
-  background: var(--hf-hover);
 }
 
 .property-hand__surface[data-open="true"] .property-hand__tab {
   right: var(--hf-gutter);
   bottom: 100%;
   left: auto;
+  width: 44px;
+  height: 44px;
   min-height: 28px;
   margin-bottom: -1px;
   padding: 0 var(--hf-space-8);
@@ -114,12 +112,6 @@
   border: 2px solid var(--player-color, var(--hf-ink-soft));
   border-radius: 50%;
   color: var(--hf-ink-soft);
-}
-
-.property-hand__count {
-  font: var(--hf-type-display-s);
-  font-size: 18px;
-  font-variant-numeric: tabular-nums;
 }
 
 .property-hand__body {
@@ -262,82 +254,204 @@
   text-transform: uppercase;
 }
 
-/* Open: a panel over the lower part of the board, the same columns flat, a side column on the right. */
+/* The Manage panel rises above the collapsed hand without changing the board size. */
 .property-hand__surface[data-open="true"] {
-  --hand-col-w: clamp(
-    70px,
-    calc((100cqw - 32px - 32px - 208px - 16px - 10 * 8px - 4px) / 11),
-    124px
-  );
-
   bottom: calc(var(--hand-peek) + 12px);
-  width: min(1280px, calc(100cqw - 32px));
-  max-height: calc(100cqh - 24px);
-  padding: var(--hf-space-16);
+  width: min(920px, calc(100cqw - 32px));
+  max-height: min(720px, calc(100dvh - 120px));
   border: 1px solid var(--hf-panel-line);
   border-radius: var(--hf-radius-panel);
-  background: var(--hf-panel-glass);
-  backdrop-filter: blur(var(--hf-blur-panel));
+  background: var(--hf-panel);
   box-shadow: 0 -8px 28px rgb(0 0 0 / 45%);
   pointer-events: auto;
 }
 
+.property-hand__surface[data-open="true"] .property-hand__tab {
+  top: 12px;
+  right: 12px;
+  bottom: auto;
+  min-width: 44px;
+  min-height: 44px;
+}
+
 .property-hand__surface[data-open="true"] .property-hand__body {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 208px;
-  gap: var(--hf-space-16);
-}
-
-.property-hand__surface[data-open="true"] .property-hand__grid {
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: 8px;
-  padding: 0;
-  cursor: auto;
-}
-
-.property-hand__surface[data-open="true"] .property-hand__col {
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.property-hand__manage-header,
+.property-hand__manage-footer {
+  flex: 0 0 auto;
+  padding: var(--hf-space-16) var(--hf-space-24);
+}
+
+.property-hand__manage-header {
+  padding-right: 64px;
+  border-bottom: 1px solid var(--hf-panel-line);
+}
+
+.property-hand__manage-header h2 {
+  margin: 0;
+  color: var(--hf-ink);
+  font: var(--hf-type-display-s);
+  text-transform: uppercase;
+}
+
+.property-hand__manage-header p,
+.property-hand__manage-footer > span {
+  margin: var(--hf-space-4) 0 0;
+  color: var(--hf-ink-soft);
+  font: var(--hf-type-body-small);
+}
+
+.property-hand__manage-list {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: var(--hf-space-8) var(--hf-space-24);
+}
+
+.property-hand__manage-group h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--hf-space-12);
+  margin: var(--hf-space-16) 0 var(--hf-space-4);
+  color: var(--hf-ink-soft);
+  font: var(--hf-type-label);
+  text-transform: uppercase;
+}
+
+.property-hand__manage-group h3 span {
+  display: inline-flex;
+  align-items: center;
   gap: var(--hf-space-4);
-  height: auto;
+  font: var(--hf-type-caption);
 }
 
-.property-hand__surface[data-open="true"] .property-hand__slot {
-  position: static;
-  height: 64px;
+.property-hand__manage-group ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.property-hand__surface[data-open="true"] .property-hand__card {
-  border-radius: 4px;
+.property-hand__manage-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto;
+  align-items: center;
+  gap: var(--hf-space-12);
+  padding: var(--hf-space-8) 0;
+  border-bottom: 1px solid var(--hf-panel-line);
 }
 
-.property-hand__surface[data-open="true"] .property-hand__row {
+.property-hand__property {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--hf-space-4) var(--hf-space-8);
+  min-height: 48px;
+  padding: var(--hf-space-4) var(--hf-space-12);
+  border: 0;
+  border-left: 6px solid var(--group-color);
+  border-radius: 0;
+  background: transparent;
+  color: var(--hf-ink);
+  text-align: left;
+}
+
+.property-hand__property strong {
+  font: var(--hf-type-body-small);
+  font-weight: 700;
+}
+
+.property-hand__property > span:not(.property-hand__buildings) {
+  grid-row: 2;
+  color: var(--hf-ink-soft);
+  font: var(--hf-type-caption);
+}
+
+.property-hand__buildings {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.property-hand__manage-row .property-hand__detail {
+  display: block;
+  min-width: 0;
+}
+
+.property-hand__manage-row .property-hand__info {
+  display: none;
+}
+
+.property-hand__manage-row .property-hand__actions {
+  display: flex;
+  flex-flow: row nowrap;
+  gap: var(--hf-space-8);
+}
+
+.property-hand__manage-row .property-hand__button {
+  min-height: 44px;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 0;
-  height: auto;
-  min-height: 26px;
-  padding: 2px 5px 0;
+  justify-content: center;
+  gap: 2px;
+  padding: var(--hf-space-4) var(--hf-space-8);
+  font-size: 12px;
 }
 
-.property-hand__surface[data-open="true"] .property-hand__name {
-  display: -webkit-box;
-  width: 100%;
-  max-height: 24px;
-  line-height: 12px;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  white-space: normal;
+.property-hand__manage-row .property-hand__amount {
+  font: var(--hf-type-caption);
 }
 
-.property-hand__surface[data-open="true"] .property-hand__price {
-  font-size: 11px;
+.property-hand__manage-row .property-hand__action {
+  position: relative;
 }
 
-.property-hand__surface[data-open="true"] .property-hand__pips {
-  min-height: 13px;
-  padding-top: 1px;
+.property-hand__manage-row .property-hand__reason {
+  position: absolute;
+  z-index: 3;
+  right: 0;
+  bottom: calc(100% + 4px);
+  width: 200px;
+  padding: var(--hf-space-8);
+  border: 1px solid var(--hf-panel-line);
+  border-radius: var(--hf-radius-control);
+  background: var(--hf-panel);
+  visibility: hidden;
+}
+
+.property-hand__manage-row .property-hand__action:hover .property-hand__reason,
+.property-hand__manage-row .property-hand__action:focus-within .property-hand__reason {
+  visibility: visible;
+}
+
+.property-hand__manage-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--hf-space-12);
+  border-top: 1px solid var(--hf-panel-line);
+}
+
+.property-hand__manage-footer .property-hand__button {
+  min-height: 44px;
+  background: var(--hf-accent);
+}
+
+@container (max-width: 700px) {
+  .property-hand__manage-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--hf-space-4);
+  }
+
+  .property-hand__manage-row .property-hand__actions {
+    flex-wrap: wrap;
+    padding-left: 18px;
+  }
 }
 
 .property-hand__empty,
@@ -475,36 +589,6 @@
 .property-hand__reason {
   color: var(--hf-ink-soft);
   font: var(--hf-type-caption);
-}
-
-/* Below 1280px the side column moves under the grid, so the columns keep their width. */
-@container (max-width: 1279px) {
-  .property-hand__surface[data-open="true"] {
-    --hand-col-w: clamp(70px, calc((100cqw - 32px - 32px - 10 * 8px - 4px) / 11), 124px);
-  }
-
-  .property-hand__surface[data-open="true"] .property-hand__body {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .property-hand__side {
-    flex-flow: row wrap;
-    align-items: flex-start;
-    gap: var(--hf-space-12) var(--hf-space-24);
-    padding: var(--hf-space-12) 0 0;
-    border-top: 1px solid var(--hf-panel-line);
-    border-left: 0;
-  }
-
-  .property-hand__detail {
-    flex-flow: row wrap;
-    align-items: center;
-  }
-
-  .property-hand__actions {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
 }
 
 /* Narrow screens: ten columns of at least 70px do not fit, so the grid scrolls sideways. */

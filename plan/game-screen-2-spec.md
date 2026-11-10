@@ -262,14 +262,14 @@ This area is the agreed home for every turn action. 5.2 covers how it presents t
 
 ### 4.6 Property hand
 
-> **Redesigned (BUG-8, BUG-11, BUG-12), approved 2026-11-10 with the prototype in `artifacts/game-screen`.** The hand header and the group labels are gone. One grid with a column per group serves both states, and all properties fit with no scroll.
+> **Redesigned (BUG-8, BUG-11, BUG-12), approved 2026-11-10 with the prototype in `artifacts/game-screen`.** The collapsed hand has no header or group labels. Update 2026-11-10: the expanded web hand uses the grouped Manage properties panel from the supplied prototype reference.
 
 - **Grid:** one column per property group, in board order (brown, sky, pink, orange, red, yellow, green, navy, stations, utilities). There are up to 10 columns. A "Get out of jail free" card is a further column in the prototype; the web hand does not show it yet (R-H5). There are no group labels.
 - **Column width:** `clamp(70px, (width − 32px − gaps) / columns, 112px)`. At 1024px and wider all 10 columns fit in the collapsed state with no scroll. Below 1024px the grid scrolls sideways.
 - **Card (collapsed):** a compact card with a 6px colour band, a name and a price on one row (11px condensed name with ellipsis, 10px price) and a row for house pips or the mortgaged tag. The cards of a column overlap downward with a 22px step, so the band, name and price of every card show. The row peeks 38px above the bottom edge of the window, so the front card shows 22px.
 - **Set complete:** a small tick on the colour band of every card in the complete set. The band is the part of a card that always shows.
 - **Card states:** mortgaged (hatched or dimmed, with the tag "Mortgaged"), houses 1–4 and hotel pips.
-- **Tab:** a small tab sits above the first column (and above the panel when the hand is open). It shows the owner's token and the number of properties. It is the keyboard entry (a button with `aria-expanded`) and the pin toggle. Its accessible name is "<name>'s properties, <count>, <value>". There is no header block, no hand label and no debt pill.
+- **Closed hand:** no pill, avatar or count is shown above the cards. An invisible button over the cards keeps click, tap and keyboard access. When open, it becomes the panel close control. It is the keyboard entry (a button with `aria-expanded`) and the pin toggle. Its accessible name is "<name>'s properties, <count>, <value>". There is no header block, no hand label and no debt pill.
 - **Peek:** the collapsed cards are not buttons and are not in the tab order. A click on them pins the hand open.
 
 #### Expanded hand
@@ -280,16 +280,11 @@ The hand has two states. The whole hand opens at once and every property is show
   - Desktop: moving the pointer onto the hand area expands it after about 150ms. It collapses about 300ms after the pointer leaves. A click on the hand area or on the tab **pins** it open, and a second click on the tab or Esc closes it.
   - Touch: a tap on the hand area toggles it. There is no hover-only behaviour.
   - Keyboard: focus entering the hand expands it, and Esc collapses it and returns the focus to the tab.
-- **Layout:**
-  - A panel rising from the bottom edge over the lower part of the board, up to 1280px wide. The board does not resize.
-  - The same columns without overlap: cards about 70–124px wide and 64px tall, 4px apart. Names wrap to two lines, so they are not cut.
-  - A side column of 208px at the right. Below 1280px it moves under the grid.
-  - All properties show with no scroll. The tallest column has four cards (stations).
-- **Side column:** the owner (token, name, "<count> properties · <value>"), the seat switcher on a hot-seat device, and the details of the selected card.
-- **Managing from the cards:**
-  - A card is a real button, 64px tall. Selecting one shows its name, price, state and actions in the side column: Build, Sell building, Mortgage or Unmortgage, and the title deed.
-  - An action that isn't allowed is disabled and says why, for example "Needs the full Sky set" or "Sell the buildings first".
-  - Actions work only in the windows in the gameplay doc (2.1): on the player's own turn before the roll and after the landing, and while settling a debt. Outside those windows, and on remote turns, the cards are view-only.
+- **Layout:** a Manage properties panel rises above the collapsed hand. It is at most 920px wide and 720px tall, limited by the window height. The board does not resize. The header shows the owner, cash and property count. The footer shows the property value and Done. The property list scrolls between the header and footer.
+- **Groups:** show colour groups in board order, followed by stations and utilities. Each group has a label and a set-complete mark when applicable.
+- **Property rows:** each row shows the colour, name, buildings, rent, and Build, Sell building, Mortgage or Unmortgage actions with their costs. Stations and utilities have no building actions. Property names and summaries are static text. They do not select a row or open further details. Narrow layouts put actions below the property name.
+- **Actions:** all property actions are available directly in the panel. A refused action is disabled. Hover or keyboard focus shows its reason. The server remains the authority for each action. An action pins the panel open while it is sent. Outside management windows, the rows show the view-only reason.
+- **Closing:** Done and Esc close the panel and return focus to the tab. The close control also closes a panel opened by hover.
 - **Debt:** the debt has no controls in the hand. The board centre shows the amount due, the Raise cash list and Pay (5.2). While this device settles a debt the panel still opens by itself, so the player can see the properties.
 - **Motion:** no animation under reduced motion.
 
@@ -440,10 +435,10 @@ Rules:
 
 - **R-H1 MUST** [Done] Group cards into colour stacks, one column per group, with no group labels (4.6).
 - **R-H2 MUST** [Done] Keep prices visible. The compact collapsed card shows its name and price on one row, and the overlap leaves that row visible.
-- **R-H3 MUST** [Done] No hand label and no total value in a header. The tab shows the token and the property count, and the expanded side column shows the owner and the total value.
+- **R-H3 MUST** [Done] The closed hand has no header, avatar or count pill. The expanded Manage panel shows the owner and cash in its header and the property count and total value in its footer.
 - **R-H4 MUST** [Done] Card states: mortgaged (hatched or dimmed), set complete (a tick on the colour band), houses and hotel pips. Managing (build, sell building, mortgage, unmortgage) is done from the expanded cards.
 - **R-H5 SHOULD** [Gap] Show Get Out of Jail Free cards in the hand.
-- **R-H6 MUST** [Done] Expanded hand: opens on hover (desktop), click-pin, tap (touch) or focus; shows every card with no scroll; hosts property management (4.6). The collapsed hand fits up to 10 columns with no scroll at 1024px and wider.
+- **R-H6 MUST** [Done] Expanded hand: opens on hover (desktop), click-pin, tap (touch) or focus; shows a scrollable Manage properties list with direct actions (4.6). The collapsed hand fits up to 10 columns with no scroll at 1024px and wider.
 
 ### 8.6 Game log
 

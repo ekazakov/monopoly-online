@@ -20,21 +20,19 @@ test("T15: building and mortgaging through the hand update the deed, cash and bo
   await bob.page
     .getByRole("button", { name: new RegExp(`^${bob.name}'s properties, 3 properties`) })
     .click();
-  await bob.page.getByRole("button", { name: /^Driftwood Lane, \$60,/ }).click();
   await bob.page
     .getByRole("group", { name: "Driftwood Lane actions" })
     .getByRole("button", { name: /^Build \$50$/ })
     .click();
   await expect(
-    bob.page.getByRole("button", { name: /^Driftwood Lane, \$60, 1 house,/ }),
+    bob.page.getByRole("group", { name: /^Driftwood Lane, \$60, 1 house,/ }),
   ).toBeVisible();
-  await bob.page.getByRole("button", { name: /^Grand Pier, \$400,/ }).click();
   await bob.page
     .getByRole("group", { name: "Grand Pier actions" })
     .getByRole("button", { name: /^Mortgage \+\$200$/ })
     .click();
   await expect(
-    bob.page.getByRole("button", { name: /^Grand Pier, \$400, mortgaged,/ }),
+    bob.page.getByRole("group", { name: /^Grand Pier, \$400, mortgaged,/ }),
   ).toBeVisible();
   for (const device of [alice, bob]) {
     await expect(device.page.locator(".player-row").filter({ hasText: bob.name })).toContainText(
@@ -76,7 +74,7 @@ test("T16: a player raises cash with a mortgage, pays the debt and continues the
     );
   }
   await expect(
-    bob.page.getByRole("button", { name: /^Grand Pier, \$400, mortgaged,/ }),
+    bob.page.getByRole("group", { name: /^Grand Pier, \$400, mortgaged,/ }),
   ).toBeVisible();
   await bob.page.getByRole("button", { name: "Next turn", exact: true }).click();
   await expect(bob.page.getByRole("log", { name: "Game log" })).toContainText(
