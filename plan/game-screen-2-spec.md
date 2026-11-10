@@ -260,6 +260,8 @@ This is a flex column, centred both ways, with a **20px gap**.
 
 This area is the agreed home for every turn action. 5.2 covers how it presents them, and the phases themselves are in the gameplay doc, section 2.
 
+The board pawns face NE on the left and top sides and SW on the right and bottom sides, in the default board view. Jail (10) and Free Parking (20) use NE; Go to Jail (30) and Start (0) use SW. A pawn takes the corner facing when it lands, including the final hop of a move. The facing also applies after a state reload or a move without animation. Model front directions are normalised so every figure follows the same rule.
+
 ### 4.6 Property hand
 
 > **Redesigned (BUG-8, BUG-11, BUG-12), approved 2026-11-10 with the prototype in `artifacts/game-screen`.** The collapsed hand has no header or group labels. Update 2026-11-10: the expanded web hand uses the grouped Manage properties panel from the supplied prototype reference.
@@ -347,6 +349,7 @@ The board centre changes with each phase of the turn. The phase list and what ea
   - a toast "It is <name>'s turn" shows on every device in the game, with no confirm button
   - it sits in the centre of the board, over the dice and the buttons (approved 2026-11-10, after a prototype with two placements in `artifacts/game-screen`)
   - it looks like the handoff screen without the button (changed 2026-11-10): a scrim at 70% opacity, the 3D figure of the next player on its plinth (150px; the flat icon when WebGL is not available), the name and the sentence "It's <name>'s turn.". It fades in over 500 ms, shows for 1 second and fades out over 500 ms (2 seconds in all). It has no button. While it shows, the action controls are disabled (the game regions are inert and the scrim takes the pointer); the top bar with the log and the Menu stays usable. It is a polite live region, so a screen reader hears it
+  - the figure stands still on its plinth; it does not rotate
   - a toast shows for a turn change only. An auction bidder or a trade responder on the same device sees the phase in the board centre, not a toast
   - there is no privacy step: on a shared device the next player's properties and actions show at once. This is on purpose
 - **Remote turn:**

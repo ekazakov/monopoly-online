@@ -6,6 +6,7 @@ import type { TokenSpot } from "./layout.ts";
 import type { TokenModel } from "./model.ts";
 import { hopAt, isMove, stepSquares } from "./motion.ts";
 import type { MotionStep, MoveStep } from "./motion.ts";
+import { arrivedSquare, tokenFacing } from "./tokenFacing.ts";
 import {
   AVATAR_HEIGHT,
   avatarFigure,
@@ -107,8 +108,9 @@ function TokenPiece({ token, spot, order, env, move }: TokenPieceProps) {
 
   useLayoutEffect(() => {
     startedAt.current = performance.now();
+    if (step && group.current) group.current.rotation.y = tokenFacing(token.avatar, step.from);
     invalidate();
-  }, [step, invalidate]);
+  }, [step, token.avatar, invalidate]);
 
   // The frame loop moves the group by hand, and React does not set a prop that has not changed.
   // So when no move plays, the group goes back to its spot here.
@@ -116,13 +118,15 @@ function TokenPiece({ token, spot, order, env, move }: TokenPieceProps) {
     if (step) return;
     group.current?.position.set(...spot.position);
     group.current?.scale.setScalar(spot.scale);
+    if (group.current) group.current.rotation.y = tokenFacing(token.avatar, token.square);
     invalidate();
-  }, [step, spot, invalidate]);
+  }, [step, spot, token.avatar, token.square, invalidate]);
 
   useFrame(() => {
     const g = group.current;
     if (!g || !step || !path) return;
-    const { hop, t } = hopAt(step, performance.now() - startedAt.current);
+    const elapsedMs = performance.now() - startedAt.current;
+    const { hop, t } = hopAt(step, elapsedMs);
     const a = path[hop]!;
     const b = path[hop + 1] ?? path[hop]!;
     const lift = Math.sin(Math.PI * t) * (step.kind === "jump" ? JUMP_LIFT : HOP_LIFT);
@@ -132,17 +136,12 @@ function TokenPiece({ token, spot, order, env, move }: TokenPieceProps) {
       a.position[2] + (b.position[2] - a.position[2]) * t,
     );
     g.scale.setScalar(a.scale + (b.scale - a.scale) * t);
+    g.rotation.y = tokenFacing(token.avatar, arrivedSquare(step, elapsedMs));
     invalidate();
   });
 
   return (
-    <group
-      ref={group}
-      position={spot.position}
-      scale={spot.scale}
-      rotation-y={0.35}
-      name={`token-${token.id}`}
-    >
+    <group ref={group} position={spot.position} scale={spot.scale} name={`token-${token.id}`}>
       {figure && <primitive object={figure} dispose={null} />}
     </group>
   );

@@ -10,13 +10,10 @@ import {
   metal,
   studioEnvironment,
 } from "../../../scene/sculpt.ts";
-import { useReducedMotion } from "../../../styles/motionPreference.ts";
 import { AvatarIcon } from "../rail/avatars.tsx";
 
 /** Same meshing resolution as the board tokens, so the figure comes from the shared cache. */
 const FIGURE_RES = 80;
-/** Turn speed of the figure, radians per second. */
-const SPIN = 0.9;
 
 function hasWebGl(): boolean {
   try {
@@ -29,14 +26,13 @@ function hasWebGl(): boolean {
 
 /**
  * The 3D figure of a token on a round plinth with a ring in the player colour (the stage of the
- * old handoff screen). It turns slowly, and stands still under reduced motion. Without WebGL it
+ * old handoff screen). It stands still. Without WebGL it
  * shows the flat icon instead. The figure is decoration: the notice carries the name as text.
  */
 export function PawnStage({ token, size }: { token: Token; size: number }) {
   const look = tokenLook(token);
   const host = useRef<HTMLDivElement>(null);
   const [webgl] = useState(hasWebGl);
-  const reduced = useReducedMotion();
 
   useEffect(() => {
     const element = host.current;
@@ -101,17 +97,7 @@ export function PawnStage({ token, size }: { token: Token; size: number }) {
     figure.rotation.y = 0.5;
     scene.add(figure);
 
-    if (reduced) {
-      renderer.render(scene, camera);
-    } else {
-      let last = performance.now();
-      renderer.setAnimationLoop((now: number) => {
-        const dt = Math.min(0.05, (now - last) / 1000);
-        last = now;
-        figure.rotation.y += dt * SPIN;
-        renderer.render(scene, camera);
-      });
-    }
+    renderer.render(scene, camera);
 
     return () => {
       renderer.setAnimationLoop(null);
@@ -125,7 +111,7 @@ export function PawnStage({ token, size }: { token: Token; size: number }) {
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [webgl, size, reduced, look.avatar, look.hex, look.metal]);
+  }, [webgl, size, look.avatar, look.hex, look.metal]);
 
   const box = { width: size, height: size, "--player-color": look.cssColor } as CSSProperties;
   if (!webgl) {

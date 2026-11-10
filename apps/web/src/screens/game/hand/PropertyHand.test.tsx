@@ -110,7 +110,7 @@ describe("PropertyHand: collapsed", () => {
     ]);
     expect(screen.queryByText("Sky · 3")).not.toBeInTheDocument();
     expect(screen.queryByText(/'s properties/)).not.toBeInTheDocument();
-    expect(view.container.querySelectorAll(".property-hand__set")).toHaveLength(5);
+    expect(view.container.querySelectorAll(".property-hand__set")).toHaveLength(0);
     expect(screen.queryByRole("button", { name: /Lantern Row/ })).not.toBeInTheDocument();
   });
 
@@ -207,12 +207,11 @@ describe("PropertyHand: expanded", () => {
     expect(toggle()).toHaveFocus();
   });
 
-  test("Done closes the panel and returns focus to the tab", async () => {
+  test("the panel has no Done button or footer", async () => {
     const t = setup();
     await openHand(t);
-    await t.user.click(screen.getByRole("button", { name: "Done" }));
-    expect(toggle()).toHaveAttribute("aria-expanded", "false");
-    expect(toggle()).toHaveFocus();
+    expect(screen.queryByRole("button", { name: "Done" })).not.toBeInTheDocument();
+    expect(t.view.container.querySelector("footer")).not.toBeInTheDocument();
   });
 
   test("Esc closes a pinned hand", async () => {
