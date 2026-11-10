@@ -204,6 +204,10 @@ test("T20: reload in mid-turn keeps cash, the deed and phase, and the next actio
   await bob.page.reload();
   await expect(bob.page.getByRole("button", { name: "Next turn", exact: true })).toBeEnabled();
   expect(await readState(table)).toEqual(beforeReload);
+  // BUG-14: the snapshot carries the event log, so the earlier lines are there after a reload.
+  const logAfterReload = bob.page.getByRole("log", { name: "Game log" });
+  await expect(logAfterReload).toContainText(/rolled \d and \d/);
+  await expect(logAfterReload).toContainText(/bought .* for \$\d+/);
   const row = bob.page.locator(".player-row").filter({ hasText: bob.name });
   await expect(row).toContainText("$1,360");
   await expect(row).toContainText("1 property");

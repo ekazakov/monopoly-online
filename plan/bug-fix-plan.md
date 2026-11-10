@@ -209,12 +209,12 @@ Proposed direction for the prototype:
 - Cause: the store (`game/store.ts`) fills the log only from `game.actions` messages and action responses. `applySnapshot` (lines 80-108) clears the log on a first load. The snapshot message (`apps/api/src/realtime/resume.ts:144-186`) has only `{game, state}`.
 - A short reconnect (gap 1 to 100) already replays the missed `game.actions` (`replayActions`, `resume.ts:75-121`). A refresh, a long gap or a new topic set gets a snapshot message with no events.
 - Events are in `game_events` (`apps/api/src/db/migrations.ts:112-127`). Save and Finish delete the rows after the turn-start game snapshot (`apps/api/src/game/service.ts:372-420`), so the stored events always match the state after a rollback.
-- [ ] `packages/shared/src/stream.ts:73-76`: add an optional `events: [{version, events}]` to the snapshot message payload.
-- [ ] `apps/api/src/realtime/resume.ts` `snapshotMessage` and `onSnapshot` in `realtime/messages.ts`: read `game_events` up to `state.version` and add them.
-- [ ] `game/store.ts` `applySnapshot`: fill `events` from the payload. Keep `lastActionEvents` empty, so no animation or card replays.
-- [ ] `screens/game/log/GameLog.tsx:43`: `initialCount` is read at mount. Do not show the earlier lines as new.
-- [ ] Tests: resume tests in the API, store tests, and a browser test (refresh, then the log has the earlier lines).
-- [ ] Update `plan/api-schema.md` (snapshot) and run `pnpm openapi` if the stream schema is in the OpenAPI document.
+- [x] `packages/shared/src/stream.ts:73-76`: add an optional `events: [{version, events}]` to the snapshot message payload.
+- [x] `apps/api/src/realtime/resume.ts` `snapshotMessage` and `onSnapshot` in `realtime/messages.ts`: read `game_events` up to `state.version` and add them.
+- [x] `game/store.ts` `applySnapshot`: fill `events` from the payload. Keep `lastActionEvents` empty, so no animation or card replays.
+- [x] `screens/game/log/GameLog.tsx:43`: `initialCount` is read at mount. Do not show the earlier lines as new.
+- [x] Tests: resume tests in the API, store tests, a `GameLog` test, and a browser test in T20 (refresh, then the log has the earlier lines; written, not run in this sandbox).
+- [x] Update `plan/api-schema.md` (snapshot) and run `pnpm openapi` if the stream schema is in the OpenAPI document.
 - Events need no redaction. They already go to every seat in `game.actions`.
 - See open decision 4 (a limit on the number of events).
 

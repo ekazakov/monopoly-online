@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import type { StreamMessage } from "@monopoly/shared";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test } from "vite-plus/test";
 import { GameStoreProvider } from "../../../game/GameStoreProvider.tsx";
@@ -28,6 +29,55 @@ function setup(userId = fx.ownerId, steps = 0) {
 const log = () => screen.getByRole("log", { name: "Game log" });
 const toggle = () => screen.getByRole("button", { name: /game log$/ });
 const lines = () => Array.from(log().querySelectorAll<HTMLElement>(".game-log__line"));
+
+/** A snapshot that carries the whole event log, as the API sends it. */
+function snapshotWithLog(stepCount: number): StreamMessage {
+  const steps = fx.steps.slice(0, stepCount);
+  const base = snapshotMessage(fx.game, steps[stepCount - 1]!.state);
+  return {
+    ...base,
+    payload: {
+      ...base.payload,
+      events: steps.map((step) => ({ version: step.state.version, events: [...step.events] })),
+    },
+  } as StreamMessage;
+}
+
+describe("GameLog after a refresh (BUG-14)", () => {
+  test("the earlier lines of a snapshot that arrives after the log mounted are not new", () => {
+    const store = createGameStore();
+    render(
+      <GameStoreProvider store={store}>
+        <GameLog userId={fx.ownerId} />
+      </GameStoreProvider>,
+    );
+    expect(log()).toHaveTextContent("No events yet.");
+    const total = fx.steps.slice(0, 3).flatMap((step) => step.events).length;
+
+    act(() => store.applyStreamMessage(snapshotWithLog(3)));
+    expect(lines()).toHaveLength(total);
+    expect(lines().every((line) => line.getAttribute("data-fresh") === "false")).toBe(true);
+
+    // An action after the snapshot is new.
+    act(() => store.applyStreamMessage(actionsMessage(fx.game, fx.steps[3]!)));
+    const after = lines();
+    expect(after.length).toBeGreaterThan(total);
+    expect(after[total]).toHaveAttribute("data-fresh", "true");
+    expect(after[0]).toHaveAttribute("data-fresh", "false");
+  });
+
+  test("a log that mounts after the snapshot also shows the earlier lines as not new", () => {
+    const store = createGameStore();
+    store.applyStreamMessage(snapshotWithLog(3));
+    render(
+      <GameStoreProvider store={store}>
+        <GameLog userId={fx.ownerId} />
+      </GameStoreProvider>,
+    );
+    expect(lines().length).toBeGreaterThan(0);
+    expect(lines().every((line) => line.getAttribute("data-fresh") === "false")).toBe(true);
+  });
+});
 
 describe("GameLog", () => {
   test("is a polite log with one root element", () => {

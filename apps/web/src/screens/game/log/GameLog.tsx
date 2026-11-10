@@ -39,14 +39,21 @@ export function GameLog({ userId }: GameLogProps) {
   const toggleRef = useRef<HTMLButtonElement>(null);
   // Whether new lines keep the list at its end. Scrolling up turns it off, reaching the end on.
   const following = useRef(true);
-  // Lines that were there when the log mounted do not flash.
-  const [initialCount] = useState(() => dropped + events.length);
+  // Lines that were there when the state first loaded do not flash, also when the log mounts before
+  // the snapshot arrives: a line is new only when its version is later than the first state version.
+  const stateVersion = useGameSelector((s) => s.state?.version ?? null);
+  const [baseVersion, setBaseVersion] = useState<number | null>(stateVersion);
+  if (baseVersion === null && stateVersion !== null) setBaseVersion(stateVersion);
 
   const seats = game?.seats;
   const ctx = useMemo(() => ({ seats: seats ?? [] }), [seats]);
   const lines = useMemo(() => {
-    return events.map(({ event }, i) => ({ key: dropped + i, line: describeEvent(event, ctx) }));
-  }, [events, dropped, ctx]);
+    return events.map(({ event, version }, i) => ({
+      key: dropped + i,
+      fresh: baseVersion !== null && version > baseVersion,
+      line: describeEvent(event, ctx),
+    }));
+  }, [events, dropped, ctx, baseVersion]);
   const tokenOf = useMemo(() => new Map(seats?.map((s) => [s.id, s.token])), [seats]);
   const mine = useMemo(() => new Set(mySeats(game, userId).map((s) => s.id)), [game, userId]);
 
@@ -116,12 +123,12 @@ export function GameLog({ userId }: GameLogProps) {
               <p className="game-log__line game-log__note">Earlier entries are not shown.</p>
             )}
             {lines.length === 0 && <p className="game-log__line game-log__note">No events yet.</p>}
-            {lines.map(({ key, line }) => (
+            {lines.map(({ key, line, fresh }) => (
               <p
                 key={key}
                 className="game-log__line"
                 data-tone={line.tone}
-                data-fresh={key >= initialCount}
+                data-fresh={fresh}
                 data-mine={line.playerId !== null && mine.has(line.playerId)}
               >
                 <span
