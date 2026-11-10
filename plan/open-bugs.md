@@ -185,7 +185,7 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 
 ### BUG-13: Board cells are not interactive (change request)
 
-- Status: open
+- Status: fixed (2026-11-10)
 - Reported: 2026-11-09
 - Area: web
 - Type: change request

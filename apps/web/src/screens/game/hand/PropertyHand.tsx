@@ -6,8 +6,9 @@ import { tokenLook } from "../../../scene/colors.ts";
 import { AvatarIcon } from "../rail/avatars.tsx";
 import { buildingText, handOf, money } from "./handModel.ts";
 import type { HandCard, HandGroup } from "./handModel.ts";
-import { ACTION_OF, propertyActions } from "./propertyActions.ts";
-import type { ManageAction, PropertyActions } from "./propertyActions.ts";
+import { PropertyDetail } from "./PropertyDetail.tsx";
+import { propertyActions } from "./propertyActions.ts";
+import type { ManageAction } from "./propertyActions.ts";
 import "./PropertyHand.css";
 
 export interface PropertyHandProps {
@@ -97,125 +98,6 @@ function CardFace({ card, color, complete }: { card: HandCard; color: string; co
 
 const cardName = (card: HandCard) =>
   `${card.name}, ${money(card.price)}, ${card.mortgaged ? "mortgaged" : buildingText(card.houses)}, ${card.rent}`;
-
-interface ActionButtonProps {
-  label: string;
-  amount: string | null;
-  allowed: boolean;
-  reason: string | null;
-  busy: boolean;
-  onClick: () => void;
-}
-
-function ActionButton({ label, amount, allowed, reason, busy, onClick }: ActionButtonProps) {
-  const reasonId = useId();
-  const shown = allowed ? null : reason;
-  // `aria-disabled`, not `disabled`: a disabled button drops the keyboard focus and the reason is read.
-  const blocked = !allowed || busy;
-  return (
-    <div className="property-hand__action">
-      <button
-        type="button"
-        className="property-hand__button"
-        aria-disabled={blocked}
-        aria-describedby={shown ? reasonId : undefined}
-        onClick={() => {
-          if (!blocked) onClick();
-        }}
-      >
-        {label}
-        {amount ? (
-          <>
-            {" "}
-            <span className="property-hand__amount">{amount}</span>
-          </>
-        ) : null}
-      </button>
-      {shown ? (
-        <span className="property-hand__reason" id={reasonId}>
-          {shown}
-        </span>
-      ) : null}
-    </div>
-  );
-}
-
-interface DetailProps {
-  id: string;
-  card: HandCard;
-  actions: PropertyActions;
-  /** The engine `mayAct` check for each action, from the game store. */
-  may: (type: ActionType) => boolean;
-  busy: boolean;
-  onAction: (type: ManageAction) => void;
-}
-
-function Detail({ id, card, actions, may, busy, onAction }: DetailProps) {
-  const refusal = (key: keyof typeof ACTION_OF, enabled: boolean) =>
-    enabled && may(ACTION_OF[key]) ? null : (actions.reason[key] ?? "Wait for your turn");
-  const canBuild = actions.canBuild && may("Build");
-  const canSell = actions.canSell && may("SellBuilding");
-  const canMortgage = actions.canMortgage && may("Mortgage");
-  const canUnmortgage = actions.canUnmortgage && may("Unmortgage");
-  const dollars = (amount: number | null, sign = "") =>
-    amount === null ? null : `${sign}${money(amount)}`;
-
-  return (
-    <div id={id} className="property-hand__detail" role="group" aria-label={`${card.name} actions`}>
-      <p className="property-hand__info">
-        <strong>{card.name}</strong>
-        {` · ${card.mortgaged ? "mortgaged" : buildingText(card.houses)} · ${card.rent}`}
-      </p>
-      {actions.manageable ? (
-        <div className="property-hand__actions">
-          {card.kind === "street" ? (
-            <>
-              <ActionButton
-                label={card.houses === 4 ? "Build hotel" : "Build"}
-                amount={dollars(actions.cost.build)}
-                allowed={canBuild}
-                reason={refusal("build", canBuild)}
-                busy={busy}
-                onClick={() => onAction("Build")}
-              />
-              <ActionButton
-                label="Sell building"
-                amount={dollars(actions.cost.sell, "+")}
-                allowed={canSell}
-                reason={refusal("sell", canSell)}
-                busy={busy}
-                onClick={() => onAction("SellBuilding")}
-              />
-            </>
-          ) : null}
-          {card.mortgaged ? (
-            <ActionButton
-              key="mortgage"
-              label="Unmortgage"
-              amount={dollars(actions.cost.unmortgage)}
-              allowed={canUnmortgage}
-              reason={refusal("unmortgage", canUnmortgage)}
-              busy={busy}
-              onClick={() => onAction("Unmortgage")}
-            />
-          ) : (
-            <ActionButton
-              key="mortgage"
-              label="Mortgage"
-              amount={dollars(actions.cost.mortgage, "+")}
-              allowed={canMortgage}
-              reason={refusal("mortgage", canMortgage)}
-              busy={busy}
-              onClick={() => onAction("Mortgage")}
-            />
-          )}
-        </div>
-      ) : (
-        <p className="property-hand__viewonly">View only: {actions.notNow?.toLowerCase()}</p>
-      )}
-    </div>
-  );
-}
 
 interface GridProps {
   groups: HandGroup[];
@@ -430,7 +312,7 @@ export function PropertyHand({ userId }: PropertyHandProps) {
   const look = tokenLook(seat.token);
   const detail =
     selected && state ? (
-      <Detail
+      <PropertyDetail
         id={detailId}
         card={selected}
         actions={propertyActions(state, seat.id, selected.square)}

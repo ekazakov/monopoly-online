@@ -3,7 +3,7 @@ import { createContext, useContext } from "react";
 import type { ApiError } from "../api.ts";
 
 /** The part of the screen that sent an action. An error of a source shows in that part only. */
-export type ActionSource = "hand" | "menu";
+export type ActionSource = "hand" | "menu" | "square";
 
 export interface GameActions {
   /**

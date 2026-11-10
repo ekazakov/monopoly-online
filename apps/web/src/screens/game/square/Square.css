@@ -1,0 +1,139 @@
+/*
+ * Square dialogs and the Squares button (spec 5.2, R-B5, BUG-13). Tokens only. The dialogs are
+ * light cards (see Modal.css), so the text uses the board ink. The shared property actions come
+ * from the hand and keep its classes; the rules here set their colours for the light dialog.
+ */
+.squares-button {
+  min-height: var(--hf-target);
+  padding: 0 18px;
+  border: 1px solid var(--hf-panel-line);
+  border-radius: var(--hf-radius-control);
+  background: var(--hf-panel);
+  color: var(--hf-ink);
+  font: var(--hf-type-label);
+  letter-spacing: var(--hf-track-label);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.squares-button:hover {
+  background: var(--hf-panel-log);
+}
+
+.square-detail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--hf-space-12);
+  color: var(--hf-board-ink);
+}
+
+.square-detail > p {
+  margin: 0;
+}
+
+.square-detail__owner {
+  font: var(--hf-type-body);
+  font-weight: 600;
+  text-align: center;
+}
+
+.square-detail__status {
+  min-height: 1.2em;
+  color: var(--hf-accent);
+  font: var(--hf-type-body-small);
+  text-align: center;
+}
+
+.square-detail .property-hand__detail {
+  width: 100%;
+}
+
+.square-detail .property-hand__info,
+.square-detail .property-hand__viewonly,
+.square-detail .property-hand__reason {
+  color: var(--hf-zone-ink);
+}
+
+.square-detail .property-hand__info strong {
+  color: var(--hf-board-ink);
+}
+
+.square-detail .property-hand__actions {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.square-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hf-space-12);
+  color: var(--hf-board-ink);
+}
+
+.square-list__heading {
+  margin: 0 0 var(--hf-space-4);
+  color: var(--hf-zone-ink);
+  font: var(--hf-type-label);
+  letter-spacing: var(--hf-track-label);
+  text-transform: uppercase;
+}
+
+.square-list__items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hf-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.square-list__item {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--hf-space-12);
+  width: 100%;
+  min-height: var(--hf-target);
+  padding: 0 var(--hf-space-12);
+  border: 1px solid var(--hf-board-ink);
+  border-radius: var(--hf-radius-control);
+  background: var(--hf-paper);
+  color: var(--hf-board-ink);
+  text-align: left;
+  text-transform: none;
+  cursor: pointer;
+}
+
+.square-list__item:hover {
+  background: #fff;
+}
+
+.square-list__chip {
+  align-self: stretch;
+  border-radius: 2px;
+  background: var(--group-color);
+}
+
+.square-list__name {
+  min-width: 0;
+  overflow: hidden;
+  font: var(--hf-type-display-s);
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.square-list__price,
+.square-list__owner {
+  font: var(--hf-type-body-small);
+  font-variant-numeric: tabular-nums;
+}
+
+.square-list__owner {
+  min-width: 72px;
+  color: var(--hf-zone-ink);
+  text-align: right;
+}

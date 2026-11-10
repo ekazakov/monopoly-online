@@ -1,3 +1,4 @@
+import { SQUARES, isProperty } from "@monopoly/game-engine";
 import { useQuery } from "@tanstack/react-query";
 import { Navigate, getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
@@ -23,6 +24,12 @@ import { ConnectionBanner } from "./game/ConnectionBanner.tsx";
 import { GameLayout } from "./game/GameLayout.tsx";
 import { PhaseModal } from "./game/modal/index.ts";
 import { CardNotice, useCardNotice } from "./game/flows/card/index.ts";
+import {
+  SquareDialogs,
+  SquareViewProvider,
+  SquaresButton,
+  useSquareView,
+} from "./game/square/index.ts";
 import { TurnToast } from "./game/toast/index.ts";
 import { LeaveGameMenu } from "./game/flows/leave/index.ts";
 import { SavedNotice } from "./game/flows/saved/index.ts";
@@ -142,40 +149,45 @@ function GameRoute({ gameId }: { gameId: string }) {
   return (
     <GameActionsContext value={actions}>
       <MotionProvider>
-        <ConnectionBanner />
-        <GameLayout
-          rail={<PlayerRail userId={userId} />}
-          log={<GameLog userId={userId} />}
-          board={<Board userId={userId} />}
-          centre={
-            <Centre
-              userId={userId}
-              loadFailed={state.isError && state.data === undefined}
-              saved={saved}
-              onSavedOk={() => void navigate({ to: "/" })}
-            />
-          }
-          hand={<PropertyHand userId={userId} />}
-          menu={
-            <>
-              {methods?.debug === true && <DebugPanel userId={userId} />}
-              <LeaveGameMenu userId={userId} onLeft={() => void navigate({ to: "/" })} />
-            </>
-          }
-          overlay={<Overlay userId={userId} />}
-        />
+        <SquareViewProvider>
+          <ConnectionBanner />
+          <GameLayout
+            rail={<PlayerRail userId={userId} />}
+            log={<GameLog userId={userId} />}
+            board={<Board userId={userId} />}
+            centre={
+              <Centre
+                userId={userId}
+                loadFailed={state.isError && state.data === undefined}
+                saved={saved}
+                onSavedOk={() => void navigate({ to: "/" })}
+              />
+            }
+            hand={<PropertyHand userId={userId} />}
+            menu={
+              <>
+                <SquaresButton />
+                {methods?.debug === true && <DebugPanel userId={userId} />}
+                <LeaveGameMenu userId={userId} onLeft={() => void navigate({ to: "/" })} />
+              </>
+            }
+            overlay={<Overlay userId={userId} />}
+          />
+        </SquareViewProvider>
       </MotionProvider>
     </GameActionsContext>
   );
 }
 
-// Above the regions: the turn toast, and a modal dialog: the drawn card, or the phase. The toast is
+// Above the regions: the turn toast, the square dialogs, and a modal dialog: the drawn card, or the phase. The toast is
 // not a dialog: it shows on every device at once, with no confirm step (spec 5.3).
 function Overlay({ userId }: { userId: string }) {
   const card = useCardNotice(userId);
   return (
     <>
       <TurnToast userId={userId} />
+      {/* The square dialogs come first in the DOM, so a card or a phase dialog lies above them. */}
+      <SquareDialogs userId={userId} />
       {card ? <CardNotice notice={card} /> : <PhaseModal userId={userId} />}
     </>
   );
@@ -186,13 +198,25 @@ function Board({ userId }: { userId: string }) {
   const { game, state } = useGame(userId);
   const reducedMotion = useReducedMotion();
   const motion = useMotionPlayback();
+  const { detail, openDetail } = useSquareView();
   const players = useMemo<ScenePlayer[]>(
     () => (game?.seats ?? []).map((seat) => ({ id: seat.id, name: seat.name, token: seat.token })),
     [game],
   );
   return (
     <div className="game-board">
-      <BoardScene state={state} players={players} motion={motion} reducedMotion={reducedMotion} />
+      <BoardScene
+        state={state}
+        players={players}
+        motion={motion}
+        reducedMotion={reducedMotion}
+        highlightSquare={detail}
+        onSquareClick={(square) => {
+          // Only properties have a detail (R-B5). The other squares do nothing.
+          const info = SQUARES[square];
+          if (info && isProperty(info)) openDetail(square);
+        }}
+      />
     </div>
   );
 }

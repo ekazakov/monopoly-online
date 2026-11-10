@@ -182,6 +182,8 @@ Fonts load from Google Fonts: Barlow 500/600 and Barlow Condensed 600/700.
 - **Style:** `#121f2a` fill, `#2c4254` border, 14/600 uppercase label "Menu".
 - **Opens:** settings, rules, sound, leave game. The session owner also gets save and exit, and finish game (gameplay doc 3.1, R-G9). Design: the "Owner controls" board.
 
+**Squares button (BUG-13, 2026-11-10):** a "Squares" button sits next to the Menu, with the same style. It opens a modal dialog "Properties": every property in colour groups, with its price and owner. Picking one opens the square detail (R-B5). It is the way to the detail for the keyboard, a screen reader and a device with no WebGL.
+
 ### 4.3 Player rail
 
 There is one row per player. Each row is a flex row with a 10px gap, centred on the cross axis.
@@ -423,7 +425,7 @@ Rules:
 - **R-B2 MUST** [Gap] Show player tokens on their squares. More than one token on a square is offset or fanned.
 - **R-B3 MUST** [Gap] Show square names and prices, special-square icons (Chance, Chest, Tax, Station, Utility) and the four corners. Reuse the Game parts components.
 - **R-B4 MUST** [Gap] Show ownership as an owner-colour marker on each owned square, plus houses (1–4) and hotels. The marker must not cover the square's price (BUG-9).
-- **R-B5 SHOULD** [Gap] Highlight the last move path briefly, and let players tap a square to see its title deed. The square detail is a modal dialog with the full deed and, for the property owner, the property actions. Keyboard and no-WebGL users get the same dialog from a list of squares (BUG-13).
+- **R-B5 SHOULD** [Done] Let players click or tap a property square (street, station or utility) to open the square detail: a modal dialog with the full title deed, the owner, the buildings and the mortgage state and, for the owner on this device, the property actions (Build, Sell building, Mortgage, Unmortgage) with the reason when one is refused. The server stays the authority. Other squares do nothing. The square is highlighted while the dialog is open. Keyboard and no-WebGL users get the same dialog from the Squares button (4.2). Still a gap: highlight the last move path briefly.
 
 ### 8.4 Turn actions (board centre)
 

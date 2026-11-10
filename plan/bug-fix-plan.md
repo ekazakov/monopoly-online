@@ -265,11 +265,11 @@ Tasks:
 ### Interactive board squares (BUG-13)
 
 - The click path exists. `scene/Tile.tsx:11-51` has an `onSelect` prop with `onClick` (a drag of more than 5px is not a click), hover and `useCursor`. `scene/BoardScene.tsx` passes `onSquareClick`. But `Board` in `screens/GameScreen.tsx:170-182` does not pass `onSquareClick`.
-- [ ] Pass `onSquareClick` for streets, stations and utilities. Open the modal dialog (phase 3) with the full deed (phase 2), the property owner, the buildings and the mortgage state.
-- [ ] Move `Detail` and `ActionButton` and the seat choice out of `hand/PropertyHand.tsx` (lines 134-245, 403-420) into shared parts. Use them in the hand and in the dialog.
-- [ ] Gate the actions with `propertyActions` (`hand/propertyActions.ts:135`) and `mayActWith`. Send the same actions: `Build`, `SellBuilding`, `Mortgage`, `Unmortgage` through `actions.send`. The server stays the authority.
-- [ ] Keyboard and no-WebGL access: the Canvas is `aria-hidden` (`BoardScene.tsx:273`) and `Unavailable` has no board. Add an accessible list of squares (buttons) that opens the same dialog. This is the largest new part.
-- [ ] Tests: dialog content, actions enabled and disabled, keyboard path.
+- [x] Pass `onSquareClick` for streets, stations and utilities. Open the modal dialog (phase 3) with the full deed (phase 2), the property owner, the buildings and the mortgage state.
+- [x] Move `Detail` and `ActionButton` and the seat choice out of `hand/PropertyHand.tsx` (lines 134-245, 403-420) into shared parts. Use them in the hand and in the dialog.
+- [x] Gate the actions with `propertyActions` (`hand/propertyActions.ts:135`) and `mayActWith`. Send the same actions: `Build`, `SellBuilding`, `Mortgage`, `Unmortgage` through `actions.send`. The server stays the authority.
+- [x] Keyboard and no-WebGL access (decided 2026-11-10: a "Squares" button in the top bar opens a list dialog; only properties are clickable on the board): the Canvas is `aria-hidden` (`BoardScene.tsx:273`) and `Unavailable` has no board. Add an accessible list of squares (buttons) that opens the same dialog. This is the largest new part.
+- [x] Tests: dialog content, actions enabled and disabled, keyboard path.
 - Spec: R-B5 ("tap a square to see its title deed").
 
 ## Open decisions

@@ -11,7 +11,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--hf-space-16);
+  /* The top bar lies above the scrim, so a tall dialog starts below it and keeps its title and Close button in view. */
+  padding: calc(var(--game-top-h, 44px) + var(--hf-space-8)) var(--hf-space-16) var(--hf-space-16);
   background: rgba(5, 10, 15, 0.7);
 }
 
@@ -29,10 +30,19 @@
   color: var(--hf-board-ink);
 }
 
-.modal__inner {
+/* A flex column with a maximum height: the body shrinks and scrolls when the content is taller than
+   the window, and the title and the Close button stay in view. `max-height: 100%` on the inner box
+   alone does nothing, because the dialog has no fixed height. */
+.modal[open] {
   display: flex;
   flex-direction: column;
-  max-height: 100%;
+}
+
+.modal__inner {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .modal__head {
@@ -70,6 +80,8 @@
   align-items: center;
   gap: 20px;
   padding: var(--hf-space-16) var(--hf-space-24) var(--hf-space-24);
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: hidden auto;
   text-align: center;
 }
