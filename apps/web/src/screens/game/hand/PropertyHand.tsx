@@ -472,13 +472,23 @@ export function PropertyHand({ userId }: PropertyHandProps) {
           className="property-hand__tab"
           aria-expanded={open}
           aria-controls={open ? panelId : undefined}
-          aria-label={`${title}, ${hand.count} ${hand.count === 1 ? "property" : "properties"}, ${money(hand.value)}`}
+          aria-label={
+            open
+              ? "Close property hand"
+              : `${title}, ${hand.count} ${hand.count === 1 ? "property" : "properties"}, ${money(hand.value)}`
+          }
           onClick={togglePinned}
         >
-          <span className="property-hand__token" aria-hidden="true">
-            <AvatarIcon kind={look.avatar} size={20} />
-          </span>
-          <span className="property-hand__count">{hand.count}</span>
+          {open ? (
+            <span aria-hidden="true">×</span>
+          ) : (
+            <>
+              <span className="property-hand__token" aria-hidden="true">
+                <AvatarIcon kind={look.avatar} size={20} />
+              </span>
+              <span className="property-hand__count">{hand.count}</span>
+            </>
+          )}
         </button>
         <div id={panelId} className="property-hand__body">
           {hand.count === 0 ? (

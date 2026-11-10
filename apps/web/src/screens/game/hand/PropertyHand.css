@@ -89,8 +89,19 @@
 }
 
 .property-hand__surface[data-open="true"] .property-hand__tab {
+  right: var(--hf-gutter);
   bottom: 100%;
+  left: auto;
+  min-height: 28px;
   margin-bottom: -1px;
+  padding: 0 var(--hf-space-8);
+  border: 0;
+  background: transparent;
+  font-size: 22px;
+}
+
+.property-hand__surface[data-open="true"] .property-hand__tab:hover {
+  background: transparent;
 }
 
 .property-hand__token {
