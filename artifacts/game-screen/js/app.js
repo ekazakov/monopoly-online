@@ -30,13 +30,15 @@ reset();
 let logSeq = 1, dlgSeq = 1;
 const P = (id) => S.players.find((p) => p.id === id);
 const reduced = () => S.reduceMotion;
-const handOwner = () => (S.situation === 'local' ? S.active : S.lastLocal);
+const handBase = () => (S.situation === 'local' ? S.active : S.lastLocal);
+// the seat switcher of the expanded hand (hot-seat): a local seat other than the one on turn
+const handOwner = () => (S.handSeat && P(S.handSeat)?.device === 'local' ? S.handSeat : handBase());
 const ownedBy = (id) => Object.entries(S.own).filter(([, o]) => o.owner === id).map(([i, o]) => ({ sq: SQUARES[+i], ...o }));
 
 // ---------- elements ----------
 const root = $('#root'), logbar = $('#logbar'), logEl = $('#log'), logToggle = $('#logToggle'), logFilters = $('#logFilters');
 const rail = $('#rail'), boardCol = $('#boardCol'), stage = $('#boardStage'), turn = $('#turn'), turnInner = $('#turnInner');
-const hand = $('#hand'), handLabel = $('#handLabel'), handoff = $('#handoff'), announceEl = $('#announce');
+const hand = $('#hand'), handTab = $('#handTab'), handPanel = $('#handPanel'), handSide = $('#handSide'), handWrap = $('#handWrap'), handoff = $('#handoff'), announceEl = $('#announce');
 logToggle.innerHTML = ICON.chevron;
 
 let board = null;
@@ -241,44 +243,155 @@ function placeTurn(r) {
 }
 new ResizeObserver(() => { if (!board) placeTurn(null); }).observe(boardCol);
 
-// ---------- hand ----------
-function renderHand() {
+// ---------- hand (4.6, redesigned for BUG-8, BUG-11, BUG-12) ----------
+// One grid with a column per group in both states. Collapsed: compact cards overlap downward, so the
+// colour band, name and price of every card show. Expanded: the same columns without overlap, a
+// side column with the owner, the seat switcher, the actions of the selected card and the debt bar.
+// There is no header and there are no group labels: the tab above the hand is the keyboard entry.
+let handMode = 'closed'; // closed | hover | pinned
+let handSel = null;      // square index of the selected card
+let handTimer = 0, debtShown = false;
+const handOpen = () => handMode !== 'closed';
+function setHandMode(m) {
+  if (m === handMode) return;
+  handMode = m;
+  if (m === 'closed') handSel = null;
+  applyHandMode();
+  renderHandSide();
+}
+function applyHandMode() {
+  const open = handOpen();
+  handWrap.dataset.open = String(open);
+  handWrap.dataset.pinned = String(handMode === 'pinned');
+  handTab.setAttribute('aria-expanded', String(open));
+  // the compact cards are a peek only: they are not in the tab order until the panel is open
+  hand.querySelectorAll('.card').forEach((c) => { c.tabIndex = open ? 0 : -1; });
+}
+const ownerOwes = () => S.phase === 'debt' && S.situation === 'local' && handOwner() === S.active;
+function allowedWindow(owner) {
+  return S.situation === 'local' && S.active === owner.id && ['start', 'doubles', 'resolved', 'debt'].includes(S.phase);
+}
+function cardActions(owner, o) {
+  const g = GROUPS[o.sq.group], mates = ownedBy(owner.id).filter((x) => x.sq.group === o.sq.group);
+  const street = o.sq.group !== 'station' && o.sq.group !== 'utility';
+  const h = o.houses || 0, debt = ownerOwes();
+  const win = allowedWindow(owner);
+  const out = [];
+  if (street) {
+    let why = '';
+    if (!win) why = 'Not in this phase';
+    else if (debt) why = 'Not while you owe money';
+    else if (mates.length < g.size) why = `Needs the full ${g.name} set`;
+    else if (mates.some((x) => x.mortgaged)) why = 'Unmortgage the set first';
+    else if (h >= 5) why = 'Already a hotel';
+    else if (owner.cash < o.sq.houseCost) why = 'Not enough cash';
+    out.push({ a: 'build', label: h === 4 ? `Hotel ${fmt(o.sq.houseCost)}` : `Build ${fmt(o.sq.houseCost)}`, why });
+    out.push({ a: 'sell', label: `Sell +${fmt(o.sq.houseCost / 2)}`, why: !win ? 'Not in this phase' : h === 0 ? 'No buildings' : '' });
+  }
+  const half = o.sq.price / 2;
+  let why = '';
+  if (!win) why = 'Not in this phase';
+  else if (!o.mortgaged && mates.some((x) => (x.houses || 0) > 0)) why = 'Sell the buildings first';
+  else if (o.mortgaged && owner.cash < Math.round(half * 1.1)) why = 'Not enough cash';
+  out.push({ a: 'mort', label: o.mortgaged ? `Unmortgage ${fmt(Math.round(half * 1.1))}` : `Mortgage +${fmt(half)}`, why });
+  return out;
+}
+function renderHandSide() {
   const owner = P(handOwner());
   const props = ownedBy(owner.id);
   const value = props.reduce((s, o) => s + o.sq.price, 0);
-  const remoteNote = S.situation === 'local' ? '' : ' (this device)';
-  handLabel.innerHTML = `${esc(owner.name)}'s properties${remoteNote} · <span class="v">${props.length} · ${fmt(value)}</span>`;
+  const locals = S.players.filter((p) => p.device === 'local' && !p.bankrupt);
+  const sel = handSel != null ? props.find((o) => o.sq.i === handSel) : null;
+  const remote = S.situation === 'local' ? '' : ' (this device)';
+  handSide.innerHTML = `
+    <div class="side-owner">
+      <span class="avatar sm" style="--pc:${owner.color}">${avatarSVG(owner.avatar, 20)}</span>
+      <div><p class="side-name">${esc(owner.name)}${remote}</p><p class="side-sub">${props.length} ${props.length === 1 ? 'property' : 'properties'} · ${fmt(value)}</p></div>
+    </div>
+    ${locals.length > 1 ? `<div class="seats" role="group" aria-label="Show the properties of">${locals.map((p) => `<button type="button" class="seat-pick" data-seat="${p.id}" aria-pressed="${p.id === owner.id}" style="--pc:${p.color}" aria-label="${esc(p.name)}">${esc(p.name)}</button>`).join('')}</div>` : ''}
+    <div class="sel" aria-live="polite">${sel ? `
+      <p class="sel-name">${esc(sel.sq.name)}</p>
+      <p class="sel-sub">${fmt(sel.sq.price)}${sel.mortgaged ? ' · mortgaged' : (sel.houses ? ` · ${sel.houses === 5 ? 'hotel' : sel.houses + ' house' + (sel.houses > 1 ? 's' : '')}` : '')}</p>
+      <div class="sel-actions">${cardActions(owner, sel).map((x) => `<button type="button" class="hf-outline" data-act="${x.a}" ${x.why ? 'disabled' : ''} ${x.why ? `aria-describedby="why-${x.a}"` : ''}>${x.label}</button>${x.why ? `<span class="why" id="why-${x.a}">${x.why}</span>` : ''}`).join('')}
+        <button type="button" class="hf-outline" data-act="deed">Title deed</button></div>` : '<p class="sel-empty">Select a card to build, mortgage or see its title deed.</p>'}</div>`;
+}
+function renderHand() {
+  const owner = P(handOwner());
+  const props = ownedBy(owner.id);
+  const owes = ownerOwes();
   const stacks = [];
   for (const gid of GROUP_ORDER) {
     const cards = props.filter((o) => o.sq.group === gid).sort((a, b) => a.sq.i - b.sq.i);
     if (!cards.length) continue;
     const g = GROUPS[gid];
-    const complete = cards.length === g.size;
-    stacks.push({ label: g.name, complete, color: g.color, cards: cards.map((o) => ({ ...o, name: o.sq.name, price: fmt(o.sq.price) })) });
+    stacks.push({ label: g.name, complete: cards.length === g.size, color: g.color, cards: cards.map((o) => ({ ...o, name: o.sq.name, price: fmt(o.sq.price) })) });
   }
   if (owner.cards) stacks.push({ label: 'Cards', jail: true, cards: Array.from({ length: owner.cards }, () => ({ name: 'Get out of jail free', price: 'Keep' })) });
+  const total = props.reduce((s, o) => s + o.sq.price, 0);
+  handWrap.style.setProperty('--first-n', String(stacks[0]?.cards.length ?? 1));
+  handTab.innerHTML = `<span class="avatar sm" style="--pc:${owner.color}">${avatarSVG(owner.avatar, 20)}</span><span class="tab-count">${props.length}</span><span class="tab-chev" aria-hidden="true">${ICON.chevron}</span>`;
+  handTab.setAttribute('aria-label', `${owner.name}'s properties, ${props.length}, ${fmt(total)}. ${handOpen() ? 'Collapse' : 'Expand'}`);
   hand.innerHTML = stacks.length ? stacks.map((s) => {
     const n = s.cards.length;
-    return `<div class="stack" style="--n:${n}" role="group" aria-label="${s.label}${n > 1 ? ', ' + n + ' cards' : ''}${s.complete ? ', set complete' : ''}">
-      <div class="stack-label">${s.label}${n > 1 ? ' · ' + n : ''}${s.complete ? `<span class="set" title="Set complete">${ICON.tick}<span class="sr-only">set complete</span></span>` : ''}</div>
-      <div class="stack-cards">${s.cards.map((k, i) => {
+    return `<div class="col" style="--n:${n}" role="group" aria-label="${s.label}${n > 1 ? ', ' + n + ' cards' : ''}${s.complete ? ', set complete' : ''}">
+      ${s.cards.map((k, i) => {
         const h = k.houses || 0;
         const pips = h === 5 ? ICON.hotel : ICON.house.repeat(h);
-        const desc = `${k.name}, ${k.price}${h === 5 ? ', hotel' : h ? `, ${h} house${h > 1 ? 's' : ''}` : ''}${k.mortgaged ? ', mortgaged' : ''}`;
-        return `<button type="button" class="card${k.mortgaged ? ' mortgaged' : ''}${s.jail ? ' jailcard' : ''}" style="--i:${i}" ${k.sq ? `data-sq="${k.sq.i}"` : 'data-jailcard="1"'} aria-label="${esc(desc)}. Open details">
-          <span class="band" style="${s.jail ? '' : `background:${s.color}`}"></span>
+        const desc = `${k.name}, ${k.price}${h === 5 ? ', hotel' : h ? `, ${h} house${h > 1 ? 's' : ''}` : ''}${k.mortgaged ? ', mortgaged' : ''}${s.complete ? ', set complete' : ''}`;
+        return `<button type="button" class="card${k.mortgaged ? ' mortgaged' : ''}${s.jail ? ' jailcard' : ''}${k.sq && k.sq.i === handSel ? ' selected' : ''}" style="--i:${i}" ${k.sq ? `data-sq="${k.sq.i}"` : 'data-jailcard="1"'} aria-label="${esc(desc)}" aria-pressed="${!!(k.sq && k.sq.i === handSel)}">
+          <span class="band" style="${s.jail ? '' : `background:${s.color}`}">${s.complete ? `<span class="set" title="Set complete">${ICON.tick}</span>` : ''}</span>
           <span class="row"><span class="nm">${esc(k.name)}</span><span class="pr">${k.price}</span></span>
           <span class="pips">${k.mortgaged ? '<span class="mtag">Mortgaged</span>' : pips}</span>
         </button>`;
-      }).join('')}</div>
+      }).join('')}
     </div>`;
-  }).join('') : '<p class="muted" style="padding-bottom:60px">No properties yet.</p>';
+  }).join('') : '<p class="muted none">No properties yet.</p>';
+  // a debt opens the panel by itself, once
+  if (owes && !debtShown) { debtShown = true; handMode = 'pinned'; }
+  if (!owes) debtShown = false;
+  applyHandMode();
+  renderHandSide();
 }
+// open on hover (about 150ms), close about 300ms after the pointer leaves; a click pins it; Esc closes
+handWrap.addEventListener('pointerenter', (e) => {
+  if (e.pointerType === 'touch') return;
+  clearTimeout(handTimer);
+  if (handMode === 'closed') handTimer = setTimeout(() => setHandMode('hover'), 150);
+});
+handWrap.addEventListener('pointerleave', (e) => {
+  if (e.pointerType === 'touch') return;
+  clearTimeout(handTimer);
+  if (handMode === 'hover') handTimer = setTimeout(() => setHandMode('closed'), 300);
+});
+handWrap.addEventListener('focusin', () => { if (handMode === 'closed' && !handTab.matches(':focus')) setHandMode('hover'); });
+handWrap.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && handOpen()) { e.stopPropagation(); setHandMode('closed'); handTab.focus(); }
+});
+handTab.addEventListener('click', () => setHandMode(handMode === 'pinned' ? 'closed' : 'pinned'));
 hand.addEventListener('click', (e) => {
   const b = e.target.closest('.card');
   if (!b) return;
-  if (b.dataset.sq) openSquare(+b.dataset.sq);
-  else dialog({ title: 'Get out of jail free', narrow: true, body: '<p class="muted">Keep this card until needed, or trade it. Use it from the jail options at the start of a turn in jail.</p>', actions: [{ label: 'Close', primary: true }] });
+  if (!handOpen() || handMode === 'hover') { handMode = 'pinned'; applyHandMode(); }
+  if (b.dataset.sq) handSel = +b.dataset.sq === handSel ? null : +b.dataset.sq;
+  else { handSel = null; dialog({ title: 'Get out of jail free', narrow: true, body: '<p class="muted">Keep this card until needed, or trade it. Use it from the jail options at the start of a turn in jail.</p>', actions: [{ label: 'Close', primary: true }] }); }
+  hand.querySelectorAll('.card').forEach((c) => { const on = !!c.dataset.sq && +c.dataset.sq === handSel; c.classList.toggle('selected', on); c.setAttribute('aria-pressed', String(on)); });
+  renderHandSide();
+});
+handSide.addEventListener('click', (e) => {
+  const seat = e.target.closest('[data-seat]');
+  if (seat) { S.handSeat = seat.dataset.seat; handSel = null; render(); return; }
+  const b = e.target.closest('[data-act]');
+  if (!b || handSel == null) return;
+  const owner = P(handOwner()), o = S.own[handSel], sq = SQUARES[handSel];
+  if (b.dataset.act === 'deed') { openSquare(handSel); return; }
+  if (b.dataset.act === 'build') { o.houses = (o.houses || 0) + 1; owner.cash -= sq.houseCost; addLog(owner.id, `{n} built on ${sq.name}.`, true); }
+  if (b.dataset.act === 'sell') { o.houses -= 1; owner.cash += sq.houseCost / 2; addLog(owner.id, `{n} sold a building on ${sq.name}.`, true); }
+  if (b.dataset.act === 'mort') {
+    if (o.mortgaged) { o.mortgaged = false; owner.cash -= Math.round(sq.price / 2 * 1.1); addLog(owner.id, `{n} unmortgaged ${sq.name}.`, true); }
+    else { o.mortgaged = true; owner.cash += sq.price / 2; addLog(owner.id, `{n} mortgaged ${sq.name}.`, true); }
+  }
+  board?.setOwnership(S.own);
+  render();
 });
 
 // ---------- handoff ----------
@@ -886,6 +999,7 @@ function renderProto() {
       <button type="button" data-st="device">This device: ${S.deviceConn}</button>
       <button type="button" data-st="owner" ${pressed(S.isOwner)}>This device is the owner</button>
       <button type="button" data-st="bankrupt" ${pressed(!!P('tove').bankrupt)}>Tove bankrupt</button>
+      <button type="button" data-st="all28" ${pressed(Object.keys(S.own).filter((i) => S.own[i].owner === 'marlow').length >= 28)}>Marlow owns all 28</button>
       <button type="button" data-st="mort" ${pressed(!!S.own[3]?.mortgaged)}>Kelp Court mortgaged</button></div></div>
     <div><h3>Board</h3><div class="opts">${[['angle', 'Angle view'], ['top', 'Top view']].map(([v, l]) => `<button type="button" data-view="${v}" ${pressed(S.view === v)}>${l}</button>`).join('')}<button type="button" data-st="log">Add log entry</button></div></div>
     <div><div class="opts"><button type="button" data-reset>Restart demo</button></div></div>`;
@@ -901,10 +1015,10 @@ protoPanel.addEventListener('click', (e) => {
     if (d.sit !== 'remote' && P(S.active).device === 'remote') S.active = S.lastLocal;
     if (d.sit === 'handoff' && S.active === S.lastLocal) S.active = locals.find((id) => id !== S.lastLocal);
     if (d.sit === 'local') S.lastLocal = S.active;
-    S.situation = d.sit; S.scripted = false;
+    S.situation = d.sit; S.scripted = false; S.handSeat = null;
   } else if (d.player) {
     const p = P(d.player);
-    S.active = p.id; S.scripted = false;
+    S.active = p.id; S.scripted = false; S.handSeat = null;
     S.situation = p.device === 'remote' ? 'remote' : 'local';
     if (p.device === 'local') S.lastLocal = p.id;
   } else if (d.phase) {
@@ -929,6 +1043,12 @@ protoPanel.addEventListener('click', (e) => {
     if (d.st === 'card') P('marlow').cards = P('marlow').cards ? 0 : 1;
     if (d.st === 'conn') { const p = P('ravi'); p.conn = { online: 'reconnecting', reconnecting: 'away', away: 'online' }[p.conn]; }
     if (d.st === 'device') S.deviceConn = { online: 'reconnecting', reconnecting: 'closed', closed: 'online' }[S.deviceConn];
+    if (d.st === 'all28') {
+      const all = SQUARES.filter((q) => GROUP_ORDER.includes(q.group));
+      const has = all.every((q) => S.own[q.i]?.owner === 'marlow');
+      for (const q of all) { if (has) { if (!OWNERSHIP[q.i] || OWNERSHIP[q.i].owner !== 'marlow') delete S.own[q.i]; else S.own[q.i] = structuredClone(OWNERSHIP[q.i]); } else if (!S.own[q.i] || S.own[q.i].owner !== 'marlow') S.own[q.i] = { owner: 'marlow' }; }
+      board?.setOwnership(S.own);
+    }
     if (d.st === 'owner') S.isOwner = !S.isOwner;
     if (d.st === 'bankrupt') { const p = P('tove'); p.bankrupt = !p.bankrupt; board?.setTokenVisible('tove', !p.bankrupt); }
     if (d.st === 'mort') { S.own[3].mortgaged = !S.own[3].mortgaged; if (S.own[3].mortgaged) S.own[3].houses = 0; board?.setOwnership(S.own); }

@@ -37,8 +37,11 @@
   </main>
 
   <footer class="hand-wrap" id="handWrap">
-    <h2 class="hand-label" id="handLabel"></h2>
-    <div class="hand" id="hand"></div>
+    <div class="hand-panel" id="handPanel" role="group" aria-label="Properties">
+      <button type="button" class="hand-tab" id="handTab" aria-controls="handPanel" aria-expanded="false"></button>
+      <div class="hand" id="hand"></div>
+      <aside class="hand-side" id="handSide" aria-label="Property details"></aside>
+    </div>
   </footer>
 </div>
 
