@@ -16,11 +16,19 @@
 import { applyAction } from "@monopoly/game-engine";
 import type { Action } from "@monopoly/game-engine";
 import { LOBBY_TOPIC, RESUME_MAX_GAP } from "@monopoly/shared";
-import type { Game, GameEvent, Invite, LobbyGame, RedactedGameState } from "@monopoly/shared";
+import type {
+  EventLogEntry,
+  Game,
+  GameEvent,
+  Invite,
+  LobbyGame,
+  RedactedGameState,
+} from "@monopoly/shared";
 import type { Kysely } from "kysely";
 import type { Database } from "../db/schema.ts";
 import { deserializeState } from "../game/loader.ts";
 import type { GameStateLoader } from "../game/loader.ts";
+import { readEventLog } from "../game/event-log.ts";
 import { redactState } from "../game/redact.ts";
 import { gameTopic, userTopic } from "./messages.ts";
 import type { StreamEnvelope } from "./messages.ts";
@@ -50,13 +58,21 @@ export function planResume(input: {
   return gap <= (input.maxGap ?? RESUME_MAX_GAP) ? { kind: "replay" } : { kind: "snapshot" };
 }
 
-export function snapshotMessage(game: Game, state: RedactedGameState | null): StreamEnvelope {
+export function snapshotMessage(
+  game: Game,
+  state: RedactedGameState | null,
+  events?: EventLogEntry[],
+): StreamEnvelope {
   return {
     topic: gameTopic(game.id),
     type: "snapshot",
     version: state?.version ?? 0,
     // The room row can be a commit ahead of the state that was read. The pair must agree.
-    payload: { game: state ? { ...game, version: state.version } : game, state },
+    payload: {
+      game: state ? { ...game, version: state.version } : game,
+      state,
+      ...(events ? { events } : {}),
+    },
   };
 }
 
@@ -182,7 +198,8 @@ export function createTopicReader(options: TopicReaderOptions) {
       options.metrics?.resumed("snapshot");
       log.info({ gameId, lastEventId, version: current, reason }, "stream resumed with a snapshot");
     }
-    return { messages: [snapshotMessage(game, redactState(full))], covered: current };
+    const events = await readEventLog(db, gameId, current);
+    return { messages: [snapshotMessage(game, redactState(full), events)], covered: current };
   };
 }
 

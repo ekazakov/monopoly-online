@@ -1,5 +1,6 @@
 import { LOBBY_TOPIC } from "@monopoly/shared";
 import type {
+  EventLogEntry,
   Game,
   LobbyGame,
   PresenceStatus,
@@ -105,13 +106,21 @@ export function createPublishers(bus: Bus<StreamEnvelope>) {
       });
     },
     /** Finish, Save and Restore: every device of the game gets the new game and state. */
-    onSnapshot({ game, state }: { game: Game; state: RedactedGameState }) {
+    onSnapshot({
+      game,
+      state,
+      events,
+    }: {
+      game: Game;
+      state: RedactedGameState;
+      events: EventLogEntry[];
+    }) {
       const topic = gameTopic(game.id);
       bus.publish(topic, {
         topic,
         type: "snapshot",
         version: state.version,
-        payload: { game, state },
+        payload: { game, state, events },
       });
     },
     onRoomEvent(event: RoomEvent) {

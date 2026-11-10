@@ -1,7 +1,8 @@
-import type { Game, RedactedGameState } from "@monopoly/shared";
+import type { EventLogEntry, Game, RedactedGameState } from "@monopoly/shared";
 import type { Kysely, Transaction } from "kysely";
 import type { Database } from "../db/schema.ts";
 import type { GameStateLoader } from "./loader.ts";
+import { readEventLog } from "./event-log.ts";
 import { redactState } from "./redact.ts";
 import { GameServiceError } from "./service.ts";
 import type { GameService } from "./service.ts";
@@ -11,6 +12,8 @@ import { createSilentLogger, type Logger } from "../log.ts";
 export interface LifecycleSnapshot {
   game: Game;
   state: RedactedGameState;
+  /** The whole event log of the game, so a reloaded page keeps the earlier events. */
+  events: EventLogEntry[];
 }
 
 export interface LifecycleServiceOptions {
@@ -77,6 +80,7 @@ export function createLifecycleService(options: LifecycleServiceOptions): Lifecy
     const game = await readGame(gameId);
     const state = await loader.load(gameId);
     if (!state) throw new Error(`Game ${gameId} has no state`);
+    const events = await readEventLog(db, gameId, state.version);
     // The change is committed. A failing subscriber must not turn it into an error.
     try {
       before?.(game);
@@ -84,7 +88,7 @@ export function createLifecycleService(options: LifecycleServiceOptions): Lifecy
       log.error({ err, gameId }, "room subscriber failed");
     }
     try {
-      onSnapshot?.({ game, state: redactState(state) });
+      onSnapshot?.({ game, state: redactState(state), events });
     } catch (err) {
       log.error({ err, gameId }, "snapshot subscriber failed");
     }

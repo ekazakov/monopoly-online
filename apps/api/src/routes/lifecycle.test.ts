@@ -114,7 +114,11 @@ describe("game lifecycle routes", () => {
       topic: gameTopic(started.game.id),
       type: "snapshot",
       version: game.version,
-      payload: { game, state: redactState({ ...turnStart, version: game.version }) },
+      payload: {
+        game,
+        state: redactState({ ...turnStart, version: game.version }),
+        events: expect.any(Array),
+      },
     });
   });
 
@@ -206,7 +210,11 @@ describe("game lifecycle routes", () => {
           topic: gameTopic(started.game.id),
           type: "snapshot",
           version: game.version,
-          payload: { game, state: redactState({ ...turnStart, version: game.version }) },
+          payload: {
+            game,
+            state: redactState({ ...turnStart, version: game.version }),
+            events: expect.any(Array),
+          },
         },
       ]);
     });
@@ -353,7 +361,7 @@ describe("game lifecycle routes", () => {
           topic: gameTopic(started.game.id),
           type: "snapshot",
           version: saved.version,
-          payload: { game, state: redactState(savedState) },
+          payload: { game, state: redactState(savedState), events: expect.any(Array) },
         },
       ]);
     });

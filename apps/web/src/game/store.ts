@@ -2,6 +2,7 @@ import type {
   ActionResponse,
   Game,
   GameEvent,
+  EventLogEntry,
   PresenceStatus,
   RedactedGameState,
   StreamMessage,
@@ -76,11 +77,26 @@ function lastLoggedVersion(prev: GameStoreState): number {
   return prev.events[prev.events.length - 1]?.version ?? -1;
 }
 
+/**
+ * The log of a snapshot. The server sends the whole log, so it replaces the events kept so far.
+ * The cap applies the same way as for live events.
+ */
+function logFromEntries(
+  entries: readonly EventLogEntry[],
+): Pick<GameStoreState, "events" | "droppedEvents"> {
+  const all = entries.flatMap((entry) =>
+    entry.events.map((event) => ({ version: entry.version, event })),
+  );
+  const dropped = Math.max(0, all.length - MAX_LOGGED_EVENTS);
+  return { events: dropped > 0 ? all.slice(dropped) : all, droppedEvents: dropped };
+}
+
 /** The server is the authority: a snapshot replaces the game and the state. */
 function applySnapshot(
   prev: GameStoreState,
   game: Game,
   state: RedactedGameState | null,
+  entries?: readonly EventLogEntry[],
 ): GameStoreState {
   const version = state?.version ?? 0;
   const sameGame = prev.game?.id === game.id;
@@ -92,6 +108,8 @@ function applySnapshot(
     game.status === "active" &&
     prev.game?.status === "active";
   const sameVersion = keepLog && version === prev.version;
+  // A snapshot without `events` (an older server, or a game with no state) keeps the old rule.
+  const logged = entries ? logFromEntries(entries) : null;
   return {
     ...prev,
     game,
@@ -99,8 +117,8 @@ function applySnapshot(
     version,
     // The server forgets the presence of a game that is not active.
     presence: sameGame && game.status === "active" ? prev.presence : {},
-    events: keepLog ? prev.events : [],
-    droppedEvents: keepLog ? prev.droppedEvents : 0,
+    events: logged ? logged.events : keepLog ? prev.events : [],
+    droppedEvents: logged ? logged.droppedEvents : keepLog ? prev.droppedEvents : 0,
     lastActionEvents: sameVersion ? prev.lastActionEvents : [],
     status: "ready",
     gapDetected: false,
@@ -133,7 +151,7 @@ function applyNewerState(
 export function applyStreamMessage(prev: GameStoreState, message: StreamMessage): GameStoreState {
   const gameId = topicGameId(message.topic);
   if (message.type === "snapshot") {
-    return applySnapshot(prev, message.payload.game, message.payload.state);
+    return applySnapshot(prev, message.payload.game, message.payload.state, message.payload.events);
   }
   // A message of another game, for example a late one after the user left for another room.
   if (prev.game && prev.game.id !== gameId) return prev;

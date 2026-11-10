@@ -69,10 +69,25 @@ const message = <T extends (typeof streamMessageTypes)[number], P extends z.ZodT
     payload,
   });
 
-/** Sent on connect, at start (version 0) and on a resume that cannot replay. */
+/** The events of one accepted action, with the engine version after it. */
+export const eventLogEntrySchema = z.strictObject({
+  version: z.number().int().nonnegative(),
+  events: z.array(gameEventSchema),
+});
+
+export type EventLogEntry = z.infer<typeof eventLogEntrySchema>;
+
+/**
+ * Sent on connect, at start (version 0) and on a resume that cannot replay. `events` is the whole
+ * log of the game up to `state.version`, so a page that was reloaded can show the earlier events.
+ */
 export const snapshotMessageSchema = message(
   "snapshot",
-  z.strictObject({ game: gameSchema, state: redactedGameStateSchema.nullable() }),
+  z.strictObject({
+    game: gameSchema,
+    state: redactedGameStateSchema.nullable(),
+    events: z.array(eventLogEntrySchema).optional(),
+  }),
 );
 
 /** Join, leave, seat add or remove. */

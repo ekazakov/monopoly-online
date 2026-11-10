@@ -1,4 +1,6 @@
 import { describe, expect, test, vi } from "vite-plus/test";
+import { snapshotMessageSchema } from "@monopoly/shared";
+import type { EventLogEntry } from "@monopoly/shared";
 import {
   actionResponse,
   actionsMessage,
@@ -9,6 +11,7 @@ import {
   snapshotMessage,
   roomOf,
   withStatus,
+  topicOf,
 } from "./fixtures.ts";
 import {
   applyActionResponse,
@@ -471,5 +474,58 @@ describe("presence.updated", () => {
     expect(listener).toHaveBeenCalledTimes(1);
     store.reset();
     expect(store.getState().presence).toEqual({});
+  });
+});
+
+describe("snapshot event log", () => {
+  const entryOf = (step: typeof s1): EventLogEntry => ({
+    version: step.state.version,
+    events: step.events,
+  });
+  /** A snapshot that carries the whole event log, as the API sends it. */
+  const withLog = (state: typeof s1.state, events: EventLogEntry[]) =>
+    snapshotMessageSchema.parse({
+      topic: topicOf(fx.game),
+      type: "snapshot",
+      version: state.version,
+      payload: { game: fx.game, state, events },
+    });
+
+  test("a snapshot with events fills the log after a refresh", () => {
+    const next = applyStreamMessage(
+      initialGameState,
+      withLog(s2.state, [entryOf(s1), entryOf(s2)]),
+    );
+    expect(next.events).toEqual([
+      ...s1.events.map((event) => ({ version: s1.state.version, event })),
+      ...s2.events.map((event) => ({ version: s2.state.version, event })),
+    ]);
+    expect(next.droppedEvents).toBe(0);
+    expect(next.lastActionEvents).toEqual([]);
+    expect(next.version).toBe(s2.state.version);
+  });
+
+  test("a snapshot with events replaces the log kept so far", () => {
+    const live = apply(initialGameState, start, actionsMessage(fx.game, s1));
+    const next = applyStreamMessage(live, withLog(s2.state, [entryOf(s1), entryOf(s2)]));
+    expect(next.events).toHaveLength(s1.events.length + s2.events.length);
+    expect(next.lastActionEvents).toEqual([]);
+  });
+
+  test("a snapshot with an empty log clears the log", () => {
+    const live = apply(initialGameState, start, actionsMessage(fx.game, s1));
+    const next = applyStreamMessage(live, withLog(s1.state, []));
+    expect(next.events).toEqual([]);
+    expect(next.droppedEvents).toBe(0);
+  });
+
+  test("a snapshot with more events than the cap keeps the last ones", () => {
+    const event = s1.events[0];
+    if (!event) throw new Error("fixture step has no events");
+    const count = MAX_LOGGED_EVENTS + 5;
+    const entry: EventLogEntry = { version: s1.state.version, events: Array(count).fill(event) };
+    const next = applyStreamMessage(initialGameState, withLog(s1.state, [entry]));
+    expect(next.events).toHaveLength(MAX_LOGGED_EVENTS);
+    expect(next.droppedEvents).toBe(5);
   });
 });
