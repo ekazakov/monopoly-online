@@ -35,6 +35,10 @@ Some documents describe work before it was built. Check the source and tests bef
 
 Use the JetBrains MCP tools for code work when they are available. The `webstorm` server in `.mcp.json` connects to the WebStorm IDE. WebStorm must be open with this project for the tools to work.
 
+For code files (`.ts`, `.tsx`, `.js`, `.css`, `.sql`), do not read, search, or edit with `Read`, `Edit`, `Write`, `rg`, `grep`, `find`, `cat`, `head`, or `tail` while the `webstorm` tools are available. Use the `webstorm` tools. If the tools are deferred, load them first with ToolSearch (`select:mcp__webstorm__read_file,mcp__webstorm__search_text,mcp__webstorm__search_file,mcp__webstorm__apply_patch,mcp__webstorm__create_new_file`). Shell commands for `git`, `vp`, and `pnpm` are allowed. When a tool call is not possible, state the reason before you use a shell command.
+
+The `PreToolUse` hook `.claude/hooks/prefer-webstorm.py` enforces this rule. It blocks those calls only when WebStorm accepts a connection on the `webstorm` server address in `.mcp.json`. It never blocks Markdown, JSON, configuration, or files outside the repository. Set `WEBSTORM_HOOK=off` to turn it off for one session.
+
 - Discover the available `webstorm` tools before use. Some actions are available through `execute_tool` instead of a direct tool call. Check the action's parameters before calling it. Pass the repository root as `projectPath` when the tool accepts it.
 - Use `search_text` for text, `search_regex` for regular expressions, `search_file` for file paths with glob patterns, and `search_symbol` for symbols. Use project-relative glob patterns to limit searches.
 - Use `read_file` to read source files. It returns numbered lines and supports `offset` and `limit`. Use `get_symbol_info` to read the declaration and documentation of a symbol.
