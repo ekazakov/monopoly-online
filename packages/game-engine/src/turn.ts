@@ -4,7 +4,7 @@ import { getPlayer, movePlayer, sendToJail } from "./helpers.ts";
 import { advanceTurn } from "./turnflow.ts";
 import { handleJailRoll } from "./jail.ts";
 import { resolveLanding } from "./landing.ts";
-import { rollDice } from "./rng.ts";
+import { takeDice } from "./dice.ts";
 import type { GameEvent, GameState, Result } from "./state.ts";
 
 const MAX_DOUBLES = 3;
@@ -13,15 +13,14 @@ export function handleRollDice(state: GameState, action: ActionOf<"RollDice">): 
   const player = getPlayer(state, action.playerId);
   if (player.inJail) return handleJailRoll(state, player);
 
-  const roll = rollDice(state.rng);
-  const [first, second] = roll.value;
+  const roll = takeDice(state);
+  const [first, second] = roll.dice;
   const isDouble = first === second;
   const doubles = isDouble ? state.turn.doubles + 1 : 0;
-  const events: GameEvent[] = [{ type: "DiceRolled", playerId: player.id, dice: roll.value }];
+  const events: GameEvent[] = [{ type: "DiceRolled", playerId: player.id, dice: roll.dice }];
   let next: GameState = {
-    ...state,
-    rng: roll.rng,
-    turn: { ...state.turn, dice: roll.value, doubles },
+    ...roll.state,
+    turn: { ...state.turn, dice: roll.dice, doubles },
   };
 
   if (doubles === MAX_DOUBLES) {

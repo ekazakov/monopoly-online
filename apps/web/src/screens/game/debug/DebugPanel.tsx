@@ -1,6 +1,8 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
-import type { DebugChange, RedactedGameState } from "@monopoly/shared";
+import type { DebugChange, DeckName, RedactedGameState } from "@monopoly/shared";
+import { CHANCE_CARDS, CHEST_CARDS } from "@monopoly/game-engine";
+import { DECK_LABELS } from "../flows/card/cardText.ts";
 import { useGame, useGameActions } from "../../../game/index.ts";
 import {
   buildingLabel,
@@ -22,7 +24,8 @@ export interface DebugPanelProps {
 type Player = RedactedGameState["players"][number];
 type Send = (changes: DebugChange[], done: string) => Promise<void>;
 
-// The debug panel (spec 4.7): the player on turn edits cash, deeds and token squares to test the
+// The debug panel (spec 4.7): the player on turn edits cash, deeds, token squares, the next dice
+// roll and the top card of a deck to test the
 // game logic. It is a disclosure in place next to the Menu button, like the Leave game panel.
 // The edits go to the server as `DebugEdit` actions, so they stay in the game log.
 export function DebugPanel({ userId }: DebugPanelProps) {
@@ -137,6 +140,10 @@ export function DebugPanel({ userId }: DebugPanelProps) {
           />
 
           <TokenForm players={players} disabled={disabled} send={send} />
+
+          <DiceForm disabled={disabled} send={send} />
+
+          <CardForm disabled={disabled} send={send} />
 
           <p
             className={`debug-panel__status${status?.error ? " debug-panel__status--error" : ""}`}
@@ -368,6 +375,115 @@ function TokenForm({ players, disabled, send }: TokenFormProps) {
         <div className="debug-panel__actions">
           <button type="submit" className="debug-panel__btn" disabled={!target}>
             Move
+          </button>
+        </div>
+      </fieldset>
+    </form>
+  );
+}
+
+const DIE_VALUES = [1, 2, 3, 4, 5, 6] as const;
+
+// The next roll of the game, whoever rolls it: a turn roll, a jail roll or the utility rent roll.
+// The server keeps the values and uses them once. The panel does not show them later.
+function DiceForm({ disabled, send }: { disabled: boolean; send: Send }) {
+  const [dice, setDice] = useState<[number, number]>([1, 1]);
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    void send([{ kind: "next_dice", dice }], `The next roll is ${dice[0]} and ${dice[1]}.`);
+  };
+
+  return (
+    <form onSubmit={submit}>
+      <fieldset className="debug-panel__group" disabled={disabled}>
+        <legend className="debug-panel__legend">Next roll</legend>
+        {([0, 1] as const).map((die) => (
+          <label key={die} className="debug-panel__field">
+            <span className="debug-panel__label">Die {die + 1}</span>
+            <select
+              className="debug-panel__input"
+              value={dice[die]}
+              onChange={(event) => {
+                const value = Number(event.target.value);
+                setDice((prev) => (die === 0 ? [value, prev[1]] : [prev[0], value]));
+              }}
+            >
+              {DIE_VALUES.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </label>
+        ))}
+        <p className="debug-panel__hint">For one roll only, by any player.</p>
+        <div className="debug-panel__actions">
+          <button type="submit" className="debug-panel__btn">
+            Set
+          </button>
+        </div>
+      </fieldset>
+    </form>
+  );
+}
+
+const DECKS: readonly DeckName[] = ["chance", "chest"];
+
+// The card on top of a deck, for the next draw from it. The device does not know the deck order
+// or the held jail cards, so the list has every card. The server refuses a card that a player
+// holds.
+function CardForm({ disabled, send }: { disabled: boolean; send: Send }) {
+  const [deck, setDeck] = useState<DeckName>("chance");
+  const [cardIndex, setCardIndex] = useState(0);
+  const cards = deck === "chance" ? CHANCE_CARDS : CHEST_CARDS;
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    const title = cards[cardIndex]?.title ?? "The card";
+    void send(
+      [{ kind: "top_card", deck, cardIndex }],
+      `"${title}" is on top of ${DECK_LABELS[deck]}.`,
+    );
+  };
+
+  return (
+    <form onSubmit={submit}>
+      <fieldset className="debug-panel__group" disabled={disabled}>
+        <legend className="debug-panel__legend">Top card</legend>
+        <label className="debug-panel__field">
+          <span className="debug-panel__label">Deck</span>
+          <select
+            className="debug-panel__input"
+            value={deck}
+            onChange={(event) => {
+              setDeck(event.target.value as DeckName);
+              setCardIndex(0);
+            }}
+          >
+            {DECKS.map((name) => (
+              <option key={name} value={name}>
+                {DECK_LABELS[name]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="debug-panel__field">
+          <span className="debug-panel__label">Card</span>
+          <select
+            className="debug-panel__input"
+            value={cardIndex}
+            onChange={(event) => setCardIndex(Number(event.target.value))}
+          >
+            {cards.map((card, index) => (
+              <option key={index} value={index}>
+                {card.title}
+              </option>
+            ))}
+          </select>
+        </label>
+        <p className="debug-panel__hint">The next draw from this deck is this card.</p>
+        <div className="debug-panel__actions">
+          <button type="submit" className="debug-panel__btn">
+            Put on top
           </button>
         </div>
       </fieldset>

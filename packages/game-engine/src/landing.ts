@@ -6,7 +6,7 @@ import { owe } from "./debt.ts";
 import { charge, getPlayer, sendToJail } from "./helpers.ts";
 import { finishRoll } from "./turnflow.ts";
 import { entryOf, ownedInGroup, ownerOf, ownsFullGroup, setEntry } from "./ownership.ts";
-import { rollDice } from "./rng.ts";
+import { takeDice } from "./dice.ts";
 import { fail } from "./state.ts";
 import type { Failure, GameEvent, GameState, Result } from "./state.ts";
 
@@ -103,10 +103,10 @@ export function resolveLanding(
       let working = state;
       let amount: number;
       if (square.kind === "utility" && options.rollForUtility) {
-        const roll = rollDice(state.rng);
-        events.push({ type: "DiceRolled", playerId: player.id, dice: roll.value });
-        working = { ...state, rng: roll.rng };
-        amount = 10 * (roll.value[0] + roll.value[1]);
+        const roll = takeDice(state);
+        events.push({ type: "DiceRolled", playerId: player.id, dice: roll.dice });
+        working = roll.state;
+        amount = 10 * (roll.dice[0] + roll.dice[1]);
       } else {
         const diceTotal = (state.turn.dice?.[0] ?? 0) + (state.turn.dice?.[1] ?? 0);
         const multiplier = square.kind === "station" ? (options.stationRentMultiplier ?? 1) : 1;

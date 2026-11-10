@@ -115,7 +115,11 @@ export type DebugChange =
       readonly houses: number;
       readonly mortgaged: boolean;
     }
-  | { readonly kind: "position"; readonly targetId: string; readonly square: number };
+  | { readonly kind: "position"; readonly targetId: string; readonly square: number }
+  /** Puts a card of the deck on top, so the next draw from that deck is this card. */
+  | { readonly kind: "top_card"; readonly deck: DeckName; readonly cardIndex: number }
+  /** The values of the next dice roll of the game, for one roll only (see `nextDice`). */
+  | { readonly kind: "next_dice"; readonly dice: Dice };
 
 export interface TurnState {
   readonly currentPlayerId: string;
@@ -142,6 +146,12 @@ export interface GameState {
   /** Card indexes into the static decks, top card first. Held jail cards are not in the list. */
   readonly decks: Readonly<Record<DeckName, readonly number[]>>;
   readonly rng: RngState;
+  /**
+   * Set by the debug panel: the next roll of the game (a turn roll, a jail roll or the utility
+   * rent roll) uses these values, then the field clears. Missing in states saved before the field
+   * existed. It stays on the server, like `rng`.
+   */
+  readonly nextDice?: Dice | null;
 }
 
 export type GameEvent =

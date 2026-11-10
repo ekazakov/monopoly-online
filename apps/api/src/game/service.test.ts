@@ -165,6 +165,32 @@ describe("submitAction: replay", () => {
     expect(replayed?.ownership["37"]).toEqual({ ownerId: third, houses: 0, mortgaged: true });
   });
 
+  test("a set top card and set dice survive a replay and drive the next roll", async () => {
+    const card = initial.decks.chance.at(-1) as number;
+    const edited = await act(first, {
+      type: "DebugEdit",
+      changes: [
+        { kind: "top_card", deck: "chance", cardIndex: card },
+        { kind: "position", targetId: first, square: 4 },
+        { kind: "next_dice", dice: [1, 2] },
+      ],
+    });
+    // The override stays on the server: the state a device gets has no `nextDice` or decks.
+    expect(edited.state).not.toHaveProperty("nextDice");
+    expect(edited.state).not.toHaveProperty("decks");
+    const replayed = await createGameStateLoader(db).load(GAME_ID);
+    expect(replayed?.nextDice).toEqual([1, 2]);
+    expect(replayed?.decks.chance[0]).toBe(card);
+
+    const rolled = await act(first, { type: "RollDice" });
+    expect(rolled.events[0]).toEqual({ type: "DiceRolled", playerId: first, dice: [1, 2] });
+    expect(rolled.events.find((e) => e.type === "CardDrawn")).toMatchObject({
+      deck: "chance",
+      cardIndex: card,
+    });
+    expect((await loader.load(GAME_ID))?.nextDice).toBeNull();
+  });
+
   test("a debug batch with one bad change is refused and stores nothing", async () => {
     const before = await counts();
     const error = await failure(

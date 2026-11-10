@@ -219,6 +219,8 @@ Proposed direction for the prototype:
 
 ### Debug mode env variable (BUG-17)
 
+- The debug panel can also set the next dice roll and the top card of a deck (added 2026-11-10). These edits use `DebugEdit`, so the same flag gates them.
+
 **Decision:** only the API reads the variable. The web gets the value from the API at run time. The API refuses to start when the flag is on and `NODE_ENV` is `production`.
 
 Why this is not a one-line change:

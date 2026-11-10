@@ -6,7 +6,7 @@ import { charge, getPlayer, movePlayer, updatePlayer } from "./helpers.ts";
 import { advanceTurn } from "./turnflow.ts";
 import { resolveLanding } from "./landing.ts";
 import type { Landing } from "./landing.ts";
-import { rollDice } from "./rng.ts";
+import { takeDice } from "./dice.ts";
 import { fail, JAIL_FINE, MAX_JAIL_ATTEMPTS } from "./state.ts";
 import type { GameEvent, GameState, Player, Result } from "./state.ts";
 
@@ -60,14 +60,13 @@ export function handleUseJailCard(state: GameState, action: ActionOf<"UseJailCar
  * fine is mandatory, and the player moves the number just rolled.
  */
 export function handleJailRoll(state: GameState, player: Player): Result {
-  const roll = rollDice(state.rng);
-  const [first, second] = roll.value;
-  const events: GameEvent[] = [{ type: "DiceRolled", playerId: player.id, dice: roll.value }];
+  const roll = takeDice(state);
+  const [first, second] = roll.dice;
+  const events: GameEvent[] = [{ type: "DiceRolled", playerId: player.id, dice: roll.dice }];
   // `doubles` stays 0, so a double that frees the player gives no extra roll.
   const rolled: GameState = {
-    ...state,
-    rng: roll.rng,
-    turn: { ...state.turn, dice: roll.value, doubles: 0 },
+    ...roll.state,
+    turn: { ...state.turn, dice: roll.dice, doubles: 0 },
   };
 
   let next = rolled;

@@ -52,8 +52,9 @@ export type ActionsMatch = Expect<
   Equal<ActionInput, Mutable<DistributiveOmit<Action, "playerId">>>
 >;
 export type EventsMatch = Expect<Equal<GameEvent, Mutable<EngineEvent>>>;
+// `rng`, `decks` and the debug `nextDice` stay on the server.
 export type StateMatches = Expect<
-  Equal<RedactedGameState, Mutable<Omit<GameState, "rng" | "decks">>>
+  Equal<RedactedGameState, Mutable<Omit<GameState, "rng" | "decks" | "nextDice">>>
 >;
 export type ErrorCodesMatch = Expect<Equal<EngineErrorCode, GameErrorCode>>;
 
@@ -63,7 +64,8 @@ type WithoutResign = Exclude<ActionInput, { type: "Resign" }>;
 // @ts-expect-error a missing action is a drift
 export type MissingActionIsCaught = Expect<Equal<WithoutResign, EngineInput>>;
 
-const redact = ({ rng: _rng, decks: _decks, ...state }: GameState) => state;
+// The server state without the fields that stay on the server (`apps/api/src/game/redact.ts`).
+const redact = ({ rng: _rng, decks: _decks, nextDice: _nextDice, ...state }: GameState) => state;
 
 describe("constants", () => {
   test("the shared limits equal the engine limits", () => {
@@ -361,6 +363,11 @@ describe("debug edit", () => {
       ],
     },
     { type: "DebugEdit", changes: [{ kind: "position", targetId: "b", square: 30 }] },
+    {
+      type: "DebugEdit",
+      changes: [{ kind: "top_card", deck: "chance", cardIndex: state.decks.chance.at(-1)! }],
+    },
+    { type: "DebugEdit", changes: [{ kind: "next_dice", dice: [3, 4] }] },
   ];
 
   test.each(edits)(

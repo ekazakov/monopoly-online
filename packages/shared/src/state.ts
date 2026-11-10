@@ -98,6 +98,12 @@ export const debugChangeSchema = z.discriminatedUnion("kind", [
     mortgaged: z.boolean(),
   }),
   z.strictObject({ kind: z.literal("position"), targetId: playerIdSchema, square: squareSchema }),
+  z.strictObject({
+    kind: z.literal("top_card"),
+    deck: deckNameSchema,
+    cardIndex: z.number().int().nonnegative(),
+  }),
+  z.strictObject({ kind: z.literal("next_dice"), dice: diceSchema }),
 ]);
 
 export const turnSchema = z.strictObject({

@@ -4014,6 +4014,51 @@
                                   },
                                   "required": ["kind", "targetId", "square"],
                                   "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": ["top_card"]
+                                    },
+                                    "deck": {
+                                      "type": "string",
+                                      "enum": ["chance", "chest"]
+                                    },
+                                    "cardIndex": {
+                                      "type": "integer",
+                                      "minimum": 0
+                                    }
+                                  },
+                                  "required": ["kind", "deck", "cardIndex"],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": ["next_dice"]
+                                    },
+                                    "dice": {
+                                      "type": "array",
+                                      "prefixItems": [
+                                        {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 6
+                                        },
+                                        {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 6
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": ["kind", "dice"],
+                                  "additionalProperties": false
                                 }
                               ]
                             },
@@ -4943,6 +4988,51 @@
                                       }
                                     },
                                     "required": ["kind", "targetId", "square"],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": ["top_card"]
+                                      },
+                                      "deck": {
+                                        "type": "string",
+                                        "enum": ["chance", "chest"]
+                                      },
+                                      "cardIndex": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      }
+                                    },
+                                    "required": ["kind", "deck", "cardIndex"],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": ["next_dice"]
+                                      },
+                                      "dice": {
+                                        "type": "array",
+                                        "prefixItems": [
+                                          {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 6
+                                          },
+                                          {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 6
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": ["kind", "dice"],
                                     "additionalProperties": false
                                   }
                                 ]

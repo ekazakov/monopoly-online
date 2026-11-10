@@ -53,7 +53,7 @@ The management actions are `Build`, `SellBuilding`, `Mortgage`, `Unmortgage` and
 
 Any active player can `Resign` in any phase except `game_over`, also off turn. It is refused with `auction_running` while an auction runs.
 
-`DebugEdit` is a tool to test the game logic, not a rule. The player on turn can use it in the phases of the management actions and in `awaiting_debt`. It sets the cash of a player, gives a deed (with buildings and a mortgage) to a player or to the bank, or puts a token on a square with no landing. It checks only the shape of the change, so a state can break the build rules. One action holds a batch of changes that apply in order, all or nothing. Each change gives one `StateEdited` event.
+`DebugEdit` is a tool to test the game logic, not a rule. The player on turn can use it in the phases of the management actions and in `awaiting_debt`. It sets the cash of a player, gives a deed (with buildings and a mortgage) to a player or to the bank, puts a token on a square with no landing, puts a card on top of a deck, or sets the values of the next dice roll (`nextDice`, used once by the next turn, jail or utility rent roll, then cleared; it stays on the server like `rng`). It checks only the shape of the change, so a state can break the build rules. One action holds a batch of changes that apply in order, all or nothing. Each change gives one `StateEdited` event.
 
 Every action has a `playerId`. Use `actorFor(state)` to get the player who must act now, and `mayAct(state, type, playerId)` to check one action.
 

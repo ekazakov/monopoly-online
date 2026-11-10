@@ -170,6 +170,35 @@ describe("DebugPanel", () => {
     );
   });
 
+  test("sets the next dice roll", async () => {
+    const { send } = setup();
+    const user = await openPanel();
+    const roll = screen.getByRole("group", { name: "Next roll" });
+    await user.selectOptions(within(roll).getByLabelText("Die 1"), "3");
+    await user.selectOptions(within(roll).getByLabelText("Die 2"), "4");
+    await user.click(within(roll).getByRole("button", { name: "Set" }));
+    expect(send).toHaveBeenCalledWith(
+      { type: "DebugEdit", changes: [{ kind: "next_dice", dice: [3, 4] }] },
+      { seatId: a.id, source: "menu" },
+    );
+  });
+
+  test("puts a card on top of a deck", async () => {
+    const { send } = setup();
+    const user = await openPanel();
+    const top = screen.getByRole("group", { name: "Top card" });
+    await user.selectOptions(within(top).getByLabelText("Deck"), "chest");
+    await user.selectOptions(within(top).getByLabelText("Card"), "Bank error");
+    await user.click(within(top).getByRole("button", { name: "Put on top" }));
+    expect(send).toHaveBeenCalledWith(
+      { type: "DebugEdit", changes: [{ kind: "top_card", deck: "chest", cardIndex: 1 }] },
+      { seatId: a.id, source: "menu" },
+    );
+    expect(
+      await screen.findByText('"Bank error" is on top of Community Chest.'),
+    ).toBeInTheDocument();
+  });
+
   test("off turn the controls are disabled and say why", async () => {
     setup({ userId: fx.guestId });
     await openPanel();

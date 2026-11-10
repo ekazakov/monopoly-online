@@ -56,6 +56,21 @@ function applyChange(state: GameState, change: DebugChange): Result {
         freedOnTurn ? { ...moved, turn: { ...moved.turn, phase: "awaiting_roll" } } : moved,
       );
     }
+    case "top_card": {
+      const deck = state.decks[change.deck];
+      // A held Get Out of Jail Free card is not in the deck.
+      if (!deck || !deck.includes(change.cardIndex)) {
+        return fail("invalid_edit", `Card ${change.cardIndex} is not in the ${change.deck} deck`);
+      }
+      const order = [change.cardIndex, ...deck.filter((card) => card !== change.cardIndex)];
+      return done({ ...state, decks: { ...state.decks, [change.deck]: order } });
+    }
+    case "next_dice": {
+      if (!change.dice.every((die) => Number.isInteger(die) && die >= 1 && die <= 6)) {
+        return fail("invalid_edit", "Each die must be a whole number from 1 to 6");
+      }
+      return done({ ...state, nextDice: [change.dice[0], change.dice[1]] });
+    }
   }
 }
 

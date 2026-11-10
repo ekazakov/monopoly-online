@@ -139,6 +139,11 @@ function debugParts(change: DebugChange): LogPart[] {
       const tail = extras.length > 0 ? `, ${extras.join(", ")}` : "";
       return parts`${squareName(change.square)} given to ${who(change.ownerId)}${tail}.`;
     }
+    case "top_card":
+      // This tells every device the next card. That is acceptable in debug mode.
+      return parts`"${cardTitle(change.deck, change.cardIndex)}" put on top of ${deckLabel(change.deck)}.`;
+    case "next_dice":
+      return parts`next roll set to ${String(change.dice[0])} and ${String(change.dice[1])}.`;
   }
 }
 

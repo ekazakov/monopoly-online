@@ -127,3 +127,68 @@ describe("DebugEdit", () => {
     }
   });
 });
+
+describe("DebugEdit: next dice and top card", () => {
+  const roll = (state: GameState) =>
+    applyAction(state, { type: "RollDice", playerId: current(state) });
+
+  test("the next roll uses the set dice once, and the random state does not advance", () => {
+    const state = after(edit(game(), { kind: "next_dice", dice: [3, 4] }));
+    expect(state.nextDice).toEqual([3, 4]);
+    const from = player(state, current(state)).position;
+    const rolled = roll(state);
+    expect(rolled.ok && rolled.events[0]).toEqual({
+      type: "DiceRolled",
+      playerId: current(state),
+      dice: [3, 4],
+    });
+    // The first move is the dice total. A card square can move the token again after it.
+    expect(rolled.ok && rolled.events.find((e) => e.type === "PlayerMoved")).toMatchObject({
+      from,
+      to: (from + 7) % 40,
+    });
+    const next = after(rolled);
+    expect(next.nextDice).toBeNull();
+    expect(next.rng).toEqual(state.rng);
+  });
+
+  test("a state with no nextDice field rolls from the random state", () => {
+    const { nextDice: _, ...state } = game();
+    const rolled = after(roll(state));
+    expect(rolled.rng).not.toEqual(state.rng);
+  });
+
+  test("refuses a die out of 1 to 6", () => {
+    expect(code(edit(game(), { kind: "next_dice", dice: [0, 4] }))).toBe("invalid_edit");
+    expect(code(edit(game(), { kind: "next_dice", dice: [3, 7] }))).toBe("invalid_edit");
+    expect(code(edit(game(), { kind: "next_dice", dice: [2.5, 1] }))).toBe("invalid_edit");
+  });
+
+  test("puts a card on top of its deck, and the next draw is that card", () => {
+    const state = game();
+    const card = state.decks.chance.at(-1)!;
+    const edited = after(
+      editAll(state, [
+        { kind: "top_card", deck: "chance", cardIndex: card },
+        { kind: "position", targetId: current(state), square: 4 },
+        { kind: "next_dice", dice: [1, 2] },
+      ]),
+    );
+    expect(edited.decks.chance[0]).toBe(card);
+    expect(edited.decks.chance).toHaveLength(state.decks.chance.length);
+    const rolled = roll(edited);
+    expect(rolled.ok && rolled.events.find((e) => e.type === "CardDrawn")).toMatchObject({
+      deck: "chance",
+      cardIndex: card,
+    });
+  });
+
+  test("refuses a card that is not in the deck", () => {
+    const state = game();
+    const missing = { ...state, decks: { ...state.decks, chest: state.decks.chest.slice(1) } };
+    const held = state.decks.chest[0]!;
+    expect(code(edit(missing, { kind: "top_card", deck: "chest", cardIndex: held }))).toBe(
+      "invalid_edit",
+    );
+  });
+});

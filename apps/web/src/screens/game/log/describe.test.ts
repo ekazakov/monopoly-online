@@ -275,6 +275,12 @@ describe("describeEvent", () => {
     expect(text({ kind: "position", targetId: c.id, square: 10 })).toMatch(
       /^Ann \(debug\): Cy's token put on .+\.$/,
     );
+    expect(text({ kind: "top_card", deck: "chest", cardIndex: 1 })).toBe(
+      'Ann (debug): "Bank error" put on top of Chest.',
+    );
+    expect(text({ kind: "next_dice", dice: [3, 4] })).toBe(
+      "Ann (debug): next roll set to 3 and 4.",
+    );
   });
 
   test("card texts come from the decks", () => {
