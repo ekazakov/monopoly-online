@@ -148,11 +148,12 @@ The server sends the whole result in one action: roll, move to Chance, card, mov
 ### Card stacks in the board centre (BUG-7)
 
 - Now: the centre is one plane (`scene/BoardScene.tsx:213-220`, `geometries.centre` in `scene/resources.ts:17`). `centreTexture()` (`scene/textures.ts:267-293`) draws two dashed outlines at 45° with the labels "CHEST" and "CHANCE". In world units the places are about (-2.68, -2.68) and (+2.68, +2.68), each about 1.4 × 0.92, turned 45° on the y axis.
-- [ ] Add a stack of a few thin boxes for each deck, at those two places. Put a card-back texture on the top card. Use `makeTexture()` (`textures.ts:43`) and the existing colours `SURFACE.chance` and `SURFACE.chest`.
-- [ ] Add the geometry and materials to `createResources()`, as the `bar` and `marker` resources do.
-- [ ] Remove the dashed outlines and labels, or make them lighter.
-- [ ] Use a fixed stack height. The redacted state does not have the deck size (`packages/shared/src/state.ts:110`). Keep the deck order on the server.
-- [ ] Check that the turn area in the centre does not cover the stacks.
+- Decided (user, 2026-11-10): 5 thin cards per stack; the top card shows the deck colour, a light border and the deck name; the dashed outlines and labels are removed; the stacks are static.
+- [x] Add a stack of a few thin boxes for each deck, at those two places. Put a card-back texture on the top card. Use `makeTexture()` (`textures.ts:43`) and the existing colours `SURFACE.chance` and `SURFACE.chest`.
+- [x] Add the geometry and materials to `createResources()`, as the `bar` and `marker` resources do.
+- [x] Remove the dashed outlines and labels, or make them lighter.
+- [x] Use a fixed stack height. The redacted state does not have the deck size (`packages/shared/src/state.ts:110`). Keep the deck order on the server.
+- [x] Check by calculation (the pane was too small for a screenshot) that the turn area in the centre does not cover the stacks.
 - No-WebGL path: `Unavailable` (`BoardScene.tsx:50-59`) has no 2D board, so no change there. Reduced motion: no animation is added.
 
 ## Phase 5: property hand redesign

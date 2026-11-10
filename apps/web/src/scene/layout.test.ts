@@ -2,10 +2,16 @@ import { BOARD_SIZE } from "@monopoly/game-engine";
 import { describe, expect, test } from "vite-plus/test";
 import {
   BAR_Z,
+  CARD_COUNT,
+  CARD_D,
+  CARD_STACKS,
+  CARD_T,
+  CARD_W,
   CELL_H,
   MAX_SPREAD,
   RING,
   buildingSlots,
+  cardJitter,
   layoutTokens,
   localToWorld,
   squareCell,
@@ -200,5 +206,36 @@ describe("buildingSlots", () => {
   test("clamps a count outside 0 to 5", () => {
     expect(buildingSlots(-2)).toEqual([]);
     expect(buildingSlots(9)).toEqual(buildingSlots(5));
+  });
+});
+
+describe("card stacks", () => {
+  test("lie in opposite corners of the centre, turned 45° with the long side along the diagonal", () => {
+    const [chest, chance] = CARD_STACKS;
+    expect(chest).toMatchObject({ deck: "chest", x: -chance!.x, z: -chance!.z });
+    expect(chance!.x).toBe(chance!.z);
+    // The long axis of the card (local x) points along +x/+z, as the old dashed places did.
+    const axis = [Math.cos(chance!.rotation), -Math.sin(chance!.rotation)];
+    expect(axis[0]).toBeCloseTo(axis[1]!);
+    expect(axis[0]).toBeGreaterThan(0);
+  });
+
+  test("fit inside the centre field, under the height of the squares", () => {
+    const reach = Math.hypot(CARD_W, CARD_D) / 2;
+    for (const { x, z } of CARD_STACKS) {
+      expect(Math.abs(x) + reach / Math.SQRT2).toBeLessThan(3.6);
+      expect(Math.abs(z) + reach / Math.SQRT2).toBeLessThan(3.6);
+    }
+    expect(CARD_COUNT * CARD_T).toBeLessThan(CELL_H);
+  });
+
+  test("keep the jitter of a card small and the same on every call", () => {
+    for (let i = 0; i < CARD_COUNT; i++) {
+      const jitter = cardJitter(i);
+      expect(Math.abs(jitter.x)).toBeLessThanOrEqual(0.025);
+      expect(Math.abs(jitter.z)).toBeLessThanOrEqual(0.025);
+      expect(Math.abs(jitter.rotation)).toBeLessThanOrEqual(0.04);
+      expect(cardJitter(i)).toEqual(jitter);
+    }
   });
 });

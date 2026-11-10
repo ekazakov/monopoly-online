@@ -13,6 +13,7 @@ import { IDLE_PLAYBACK, isMove, restingSites, stepSquares } from "./motion.ts";
 import type { MotionPlayback } from "./motion.ts";
 import type { ScenePlayer } from "./model.ts";
 import { createResources } from "./resources.ts";
+import { CardStacks } from "./CardStacks.tsx";
 import { createBoardTextures, whenBoardFontsReady } from "./textures.ts";
 import { Tile } from "./Tile.tsx";
 import { Tokens, useStudioEnvironment } from "./Tokens.tsx";
@@ -218,6 +219,8 @@ function Scene({
       >
         <meshStandardMaterial map={textures.centre} roughness={0.85} />
       </mesh>
+
+      <CardStacks resources={resources} backs={textures.cardBacks} />
 
       {SQUARES.map((_, i) => (
         <Tile

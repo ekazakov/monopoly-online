@@ -1,6 +1,8 @@
 import * as THREE from "three";
 import type { Square } from "@monopoly/game-engine";
 import { GROUP_COLORS, SURFACE } from "./colors.ts";
+import { CARD_D, CARD_W } from "./layout.ts";
+import type { StackDeck } from "./layout.ts";
 
 export const DISPLAY = '"Barlow Condensed", "Arial Narrow", sans-serif';
 export const BODY = '"Barlow", system-ui, sans-serif';
@@ -283,31 +285,31 @@ export function cornerTexture(kind: CornerKind, anisotropy: number): THREE.Canva
   });
 }
 
-/** The plain centre field with the two card piles in opposite corners. */
+/** The plain centre field. The card stacks are 3D (`CardStacks`), so nothing is drawn on it. */
 export function centreTexture(anisotropy: number): THREE.CanvasTexture {
   return makeTexture(CENTRE_PX, CENTRE_PX, anisotropy, (g) => {
-    const w = CENTRE_PX;
     g.fillStyle = SURFACE.centre;
-    g.fillRect(0, 0, w, w);
-    const k = w / 720;
-    const zone = (cx: number, cy: number, label: string) => {
-      g.save();
-      g.translate(cx * k, cy * k);
-      g.rotate(Math.PI / 4);
-      g.setLineDash([14, 10]);
-      g.lineWidth = 5;
-      g.strokeStyle = "#3d5a4a";
-      g.strokeRect(-70 * k, -46 * k, 140 * k, 92 * k);
-      g.setLineDash([]);
-      g.fillStyle = SURFACE.zoneInk;
-      g.font = `700 ${18 * k}px ${DISPLAY}`;
-      g.textAlign = "center";
-      g.textBaseline = "middle";
-      g.fillText(label, 0, 0);
-      g.restore();
-    };
-    zone(92, 92, "CHEST");
-    zone(628, 628, "CHANCE");
+    g.fillRect(0, 0, CENTRE_PX, CENTRE_PX);
+  });
+}
+
+const CARD_LABELS = { chance: "CHANCE", chest: "CHEST" } as const;
+
+/** The back of the top card of a deck: the deck colour, a light inner border and the deck name. */
+export function cardBackTexture(deck: StackDeck, anisotropy: number): THREE.CanvasTexture {
+  const w = 560;
+  const h = Math.round((w * CARD_D) / CARD_W);
+  return makeTexture(w, h, anisotropy, (g) => {
+    g.fillStyle = SURFACE[deck];
+    g.fillRect(0, 0, w, h);
+    g.strokeStyle = SURFACE.paper;
+    g.lineWidth = 8;
+    g.strokeRect(24, 24, w - 48, h - 48);
+    g.fillStyle = SURFACE.paper;
+    g.font = `700 96px ${DISPLAY}`;
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.fillText(CARD_LABELS[deck], w / 2, h / 2);
   });
 }
 
@@ -327,6 +329,8 @@ export interface BoardTextures {
   /** White price text for the owner marker, per square index. Squares with no price have none. */
   prices: (THREE.CanvasTexture | undefined)[];
   centre: THREE.CanvasTexture;
+  /** The back of the top card of each deck. */
+  cardBacks: Record<StackDeck, THREE.CanvasTexture>;
   dispose(): void;
 }
 
@@ -352,14 +356,21 @@ export function createBoardTextures(squares: readonly Square[], anisotropy: numb
     return t;
   });
   const centre = centreTexture(anisotropy);
+  const cardBacks = {
+    chance: cardBackTexture("chance", anisotropy),
+    chest: cardBackTexture("chest", anisotropy),
+  };
   return {
     squares: faces,
     prices,
     centre,
+    cardBacks,
     dispose() {
       for (const t of faces) t.dispose();
       for (const t of byLabel.values()) t.dispose();
       centre.dispose();
+      cardBacks.chance.dispose();
+      cardBacks.chest.dispose();
     },
   };
 }

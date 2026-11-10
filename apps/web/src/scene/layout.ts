@@ -27,6 +27,35 @@ export const MARKER_DEPTH = 0.235;
 /** Local z of the owner marker: its outer side is flush with the outer edge of the square. */
 export const MARKER_Z = CELL_D / 2 - MARKER_DEPTH / 2;
 
+/** Card stacks in the board centre (BUG-7), where the old dashed places were. Size of one card. */
+export const CARD_W = 1.4;
+export const CARD_D = 0.92;
+export const CARD_T = 0.02;
+/**
+ * Cards in a stack. Fixed: the device does not know the deck size, and the server keeps the deck
+ * order.
+ */
+export const CARD_COUNT = 5;
+/** Distance of a stack from the middle of the board, on both axes. */
+const STACK_OFFSET = 2.68;
+
+export type StackDeck = "chest" | "chance";
+
+/** Both stacks lie on the diagonal, turned 45° like the places they replace. Rotation is about y. */
+export const CARD_STACKS: readonly { deck: StackDeck; x: number; z: number; rotation: number }[] = [
+  { deck: "chest", x: -STACK_OFFSET, z: -STACK_OFFSET, rotation: -Math.PI / 4 },
+  { deck: "chance", x: STACK_OFFSET, z: STACK_OFFSET, rotation: -Math.PI / 4 },
+];
+
+/** Offset and turn of the card at `index`, so the stack looks placed by hand. Fixed, not random. */
+export function cardJitter(index: number): { x: number; z: number; rotation: number } {
+  return {
+    x: Math.sin(index * 2.3) * 0.025,
+    z: Math.cos(index * 1.7) * 0.025,
+    rotation: Math.sin(index * 3.1) * 0.04,
+  };
+}
+
 export interface SquareCell {
   x: number;
   z: number;
