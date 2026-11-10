@@ -9,7 +9,7 @@ import { FOV, ORBIT, VIEW_DIRECTION, fitDistance } from "./camera.ts";
 import { layoutTokens } from "./layout.ts";
 import type { TokenSpot } from "./layout.ts";
 import { buildSceneModel } from "./model.ts";
-import { IDLE_PLAYBACK, restingSites, stepSquares } from "./motion.ts";
+import { IDLE_PLAYBACK, isMove, restingSites, stepSquares } from "./motion.ts";
 import type { MotionPlayback } from "./motion.ts";
 import type { ScenePlayer } from "./model.ts";
 import { createResources } from "./resources.ts";
@@ -160,7 +160,7 @@ function Scene({
   // Where the moving token ends, with the other tokens where they stand now.
   const landing = useMemo<TokenSpot | null>(() => {
     const step = motion.current;
-    if (!step || step.kind === "roll") return null;
+    if (!isMove(step)) return null;
     const to = stepSquares(step).at(-1)!;
     const state = model.tokens.find((t) => t.id === step.playerId);
     const after = sites.map((s) =>

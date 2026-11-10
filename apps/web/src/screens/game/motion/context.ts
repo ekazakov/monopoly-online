@@ -13,3 +13,10 @@ export function useMotionPlayback(): MotionPlayback {
 export function useMotionStep(): MotionStep | null {
   return useContext(MotionContext).current;
 }
+
+/** Ends the hold of a drawn card, so the token moves on. It does nothing when no hold waits. */
+export const MotionReleaseContext = createContext<() => void>(() => {});
+
+export function useMotionRelease(): () => void {
+  return useContext(MotionReleaseContext);
+}

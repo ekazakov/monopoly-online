@@ -31,6 +31,12 @@ function step(version: number, events: GameEvent[]): Step {
   return { state: { ...start, version }, events } as unknown as Step;
 }
 
+/** The parent of the dialog in the game screen: it owns the hook and shows the dialog. */
+function CardHost({ userId }: { userId: string }) {
+  const notice = useCardNotice(userId);
+  return notice ? <CardNotice notice={notice} /> : null;
+}
+
 function setup(userId = fx.ownerId) {
   const store = createGameStore();
   act(() => store.applyStreamMessage(snapshotMessage(fx.game, start)));
@@ -39,7 +45,7 @@ function setup(userId = fx.ownerId) {
   const tree = (
     <GameStoreProvider store={store}>
       <GameActionsContext value={actions}>
-        <CardNotice userId={userId} />
+        <CardHost userId={userId} />
       </GameActionsContext>
     </GameStoreProvider>
   );
@@ -50,11 +56,22 @@ function setup(userId = fx.ownerId) {
 }
 
 describe("CardNotice", () => {
-  test("shows nothing before a card is drawn, and keeps one root element when it shows", () => {
+  test("shows nothing before a card is drawn, and a dialog with the drawer when it shows", () => {
     const { container, apply } = setup();
     expect(container).toBeEmptyDOMElement();
     apply(1, [drawn(a.id, "chance", 8)]);
-    expect(container.children).toHaveLength(1);
+    expect(screen.getByRole("dialog", { name: "Ann drew a card" })).toBeInTheDocument();
+  });
+
+  test("Esc closes the card like OK, and the dialog has no Close button", async () => {
+    const { apply, send } = setup();
+    apply(1, [drawn(a.id, "chance", 8)]);
+    expect(screen.queryByRole("button", { name: "Close" })).not.toBeInTheDocument();
+    // A browser gives the first control the focus when the dialog opens; jsdom does not.
+    screen.getByRole("button", { name: "OK" }).focus();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("group")).not.toBeInTheDocument();
+    expect(send).not.toHaveBeenCalled();
   });
 
   test("shows a Chance card with its title, text and who drew it", () => {
@@ -64,7 +81,7 @@ describe("CardNotice", () => {
     expect(card).toHaveTextContent("Chance");
     expect(card).toHaveTextContent("Dividend");
     expect(card).toHaveTextContent("Collect $50.");
-    expect(screen.getByText("Ann drew a card")).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Ann drew a card" })).toBeInTheDocument();
   });
 
   test("shows a Community Chest card for a draw by a player on another device", () => {
@@ -73,7 +90,7 @@ describe("CardNotice", () => {
     const card = screen.getByRole("group", { name: "Community Chest card" });
     expect(card).toHaveTextContent("Bank error");
     expect(card).toHaveTextContent("Collect $200.");
-    expect(screen.getByText("Bo drew a card")).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Bo drew a card" })).toBeInTheDocument();
     expect(card.closest("[data-deck]")).toHaveAttribute("data-deck", "chest");
   });
 
@@ -100,7 +117,7 @@ describe("CardNotice", () => {
     expect(store.getState().lastActionEvents).toHaveLength(1);
     render(
       <GameStoreProvider store={store}>
-        <CardNotice userId={fx.ownerId} />
+        <CardHost userId={fx.ownerId} />
       </GameStoreProvider>,
     );
     expect(screen.queryByRole("group")).not.toBeInTheDocument();
@@ -110,7 +127,7 @@ describe("CardNotice", () => {
     const store = createGameStore();
     render(
       <GameStoreProvider store={store}>
-        <CardNotice userId={fx.ownerId} />
+        <CardHost userId={fx.ownerId} />
       </GameStoreProvider>,
     );
     act(() => store.applyStreamMessage(snapshotMessage(fx.game, { ...start, version: 9 })));

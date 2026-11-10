@@ -78,7 +78,7 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 
 ### BUG-5: Chance and Community Chest cards are not in modal dialogs (change request)
 
-- Status: open
+- Status: fixed (2026-11-10)
 - Reported: 2026-11-09
 - Area: web
 - Type: change request
@@ -227,7 +227,7 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 
 ### BUG-16: Token moves to the card's target cell before the player confirms the card (change request)
 
-- Status: open
+- Status: fixed (2026-11-10)
 - Reported: 2026-11-09
 - Area: web
 - Type: change request

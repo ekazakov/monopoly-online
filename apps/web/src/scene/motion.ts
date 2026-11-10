@@ -13,9 +13,19 @@ export type MotionStep =
    * true when the token leaves the jail cell with this move, so it waits in the cell until then.
    */
   | { kind: "walk"; playerId: string; from: number; fromJail: boolean; path: readonly number[] }
-  | { kind: "jump"; playerId: string; from: number; fromJail: boolean; to: number };
+  | { kind: "jump"; playerId: string; from: number; fromJail: boolean; to: number }
+  /**
+   * The player has drawn a card that moves their token. The token stays where it is and the queue
+   * waits, with no timer, until `release()` (OK on the card). `eventIndex` is the index of the
+   * `CardDrawn` event in the events of the action.
+   */
+  | { kind: "hold"; playerId: string; eventIndex: number };
 
 export type MoveStep = Extract<MotionStep, { kind: "walk" | "jump" }>;
+
+export function isMove(step: MotionStep | null | undefined): step is MoveStep {
+  return step?.kind === "walk" || step?.kind === "jump";
+}
 
 /** What is on screen now: the step that plays, and the steps that wait behind it. */
 export interface MotionPlayback {
@@ -40,6 +50,9 @@ export function stepDuration(step: MotionStep): number {
       return HOP_MS * step.path.length;
     case "jump":
       return JUMP_MS;
+    case "hold":
+      // No timer: a hold ends with `release()`.
+      return 0;
   }
 }
 
@@ -68,7 +81,7 @@ export function restingSites<T extends { id: string; square: number; inJail: boo
 ): T[] {
   const first = new Map<string, MoveStep>();
   for (const step of [playback.current, ...playback.waiting]) {
-    if (step && step.kind !== "roll" && !first.has(step.playerId)) first.set(step.playerId, step);
+    if (isMove(step) && !first.has(step.playerId)) first.set(step.playerId, step);
   }
   if (first.size === 0) return [...sites];
   return sites.map((site) => {
@@ -108,6 +121,15 @@ export function planMotion(events: readonly GameEvent[]): MotionStep[] {
       events.slice(0, i).some((e) => e.type === "LeftJail" && e.playerId === playerId);
     if (event.type === "DiceRolled") {
       steps.push({ kind: "roll", playerId: event.playerId, dice: event.dice });
+    } else if (event.type === "CardDrawn") {
+      // The engine puts the move of a card after its `CardDrawn`. The hold keeps the token on the
+      // card square until the player has read the card.
+      const rest = events.slice(i + 1);
+      const end = rest.findIndex((e) => e.type === "CardDrawn");
+      const moves = rest
+        .slice(0, end === -1 ? undefined : end)
+        .some((e) => e.type === "PlayerMoved" && e.playerId === event.playerId && e.from !== e.to);
+      if (moves) steps.push({ kind: "hold", playerId: event.playerId, eventIndex: i });
     } else if (event.type === "PlayerMoved" && event.from !== event.to) {
       steps.push(
         isBackward(event, events[i + 1])

@@ -114,11 +114,13 @@ Do both in one change. `screens/game/turn/PropertyCard.tsx` is the only deed com
 ### Cards in a modal dialog (BUG-5)
 
 - Now: `CardNotice` (`flows/card/CardNotice.tsx`) shows above `TurnArea` (`GameScreen.tsx:207`). `flows/card/useCardNotice.ts:38-70` gives its state. OK only closes it on this device and sends no action.
-- [ ] Show the card in the modal dialog, for Chance and Community Chest. Keep "<name> drew a card" and the OK button.
-- [ ] Keep OK as a local close. It sends no action (gameplay doc 2.1).
-- [ ] Show the card on every device. Each device closes it on its own.
+- [x] Show the card in the modal dialog, for Chance and Community Chest. Decided (user, 2026-11-10): the title is "<name> drew a card"; the body is the card face and OK; Esc works like OK; no × button; no animation. The dialog comes before a phase dialog (Buy), which follows after OK.
+- [x] Keep OK as a local close. It sends no action (gameplay doc 2.1).
+- [x] Show the card on every device. Each device closes it on its own.
 
 ### Hold the card move until OK (BUG-16)
+
+Decided (user, 2026-11-10): only the token waits. The rail cash, the owner markers and the log show the end state during the hold.
 
 The server sends the whole result in one action: roll, move to Chance, card, move to the card target. The web plays all moves, then shows the card. The fix is web only.
 
@@ -128,14 +130,14 @@ The server sends the whole result in one action: roll, move to Chance, card, mov
   - `planMotion` (`motion.ts:103-132`) makes a step for `DiceRolled` and for each `PlayerMoved`. It ignores `CardDrawn`.
   - `useCardNotice.ts:45` shows nothing while a step plays, so the card shows after the last move.
 - The engine sends `CardDrawn` before the card's own `PlayerMoved` (`packages/game-engine/src/cardplay.ts:56`), so the event order supports a hold.
-- [ ] In `planMotion`, add a `card` hold step at each `CardDrawn` that a move follows.
-- [ ] In `useMotionPlayer`, stop at a hold step with no timer. Add a `release()` to the motion context (`screens/game/motion/context.ts`).
-- [ ] In `useCardNotice`, show the card while the current step is a hold. OK calls `release()`.
-- [ ] `restingSites` (`motion.ts:65-78`) already keeps the token on the Chance square while the hold waits. Check it.
-- [ ] In `TurnArea.tsx:35-43`, do not show "Moving…" during a hold. Hide the phase actions (for example Buy for the utility) until OK.
-- [ ] Reduced motion: today `useMotionPlayer.ts:82` calls `settle()` and puts the token on the last square at once. Change it: moves show at once, but a hold step still waits for OK, with the token on the card square.
-- [ ] Cases: two cards in one action; a new action, a snapshot message or a reconnect during a hold (settle and release); a card with no move; a card of a remote player (each device holds on its own).
-- [ ] Update `MotionProvider.test.tsx` (reduced motion and settle cases) and `CardNotice.test.tsx`.
+- [x] In `planMotion`, add a `card` hold step at each `CardDrawn` that a move follows.
+- [x] In `useMotionPlayer`, stop at a hold step with no timer. Add a `release()` to the motion context (`screens/game/motion/context.ts`).
+- [x] In `useCardNotice`, show the card while the current step is a hold. OK calls `release()`.
+- [x] `restingSites` (`motion.ts:65-78`) already keeps the token on the Chance square while the hold waits. Check it.
+- [x] In `TurnArea.tsx:35-43`, do not show "Moving…" during a hold. Hide the phase actions (for example Buy for the utility) until OK.
+- [x] Reduced motion: today `useMotionPlayer.ts:82` calls `settle()` and puts the token on the last square at once. Change it: moves show at once, but a hold step still waits for OK, with the token on the card square.
+- [x] Cases: two cards in one action; a new action, a snapshot message or a reconnect during a hold (settle and release); a card with no move; a card of a remote player (each device holds on its own).
+- [x] Update `MotionProvider.test.tsx` (reduced motion and settle cases) and `CardNotice.test.tsx`.
 
 ### Spec
 

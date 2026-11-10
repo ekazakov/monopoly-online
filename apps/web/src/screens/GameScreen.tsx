@@ -24,7 +24,7 @@ import { ConnectionBanner } from "./game/ConnectionBanner.tsx";
 import { GameLayout } from "./game/GameLayout.tsx";
 import { Handoff } from "./game/handoff/index.ts";
 import { PhaseModal } from "./game/modal/index.ts";
-import { CardNotice } from "./game/flows/card/index.ts";
+import { CardNotice, useCardNotice } from "./game/flows/card/index.ts";
 import { LeaveGameMenu } from "./game/flows/leave/index.ts";
 import { SavedNotice } from "./game/flows/saved/index.ts";
 import { DebugPanel } from "./game/debug/index.ts";
@@ -168,11 +168,15 @@ function GameRoute({ gameId }: { gameId: string }) {
   );
 }
 
-// Above the regions: the hot-seat handoff, or else the modal dialog of the phase. The dialog waits
-// for the handoff, so the next player does not see or answer it before they confirm.
+// Above the regions: the hot-seat handoff, or else a modal dialog: the drawn card, or the phase.
+// A dialog waits for the handoff, so the next player does not see or answer it before they confirm.
+// The card hook stays mounted here, also during a handoff, so it sees the version at mount. The
+// card comes first: the phase dialog (for example Buy) follows after OK.
 function Overlay({ userId }: { userId: string }) {
   const { pending, confirm } = useHotSeatHandoff(userId);
+  const card = useCardNotice(userId);
   if (pending) return <Handoff seat={pending} onConfirm={confirm} />;
+  if (card) return <CardNotice notice={card} />;
   return <PhaseModal userId={userId} />;
 }
 
@@ -192,8 +196,6 @@ function Board({ userId }: { userId: string }) {
   );
 }
 
-// The card reveal stays mounted from the first render, so it sees the version at mount. Over the
-// phase view it shows the card of the latest action.
 function Centre({
   userId,
   loadFailed,
@@ -214,7 +216,6 @@ function Centre({
   }
   return (
     <div className="game-centre">
-      <CardNotice userId={userId} />
       {loadFailed && (
         <p className="game-placeholder" role="alert">
           Could not load the game state.

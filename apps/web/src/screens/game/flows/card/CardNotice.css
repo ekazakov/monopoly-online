@@ -1,6 +1,6 @@
 /*
- * Card reveal in the board centre (spec 5.2; design board TurnArea, Chance card). Tokens only.
- * The text sits on the light board surface, so it uses the board ink and not the shell ink.
+ * Card reveal in a dialog (spec 5.2; BUG-5). Tokens only. The text sits on the light dialog, so it
+ * uses the board ink and not the shell ink. No animation, like the other dialogs.
  */
 .card-notice {
   display: flex;
@@ -28,12 +28,6 @@
   --card-colour: var(--hf-chest);
 }
 
-.card-notice__who {
-  font: var(--hf-type-body-small);
-  font-weight: 600;
-  color: var(--hf-zone-ink);
-}
-
 .card-notice__face {
   display: flex;
   flex-direction: column;
@@ -48,7 +42,6 @@
   border-radius: var(--hf-radius-panel);
   background: var(--hf-paper);
   box-shadow: 0 10px 22px rgba(23, 33, 27, 0.25);
-  animation: card-notice-flip var(--hf-dur-base) var(--hf-ease-out) both;
 }
 
 .card-notice__face > :where(*) {
@@ -105,16 +98,4 @@
 .card-notice .card-notice__ok:focus-visible {
   outline: 2px solid var(--hf-board-ink);
   outline-offset: 2px;
-}
-
-@keyframes card-notice-flip {
-  from {
-    opacity: 0;
-    transform: perspective(600px) rotateY(-90deg);
-  }
-
-  to {
-    opacity: 1;
-    transform: perspective(600px) rotateY(0);
-  }
 }

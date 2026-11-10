@@ -4,8 +4,8 @@ import * as THREE from "three";
 import { soloSpot } from "./layout.ts";
 import type { TokenSpot } from "./layout.ts";
 import type { TokenModel } from "./model.ts";
-import { hopAt, stepSquares } from "./motion.ts";
-import type { MotionStep } from "./motion.ts";
+import { hopAt, isMove, stepSquares } from "./motion.ts";
+import type { MotionStep, MoveStep } from "./motion.ts";
 import {
   AVATAR_HEIGHT,
   avatarFigure,
@@ -52,11 +52,7 @@ const HOP_LIFT = 0.3;
 const JUMP_LIFT = 0.9;
 
 /** The spots a move passes: the start, a lone-token spot for each square between, and the landing. */
-function waypoints(
-  step: Exclude<MotionStep, { kind: "roll" }>,
-  start: TokenSpot,
-  landing: TokenSpot,
-): TokenSpot[] {
+function waypoints(step: MoveStep, start: TokenSpot, landing: TokenSpot): TokenSpot[] {
   const squares = stepSquares(step);
   return squares.map((square, i) =>
     i === 0 ? start : i === squares.length - 1 ? landing : soloSpot(square),
@@ -69,7 +65,7 @@ interface TokenPieceProps {
   order: number;
   env: THREE.Texture;
   /** The move this token makes now, with the spot it lands on. */
-  move: { step: Exclude<MotionStep, { kind: "roll" }>; landing: TokenSpot } | null;
+  move: { step: MoveStep; landing: TokenSpot } | null;
 }
 
 /**
@@ -156,7 +152,7 @@ interface TokensProps {
   tokens: readonly TokenModel[];
   spots: ReadonlyMap<string, TokenSpot>;
   env: THREE.Texture;
-  /** The step that plays now. A roll moves no token. */
+  /** The step that plays now. Only a walk or a jump moves a token. */
   step: MotionStep | null;
   /** Where the token of a move step ends. */
   landing: TokenSpot | null;
@@ -174,11 +170,7 @@ export function Tokens({ tokens, spots, env, step, landing }: TokensProps) {
             spot={spot}
             order={order}
             env={env}
-            move={
-              step && step.kind !== "roll" && step.playerId === token.id && landing
-                ? { step, landing }
-                : null
-            }
+            move={isMove(step) && step.playerId === token.id && landing ? { step, landing } : null}
           />
         ) : null;
       })}

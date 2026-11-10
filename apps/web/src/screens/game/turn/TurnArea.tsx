@@ -23,7 +23,8 @@ export function TurnArea({ userId }: { userId: string }) {
   if (trading && !tradeAllowed) setTrading(false);
 
   // Spec 5.2: while the dice roll and the token moves, the centre shows only the animation and
-  // nothing is clickable.
+  // nothing is clickable. During a card hold the card dialog is open, and the phase actions (for
+  // example Buy for the utility the token has not reached yet) wait for OK.
   if (motion?.kind === "roll") {
     return (
       <div className="turn-area" aria-busy="true">
@@ -37,7 +38,7 @@ export function TurnArea({ userId }: { userId: string }) {
     return (
       <div className="turn-area" aria-busy="true">
         {dice && !stale && <Dice dice={dice} />}
-        <Status title="Moving…" />
+        <Status title={motion.kind === "hold" ? "Drew a card" : "Moving…"} />
       </div>
     );
   }

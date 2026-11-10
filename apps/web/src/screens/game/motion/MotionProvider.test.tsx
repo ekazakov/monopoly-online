@@ -8,6 +8,7 @@ import { createGameStore } from "../../../game/store.ts";
 import { ROLL_MS, planMotion, stepDuration } from "../../../scene/motion.ts";
 import { setMotionPreference } from "../../../styles/motionPreference.ts";
 import { TurnArea } from "../turn/index.ts";
+import { useMotionRelease, useMotionStep } from "./index.ts";
 import { MotionProvider } from "./MotionProvider.tsx";
 import { REPLAY_WINDOW_MS } from "./useMotionPlayer.ts";
 
@@ -155,5 +156,84 @@ describe("settling instead of animating", () => {
     const store = setup();
     act(() => store.applyStreamMessage(actionsMessage(fx.game, nextWithRoll())));
     expect(rolling()).toBeNull();
+  });
+});
+
+describe("card hold", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    setMotionPreference("system");
+  });
+
+  /** A roll to a square, a card, and the move of the card. */
+  const heldStep = () => {
+    const base = rollStep!;
+    const player = base.events.find((e) => e.type === "DiceRolled")!.playerId;
+    const landed = base.events.find((e) => e.type === "PlayerMoved")!;
+    if (landed.type !== "PlayerMoved") throw new Error("no move");
+    const events = [
+      ...base.events.filter((e) => e.type === "DiceRolled" || e.type === "PlayerMoved"),
+      { type: "CardDrawn", playerId: player, deck: "chance", cardIndex: 0 },
+      { type: "PlayerMoved", playerId: player, from: landed.to, to: (landed.to + 5) % 40 },
+    ] as typeof base.events;
+    return { ...base, events };
+  };
+
+  function Probe() {
+    const release = useMotionRelease();
+    const step = useMotionStep();
+    return (
+      <button type="button" onClick={release}>
+        {step?.kind ?? "idle"}
+      </button>
+    );
+  }
+
+  function mount() {
+    const store = createGameStore();
+    store.applyStreamMessage(snapshotMessage(fx.game, redact(fx.start)));
+    render(
+      <GameStoreProvider store={store}>
+        <MotionProvider>
+          <Probe />
+        </MotionProvider>
+      </GameStoreProvider>,
+    );
+    return store;
+  }
+
+  test("waits at the card with no timer until release, then plays the card move", () => {
+    const store = mount();
+    act(() => store.applyStreamMessage(actionsMessage(fx.game, heldStep())));
+    act(() => void vi.advanceTimersByTime(60_000));
+    expect(screen.getByRole("button")).toHaveTextContent("hold");
+    act(() => screen.getByRole("button").click());
+    expect(screen.getByRole("button")).toHaveTextContent("walk");
+    act(() => void vi.advanceTimersByTime(60_000));
+    expect(screen.getByRole("button")).toHaveTextContent("idle");
+  });
+
+  test("a new action during the hold settles it", () => {
+    const store = mount();
+    act(() => store.applyStreamMessage(actionsMessage(fx.game, heldStep())));
+    act(() => void vi.advanceTimersByTime(60_000));
+    act(() =>
+      store.applyStreamMessage(
+        actionsMessage(fx.game, { ...fx.steps.at(-1)!, events: [] } as typeof rollStep & object),
+      ),
+    );
+    expect(screen.getByRole("button")).toHaveTextContent("idle");
+  });
+
+  test("under reduced motion the moves show at once, but the hold waits for OK", () => {
+    setMotionPreference("reduce");
+    const store = mount();
+    act(() => store.applyStreamMessage(actionsMessage(fx.game, heldStep())));
+    expect(screen.getByRole("button")).toHaveTextContent("hold");
+    act(() => screen.getByRole("button").click());
+    expect(screen.getByRole("button")).toHaveTextContent("idle");
   });
 });

@@ -27,8 +27,13 @@ export const REPLAY_WINDOW_MS = 1000;
  * - an action that comes while the tab is hidden, because nobody watches it and the steps would
  *   play one after the other when the user comes back, and
  * - any action under reduced motion: no dice roll, no hops, the result shows at once.
+ *
+ * A drawn card that moves the token is a hold step: the player stops on it with no timer and waits
+ * for `release()` (OK on the card). A new action, a snapshot or a reconnect during a hold settles
+ * it. Under reduced motion the moves still show at once, but a hold waits for OK too, with the
+ * token on the card square.
  */
-export function useMotionPlayer(): MotionPlayback {
+export function useMotionPlayer(): { playback: MotionPlayback; release: () => void } {
   const store = useGameStore();
   const { version, lastActionEvents } = useGameSnapshot();
   const [mountVersion] = useState(version);
@@ -41,13 +46,17 @@ export function useMotionPlayer(): MotionPlayback {
   const replayUntil = useRef(0);
   const reduced = useReducedMotion();
   const reducedNow = useRef(reduced);
+  const holding = useRef(false);
 
   const advance = useCallback(
     function advance() {
-      if (reducedNow.current) queue.clear();
-      const step = queue.next() ?? null;
+      let step = queue.next() ?? null;
+      // Reduced motion: no roll and no hop. Only a hold is left to wait for.
+      while (reducedNow.current && step && step.kind !== "hold") step = queue.next() ?? null;
+      holding.current = step?.kind === "hold";
       setPlayback(step ? { current: step, waiting: queue.pending() } : IDLE_PLAYBACK);
-      timer.current = step ? setTimeout(advance, stepDuration(step)) : undefined;
+      timer.current =
+        step && !holding.current ? setTimeout(advance, stepDuration(step)) : undefined;
     },
     [queue],
   );
@@ -55,6 +64,7 @@ export function useMotionPlayer(): MotionPlayback {
   const settle = useCallback(() => {
     clearTimeout(timer.current);
     timer.current = undefined;
+    holding.current = false;
     queue.clear();
     setPlayback(IDLE_PLAYBACK);
   }, [queue]);
@@ -75,25 +85,36 @@ export function useMotionPlayer(): MotionPlayback {
     return store.subscribe(check);
   }, [store]);
 
-  useEffect(() => {
-    if (version <= seen.current) return;
-    seen.current = version;
-    const replay = down.current || Date.now() < replayUntil.current;
-    if (lastActionEvents.length === 0 || replay || document.hidden || reduced) {
-      settle();
-      return;
-    }
-    queue.push(lastActionEvents);
-    if (timer.current === undefined) advance();
-    else setPlayback((prev) => ({ current: prev.current, waiting: queue.pending() }));
-  }, [version, lastActionEvents, queue, advance, settle, reduced]);
-
   // Reduced motion that starts while steps play: the step that plays ends, and `advance` drops the rest.
   useEffect(() => {
     reducedNow.current = reduced;
   }, [reduced]);
 
+  useEffect(() => {
+    if (version <= seen.current) return;
+    seen.current = version;
+    const replay = down.current || Date.now() < replayUntil.current;
+    // The news ends a hold: the card of the old action is not the one to wait for. The queue
+    // starts again below (or settles), so the playback needs no update here.
+    if (holding.current) {
+      holding.current = false;
+      queue.clear();
+    }
+    const live = lastActionEvents.length > 0 && !replay && !document.hidden;
+    if (live) queue.push(lastActionEvents);
+    if (!live || (reduced && !queue.pending().some((step) => step.kind === "hold"))) {
+      settle();
+      return;
+    }
+    if (timer.current === undefined) advance();
+    else setPlayback((prev) => ({ current: prev.current, waiting: queue.pending() }));
+  }, [version, lastActionEvents, queue, advance, settle, reduced]);
+
   useEffect(() => () => clearTimeout(timer.current), []);
 
-  return playback;
+  const release = useCallback(() => {
+    if (holding.current) advance();
+  }, [advance]);
+
+  return { playback, release };
 }

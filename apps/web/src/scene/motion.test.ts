@@ -27,6 +27,12 @@ const moved = (from: number, to: number, playerId = A): GameEvent => ({
   from,
   to,
 });
+const drew = (playerId = A): GameEvent => ({
+  type: "CardDrawn",
+  playerId,
+  deck: "chance",
+  cardIndex: 0,
+});
 const passedGo = (playerId = A): GameEvent => ({ type: "PassedGo", playerId, amount: 200 });
 const jailed = (playerId = A): GameEvent => ({ type: "SentToJail", playerId });
 
@@ -70,6 +76,27 @@ describe("planMotion", () => {
   test("jumps for a card that sends the token back", () => {
     expect(planMotion([moved(7, 4)])).toEqual([
       { kind: "jump", playerId: A, from: 7, fromJail: false, to: 4 },
+    ]);
+  });
+
+  test("holds at a card that moves the token, between the landing and the card move", () => {
+    expect(
+      planMotion([rolled([3, 4]), moved(0, 7), drew(), moved(7, 12)]).map((s) => s.kind),
+    ).toEqual(["roll", "walk", "hold", "walk"]);
+    expect(planMotion([moved(0, 7), drew(), moved(7, 12)])[1]).toEqual({
+      kind: "hold",
+      playerId: A,
+      eventIndex: 1,
+    });
+  });
+
+  test("makes no hold for a card with no move, or when the next card has the move", () => {
+    expect(planMotion([moved(0, 7), drew()]).map((s) => s.kind)).toEqual(["walk"]);
+    // The first card has no move before the next card: only the second one holds.
+    expect(planMotion([moved(0, 7), drew(), drew(), moved(7, 4)]).map((s) => s.kind)).toEqual([
+      "walk",
+      "hold",
+      "jump",
     ]);
   });
 
@@ -229,6 +256,14 @@ describe("restingSites", () => {
   test("uses the first move of a token when it has several", () => {
     const playback = { current: null, waiting: [walk("a", 3, 6), walk("a", 6, 9)] };
     expect(restingSites(sites, playback)[0]!.square).toBe(3);
+  });
+
+  test("keeps a token on the card square while a hold waits", () => {
+    const playback = {
+      current: { kind: "hold" as const, playerId: "a", eventIndex: 1 },
+      waiting: [walk("a", 7, 12)],
+    };
+    expect(restingSites(sites, playback)[0]!.square).toBe(7);
   });
 
   test("ignores a roll", () => {

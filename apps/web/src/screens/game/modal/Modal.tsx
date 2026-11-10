@@ -10,6 +10,8 @@ interface ModalProps {
    * unmounting it, for a dialog that is the phase itself (the auction, the purchase).
    */
   onClose?: () => void;
+  /** With `onClose`: closes on Esc only, with no Close button. The dialog has its own OK. */
+  hideClose?: boolean;
 }
 
 /** The regions that a dialog makes inert: all but the top bar, which has the log and the Menu. */
@@ -20,7 +22,7 @@ const BEHIND = ":scope > .game-layout__regions > :not(.game-layout__top)";
 // paints over it, so the top bar with the log and the Menu would be out of reach. Here the scrim
 // sits below the top bar, and the dialog makes the other regions inert by hand. Mount it as a child
 // of `.game-layout`, after the regions.
-export function Modal({ title, children, onClose }: ModalProps) {
+export function Modal({ title, children, onClose, hideClose }: ModalProps) {
   const titleId = useId();
   const closable = onClose !== undefined;
 
@@ -67,7 +69,7 @@ export function Modal({ title, children, onClose }: ModalProps) {
             <h2 id={titleId} className="modal__title">
               {title}
             </h2>
-            {closable && (
+            {closable && !hideClose && (
               <button type="button" className="modal__close" aria-label="Close" onClick={onClose}>
                 ×
               </button>
