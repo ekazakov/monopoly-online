@@ -1,6 +1,6 @@
 /*
  * Game screen shell (spec 3.1, 7). Tokens only.
- * Layers: board 0, rail 1, centre 2, hand 3, top bar 5. The handoff overlay (H8, z-index 10) sits above these.
+ * Layers: board 0, rail 1, centre 2, hand 3, top bar 5. The modal dialogs and the card notice sit above these (scrim z-index 4); the turn toast sits at z-index 6.
  * --game-hand-peek is the part of the collapsed hand below the window edge (spec 4.6).
  */
 .game-layout {

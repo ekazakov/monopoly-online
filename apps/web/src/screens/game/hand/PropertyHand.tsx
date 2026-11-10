@@ -315,7 +315,7 @@ export function PropertyHand({ userId }: PropertyHandProps) {
       ? view.actingSeat.id
       : null;
 
-  // Render-time state, as `useHotSeatHandoff` does: a new acting seat of this device wins the hand.
+  // Render-time state: a new acting seat of this device wins the hand, so the next player sees their properties at once.
   if (actingMine && actingMine !== lastActing) {
     setLastActing(actingMine);
     setPicked(null);

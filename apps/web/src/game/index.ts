@@ -7,7 +7,6 @@ export {
   useGameSelector,
   useGameSnapshot,
   useGameStore,
-  useHotSeatHandoff,
   useMayAct,
 } from "./useGame.ts";
 export type { GameView } from "./useGame.ts";

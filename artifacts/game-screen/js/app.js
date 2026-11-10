@@ -525,6 +525,16 @@ function useCard() {
   addLog(p.id, '{n} used a Get Out of Jail Free card.');
   S.phase = 'start'; render();
 }
+// The turn toast (BUG-15, prototype): a notice that closes by itself after 5 seconds.
+let toastTimer = 0;
+function showToast(text) {
+  const el = $('#toast');
+  el.innerHTML = `<span>${esc(text)}</span><button type="button" class="toast-close" aria-label="Close notice">×</button>`;
+  el.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.hidden = true; }, 5000);
+  el.querySelector('.toast-close').addEventListener('click', () => { el.hidden = true; clearTimeout(toastTimer); });
+}
 function nextTurn() {
   const prev = S.active;
   const order = PLAYERS.map((p) => p.id);
@@ -533,6 +543,7 @@ function nextTurn() {
   const next = SCRIPT[S.turnIdx].player;
   if (order.indexOf(next) <= order.indexOf(prev)) S.round++;
   enterTurn(next, true);
+  showToast(`It is ${P(next).name}'s turn.`);
 }
 function enterTurn(id, scripted) {
   const p = P(id);
@@ -1001,6 +1012,7 @@ function renderProto() {
       <button type="button" data-st="bankrupt" ${pressed(!!P('tove').bankrupt)}>Tove bankrupt</button>
       <button type="button" data-st="all28" ${pressed(Object.keys(S.own).filter((i) => S.own[i].owner === 'marlow').length >= 28)}>Marlow owns all 28</button>
       <button type="button" data-st="mort" ${pressed(!!S.own[3]?.mortgaged)}>Kelp Court mortgaged</button></div></div>
+    <div><h3>Turn toast</h3><div class="opts"><button type="button" data-st="toast">Show turn toast</button><button type="button" data-place="top" ${pressed(root.dataset.toast !== 'centre')}>Top</button><button type="button" data-place="centre" ${pressed(root.dataset.toast === 'centre')}>Centre</button></div></div>
     <div><h3>Board</h3><div class="opts">${[['angle', 'Angle view'], ['top', 'Top view']].map(([v, l]) => `<button type="button" data-view="${v}" ${pressed(S.view === v)}>${l}</button>`).join('')}<button type="button" data-st="log">Add log entry</button></div></div>
     <div><div class="opts"><button type="button" data-reset>Restart demo</button></div></div>`;
 }
@@ -1038,6 +1050,10 @@ protoPanel.addEventListener('click', (e) => {
     if (d.dlg === 'over') openGameOver();
     if (d.dlg === 'deed') openSquare(26);
     return;
+  } else if (d.place) {
+    root.dataset.toast = d.place;
+    renderProto();
+    return;
   } else if (d.st) {
     if (d.st === 'jail') { const p = P('ines'); p.inJail = !p.inJail; if (p.inJail) { p.pos = 10; board?.placeToken('ines', 10); } }
     if (d.st === 'card') P('marlow').cards = P('marlow').cards ? 0 : 1;
@@ -1049,6 +1065,7 @@ protoPanel.addEventListener('click', (e) => {
       for (const q of all) { if (has) { if (!OWNERSHIP[q.i] || OWNERSHIP[q.i].owner !== 'marlow') delete S.own[q.i]; else S.own[q.i] = structuredClone(OWNERSHIP[q.i]); } else if (!S.own[q.i] || S.own[q.i].owner !== 'marlow') S.own[q.i] = { owner: 'marlow' }; }
       board?.setOwnership(S.own);
     }
+    if (d.st === 'toast') showToast(`It is ${P(S.active).name}'s turn.`);
     if (d.st === 'owner') S.isOwner = !S.isOwner;
     if (d.st === 'bankrupt') { const p = P('tove'); p.bankrupt = !p.bankrupt; board?.setTokenVisible('tove', !p.bankrupt); }
     if (d.st === 'mort') { S.own[3].mortgaged = !S.own[3].mortgaged; if (S.own[3].mortgaged) S.own[3].houses = 0; board?.setOwnership(S.own); }

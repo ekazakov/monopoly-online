@@ -3,7 +3,7 @@ import { GAME_REGION_LABELS, type GameRegion } from "./regions.ts";
 import "./GameLayout.css";
 
 export type GameLayoutProps = { [R in GameRegion]?: ReactNode } & {
-  /** Covers every region (the hot-seat handoff). It makes the regions inert while it is shown. */
+  /** Covers the regions: the turn toast and the modal dialogs. A dialog makes the regions inert while it is shown. */
   overlay?: ReactNode;
 };
 

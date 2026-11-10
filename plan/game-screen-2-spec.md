@@ -348,7 +348,9 @@ The board centre changes with each phase of the turn. The phase list and what ea
   - remote players show a connection dot: online, reconnecting or away
 - **Turn-change toast** (replaces the handoff interstitial, BUG-15):
   - a toast "It is <name>'s turn" shows on every device in the game, with no confirm button
-  - it closes by itself
+  - it sits in the centre of the board, over the dice and the buttons (approved 2026-11-10, after a prototype with two placements in `artifacts/game-screen`)
+  - it looks like the handoff screen without the button (changed 2026-11-10): a scrim at 70% opacity, the 3D figure of the next player on its plinth (150px; the flat icon when WebGL is not available), the name and the sentence "It's <name>'s turn.". It fades in over 500 ms, shows for 1 second and fades out over 500 ms (2 seconds in all). It has no button. While it shows, the action controls are disabled (the game regions are inert and the scrim takes the pointer); the top bar with the log and the Menu stays usable. It is a polite live region, so a screen reader hears it
+  - a toast shows for a turn change only. An auction bidder or a trade responder on the same device sees the phase in the board centre, not a toast
   - there is no privacy step: on a shared device the next player's properties and actions show at once. This is on purpose
 - **Remote turn:**
   - the board centre shows the same phase content but **read-only**
@@ -429,7 +431,7 @@ Rules:
 - **R-T2 MUST** [Done] The Next turn button sits under the dice.
 - **R-T3 MUST** [Gap] Design the board centre for every phase in the gameplay doc, section 2 (including In debt and Bankrupt), following 5.2.
 - **R-T4 MUST** [Gap] Show the read-only remote-turn state (5.3).
-- **R-T5 MUST** [Gap] Show a turn-change toast on every device (5.3). It replaces the "Pass to <name>" handoff interstitial (BUG-15).
+- **R-T5 MUST** [Done] Show a turn-change toast on every device (5.3): centre of the board, a 2-second run with 500 ms fades, turn changes only. It replaces the "Pass to <name>" handoff interstitial (BUG-15).
 - **R-T6 SHOULD** [Done] Animate the dice roll and the token movement, with reduced-motion fallbacks. Done. Reduced motion (device setting, or the switch in the Menu) turns off all animation: the result of a roll and the new token squares show at once.
 
 ### 8.5 Hand

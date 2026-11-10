@@ -130,15 +130,13 @@ export async function startTable(browser: Browser, tag: string): Promise<Table> 
 
 /** What a device can do now, in the order that the loop tries it. */
 const ACTIONS: Array<[string, RegExp]> = [
-  ["handoff", /^I.m .+, start my turn$/],
   ["roll", /^Roll( again)?$/i],
   ["buy", /^Buy \$/],
   ["next", /^Next turn$/i],
 ];
 
 /**
- * Do one step for the first device that has a turn action: confirm a hot-seat handoff, roll, buy a
- * property, or end the turn. Returns the step name, or null when no device can act yet (the token is
+ * Do one step for the first device that has a turn action: roll, buy a property, or end the turn. Returns the step name, or null when no device can act yet (the token is
  * still moving, or the game waits for someone).
  */
 export async function step(devices: Device[]): Promise<string | null> {

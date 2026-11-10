@@ -242,9 +242,6 @@ test("T21: a disconnected stream resumes missed actions and catches up without a
 
   await alice.page.getByRole("button", { name: "Roll", exact: true }).click();
   await alice.page.getByRole("button", { name: "Next turn", exact: true }).click();
-  await alice.page
-    .getByRole("button", { name: `I’m ${alice.name}, start my turn`, exact: true })
-    .click();
   await alice.page.getByRole("button", { name: "Roll", exact: true }).click();
   await alice.page.getByRole("button", { name: /^Buy \$/ }).click();
   await alice.page.getByRole("button", { name: "Next turn", exact: true }).click();

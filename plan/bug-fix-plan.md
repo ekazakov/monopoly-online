@@ -250,15 +250,15 @@ Tasks:
 - Now: `handoff/HandoffPrompt.tsx` is a full-screen `role="dialog"` with "Pass to <name>" and "I'm <name>, start my turn". It sets `inert` on `.game-layout__regions`. `useHotSeatHandoff` (`game/useGame.ts:97-117`) and `isHotSeatHandoff` (`game/selectors.ts:83-95`) control it.
 - `isHotSeatHandoff` uses `actingSeat`: the bidder, the trade partner or the player on turn. So the overlay also shows for an auction bid or a trade answer between hot-seat seats, not only at a turn change.
 - No toast system exists.
-- [ ] Build a small toast host: a context, an `aria-live="polite"` region, and a timed close. Mount it outside `.game-layout__regions`.
-- [ ] Show "It is <name>'s turn" on **every device** in the game when the turn changes. Use the `TurnEnded` event in `lastActionEvents` (`packages/shared/src/events.ts:151`). `lastActionEvents` is empty after a snapshot message, so a reload shows no toast.
-- [ ] For an acting-seat change on one device (auction bidder, trade answer), show a toast too. See open decision 3.
-- [ ] Remove `HandoffPrompt` and `useHotSeatHandoff`. Keep the hand switch in `PropertyHand.tsx:316-320`.
-- [ ] The privacy step is removed on purpose. The next player's properties and actions show at once.
-- [ ] Unit tests: `HandoffPrompt.test.tsx` (delete), `GameScreen.test.tsx:375`, `game/useGame.test.tsx:154-190`, `game/selectors.test.ts:149-163`, and new toast tests.
-- [ ] Browser tests: `apps/e2e/support/game.ts:133, 140` (the "handoff" step), `core-game.spec.ts` (lines 5-6, 22, 55-59), `game-auction-trade.spec.ts` T11 (lines 42-68, rewrite), `session.spec.ts:246`.
+- [x] Build a small toast host (a hook and a component, not a context: one notice at a time). Decided 2026-11-10: centre of the board, styled like the handoff screen with the 3D pawn, 500 ms fades and 1 second in full view: a context, an `aria-live="polite"` region, and a timed close. Mount it outside `.game-layout__regions`.
+- [x] Show "It is <name>'s turn" on **every device** in the game when the turn changes. Use the `TurnEnded` event in `lastActionEvents` (`packages/shared/src/events.ts:151`). `lastActionEvents` is empty after a snapshot message, so a reload shows no toast.
+- [x] For an acting-seat change on one device (auction bidder, trade answer): decided 2026-11-10, no toast. Turn changes only.
+- [x] Remove `HandoffPrompt` and `useHotSeatHandoff`. Keep the hand switch in `PropertyHand.tsx:316-320`.
+- [x] The privacy step is removed on purpose. The next player's properties and actions show at once.
+- [x] Unit tests: `HandoffPrompt.test.tsx` (delete), `GameScreen.test.tsx:375`, `game/useGame.test.tsx:154-190`, `game/selectors.test.ts:149-163`, and new toast tests.
+- [x] Browser tests (updated 2026-11-10, not run in this sandbox): `apps/e2e/support/game.ts:133, 140` (the "handoff" step), `core-game.spec.ts` (lines 5-6, 22, 55-59), `game-auction-trade.spec.ts` T11 (lines 42-68, rewrite), `session.spec.ts:246`.
 - [x] Design docs: the spec (1.2, 5.3, R-T5) and the gameplay doc (section 1 and 3) already describe the toast.
-- [ ] When the code is done, replace the planned-change note for T11 in `plan/e2e-test-plan.md` with the final text.
+- [x] When the code is done, replace the planned-change note for T11 in `plan/e2e-test-plan.md` with the final text.
 
 ## Phase 7: board interaction
 

@@ -13,7 +13,6 @@ import {
   useGameActionsProvider,
   useGameSelector,
   useGameStore,
-  useHotSeatHandoff,
 } from "../game/index.ts";
 import { useRealtimeStatus, useTopic } from "../realtime/index.ts";
 import { BoardScene } from "../scene/BoardScene.tsx";
@@ -22,9 +21,9 @@ import { useAuthMethods, useSession } from "../session/index.ts";
 import { useReducedMotion } from "../styles/motionPreference.ts";
 import { ConnectionBanner } from "./game/ConnectionBanner.tsx";
 import { GameLayout } from "./game/GameLayout.tsx";
-import { Handoff } from "./game/handoff/index.ts";
 import { PhaseModal } from "./game/modal/index.ts";
 import { CardNotice, useCardNotice } from "./game/flows/card/index.ts";
+import { TurnToast } from "./game/toast/index.ts";
 import { LeaveGameMenu } from "./game/flows/leave/index.ts";
 import { SavedNotice } from "./game/flows/saved/index.ts";
 import { DebugPanel } from "./game/debug/index.ts";
@@ -170,16 +169,16 @@ function GameRoute({ gameId }: { gameId: string }) {
   );
 }
 
-// Above the regions: the hot-seat handoff, or else a modal dialog: the drawn card, or the phase.
-// A dialog waits for the handoff, so the next player does not see or answer it before they confirm.
-// The card hook stays mounted here, also during a handoff, so it sees the version at mount. The
-// card comes first: the phase dialog (for example Buy) follows after OK.
+// Above the regions: the turn toast, and a modal dialog: the drawn card, or the phase. The toast is
+// not a dialog: it shows on every device at once, with no confirm step (spec 5.3).
 function Overlay({ userId }: { userId: string }) {
-  const { pending, confirm } = useHotSeatHandoff(userId);
   const card = useCardNotice(userId);
-  if (pending) return <Handoff seat={pending} onConfirm={confirm} />;
-  if (card) return <CardNotice notice={card} />;
-  return <PhaseModal userId={userId} />;
+  return (
+    <>
+      <TurnToast userId={userId} />
+      {card ? <CardNotice notice={card} /> : <PhaseModal userId={userId} />}
+    </>
+  );
 }
 
 // The token of the seat decides the colour and the figure, the same as in the rail.

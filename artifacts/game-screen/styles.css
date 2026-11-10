@@ -454,3 +454,17 @@ input[type="range"] { accent-color: var(--accent); width: 160px; min-height: 44p
   .col { scroll-snap-align: start; }
   .cols, .auction { grid-template-columns: 1fr; }
 }
+
+/* ---------- turn toast (BUG-15, prototype) ---------- */
+/* A short notice that says whose turn it is. It closes by itself after 5 seconds, or with its close
+   button. The placement is a choice in the Prototype panel: top centre under the top bar, or the
+   centre of the board. */
+.toast {
+  position: absolute; z-index: 6; left: 50%; top: 56px; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 12px; max-width: min(440px, 90vw);
+  padding: 8px 8px 8px 16px; background: var(--panel-raised); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  font-size: 15px; font-weight: 600;
+}
+.root[data-toast="centre"] .toast { top: 50%; transform: translate(-50%, -50%); }
+.toast-close { min-width: 36px; min-height: 36px; padding: 0 8px; font-size: 18px; line-height: 1; }

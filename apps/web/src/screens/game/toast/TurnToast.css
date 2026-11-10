@@ -1,0 +1,97 @@
+/*
+ * Turn notice (spec 5.3, BUG-15). Tokens only. It is the handoff screen without the button: a scrim
+ * at 70% opacity, a figure, the name and a sentence. The notice fades in over 500 ms, stays for
+ * one second, and fades out over 500 ms: a 2-second run. While it shows, the scrim takes the
+ * pointer and the game regions are inert, so the action controls are disabled. The scrim sits
+ * below the top bar (z-index 5, as the dialog scrim does), so the log and the Menu keep working.
+ * The host lets the pointer through when no notice shows.
+ */
+.turn-toast-host {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.turn-toast {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--hf-space-16);
+  background: rgba(9, 16, 23, 0.7);
+  pointer-events: auto;
+  animation: turn-toast-fade 2000ms linear both;
+}
+
+@keyframes turn-toast-fade {
+  0% {
+    opacity: 0;
+  }
+
+  25% {
+    opacity: 1;
+  }
+
+  75% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+.turn-toast__stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--hf-space-8);
+  max-width: 460px;
+  text-align: center;
+}
+
+.turn-toast__figure {
+  display: block;
+}
+
+.turn-toast__figure canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* No WebGL: the flat icon in a ring. */
+.turn-toast__figure--flat {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border: 3px solid var(--player-color, var(--hf-ink-soft));
+  border-radius: 50%;
+  background: var(--hf-panel);
+  color: var(--hf-ink);
+}
+
+.turn-toast__eyebrow {
+  margin: 0;
+  color: var(--hf-accent);
+  font: var(--hf-type-label);
+  letter-spacing: var(--hf-track-label);
+  text-transform: uppercase;
+}
+
+.turn-toast__name {
+  margin: 0;
+  color: var(--hf-ink);
+  font: var(--hf-type-display-m);
+  letter-spacing: var(--hf-track-display-m);
+  text-transform: uppercase;
+}
+
+.turn-toast__text {
+  margin: 0;
+  color: var(--hf-ink-soft);
+  font: var(--hf-type-body);
+}

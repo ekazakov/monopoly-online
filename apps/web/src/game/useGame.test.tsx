@@ -3,16 +3,9 @@ import { actorFor } from "@monopoly/game-engine";
 import type { ReactNode } from "react";
 import { describe, expect, test, vi } from "vite-plus/test";
 import { GameStoreProvider } from "./GameStoreProvider.tsx";
-import { actionsMessage, recordFixture, redact, roomMessage, snapshotMessage } from "./fixtures.ts";
+import { actionsMessage, recordFixture, redact, snapshotMessage } from "./fixtures.ts";
 import { createGameStore } from "./store.ts";
-import {
-  useGame,
-  useGameSelector,
-  useGameSnapshot,
-  useGameStore,
-  useHotSeatHandoff,
-  useMayAct,
-} from "./useGame.ts";
+import { useGame, useGameSelector, useGameSnapshot, useGameStore, useMayAct } from "./useGame.ts";
 
 const fx = recordFixture(12);
 const start = snapshotMessage(fx.game, redact(fx.start));
@@ -148,48 +141,5 @@ describe("useMayAct", () => {
     expect(result.current).toEqual({ yes: false, no: false });
     act(() => store.applyStreamMessage(start));
     expect(result.current).toEqual({ yes: true, no: false });
-  });
-});
-
-describe("useHotSeatHandoff", () => {
-  test("asks for a handoff when the turn moves to another seat of this device", () => {
-    const { store, wrapper } = setup();
-    const { result } = renderHook(() => useHotSeatHandoff(fx.ownerId), { wrapper });
-    const mine = new Set(
-      fx.game.seats.filter((s) => s.controllerUserId === fx.ownerId).map((s) => s.id),
-    );
-
-    act(() => store.applyStreamMessage(start));
-    expect(result.current.pending).toBeNull();
-
-    let previous = actorFor(fx.start);
-    const handoffs: { expected: string; pending: string | undefined; after: string | undefined }[] =
-      [];
-    const remote: (string | undefined)[] = [];
-    for (const step of fx.steps) {
-      act(() => store.applyStreamMessage(actionsMessage(fx.game, step)));
-      const next = actorFor(step.full);
-      if (next !== previous && mine.has(previous) && mine.has(next)) {
-        const pending = result.current.pending?.id;
-        act(() => result.current.confirm());
-        handoffs.push({ expected: next, pending, after: result.current.pending?.id });
-      } else if (next !== previous) {
-        remote.push(result.current.pending?.id);
-      }
-      previous = next;
-    }
-    // The seeded game must exercise both cases.
-    expect(handoffs.length).toBeGreaterThan(0);
-    expect(remote.length).toBeGreaterThan(0);
-    expect(handoffs.every((h) => h.pending === h.expected && h.after === undefined)).toBe(true);
-    expect(remote.every((id) => id === undefined)).toBe(true);
-  });
-
-  test("a room change does not start a handoff", () => {
-    const { store, wrapper } = setup();
-    const { result } = renderHook(() => useHotSeatHandoff(fx.ownerId), { wrapper });
-    act(() => store.applyStreamMessage(start));
-    act(() => store.applyStreamMessage(roomMessage({ ...fx.game, name: "Renamed" })));
-    expect(result.current.pending).toBeNull();
   });
 });

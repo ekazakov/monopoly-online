@@ -1,4 +1,4 @@
-import { useContext, useRef, useState, useSyncExternalStore } from "react";
+import { useContext, useRef, useSyncExternalStore } from "react";
 import type { ActionType } from "@monopoly/game-engine";
 import type { Game, Phase, RedactedGameState, Seat } from "@monopoly/shared";
 import { GameStoreContext } from "./context.ts";
@@ -6,7 +6,6 @@ import {
   actingSeat,
   currentPlayer,
   isFinished,
-  isHotSeatHandoff,
   isMyTurn,
   mayAct,
   mySeats,
@@ -93,25 +92,4 @@ export function useMayAct(userId: string | null, type?: ActionType): boolean {
 
 export function useGameRoom(): Game | null {
   return useGameSelector((s) => s.game);
-}
-
-/**
- * The seat to hand the device to, or null. It is set when the acting seat changes to another
- * seat of this device, and cleared by `confirm` (the "Pass to <name>" button).
- */
-export function useHotSeatHandoff(userId: string | null): {
-  pending: Seat | null;
-  confirm: () => void;
-} {
-  const { game, state } = useGameSnapshot();
-  const acting = actingSeat(game, state);
-  const [previous, setPrevious] = useState(acting);
-  const [pending, setPending] = useState<Seat | null>(null);
-
-  if (acting?.id !== previous?.id) {
-    setPrevious(acting);
-    setPending(isHotSeatHandoff(previous, acting, mySeats(game, userId)) ? acting : null);
-  }
-
-  return { pending, confirm: () => setPending(null) };
 }

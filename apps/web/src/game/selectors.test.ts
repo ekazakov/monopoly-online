@@ -6,7 +6,6 @@ import {
   actingSeat,
   currentPlayer,
   isFinished,
-  isHotSeatHandoff,
   isMyTurn,
   mayAct,
   mayActWith,
@@ -143,24 +142,6 @@ describe("mayAct", () => {
     };
     expect(mayActWith(game, gone, actingId)).toBe(false);
     expect(mayActWith(game, gone, actingId, "Resign")).toBe(false);
-  });
-});
-
-describe("isHotSeatHandoff", () => {
-  const mine = [seats.a, seats.c];
-
-  test("true for a change between two seats of the same device", () => {
-    expect(isHotSeatHandoff(seats.a, seats.c, mine)).toBe(true);
-    expect(isHotSeatHandoff(seats.c, seats.a, mine)).toBe(true);
-  });
-
-  test("false for the same seat, a seat of another device or a missing seat", () => {
-    expect(isHotSeatHandoff(seats.a, seats.a, mine)).toBe(false);
-    expect(isHotSeatHandoff(seats.a, seats.b, mine)).toBe(false);
-    expect(isHotSeatHandoff(seats.b, seats.a, mine)).toBe(false);
-    expect(isHotSeatHandoff(null, seats.a, mine)).toBe(false);
-    expect(isHotSeatHandoff(seats.a, null, mine)).toBe(false);
-    expect(isHotSeatHandoff(seats.a, seats.c, [])).toBe(false);
   });
 });
 

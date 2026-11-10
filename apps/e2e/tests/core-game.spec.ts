@@ -2,8 +2,8 @@ import { expect } from "@playwright/test";
 import { bodyText, playUntil, startTable, test } from "../support/game.ts";
 
 // F2. Two browser profiles and one hot-seat seat play a short game with the fixed dice from
-// `GAME_SEED`: roll, buy, rent, a hot-seat handoff, a trade and the end of a turn.
-test("two devices and a hot-seat seat play roll, buy, rent, handoff and trade", async ({
+// `GAME_SEED`: roll, buy, rent, a hot-seat turn change, a trade and the end of a turn.
+test("two devices and a hot-seat seat play roll, buy, rent, a turn change and trade", async ({
   browser,
 }) => {
   const { alice, bob } = await startTable(browser, "core");
@@ -19,7 +19,6 @@ test("two devices and a hot-seat seat play roll, buy, rent, handoff and trade", 
     /paid .*rent/i.test(await bodyText(alice.page)),
   );
   expect(taken).toContain("buy");
-  expect(taken).toContain("handoff");
   const log = await bodyText(alice.page);
   expect(log).toMatch(/rolled \d and \d/);
   expect(log).toMatch(/bought .* for \$\d+/);
@@ -52,11 +51,9 @@ test("two devices and a hot-seat seat play roll, buy, rent, handoff and trade", 
   await bob.page.getByLabel("Cash from Cara").fill("25");
   await bob.page.getByRole("button", { name: "Propose" }).click();
 
-  // The offer may wait behind a hot-seat handoff on Alice's device.
+  // The offer shows on Alice's device at once: there is no pass-the-device step (spec 5.3).
   const accept = alice.page.getByRole("button", { name: "Accept" });
-  const handoff = alice.page.getByRole("button", { name: /^I.m .+, start my turn$/ });
-  await expect(accept.or(handoff)).toBeVisible();
-  if (await handoff.isVisible()) await handoff.click();
+  await expect(accept).toBeVisible();
   await accept.click();
 
   await expect.poll(readHand).toEqual({ count: before.count - 1, cash: before.cash + 25 });

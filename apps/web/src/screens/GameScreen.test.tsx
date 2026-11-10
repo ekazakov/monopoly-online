@@ -442,7 +442,7 @@ describe("GameScreen: hot-seat device", () => {
     expect(realtime.send.mock.calls[0]?.[0]).toMatchObject({ seatId: c.id });
   });
 
-  test("shows the pass-the-device prompt when the turn moves to another seat of this device", async () => {
+  test("the turn moves to another seat of this device with no prompt: the next seat acts at once", async () => {
     const onA = {
       ...redact(fx.start),
       turn: { currentPlayerId: a.id, phase: "awaiting_roll" as const, doubles: 0, dice: null },
@@ -450,12 +450,10 @@ describe("GameScreen: hot-seat device", () => {
     const onC = { ...onA, version: 1, turn: { ...onA.turn, currentPlayerId: c.id } };
     const { realtime } = await setup({ state: onA, userId: fx.ownerId });
     await roll();
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     act(() => realtime.emit(snapshotMessage(fx.game, onC, 1)));
-    const prompt = await screen.findByRole("dialog", { name: "Pass to Cy" });
-    expect(prompt).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Roll" })).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: /^I.m Cy/ }));
+    // Spec 5.3: no privacy step. The next player's controls show at once.
+    expect(screen.queryByRole("dialog", { name: /Pass to/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^I.m Cy/ })).not.toBeInTheDocument();
     expect(await roll()).toBeInTheDocument();
   });
 

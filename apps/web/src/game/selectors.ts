@@ -80,20 +80,6 @@ export function isMyTurn(
   return seat !== null && mySeats(game, userId).some((mine) => mine.id === seat.id);
 }
 
-/**
- * The acting seat changed to another seat of the same device, so the device must show "Pass to
- * <name>" before it unlocks the controls. A change to a seat on another device is no handoff.
- */
-export function isHotSeatHandoff(
-  prevActingSeat: Seat | null,
-  nextActingSeat: Seat | null,
-  seats: readonly Seat[],
-): boolean {
-  if (!prevActingSeat || !nextActingSeat || prevActingSeat.id === nextActingSeat.id) return false;
-  const mine = (seat: Seat) => seats.some((s) => s.id === seat.id);
-  return mine(prevActingSeat) && mine(nextActingSeat);
-}
-
 export function isFinished(game: Game | null, state: RedactedGameState | null): boolean {
   return game?.status === "finished" || state?.turn.phase === "game_over";
 }

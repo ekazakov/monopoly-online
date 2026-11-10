@@ -213,7 +213,7 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 
 ### BUG-15: Hot-seat turn change shows a full-screen confirmation overlay (change request)
 
-- Status: open
+- Status: fixed (2026-11-10). Browser tests T11 and the core script are updated but not run in this sandbox
 - Reported: 2026-11-09
 - Area: web
 - Type: change request
