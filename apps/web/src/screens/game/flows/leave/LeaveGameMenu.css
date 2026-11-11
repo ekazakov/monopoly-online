@@ -234,3 +234,16 @@
 .leave-menu__status:empty {
   position: absolute;
 }
+
+/* The volume sliders of the sound settings. */
+.leave-menu__volume input[type="range"] {
+  flex: 0 1 160px;
+  min-height: var(--hf-target);
+  accent-color: var(--hf-accent);
+  cursor: pointer;
+}
+
+.leave-menu__volume input[type="range"]:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

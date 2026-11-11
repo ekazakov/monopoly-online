@@ -4,6 +4,7 @@ import { Navigate, getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { isApiError } from "../api/index.ts";
+import { useGameSounds } from "../audio/useGameSounds.ts";
 import {
   GameActionsContext,
   GameStoreProvider,
@@ -111,6 +112,7 @@ function GameRoute({ gameId }: { gameId: string }) {
   }, [finished, roomStatus, refetchRoom]);
 
   const actions = useGameActionsProvider(gameId, userId, () => void refetch());
+  const sounds = useGameSounds(userId);
 
   if (room.isPending) return <Message title="Loading the game" />;
   if (room.isError) {
@@ -148,7 +150,7 @@ function GameRoute({ gameId }: { gameId: string }) {
 
   return (
     <GameActionsContext value={actions}>
-      <MotionProvider>
+      <MotionProvider listener={sounds}>
         <SquareViewProvider>
           <ConnectionBanner />
           <GameLayout

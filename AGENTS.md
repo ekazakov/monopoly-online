@@ -27,6 +27,7 @@ Read the relevant documents before a change:
 - [Game engine README](packages/game-engine/README.md) and [game rules](plan/game-rules-reference.md): engine design and rules.
 - [Implementation roadmap](plan/implementation-roadmap.md) and [API schema](plan/api-schema.md): planned scope and API contracts.
 - [Milestone 3 tasks](plan/milestone-3-tasks.md) and [E2E test plan](plan/e2e-test-plan.md): session, presence, save and restore, and browser test work.
+- [Sound design](plan/sound-design.md): sound cues, their timing, and the sound files.
 - [Milestone 5 tasks](plan/milestone-5-tasks.md): logging, telemetry, the Docker image and docker compose. Deployment is M6 and Cloudflare is M7.
 
 Some documents describe work before it was built. Check the source and tests before treating a plan or a README statement as current behavior. The engine is connected to the API and web app. Milestone 3 has session and presence support, but its task list still has open browser tests and close tasks. The autopilot for away players is postponed.

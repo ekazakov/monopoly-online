@@ -42,3 +42,6 @@ data/
 
 .ua
 .groma
+
+# Source sound packs for apps/web/public/sounds (see CREDITS.md there)
+raw-audio/

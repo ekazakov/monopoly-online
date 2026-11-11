@@ -9,6 +9,7 @@ import {
   useGame,
   useGameActions,
 } from "../../../../game/index.ts";
+import { setSoundPreference, useSoundPreference } from "../../../../audio/soundPreference.ts";
 import { tokenLook } from "../../../../scene/colors.ts";
 import { setReducedMotion, useReducedMotion } from "../../../../styles/motionPreference.ts";
 import { consequenceText } from "./consequence.ts";
@@ -31,6 +32,7 @@ export function LeaveGameMenu({ userId, onLeft }: LeaveGameMenuProps) {
   const view = useGame(userId);
   const actions = useGameActions();
   const reducedMotion = useReducedMotion();
+  const sound = useSoundPreference();
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -228,6 +230,50 @@ export function LeaveGameMenu({ userId, onLeft }: LeaveGameMenuProps) {
                   {reducedMotion ? "On" : "Off"}
                 </button>
               </div>
+              <div className="leave-menu__row">
+                <p className="leave-menu__row-text">
+                  <span className="leave-menu__row-title">Sound</span>
+                  <span className="leave-menu__hint">Effects and music on this device</span>
+                </p>
+                <button
+                  type="button"
+                  role="switch"
+                  className="leave-menu__btn"
+                  aria-label="Sound"
+                  aria-checked={sound.enabled}
+                  onClick={() => setSoundPreference({ enabled: !sound.enabled })}
+                >
+                  {sound.enabled ? "On" : "Off"}
+                </button>
+              </div>
+              <label className="leave-menu__row leave-menu__volume">
+                <span className="leave-menu__row-title">Effects</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={Math.round(sound.effects * 100)}
+                  disabled={!sound.enabled}
+                  onChange={(event) =>
+                    setSoundPreference({ effects: Number(event.target.value) / 100 })
+                  }
+                />
+              </label>
+              <label className="leave-menu__row leave-menu__volume">
+                <span className="leave-menu__row-title">Music</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={Math.round(sound.music * 100)}
+                  disabled={!sound.enabled}
+                  onChange={(event) =>
+                    setSoundPreference({ music: Number(event.target.value) / 100 })
+                  }
+                />
+              </label>
               <div className="leave-menu__row">
                 <p className="leave-menu__row-text">
                   <span className="leave-menu__row-title">Leave game</span>

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { GameEvent, RedactedGameState } from "@monopoly/shared";
 import { useGameSnapshot, useGameStore } from "../../../game/index.ts";
 import type { ConnectionStatus } from "../../../game/index.ts";
 import { IDLE_PLAYBACK, createMotionQueue, stepDuration } from "../../../scene/motion.ts";
-import type { MotionPlayback } from "../../../scene/motion.ts";
+import type { MotionPlayback, MotionStep } from "../../../scene/motion.ts";
 import { useReducedMotion } from "../../../styles/motionPreference.ts";
 
 /**
@@ -10,6 +11,21 @@ import { useReducedMotion } from "../../../styles/motionPreference.ts";
  * The server sends the replay as soon as the stream opens.
  */
 export const REPLAY_WINDOW_MS = 1000;
+
+/**
+ * Hears what the player does, for example to play sounds in time with the motion.
+ * - `onAction`: a live action came, with the state after it. Its steps are in the queue now.
+ * - `onStep`: a step starts to play.
+ * - `onIdle`: the queue is empty after live actions, so their result is on screen.
+ * - `onSettle`: news that is not a live action put the tokens on their squares at once. It
+ *   has the new state.
+ */
+export interface MotionListener {
+  onAction?: (events: readonly GameEvent[], state: RedactedGameState | null) => void;
+  onStep?: (step: MotionStep) => void;
+  onIdle?: () => void;
+  onSettle?: (state: RedactedGameState | null) => void;
+}
 
 /**
  * Plays the motion of the latest actions one step after the other, and returns the step that
@@ -33,9 +49,12 @@ export const REPLAY_WINDOW_MS = 1000;
  * it. Under reduced motion the moves still show at once, but a hold waits for OK too, with the
  * token on the card square.
  */
-export function useMotionPlayer(): { playback: MotionPlayback; release: () => void } {
+export function useMotionPlayer(listener?: MotionListener): {
+  playback: MotionPlayback;
+  release: () => void;
+} {
   const store = useGameStore();
-  const { version, lastActionEvents } = useGameSnapshot();
+  const { version, lastActionEvents, state } = useGameSnapshot();
   const [mountVersion] = useState(version);
   const [queue] = useState(createMotionQueue);
   const [playback, setPlayback] = useState<MotionPlayback>(IDLE_PLAYBACK);
@@ -47,6 +66,7 @@ export function useMotionPlayer(): { playback: MotionPlayback; release: () => vo
   const reduced = useReducedMotion();
   const reducedNow = useRef(reduced);
   const holding = useRef(false);
+  const hears = useRef(listener);
 
   const advance = useCallback(
     function advance() {
@@ -57,6 +77,8 @@ export function useMotionPlayer(): { playback: MotionPlayback; release: () => vo
       setPlayback(step ? { current: step, waiting: queue.pending() } : IDLE_PLAYBACK);
       timer.current =
         step && !holding.current ? setTimeout(advance, stepDuration(step)) : undefined;
+      if (step) hears.current?.onStep?.(step);
+      else hears.current?.onIdle?.();
     },
     [queue],
   );
@@ -85,6 +107,10 @@ export function useMotionPlayer(): { playback: MotionPlayback; release: () => vo
     return store.subscribe(check);
   }, [store]);
 
+  useEffect(() => {
+    hears.current = listener;
+  }, [listener]);
+
   // Reduced motion that starts while steps play: the step that plays ends, and `advance` drops the rest.
   useEffect(() => {
     reducedNow.current = reduced;
@@ -101,14 +127,20 @@ export function useMotionPlayer(): { playback: MotionPlayback; release: () => vo
       queue.clear();
     }
     const live = lastActionEvents.length > 0 && !replay && !document.hidden;
-    if (live) queue.push(lastActionEvents);
+    if (live) {
+      queue.push(lastActionEvents);
+      hears.current?.onAction?.(lastActionEvents, state);
+    }
     if (!live || (reduced && !queue.pending().some((step) => step.kind === "hold"))) {
       settle();
+      // A live action with no motion to show has its result on screen now.
+      if (live) hears.current?.onIdle?.();
+      else hears.current?.onSettle?.(state);
       return;
     }
     if (timer.current === undefined) advance();
     else setPlayback((prev) => ({ current: prev.current, waiting: queue.pending() }));
-  }, [version, lastActionEvents, queue, advance, settle, reduced]);
+  }, [version, lastActionEvents, state, queue, advance, settle, reduced]);
 
   useEffect(() => () => clearTimeout(timer.current), []);
 
