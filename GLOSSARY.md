@@ -161,7 +161,7 @@ Package [packages/game-engine](packages/game-engine/README.md). Pure functions, 
 | OpenAPI document, `AppType` | `apps/api/openapi.json`, made from the zod routes. `AppType` gives the web client the route types                     | [openapi.json](apps/api/openapi.json), [app.ts](apps/api/src/app.ts), [api.ts](apps/web/src/api.ts) |
 | Q-numbers                   | `Q8`, `Q19`, …: the decided gameplay questions                                                                        | [game-screen-2-gameplay.md](plan/game-screen-2-gameplay.md) §6                                      |
 
-## Observability and Docker (planned, M5)
+## Observability and Docker (M5)
 
 | Term                   | Meaning                                                                                                                 | Where used                                                     |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
@@ -172,6 +172,16 @@ Package [packages/game-engine](packages/game-engine/README.md). Pure functions, 
 | Liveness, readiness    | Liveness (`/api/health`): the process runs. Readiness (`/api/ready`): the database works and the migrations are applied | [milestone-5-tasks.md](plan/milestone-5-tasks.md)              |
 | Local Grafana stack    | The `grafana/otel-lgtm` container: OpenTelemetry Collector, Prometheus, Loki, Tempo and Grafana                         | [milestone-5-tasks.md](plan/milestone-5-tasks.md)              |
 | Prod image, dev target | The prod image is the one Docker image for all environments. The dev target is a build stage for local hot reload only  | [milestone-5-tasks.md](plan/milestone-5-tasks.md)              |
+
+## Deployment (planned, M6)
+
+| Term                | Meaning                                                                                                                  | Where used                                        |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------- |
+| VPS                 | The one Kamatera server that runs the prod image. Do not write "droplet" (the old DigitalOcean plan) or "server" for it  | [milestone-6-tasks.md](plan/milestone-6-tasks.md) |
+| Production settings | The env file `/srv/harborfront/app.env` on the VPS. The template is `ops/prod/app.env.example`                           | [milestone-6-tasks.md](plan/milestone-6-tasks.md) |
+| Deploy, rollback    | Deploy: build, send and start a new image with `pnpm deploy:prod`. Rollback: start the previous image again              | [milestone-6-tasks.md](plan/milestone-6-tasks.md) |
+| Backup, restore     | Backup: a checked copy of the SQLite file, made each day on the VPS. Restore: put a backup back in place of the database | [milestone-6-tasks.md](plan/milestone-6-tasks.md) |
+| Reverse proxy       | nginx on the VPS. It ends TLS and sends the requests to the app. M7 removes it                                           | [milestone-6-tasks.md](plan/milestone-6-tasks.md) |
 
 ## Known inconsistencies
 

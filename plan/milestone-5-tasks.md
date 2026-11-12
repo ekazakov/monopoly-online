@@ -3,7 +3,7 @@
 |                |                                                                                                    |
 | -------------- | -------------------------------------------------------------------------------------------------- |
 | Companion docs | [implementation-roadmap.md](implementation-roadmap.md) (sections 8 and 9), [api-schema.md](api-schema.md), [e2e-test-plan.md](e2e-test-plan.md), [milestone-4-tasks.md](milestone-4-tasks.md) |
-| Status         | Planned. Last updated 2026-11-12 |
+| Status         | Done. Last updated 2026-11-12 |
 
 **Goal.** On the local machine, the API writes structured logs and sends metrics, logs and traces to a local Grafana stack. The app runs from one Docker image, and the browser suite passes against that image. M6 can then deploy the same image.
 
@@ -19,7 +19,7 @@
 
 - In M5: logs, metrics, traces, the local Grafana stack and dashboard, readiness and graceful shutdown, the static web build served by the API, the Docker image, docker compose, and the browser suite on the image. Added 2026-11-12: browser preferences, the light theme, the owner marker, and the Russian translation (section E).
 - Not in M5:
-  - Deployment, the droplet, Caddy, the domain, Grafana Cloud, alerts and backups (M6).
+  - Deployment, the VPS, nginx, the domain, Grafana Cloud, alerts and backups (M6).
   - Cloudflare proxy, Tunnel, Access and the Access JWT check (M7).
   - CI. It is in "Later" in the roadmap.
   - Game metrics (active games, action count and duration, refused actions). Decided 2026-11-08. Traces can still have an `applyAction` span.
@@ -51,7 +51,7 @@
 | Web serving | The API serves `apps/web/dist` with `serveStatic` and a fallback to `index.html` for app routes. Not for `/api/*`. One origin, one process |
 | Image | One `Dockerfile` on `node:26-slim` (glibc, so the `better-sqlite3` binaries work). Stages: deps, build, `dev`, `prod` |
 | Prod target | The `pnpm deploy --prod` output for `@monopoly/api`, `dist/index.mjs`, and the web `dist`. Non-root user. `CMD ["node", …]` in exec form, so SIGTERM gets to Node. SQLite at `/data` (a volume) |
-| One prod image | The same image runs locally, in `pnpm e2e:docker` and on the droplet (M6). Only environment variables are different |
+| One prod image | The same image runs locally, in `pnpm e2e:docker` and on the VPS (M6). Only environment variables are different |
 | Dev target | All dependencies and the source mounted from the host, `pnpm dev` with hot reload. Never deployed |
 | Compose | `compose.yaml` in the repository root. Default profile: app (prod target) and otel-lgtm. `dev` profile: dev target and otel-lgtm. `e2e` profile: the prod image with the test settings |
 | Browser suite on the image | New `pnpm e2e:docker`. `pnpm e2e` on the source stays the default |
@@ -161,7 +161,7 @@ Docker Desktop (or another Docker engine) with compose v2. No accounts or keys: 
 | Open SSE streams stop `server.close()` | The shutdown closes the streams first, with a time limit |
 | The macOS `node_modules` does not work in a Linux container | The `dev` profile keeps `node_modules` in a container volume |
 | `grafana/otel-lgtm` uses much memory on a laptop | Accepted for development. Stop it with the app |
-| The browser suite on the image runs with development settings, so it does not test the production guards | The API tests cover the guards. M6 checks the production settings on the droplet |
+| The browser suite on the image runs with development settings, so it does not test the production guards | The API tests cover the guards. M6 checks the production settings on the VPS |
 | Logs and spans add time to each action | Measure with the Manual run (F1). Sampling can go down in M6 |
 | Russian text is longer than English and can break the board labels and the buttons | Check each layout in Russian Translation (E6). Allow text wrap or a shorter key text |
 | A colour that is fixed in a component stays dark on the light theme | Move all colours to tokens in Light theme (E2). Check each screen on both themes |

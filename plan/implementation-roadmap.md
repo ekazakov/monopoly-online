@@ -4,11 +4,11 @@
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Companion docs | [game-rules-reference.md](game-rules-reference.md) (rules), [game-screen-2-gameplay.md](game-screen-2-gameplay.md) (turn flow, devices, session owner), [game-screen-2-spec.md](game-screen-2-spec.md) (UI), [GLOSSARY.md](../GLOSSARY.md) (terms) |
 | Engine         | [packages/game-engine](../packages/game-engine/README.md): complete                                                                                                                                              |
-| Status         | M1 to M4 done. M5 planned ([tasks](milestone-5-tasks.md)). Last updated 2026-11-08 |
+| Status         | M1 to M5 done. M6 planned ([tasks](milestone-6-tasks.md)). Last updated 2026-11-12 |
 
 This document is the plan from the first scaffold to a fully working online game. It covers the API, the realtime layer, auth, the UI, testing, telemetry, and hosting.
 
-**Where we are.** M1 to M4 are done: the game is playable on the local machine, with the lobby, Save and Restore, presence, and Google sign-in. The API has no structured logs, no telemetry and no Docker image yet (M5). Nothing is deployed (M6, M7).
+**Where we are.** M1 to M5 are done: the game is playable on the local machine, with the lobby, Save and Restore, presence, Google sign-in, logs, telemetry and one Docker image. Nothing is deployed yet (M6, M7).
 
 **Decisions (2026-10-31)**
 
@@ -46,10 +46,10 @@ Milestones M1 to M5 run on the local machine. Deployment (M6) and Cloudflare (M7
 | **M3 Session and resilience** ([tasks](milestone-3-tasks.md)) | Owner Finish, Save and Restore (gameplay 3.1), disconnect and away rules (3.2): the game waits for an away player, and it saves itself when nobody is online. The Playwright setup and script from M1, with a disconnect script |
 | **M4 Sign-in and room control** ([tasks](milestone-4-tasks.md)) | Host removes a player, Google sign-in. Guest sign-in stays for test and development only. The accessibility pass and WebSocket move to after the first release. **Done** on 2026-11-08, with the manual run on real Google sign-in (G1) |
 | **M5 Observability and Docker** ([tasks](milestone-5-tasks.md)) | pino logs, OpenTelemetry metrics, logs and traces, a local Grafana stack (`grafana/otel-lgtm`) with a dashboard, readiness and graceful shutdown, the API serves the web build, one Docker image (dev and prod targets), docker compose, and the browser suite on the image (`pnpm e2e:docker`). All on the local machine |
-| **M6 Deployment**             | A domain (Cloudflare Registrar, DNS only), one DigitalOcean droplet with Docker, Caddy with Let's Encrypt, a local build and deploy script (no registry), the Google redirect address for production, the OpenTelemetry export to Grafana Cloud with alerts, and the daily SQLite backup |
-| **M7 Cloudflare**             | The Cloudflare proxy and edge TLS, Cloudflare Tunnel (Caddy removed, no open HTTP port), Cloudflare Access, the Access JWT check in the API, and the SSE check through Cloudflare. This is the first release |
+| **M6 Deployment** ([tasks](milestone-6-tasks.md)) | One Kamatera VPS with Docker, nginx with Let's Encrypt (certbot), a local build and deploy script with rollback (no registry), the daily SQLite backup, the OpenTelemetry export to Grafana Cloud with alerts, and, last, a domain (DNS at Cloudflare, DNS only) and the Google redirect address for production |
+| **M7 Cloudflare**             | The Cloudflare proxy and edge TLS, Cloudflare Tunnel (nginx removed, no open HTTP port), Cloudflare Access, the Access JWT check in the API, and the SSE check through Cloudflare. This is the first release |
 | **After the first release**   | Accessibility pass ([future work](milestone-4-tasks.md#future-work-after-the-first-release)), WebSocket transport (only if SSE has a problem through Cloudflare) |
-| **Later (no milestone)**      | The autopilot for away players (postponed 2026-11-06). Claim from another browser (gameplay Q25). CI with GitHub Actions. Browser telemetry |
+| **Later (no milestone)**      | The autopilot for away players (postponed 2026-11-06). Claim from another browser (gameplay Q25). CI with GitHub Actions. Browser telemetry. Offsite backup storage (Cloudflare R2 or Backblaze B2) |
 
 Tests are written with each milestone (section 7). There is no CI: run them on the local machine before each commit and each deploy.
 
@@ -175,7 +175,7 @@ M5 builds this section on the local machine. M6 sends the same data to Grafana C
   - No game metrics in M5 (decided 2026-11-08).
 - **Health.** `/api/health` is the liveness check. `/api/ready` checks the database and the migrations.
 - **Local stack (M5).** One `grafana/otel-lgtm` container in docker compose: an OpenTelemetry Collector, Prometheus, Loki, Tempo and Grafana. A dashboard file in the repository is loaded at start.
-- **Backend (M6).** OTLP to the Grafana Cloud free tier. Only the endpoint, the headers and the sampling ratio change. Alerts in M6.
+- **Backend (M6).** The Node SDK sends OTLP directly to the Grafana Cloud free tier, with no collector on the VPS. Only the endpoint, the headers and the sampling ratio change. Alerts in M6.
 - **Settings.** Telemetry is off when no OTLP endpoint is set, and in the unit tests.
 - **Privacy.** No personal data except the display name. No cookies, tokens, IP addresses or user agents in logs or spans. pino removes cookies, `Authorization`, session tokens, and the OAuth `code` and `state`.
 - **Web.** No browser telemetry for now (Later).
@@ -187,36 +187,37 @@ M5 builds this section on the local machine. M6 sends the same data to Grafana C
 | Part      | Choice                                                                                                       | Cost             | Milestone |
 | --------- | ------------------------------------------------------------------------------------------------------------ | ---------------- | --------- |
 | Image     | One Docker image, `node:26-slim`. The API process also serves the static web build. One instance            | Free             | M5        |
-| Domain    | Bought at Cloudflare Registrar. DNS only (no proxy) in M6                                                   | About $10/year   | M6        |
-| API + web | One small DigitalOcean droplet with Docker and docker compose                                                | About $4–6/month | M6        |
-| TLS       | Caddy with Let's Encrypt in M6. Cloudflare edge TLS in M7, and Caddy is removed                             | Free             | M6, M7    |
-| Edge      | Cloudflare proxy, Cloudflare Tunnel to the droplet, Cloudflare Access (section 10)                          | Free             | M7        |
-| Database  | SQLite file on the droplet volume. A daily backup of the file (`sqlite3 .backup`), copied to the local machine | Free             | M6        |
+| Domain    | Bought at a registrar that is not Cloudflare. The name servers move to the Cloudflare free plan. DNS only (no proxy) in M6 | About $10/year   | M6        |
+| API + web | One Kamatera VPS (1 vCPU, 1 GB RAM, 10 GB disk, Ubuntu 26.04) with Docker and docker compose                 | About $4–6/month | M6        |
+| TLS       | nginx and certbot (Let's Encrypt) on the host in M6. Cloudflare edge TLS in M7, and nginx is removed        | Free             | M6, M7    |
+| Edge      | Cloudflare proxy, Cloudflare Tunnel to the VPS, Cloudflare Access (section 10)                              | Free             | M7        |
+| Database  | SQLite file in a host folder on the VPS. A daily backup of the file (`sqlite3 .backup`), 7 copies on the VPS, pulled to the local machine | Free             | M6        |
 | Telemetry | Grafana Cloud, free tier                                                                                     | Free             | M6        |
 
 - **One origin.** The web app and the API share one hostname, for example `play.<domain>`, with the API under `/api`. Then one Access application covers both, and the session cookie needs no cross-site settings.
-- **One image.** The same prod image runs on the local machine, in `pnpm e2e:docker` and on the droplet. Only the environment variables are different.
-- **Why a droplet and not App Platform.** On a droplet, `cloudflared` runs next to the API and opens an outbound tunnel (M7). The droplet then needs no public HTTP port, so nobody can go around Cloudflare Access. App Platform is still possible, but then only the JWT check in the API (section 10) protects the origin.
+- **One image.** The same prod image runs on the local machine, in `pnpm e2e:docker` and on the VPS. Only the environment variables are different.
+- **Why a VPS and not a platform service.** On a VPS, `cloudflared` runs next to the API and opens an outbound tunnel (M7). The VPS then needs no public HTTP port, so nobody can go around Cloudflare Access. This design works on any VPS. The change from DigitalOcean to Kamatera (2026-11-12) does not change M7.
 - **Why the API is not on Vercel.** Serverless functions run for a short time only. They cannot keep SSE streams open or run the grace timers.
-- **Deploy (M6).** A local script builds the image for `linux/amd64` with `docker buildx` (the local machine is arm64, so this build is slow), sends it with `docker save | ssh … docker load`, runs `docker compose up -d`, and checks `/api/ready` inside the droplet. No registry and no CI. The API applies the migrations at start. Secrets are in an env file on the droplet.
+- **Deploy (M6).** A local script builds the image for the platform of the VPS with `docker buildx`. The local machine is arm64, so this build is slow. The script sends the image with `docker save | ssh … docker load`, makes a backup, runs `docker compose up -d`, and checks `/api/ready` on the VPS. It keeps the previous image for a rollback. No registry and no CI. The API applies the migrations at start. Secrets are in an env file on the VPS.
+- **Small server.** 1 GB RAM and a 10 GB disk. No Grafana stack or collector on the VPS. A swap file, a container memory limit, log limits, and two images at most.
 - **One instance.** The game is not built for scale. One API process holds the bus, the game cache and the timers.
 
 ---
 
 ## 10. Access control (Cloudflare Access, M7)
 
-Only persons on an allow list can open the game. Cloudflare Access (Zero Trust, free for up to 50 users) checks each request before it reaches the droplet.
+Only persons on an allow list can open the game. Cloudflare Access (Zero Trust, free for up to 50 users) checks each request before it reaches the VPS.
 
 - **Access application.** One self-hosted application for `play.<domain>`, covering all paths (the web app, `/api`, `/api/stream`, `/api/telemetry`).
 - **Policy.** Allow: a list of email addresses, kept in the Cloudflare dashboard. All other persons get the Cloudflare sign-in page and cannot continue.
 - **Sign-in method.** One-time PIN by email (no extra setup). Google can be added as an identity provider later, together with the Google OAuth step of section 5.
 - **Session.** Access session of 7 to 30 days, so friends do not sign in each evening.
 - **Origin protection.**
-  - Cloudflare Tunnel: the droplet has no open HTTP port (firewall allows only SSH).
+  - Cloudflare Tunnel: the VPS has no open HTTP port (firewall allows only SSH).
   - Defence in depth: an API middleware checks the `Cf-Access-Jwt-Assertion` header (signature from the team's public keys, audience tag, expiry). A request without a valid token gets 403. The check is off in local development and in tests (environment flag).
 - **Relation to the guest name (section 5).** Access decides who may enter. The Google sign-in (section 5) gives the in-game identity. The API does not read the Access email and does not link it to a user.
 - **SSE through Cloudflare.** Cloudflare closes an idle connection after about 100 seconds. The 15-second heartbeat (section 4.1) keeps the stream open. When the Access session ends, the stream and POST requests fail with a redirect or 403: the client shows "Session ended" and reloads the page, so the person signs in again.
-- **Health check.** `/api/health` stays behind Access. The deploy checks it inside the droplet, not through Cloudflare.
+- **Health check.** `/api/health` stays behind Access. The deploy checks it on the VPS, not through Cloudflare.
 - **Managing access.** Add or remove a person in the Access policy in the dashboard. No deploy is necessary. Optional later: keep the policy in Terraform.
 
 ---
@@ -228,12 +229,12 @@ Only persons on an allow list can open the game. Cloudflare Access (Zero Trust, 
 | Some proxies buffer or close SSE streams                 | Heartbeats, and the header `X-Accel-Buffering: no`                         |
 | The Access session ends during a game                    | Long Access sessions; the client detects the redirect or 403 and reloads   |
 | The origin is reached without Cloudflare                 | Cloudflare Tunnel with no open HTTP port, and the JWT check in the API     |
-| The SQLite file is lost with the droplet                 | Daily backup of the file                                                   |
+| The SQLite file is lost with the VPS                     | Daily backup of the file, pulled to the local machine                      |
 | Timers in the API process are lost on a restart          | Make them again from the database at start                                 |
 | A silent network drop (a laptop sleeps) closes no stream, so the server can see the device as online for minutes | Check this through Cloudflare in M7. If it is a problem, add a client ping |
 | Open SSE streams stop a clean shutdown, because the server waits for them | On SIGTERM the API closes the streams itself (M5) |
 | The OpenTelemetry HTTP spans record the client IP and the user agent by default | Remove these attributes (M5) |
-| Before M7 the droplet has an open HTTPS port, and Access does not protect it | Short M6 period. Google sign-in still controls who plays |
+| Before M7 the VPS has an open HTTPS port, and Access does not protect it | Short M6 period. Google sign-in still controls who plays |
 | One absent player stops the game, because the game waits for them (gameplay 3.2) | The owner can use Save or Finish. When all players leave, the game saves itself |
 
 ---
@@ -257,3 +258,4 @@ Only persons on an allow list can open the game. Cloudflare Access (Zero Trust, 
 | 2026-11-08 | Task list for milestone 4 in [milestone-4-tasks.md](milestone-4-tasks.md). Google is the only production sign-in; guest sign-in is for test and development only. The accessibility pass and WebSocket move to after the first release (M5) |
 | 2026-11-08 | Milestone 4 code done: the host removes a player (API, `room.removed`, room screen), Google sign-in with Arctic behind an injected provider, guest sign-in behind `GUEST_SIGN_IN_ENABLED`, the sign-in screen, and the remove player Playwright script (32 scripts pass). "As built" rules in [api-schema.md](api-schema.md). The manual run with real Google sign-in (G1) passed. Claim from another browser (Q25) stays an open question |
 | 2026-11-08 | Milestone 5 split: M5 Observability and Docker ([tasks](milestone-5-tasks.md)), M6 Deployment (droplet, Caddy, local deploy script, Grafana Cloud, backup), M7 Cloudflare (proxy, Tunnel, Access, JWT check). CI moves to Later. No game metrics in M5 |
+| 2026-11-12 | Milestone 5 done. Task list for milestone 6 in [milestone-6-tasks.md](milestone-6-tasks.md). The host is one Kamatera VPS (1 vCPU, 1 GB RAM, 10 GB disk, Ubuntu 26.04), not a DigitalOcean droplet. nginx and certbot replace Caddy. The domain is bought later at another registrar, with DNS at Cloudflare. Backups stay on the VPS and are pulled to the local machine. Offsite storage moves to Later |

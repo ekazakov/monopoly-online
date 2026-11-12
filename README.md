@@ -48,7 +48,7 @@ The API keeps its database in `apps/api/data/monopoly.db`. To change the path, s
 
 ## Docker image
 
-One `Dockerfile` makes the image that runs locally, in the browser tests and on the droplet. The default target is `prod`: Node 26, the API bundle, its production dependencies and the web build, as the user `node`. It listens on port 8787, keeps the database in the `/data` volume and has a health check on `/api/ready`. The `dev` target has all dependencies for `pnpm dev`; its source comes from the host.
+One `Dockerfile` makes the image that runs locally, in the browser tests and on the VPS (M6). The default target is `prod`: Node 26, the API bundle, its production dependencies and the web build, as the user `node`. It listens on port 8787, keeps the database in the `/data` volume and has a health check on `/api/ready`. The `dev` target has all dependencies for `pnpm dev`; its source comes from the host.
 
 ```bash
 docker build -t harborfront .
