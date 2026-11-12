@@ -34,7 +34,7 @@
   flex-direction: column;
   gap: var(--hf-space-12);
   box-sizing: border-box;
-  width: 320px;
+  width: 400px;
   max-width: calc(100vw - 2 * var(--hf-space-12));
   max-height: calc(100vh - 80px);
   padding: var(--hf-space-16);
