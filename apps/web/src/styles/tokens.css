@@ -133,10 +133,10 @@
 :root[data-theme="light"] {
   color-scheme: light;
 
-  --hf-ground: #eaf0ee;
+  --hf-ground: #dde5e2;
   --hf-table: #f7faf8;
   --hf-panel: #f7faf8;
-  --hf-panel-log: #f0f5f3;
+  --hf-panel-log: #f7faf8;
   --hf-panel-glass: rgba(247, 250, 248, 0.86);
   --hf-panel-line: #c3d1d9;
   --hf-ink: #0e1822;

@@ -96,6 +96,15 @@ export const tokenLook = (token: Token): TokenLook => TOKEN_LOOKS[token];
 /** Owner marker colour for a deed whose owner is not among the known players. */
 export const UNKNOWN_OWNER_COLOR = "#a9bcc9";
 
+/**
+ * The board shadow on the page. Black at 35% suits the dark page. On the light page that reads as
+ * grey dirt, so it is the shell ink at a low opacity.
+ */
+export const BOARD_SHADOW = {
+  dark: { color: "#000000", opacity: 0.35 },
+  light: { color: "#0e1822", opacity: 0.14 },
+} as const;
+
 // Board surface colours, copies of the --hf-* board tokens.
 export const SURFACE = {
   slab: "#e9e2cf",

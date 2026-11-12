@@ -5,7 +5,9 @@ import { Canvas, useThree } from "@react-three/fiber";
 import { Component, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { ComponentRef, ReactNode } from "react";
 import * as THREE from "three";
+import { useTheme } from "../styles/themePreference.ts";
 import { FOV, ORBIT, VIEW_DIRECTION, fitDistance } from "./camera.ts";
+import { BOARD_SHADOW } from "./colors.ts";
 import { layoutTokens } from "./layout.ts";
 import type { TokenSpot } from "./layout.ts";
 import { buildSceneModel } from "./model.ts";
@@ -132,8 +134,19 @@ function Scene({
   reducedMotion,
 }: SceneProps) {
   const gl = useThree((s) => s.gl);
+  const invalidate = useThree((s) => s.invalidate);
   const resources = useMemo(createResources, []);
   useEffect(() => () => resources.dispose(), [resources]);
+
+  // The board shadow follows the page theme (light theme: a soft ink shadow, not grey).
+  const theme = useTheme();
+  useEffect(() => {
+    const { color, opacity } = BOARD_SHADOW[theme];
+    const material = resources.materials.shadowCatcher;
+    material.color.set(color);
+    material.opacity = opacity;
+    invalidate();
+  }, [theme, resources, invalidate]);
 
   const epoch = useFontEpoch();
   const textures = useMemo(

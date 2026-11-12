@@ -14,7 +14,7 @@ export const THEME_KEY = "hf.theme";
 const QUERY = "(prefers-color-scheme: light)";
 
 /** The browser bar colour of each theme: the `--hf-ground` token. */
-export const THEME_COLOR: Record<Theme, string> = { dark: "#0e1822", light: "#eaf0ee" };
+export const THEME_COLOR: Record<Theme, string> = { dark: "#0e1822", light: "#dde5e2" };
 
 function systemTheme(): Theme {
   return window.matchMedia?.(QUERY).matches ? "light" : "dark";
@@ -66,4 +66,9 @@ export function startThemePreference(): () => void {
 
 export function useThemePreference(): ThemePreference {
   return useSyncExternalStore(store.subscribe, store.get);
+}
+
+/** The theme that shows now, for code that cannot read CSS, such as the 3D board. */
+export function useTheme(): Theme {
+  return useSyncExternalStore(store.subscribe, currentTheme);
 }

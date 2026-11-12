@@ -71,6 +71,13 @@
   pointer-events: auto;
 }
 
+/* On the light page the bar is close to the ground, so it gets an edge and a small shadow. */
+:root[data-theme="light"] .game-layout__log {
+  border: 1px solid var(--hf-panel-line);
+  border-top: none;
+  box-shadow: 0 2px 8px rgba(14, 24, 34, 0.1);
+}
+
 .game-layout__menu {
   position: absolute;
   top: var(--hf-space-12);
