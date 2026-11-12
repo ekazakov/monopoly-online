@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { RedactedGameState } from "@monopoly/shared";
 import { afterEach, describe, expect, test, vi } from "vite-plus/test";
@@ -56,6 +56,23 @@ async function openConfirm(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe("LeaveGameMenu: panel", () => {
+  test("the theme buttons choose a theme and show the choice", async () => {
+    const user = userEvent.setup();
+    setup();
+    await user.click(menuButton());
+    const theme = screen.getByRole("group", { name: "Theme" });
+    const light = within(theme).getByRole("button", { name: "Light" });
+    expect(within(theme).getByRole("button", { name: "Device" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await user.click(light);
+    expect(light).toHaveAttribute("aria-pressed", "true");
+    expect(document.documentElement.dataset.theme).toBe("light");
+    await user.click(within(theme).getByRole("button", { name: "Device" }));
+    expect(window.localStorage.getItem("hf.theme")).toBeNull();
+  });
+
   test("renders one root element and a closed Menu button", () => {
     const { container } = setup();
     expect(container.children).toHaveLength(1);
@@ -386,6 +403,8 @@ describe("LeaveGameMenu: owner controls", () => {
     await user.click(menuButton());
     const names = screen
       .getAllByRole("button")
+      // the theme choices are settings, not game controls
+      .filter((b) => !b.closest('[role="group"]'))
       .map((b) => b.getAttribute("aria-label") ?? b.textContent);
     expect(names).toEqual(["Menu", "Save and exit", "Finish game", "Leave game"]);
   });

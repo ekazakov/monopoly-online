@@ -1,9 +1,28 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#0e1822" />
     <title>Harborfront</title>
+    <script>
+      // Sets the theme before the first paint, so a light page does not flash dark. The same rule
+      // is in src/styles/themePreference.ts, which takes over when the app starts.
+      (function () {
+        var stored = null;
+        try {
+          stored = localStorage.getItem("hf.theme");
+        } catch (e) {}
+        var light =
+          stored === "light" ||
+          (stored !== "dark" &&
+            window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: light)").matches);
+        document.documentElement.dataset.theme = light ? "light" : "dark";
+        if (light) document.querySelector('meta[name="theme-color"]').content = "#eaf0ee";
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

@@ -76,6 +76,17 @@
   color: var(--hf-ink-soft);
 }
 
+/* A set of choices for one setting, such as the theme. */
+.leave-menu__choice {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--hf-space-4);
+}
+
+.leave-menu__choice .leave-menu__btn {
+  padding-inline: var(--hf-space-8);
+}
+
 .leave-menu__confirm {
   display: flex;
   flex-direction: column;

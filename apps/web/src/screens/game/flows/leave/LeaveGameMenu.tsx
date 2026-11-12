@@ -12,6 +12,14 @@ import {
 import { setSoundPreference, useSoundPreference } from "../../../../audio/soundPreference.ts";
 import { tokenLook } from "../../../../scene/colors.ts";
 import { setReducedMotion, useReducedMotion } from "../../../../styles/motionPreference.ts";
+import { setThemePreference, useThemePreference } from "../../../../styles/themePreference.ts";
+import type { ThemePreference } from "../../../../styles/themePreference.ts";
+
+const THEMES: ReadonlyArray<[ThemePreference, string]> = [
+  ["system", "Device"],
+  ["light", "Light"],
+  ["dark", "Dark"],
+];
 import { consequenceText } from "./consequence.ts";
 import "./LeaveGameMenu.css";
 
@@ -32,6 +40,7 @@ export function LeaveGameMenu({ userId, onLeft }: LeaveGameMenuProps) {
   const view = useGame(userId);
   const actions = useGameActions();
   const reducedMotion = useReducedMotion();
+  const theme = useThemePreference();
   const sound = useSoundPreference();
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -229,6 +238,31 @@ export function LeaveGameMenu({ userId, onLeft }: LeaveGameMenuProps) {
                 >
                   {reducedMotion ? "On" : "Off"}
                 </button>
+              </div>
+              <div className="leave-menu__row">
+                <p className="leave-menu__row-text">
+                  <span className="leave-menu__row-title" id={`${panelId}-theme`}>
+                    Theme
+                  </span>
+                  <span className="leave-menu__hint">Device follows your system setting</span>
+                </p>
+                <div
+                  className="leave-menu__choice"
+                  role="group"
+                  aria-labelledby={`${panelId}-theme`}
+                >
+                  {THEMES.map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      className={`leave-menu__btn${theme === value ? " leave-menu__btn--primary" : ""}`}
+                      aria-pressed={theme === value}
+                      onClick={() => setThemePreference(value)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="leave-menu__row">
                 <p className="leave-menu__row-text">

@@ -9,10 +9,29 @@
   --log-gain: #72d69e;
   --log-loss: #ff958b;
   --log-alert: #f5c95c;
+  --log-name-dog: #ff958b;
+  --log-name-cat: #8cb8ff;
+  --log-name-penguin: #72d69e;
+  --log-name-car: #f5c95c;
+  --log-name-horse: #c4a5f2;
+  --log-name-duck: #6fd9d3;
 
   position: relative;
   height: var(--log-line);
   color: var(--hf-ink);
+}
+
+/* On the light log bar the lifted tones are too pale, so they go darker. */
+:root[data-theme="light"] .game-log {
+  --log-gain: #1a7a43;
+  --log-loss: #b3261e;
+  --log-alert: #855d00;
+  --log-name-dog: #b3261e;
+  --log-name-cat: #1f56b0;
+  --log-name-penguin: #1a7a43;
+  --log-name-car: #855d00;
+  --log-name-horse: #6a3fb5;
+  --log-name-duck: #0b6e6a;
 }
 
 .game-log__panel {

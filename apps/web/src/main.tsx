@@ -9,10 +9,12 @@ import { RealtimeProvider } from "./realtime/index.ts";
 import { createQueryClient } from "./queryClient.ts";
 import { createAppRouter } from "./router.tsx";
 import { startMotionPreference } from "./styles/motionPreference.ts";
+import { startThemePreference } from "./styles/themePreference.ts";
 import "./styles/tokens.css";
 import "./styles.css";
 
 startMotionPreference();
+startThemePreference();
 startSoundPreference();
 startAudio();
 

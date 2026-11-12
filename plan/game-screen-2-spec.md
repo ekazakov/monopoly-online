@@ -478,7 +478,7 @@ Gameplay questions (player limits, disconnects, trades, house rules, timer, bots
 
 1. Are the 3D camera views from the Game screen board (Angle, Top, Low) still planned for this screen?
 2. Which sound, music and motion settings does the Menu need?
-3. Should a light theme (Light theme board) apply to this screen?
+3. **Light theme (decided 2026-11-12).** Yes. The Menu has a Theme choice: Device, Light and Dark. Only the shell tokens change, as on the Light theme board. The board, street colours and pieces stay the same.
 4. ~~Turn timer placement.~~ Closed: there is no turn timer in v1 (gameplay Q5).
 5. **Colour collisions (decided 2026-11-12).** Every player colour is close to a property-group colour: Marlow's red and the Red group, Ines's blue and Navy, Tove's green and Green, Ravi's gold and Yellow (and the cash coin). The owner marker (R-B4) can't rely on colour. Decision: the group bar stays on the inner edge. The owner marker at the outer edge becomes a neutral band with the owner's avatar glyph in a chip and the price beside it. The owner colour is only a thin ring around the glyph, so the glyph alone identifies the owner. No palette change: the game has at most six players. Rejected: a glyph chip without the neutral band, patterns for each player, a new palette alone, and an owner-colour outline.
 6. **Next turn placement.** The button sits where "Roll" would, right under the dice. Should it be disabled while a decision or debt is pending, show "Roll again" after doubles, and ask for confirmation when the player still has unspent options?
@@ -503,6 +503,7 @@ Gameplay questions (player limits, disconnects, trades, house rules, timer, bots
 | 2026-11-03 | Debug panel added (4.7, R-D1 to R-D5): the player on turn edits cash, deeds and token squares to test the game logic. It is not part of the game design |
 | 2026-11-03 | Debug panel: the Deeds list is a multi-select in three groups (Streets, Stations, Utilities), and one edit can hold a batch of changes (4.7) |
 | 2026-11-03 | Horse and duck outline icons and 3D figures added, with the purple and teal pawn colours (4.3, R-P7)                                                                                    |
+| 2026-11-12 | Light theme decided (question 3): a Theme choice in the Menu, shell tokens only |
 | 2026-11-12 | Colour collisions decided (question 5, R-B4): a neutral owner band with the owner's avatar glyph in a chip and an owner-colour ring |
 | 2026-11-10 | Property hand redesign approved (4.6, R-H1 to R-H6): one grid with a column per group, no header and no group labels, a tab above the hand, a side column in the expanded panel, no debt controls in the hand |
 | 2026-11-09 | Bug review ([bug-fix-plan.md](bug-fix-plan.md)): modal dialogs for the auction, card reveal and square detail (5.2, 8.7, R-B5, question 11 closed); full title deed; card hold; turn-change toast replaces the handoff interstitial (1.2, 5.3, R-T5); same pips on all faces (4.5); card stacks (4.4); owner marker clear of the price (R-B4); debug mode behind an API flag (4.7, R-D1, R-D5); planned hand redesign (4.6) |

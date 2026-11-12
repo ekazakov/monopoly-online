@@ -7,14 +7,15 @@ import { describeEvent, playerName } from "./describe.ts";
 import { LogIcon } from "./LogIcon.tsx";
 import "./GameLog.css";
 
-// Token colours lifted for text on the log bar (4.5:1 or better).
+// Token colours for player names on the log bar (4.5:1 or better). The values are `--log-name-*`
+// in GameLog.css, lifted on the dark bar and darker on the light one.
 const NAME_COLORS: Record<Token, string> = {
-  dog: "#ff958b",
-  cat: "#8cb8ff",
-  penguin: "#72d69e",
-  car: "#f5c95c",
-  horse: "#c4a5f2",
-  duck: "#6fd9d3",
+  dog: "var(--log-name-dog)",
+  cat: "var(--log-name-cat)",
+  penguin: "var(--log-name-penguin)",
+  car: "var(--log-name-car)",
+  horse: "var(--log-name-horse)",
+  duck: "var(--log-name-duck)",
 };
 
 // How far from the end still counts as "at the end", for fractional scroll positions.

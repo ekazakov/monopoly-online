@@ -1,6 +1,7 @@
 /*
  * Harborfront design tokens (design spec section 2, design system Foundations and Main boards).
- * The dark shell is the only theme. The light theme in Light.dc.html is open question 3 of the spec.
+ * Dark is the default theme. The light theme (design system Light board) is at the end of this file:
+ * it changes only the shell tokens. The board, street and piece tokens are the same in both themes.
  * Spec-only roles that the design system does not name get an --hf- name of their own.
  */
 :root {
@@ -122,6 +123,36 @@
   --hf-ease-out: ease-out;
   --hf-ease-in-out: ease-in-out;
   --hf-ease-camera: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/*
+ * Light theme. `data-theme` is set before the first paint by index.html and then by
+ * themePreference.ts. Values from the Light board; the tokens it does not list are derived from
+ * the same ramp: panel-log, ring, hover, ok, danger-ink and the shadows.
+ */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --hf-ground: #eaf0ee;
+  --hf-table: #f7faf8;
+  --hf-panel: #f7faf8;
+  --hf-panel-log: #f0f5f3;
+  --hf-panel-glass: rgba(247, 250, 248, 0.86);
+  --hf-panel-line: #c3d1d9;
+  --hf-ink: #0e1822;
+  --hf-ink-soft: #3d5466;
+  --hf-ring: #7d93a2;
+  --hf-accent: #c8322b;
+  --hf-accent-hover: #b02a24;
+  --hf-accent-ink: #ffffff;
+  --hf-focus: #0e1822;
+  --hf-hover: rgba(14, 24, 34, 0.07);
+  --hf-ok: #1a7a43;
+  --hf-danger: #a3241d;
+  --hf-danger-ink: #a3241d;
+
+  --hf-elev-2: 0 8px 24px rgba(14, 24, 34, 0.16);
+  --hf-elev-3: 0 24px 64px rgba(14, 24, 34, 0.18);
 }
 
 :root[data-motion="reduce"] {
