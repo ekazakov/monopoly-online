@@ -129,8 +129,8 @@ These tasks change `apps/web`. They do not depend on sections B to D. Do them in
 
 ### F. Close
 
-- [ ] **Manual run (F1).** `docker compose up`, play a short game with two browser profiles and one hot-seat seat, and look at the dashboard, the logs and the traces. Do `docker compose stop` and read the shutdown lines. Also try the `dev` profile. Play once in the light theme and once in Russian. Fix the defects that you find.
-- [ ] **Milestone 5 close (F2).** Roadmap status and change log. "As built" notes in the roadmap section 8. Write the M6 task list.
+- [x] **Manual run (F1).** `docker compose up`, play a short game with two browser profiles and one hot-seat seat, and look at the dashboard, the logs and the traces. Do `docker compose stop` and read the shutdown lines. Also try the `dev` profile. Play once in the light theme and once in Russian. Fix the defects that you find.
+- [x] **Milestone 5 close (F2).** Roadmap status and change log. "As built" notes in the roadmap section 8. Write the M6 task list.
 
 ## Setup
 
