@@ -1,24 +1,31 @@
 import { MAX_SEATS, type Game, type Seat } from "@monopoly/shared";
 import { useState } from "react";
+import { useT } from "../../i18n/index.ts";
+import type { Translate } from "../../i18n/index.ts";
 import { tokenLook } from "../../scene/colors.ts";
 import { AvatarIcon } from "../game/rail/avatars.tsx";
 import { RemovePlayer } from "./RemovePlayer.tsx";
 import { seatLabels } from "./roomModel.ts";
 
 // Names who joined or left since the last room, for the polite live region.
-function describeChange(before: Seat[], after: Seat[]): string {
+function describeChange(before: Seat[], after: Seat[], t: Translate): string {
   const ids = new Set(before.map((s) => s.id));
   const now = new Set(after.map((s) => s.id));
-  const joined = after.filter((s) => !ids.has(s.id)).map((s) => `${s.name} joined`);
-  const left = before.filter((s) => !now.has(s.id)).map((s) => `${s.name} left`);
+  const joined = after
+    .filter((s) => !ids.has(s.id))
+    .map((s) => t("room.announce.joined", { name: s.name }));
+  const left = before
+    .filter((s) => !now.has(s.id))
+    .map((s) => t("room.announce.left", { name: s.name }));
   return [...joined, ...left].join(". ");
 }
 
 export function useSeatAnnouncement(seats: Seat[]): string {
+  const t = useT();
   const [state, setState] = useState({ seats, text: "" });
   // Adjusting state while rendering keeps the text in step with the room, with no effect.
   if (state.seats !== seats) {
-    const text = describeChange(state.seats, seats);
+    const text = describeChange(state.seats, seats, t);
     setState({ seats, text: text || state.text });
   }
   return state.text;
@@ -44,6 +51,7 @@ export function SeatList({
   onRemovePlayer,
   headingRef,
 }: Props) {
+  const t = useT();
   const announcement = useSeatAnnouncement(game.seats);
   // A saved game is the restore room: each seat is back or not, and nobody joins or is invited.
   const saved = game.status === "saved";
@@ -56,31 +64,36 @@ export function SeatList({
     <section className="room__panel" aria-labelledby="room-players">
       <div className="room__panel-head">
         <h2 id="room-players" className="room__h2" ref={headingRef} tabIndex={-1}>
-          Players
+          {t("room.players")}
         </h2>
-        <span className="room__count">{game.seats.length} of 6 seats</span>
+        <span className="room__count">{t("room.seatsOf", { count: game.seats.length })}</span>
       </div>
       <ul className="room__seats">
         {game.seats.map((seat) => {
-          const labels = seatLabels(game, seat, userId);
+          const labels = seatLabels(game, seat, userId, t);
           return (
             <li key={seat.id} className="room__seat">
               <span
                 role="img"
                 className="room__avatar"
-                aria-label={`${seat.name}, ${tokenLook(seat.token).label}`}
+                aria-label={t("room.avatarLabel", {
+                  name: seat.name,
+                  token: t(`token.${seat.token}.label`),
+                })}
                 style={{ borderColor: tokenLook(seat.token).cssColor }}
               >
                 <AvatarIcon kind={seat.token} size={26} />
               </span>
               <span className="room__seat-main">
                 <span className="room__seat-name">{seat.name}</span>
-                {labels.host && <span className="room__tag room__tag--host">Host</span>}
-                {labels.you && <span className="room__tag">You</span>}
-                {labels.thisDevice && <span className="room__tag">This device</span>}
+                {labels.host && (
+                  <span className="room__tag room__tag--host">{t("room.tag.host")}</span>
+                )}
+                {labels.you && <span className="room__tag">{t("room.tag.you")}</span>}
+                {labels.thisDevice && <span className="room__tag">{t("room.tag.thisDevice")}</span>}
                 {saved ? (
                   <span className="room__seat-note" data-back={seat.claimed || undefined}>
-                    {seat.claimed ? "Back" : "Not back yet"}
+                    {seat.claimed ? t("room.seat.back") : t("room.seat.notBack")}
                   </span>
                 ) : (
                   <span className="room__seat-note">{labels.note}</span>
@@ -102,9 +115,9 @@ export function SeatList({
                   className="room__button room__button--quiet"
                   onClick={() => onRemove(seat)}
                   aria-disabled={removingId === seat.id || undefined}
-                  aria-label={`Remove ${seat.name}`}
+                  aria-label={t("room.seat.removeLabel", { name: seat.name })}
                 >
-                  Remove
+                  {t("room.seat.remove")}
                 </button>
               )}
             </li>
@@ -118,14 +131,14 @@ export function SeatList({
             </span>
             <span className="room__seat-main">
               <span className="room__seat-name">{invite.name}</span>
-              <span className="room__tag">Invited</span>
-              <span className="room__seat-note">Invited · waiting to accept</span>
+              <span className="room__tag">{t("room.tag.invited")}</span>
+              <span className="room__seat-note">{t("room.seat.invitedNote")}</span>
             </span>
           </li>
         ))}
         {empty.map((_, index) => (
           <li key={`open-${index}`} className="room__seat room__seat--open">
-            Open seat
+            {t("room.openSeat")}
           </li>
         ))}
       </ul>

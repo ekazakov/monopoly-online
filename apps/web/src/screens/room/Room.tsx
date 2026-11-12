@@ -3,6 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import type { Game, Seat, Token } from "@monopoly/shared";
 import { useEffect, useRef, useState } from "react";
 import { isApiError } from "../../api/index.ts";
+import { useT } from "../../i18n/index.ts";
 import { useRealtimeStatus, useTopic } from "../../realtime/index.ts";
 import { AddSeatForm } from "./AddSeatForm.tsx";
 import { CancelGame } from "./CancelGame.tsx";
@@ -15,7 +16,6 @@ import { roomKey } from "./queries.ts";
 import {
   errorText,
   notBackHint,
-  roomCopy,
   roomView,
   waitingForInvitees,
   type RoomAction,
@@ -26,6 +26,7 @@ import { useRoomActions } from "./useRoomActions.ts";
 import "./Room.css";
 
 export function Room({ game, userId }: { game: Game; userId: string }) {
+  const t = useT();
   const gameId = game.id;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -89,7 +90,7 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
   });
 
   function fail(action: RoomAction, error: unknown) {
-    setNotice(errorText(action, error));
+    setNotice(errorText(action, error, t));
     // The room changed under the user (or they are out of date): read it again.
     if (isApiError(error) && error.status === 409) void actions.reload();
   }
@@ -175,21 +176,22 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
     });
   }
 
-  const hostName = view.host?.name ?? "the host";
+  const hostName = view.host?.name ?? t("room.theHost");
+  const hostNameCap = view.host?.name ?? t("room.theHostCap");
   const busy = actions.start.isPending;
 
-  if (cancelled) return <GameCancelled hostName={view.host?.name ?? "The host"} />;
-  if (removed) return <GameRemoved hostName={view.host?.name ?? "The host"} />;
+  if (cancelled) return <GameCancelled hostName={hostNameCap} />;
+  if (removed) return <GameRemoved hostName={hostNameCap} />;
   if (started && !view.seated) {
     return (
       <main className="screen" role="alert">
-        <h1>Not your game</h1>
-        <p>You have no seat in this game.</p>
+        <h1>{t("room.notYours.title")}</h1>
+        <p>{t("room.notYours.text")}</p>
       </main>
     );
   }
   if (finishedWhileSaved && view.seated) {
-    return <SavedGameFinished hostName={view.host?.name ?? "The host"} onSeeResult={goToPlay} />;
+    return <SavedGameFinished hostName={hostNameCap} onSeeResult={goToPlay} />;
   }
   const myUnclaimed = game.seats.some((seat) => seat.controllerUserId === userId && !seat.claimed);
 
@@ -198,26 +200,22 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
       <header className="room__top">
         <span className="room__brand">Harborfront</span>
         <Link to="/" className="room__back">
-          Home
+          {t("room.home")}
         </Link>
       </header>
       <main className="room__main">
         <div className="room__intro">
-          <p className="room__eyebrow">Game room</p>
+          <p className="room__eyebrow">{t("room.eyebrow")}</p>
           <h1 className="room__title">
             {game.name}
-            {saved && <span className="room__tag room__tag--status">Saved</span>}
+            {saved && <span className="room__tag room__tag--status">{t("room.saved")}</span>}
           </h1>
-          {saved && view.seated && (
-            <p className="room__text">
-              Open this game link and claim your seats. Then the host starts the game.
-            </p>
-          )}
+          {saved && view.seated && <p className="room__text">{t("room.savedIntro")}</p>}
         </div>
 
         {view.seated && realtime === "reconnecting" && (
           <p className="room__notice" data-tone="warn" role="status">
-            Reconnecting… Updates may be late.
+            {t("room.reconnecting")}
           </p>
         )}
         {notice && (
@@ -227,7 +225,7 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
         )}
         {!view.seated && saved && (
           <p className="room__notice" data-tone="error" role="status">
-            {roomCopy.savedVisitor}
+            {t("room.savedVisitor")}
           </p>
         )}
         <SeatList
@@ -253,26 +251,26 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
             {view.isOwner && !view.full && <InvitePanel invite={actions.invite} />}
             <InviteLink gameId={gameId} />
             {view.full ? (
-              <p className="room__text">All 6 seats are taken.</p>
+              <p className="room__text">{t("room.allTaken")}</p>
             ) : (
               <AddSeatForm add={actions.add} inputRef={nameRef} />
             )}
           </>
         )}
 
-        <section className="room__actions" aria-label="Game actions">
+        <section className="room__actions" aria-label={t("room.actions")}>
           {view.seated && saved && (
             <>
               {myUnclaimed && (
                 <>
-                  <p className="room__hint">Claim your seats so the host sees that you are back.</p>
+                  <p className="room__hint">{t("room.claimHint")}</p>
                   <button
                     type="button"
                     className={`room__button${view.isOwner ? "" : " room__button--primary"}`}
                     onClick={claim}
                     aria-disabled={actions.claim.isPending || undefined}
                   >
-                    {actions.claim.isPending ? "Claiming" : "Claim my seats"}
+                    {actions.claim.isPending ? t("room.claiming") : t("room.claim")}
                   </button>
                 </>
               )}
@@ -285,16 +283,16 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
                     aria-disabled={actions.restore.isPending || undefined}
                     aria-describedby="room-restore-hint"
                   >
-                    {actions.restore.isPending ? "Starting" : "Start game"}
+                    {actions.restore.isPending ? t("room.starting") : t("room.start")}
                   </button>
                   <p id="room-restore-hint" className="room__hint">
-                    {notBackHint(game.seats)}
+                    {notBackHint(game.seats, t)}
                   </p>
                 </>
               ) : (
                 !myUnclaimed && (
                   <p className="room__text" role="status">
-                    Waiting for {hostName} to start the game.
+                    {t("room.waitingHostGame", { name: hostName })}
                   </p>
                 )
               )}
@@ -308,9 +306,9 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
                 onClick={join}
                 aria-disabled={actions.join.isPending || undefined}
               >
-                {actions.join.isPending ? "Joining" : "Join game"}
+                {actions.join.isPending ? t("room.joining") : t("room.join")}
               </button>
-              <p className="room__hint">You join with your own name.</p>
+              <p className="room__hint">{t("room.joinHint")}</p>
             </>
           )}
           {view.seated && view.isOwner && game.status === "waiting" && (
@@ -322,12 +320,14 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
                 aria-disabled={!view.canStart || busy || undefined}
                 aria-describedby="room-start-hint"
               >
-                {busy ? "Starting" : "Start game"}
+                {busy ? t("room.starting") : t("room.start")}
               </button>
               <p id="room-start-hint" className="room__hint">
                 {[
-                  view.canStart ? `${game.seats.length} players ready.` : roomCopy.notEnough,
-                  waitingForInvitees(game.invites),
+                  view.canStart
+                    ? t("room.playersReady", { count: game.seats.length })
+                    : t("room.notEnough"),
+                  waitingForInvitees(game.invites, t),
                 ]
                   .filter(Boolean)
                   .join(" ")}
@@ -338,18 +338,16 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
           {view.seated && !view.isOwner && game.status === "waiting" && (
             <>
               <p className="room__text" role="status">
-                Waiting for {hostName} to start
+                {t("room.waitingHost", { name: hostName })}
               </p>
-              <p className="room__hint">
-                The game starts for everyone at once. You can leave any time before that.
-              </p>
+              <p className="room__hint">{t("room.startsAtOnce")}</p>
               <button
                 type="button"
                 className="room__button"
                 onClick={leave}
                 aria-disabled={actions.leave.isPending || undefined}
               >
-                Leave game
+                {t("room.leave")}
               </button>
             </>
           )}

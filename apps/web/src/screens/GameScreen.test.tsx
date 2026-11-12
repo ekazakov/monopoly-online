@@ -252,7 +252,7 @@ describe("GameScreen: actions", () => {
     ).toHaveAttribute("aria-busy", "true");
 
     await act(async () => reject(new ActionApiError(409, "wrong_phase", "Not now")));
-    expect(await screen.findAllByText("Not now")).toHaveLength(1);
+    expect(await screen.findAllByText("That is not possible now.")).toHaveLength(1);
     expect(screen.getByRole("button", { name: "Roll" })).toBeEnabled();
   });
 
@@ -268,8 +268,8 @@ describe("GameScreen: actions", () => {
     await userEvent.click(within(hand).getByRole("button", { name: /Bo's properties/ }));
     await userEvent.click(await within(hand).findByRole("button", { name: /^Mortgage/ }));
     await waitFor(() => expect(realtime.send).toHaveBeenCalled());
-    expect(await screen.findAllByText("Mortgage refused")).toHaveLength(1);
-    expect(within(hand).getByText("Mortgage refused")).toBeInTheDocument();
+    expect(await screen.findAllByText("That is not possible now.")).toHaveLength(1);
+    expect(within(hand).getByText("That is not possible now.")).toBeInTheDocument();
   });
 
   test("retries after a network error with the same clientActionId", async () => {
@@ -294,7 +294,7 @@ describe("GameScreen: actions", () => {
       .mockRejectedValueOnce(new ActionApiError(409, "wrong_phase", "Not now"))
       .mockRejectedValueOnce(new ActionApiError(409, "wrong_phase", "Not now"));
     await userEvent.click(await roll());
-    await screen.findByText("Not now");
+    await screen.findByText("That is not possible now.");
     await userEvent.click(screen.getByRole("button", { name: "Roll" }));
     await waitFor(() => expect(realtime.send).toHaveBeenCalledTimes(2));
     const [one, two] = realtime.send.mock.calls.map((call) => call[0]);
@@ -307,7 +307,7 @@ describe("GameScreen: actions", () => {
       new ActionApiError(409, "version_conflict", "The game moved on", [], 3),
     );
     await userEvent.click(await roll());
-    expect(await screen.findByText("The game moved on")).toBeInTheDocument();
+    expect(await screen.findByText("The game changed. Try again.")).toBeInTheDocument();
     await waitFor(() => expect(stateCalls()).toBe(2));
   });
 });

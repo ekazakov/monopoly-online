@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useT } from "../../../i18n/index.ts";
 import { PawnStage } from "./PawnStage.tsx";
 import { useTurnNotice } from "./useTurnNotice.ts";
 import "./TurnToast.css";
@@ -16,6 +17,7 @@ export const TOAST_MS = 2000;
 // between, closes after `TOAST_MS`, and does not block the controls. The live region is always mounted, so a screen reader
 // hears each notice. It is a child of the game layout, outside the game regions.
 export function TurnToast({ userId }: { userId: string }) {
+  const t = useT();
   const notice = useTurnNotice(userId);
   const [closed, setClosed] = useState<string | null>(null);
   const shown = notice && notice.key !== closed ? notice : null;
@@ -47,9 +49,9 @@ export function TurnToast({ userId }: { userId: string }) {
         <div key={shown.key} className="turn-toast">
           <div className="turn-toast__stage">
             {shown.token ? <PawnStage token={shown.token} size={FIGURE_PX} /> : null}
-            <p className="turn-toast__eyebrow">Next turn</p>
+            <p className="turn-toast__eyebrow">{t("turn.nextTurn")}</p>
             <p className="turn-toast__name">{shown.name}</p>
-            <p className="turn-toast__text">{`It's ${shown.name}'s turn.`}</p>
+            <p className="turn-toast__text">{t("toast.turn", { name: shown.name })}</p>
           </div>
         </div>
       ) : null}

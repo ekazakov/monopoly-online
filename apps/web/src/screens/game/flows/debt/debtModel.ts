@@ -7,6 +7,8 @@ import {
 } from "@monopoly/game-engine";
 import type { GameState, PropertySquare, SquareGroup } from "@monopoly/game-engine";
 import type { RedactedGameState } from "@monopoly/shared";
+import { errorMessage, squareName } from "../../../../i18n/index.ts";
+import type { Translate } from "../../../../i18n/index.ts";
 
 type Debt = RedactedGameState["debts"][number];
 
@@ -15,21 +17,18 @@ type Debt = RedactedGameState["debts"][number];
 // `rng` or `decks` fails a test here.
 const forEngine = (state: RedactedGameState) => state as unknown as GameState;
 
-const REASONS: Record<Debt["reason"], string> = {
-  tax: "Tax",
-  rent: "Rent",
-  card: "Card payment",
-  fine: "Jail fine",
-};
+export const reasonLabel = (reason: Debt["reason"], t: Translate): string =>
+  t(`debt.reason.${reason}`);
 
-export const reasonLabel = (reason: Debt["reason"]): string => REASONS[reason];
-
-export const playerName = (state: RedactedGameState, id: string): string =>
-  state.players.find((p) => p.id === id)?.name ?? "a player";
+export const playerName = (state: RedactedGameState, id: string, t: Translate): string =>
+  state.players.find((p) => p.id === id)?.name ?? t("debt.aPlayer");
 
 /** "the bank" or the name of the player. */
-export const creditorName = (state: RedactedGameState, creditor: Debt["creditor"]): string =>
-  creditor.type === "bank" ? "the bank" : playerName(state, creditor.id);
+export const creditorName = (
+  state: RedactedGameState,
+  creditor: Debt["creditor"],
+  t: Translate,
+): string => (creditor.type === "bank" ? t("debt.theBank") : playerName(state, creditor.id, t));
 
 export interface DebtSummary {
   debtorId: string;
@@ -84,9 +83,14 @@ export interface RaiseOptions {
   hiddenMortgages: number;
 }
 
-function buildingText(houses: number): string {
-  if (houses === 5) return "a hotel";
-  return houses === 1 ? "1 house" : `${houses} houses`;
+function buildingText(houses: number, t: Translate): string {
+  if (houses === 5) return t("debt.aHotel");
+  return t("count.houses", { count: houses });
+}
+
+/** Why the engine refused a raise: selling and mortgaging have their own wording for uneven sales. */
+function refusalText(error: { code: string; message: string }, t: Translate): string {
+  return error.code === "uneven_build" ? t("debt.evenSell") : errorMessage(error, t);
 }
 
 /**
@@ -94,7 +98,11 @@ function buildingText(houses: number): string {
  * by running it on the state, so the list never offers what the server would refuse. The money of
  * a row is the sale price or the mortgage value from the board data. Buildings come first.
  */
-export function raiseOptions(state: RedactedGameState, playerId: string): RaiseOptions {
+export function raiseOptions(
+  state: RedactedGameState,
+  playerId: string,
+  t: Translate,
+): RaiseOptions {
   const full = forEngine(state);
   const sells: RaiseOption[] = [];
   const mortgages: RaiseOption[] = [];
@@ -108,7 +116,11 @@ export function raiseOptions(state: RedactedGameState, playerId: string): RaiseO
   for (const { square, entry } of owned) {
     const info = SQUARES[square];
     if (!info || !isProperty(info)) continue;
-    const base = { square, name: info.name, group: info.group } satisfies Partial<RaiseOption>;
+    const base = {
+      square,
+      name: squareName(square, t),
+      group: info.group,
+    } satisfies Partial<RaiseOption>;
 
     if (info.kind === "street" && entry.houses > 0) {
       const result = applyAction(full, { type: "SellBuilding", playerId, square });
@@ -116,9 +128,9 @@ export function raiseOptions(state: RedactedGameState, playerId: string): RaiseO
         ...base,
         key: `sell-${square}`,
         kind: "sell",
-        detail: buildingText(entry.houses),
+        detail: buildingText(entry.houses, t),
         amount: info.buildPrice / 2,
-        refusal: result.ok ? null : result.error.message,
+        refusal: result.ok ? null : refusalText(result.error, t),
       });
     }
 
@@ -128,7 +140,7 @@ export function raiseOptions(state: RedactedGameState, playerId: string): RaiseO
         hiddenMortgages++;
         continue;
       }
-      mortgages.push(mortgageRow(info, base, result.ok ? null : result.error.message));
+      mortgages.push(mortgageRow(info, base, result.ok ? null : refusalText(result.error, t)));
     }
   }
 
@@ -151,23 +163,20 @@ function mortgageRow(
 }
 
 /** What a bankruptcy of the debtor does, from the rules (12): the creditor or the bank gets it all. */
-export function consequenceText(state: RedactedGameState, debtorId: string): string {
+export function consequenceText(state: RedactedGameState, debtorId: string, t: Translate): string {
   const toPlayers = new Map<string, number>();
   for (const debt of state.debts) {
     if (debt.debtorId !== debtorId || debt.creditor.type !== "player") continue;
     toPlayers.set(debt.creditor.id, (toPlayers.get(debt.creditor.id) ?? 0) + debt.amount);
   }
 
-  const cards =
-    "Your Get Out of Jail Free cards go back to their decks. You leave the game and keep watching.";
-  if (toPlayers.size === 0) {
-    return `Everything goes to the bank: your cash, and your properties after the buildings are removed. The bank auctions the properties one by one. ${cards}`;
-  }
+  const cards = t("debt.consequence.cards");
+  if (toPlayers.size === 0) return t("debt.consequence.bank", { cards });
   if (toPlayers.size === 1) {
     const [id] = [...toPlayers.keys()];
-    const name = playerName(state, id ?? "");
-    return `Your buildings are sold to the bank at half price. ${name} receives all your cash and all your properties (mortgaged ones stay mortgaged). ${cards}`;
+    const name = playerName(state, id ?? "", t);
+    return t("debt.consequence.one", { name, cards });
   }
-  const names = [...toPlayers.keys()].map((id) => playerName(state, id)).join(", ");
-  return `Your buildings are sold to the bank at half price. Your cash is split between ${names} by what you owe each of them. The player owed the most receives your properties. ${cards}`;
+  const names = [...toPlayers.keys()].map((id) => playerName(state, id, t)).join(", ");
+  return t("debt.consequence.many", { names, cards });
 }

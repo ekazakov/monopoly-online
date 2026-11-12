@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useT } from "../../i18n/index.ts";
 import { GAME_REGION_LABELS, type GameRegion } from "./regions.ts";
 import "./GameLayout.css";
 
@@ -11,14 +12,15 @@ export type GameLayoutProps = { [R in GameRegion]?: ReactNode } & {
 // Board layer: full-bleed, behind every other region, so a zoomed board shows under the chrome.
 // Centre: the board column. Its content sits in the middle of the board, on top of it.
 export function GameLayout({ rail, log, board, centre, hand, menu, overlay }: GameLayoutProps) {
+  const t = useT();
   return (
-    <main className="game-layout" aria-label="Game">
-      <h1 className="game-layout__title">Game</h1>
+    <main className="game-layout" aria-label={t("game.title")}>
+      <h1 className="game-layout__title">{t("game.title")}</h1>
       <div className="game-layout__regions">
         <section
           className="game-layout__board"
           data-region="board"
-          aria-label={GAME_REGION_LABELS.board}
+          aria-label={t(GAME_REGION_LABELS.board)}
         >
           {board}
         </section>
@@ -26,14 +28,14 @@ export function GameLayout({ rail, log, board, centre, hand, menu, overlay }: Ga
           <section
             className="game-layout__log"
             data-region="log"
-            aria-label={GAME_REGION_LABELS.log}
+            aria-label={t(GAME_REGION_LABELS.log)}
           >
             {log}
           </section>
           <nav
             className="game-layout__menu"
             data-region="menu"
-            aria-label={GAME_REGION_LABELS.menu}
+            aria-label={t(GAME_REGION_LABELS.menu)}
           >
             {menu}
           </nav>
@@ -41,21 +43,21 @@ export function GameLayout({ rail, log, board, centre, hand, menu, overlay }: Ga
         <aside
           className="game-layout__rail"
           data-region="rail"
-          aria-label={GAME_REGION_LABELS.rail}
+          aria-label={t(GAME_REGION_LABELS.rail)}
         >
           {rail}
         </aside>
         <section
           className="game-layout__centre"
           data-region="centre"
-          aria-label={GAME_REGION_LABELS.centre}
+          aria-label={t(GAME_REGION_LABELS.centre)}
         >
           {centre}
         </section>
         <section
           className="game-layout__hand"
           data-region="hand"
-          aria-label={GAME_REGION_LABELS.hand}
+          aria-label={t(GAME_REGION_LABELS.hand)}
         >
           {hand}
         </section>

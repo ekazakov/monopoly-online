@@ -10,6 +10,7 @@ import { GameStoreProvider } from "../../../../game/GameStoreProvider.tsx";
 import { createGameStore } from "../../../../game/store.ts";
 import { errorReply, mockApi } from "../../../../testing/fakeApi.ts";
 import { LeaveGameMenu, consequenceText } from "./index.ts";
+import { tEn } from "../../../../testing/tEn.ts";
 
 const fx = recordFixture(1);
 const { a, b, c } = fx.seats;
@@ -358,10 +359,10 @@ describe("LeaveGameMenu: a device with no seat in play", () => {
 
 describe("consequenceText", () => {
   test("names the player, or says the chosen player, and tells how the game goes on", () => {
-    expect(consequenceText("Ann", 4)).toBe(
+    expect(consequenceText("Ann", 4, tEn)).toBe(
       "Ann resigns. Their properties go to the player they owe, or to the bank for auction. The game goes on for the other players.",
     );
-    expect(consequenceText(null, 2)).toMatch(/^The chosen player resigns\..*the game ends\.$/);
+    expect(consequenceText(null, 2, tEn)).toMatch(/^The chosen player resigns\..*the game ends\.$/);
   });
 });
 

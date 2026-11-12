@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, test } from "vite-plus/test";
 import { Waiting, waitingText } from "./ActionBar.tsx";
+import { tEn } from "../../../testing/tEn.ts";
 
 describe("waitingText", () => {
   test.each([
@@ -13,11 +14,11 @@ describe("waitingText", () => {
     ],
     ["away" as const, "Waiting for Ravi to return", "The game continues when Ravi returns."],
   ])("for %s", (presence, title, sub) => {
-    expect(waitingText("Ravi", presence)).toEqual({ title, sub });
+    expect(waitingText("Ravi", presence, tEn)).toEqual({ title, sub });
   });
 
   test("with no name it waits for the game", () => {
-    expect(waitingText("", "away")).toEqual({ title: "Waiting for the game", sub: null });
+    expect(waitingText("", "away", tEn)).toEqual({ title: "Waiting for the game", sub: null });
   });
 });
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useGame } from "../../../../game/index.ts";
+import { useT } from "../../../../i18n/index.ts";
 import { Status } from "../../turn/Status.tsx";
 import "../../turn/TurnArea.css";
 
@@ -13,21 +14,19 @@ export interface SavedNoticeProps {
 // controls", gameplay 3.1). It takes the place of the turn area. The owner is told how to
 // continue the game; the others are told whose game it is and where it will be.
 export function SavedNotice({ userId, onOk }: SavedNoticeProps) {
+  const t = useT();
   const { game } = useGame(userId);
   const okRef = useRef<HTMLButtonElement>(null);
   useEffect(() => okRef.current?.focus(), []);
 
   const isOwner = game?.ownerId === userId;
-  const ownerName = game?.seats.find((seat) => seat.userId === game.ownerId)?.name ?? "The owner";
+  const ownerName =
+    game?.seats.find((seat) => seat.userId === game.ownerId)?.name ?? t("saved.theOwner");
   return (
     <div className="turn-area">
       <Status
-        title={isOwner ? "Game saved" : `Game saved by ${ownerName}`}
-        sub={
-          isOwner
-            ? "You can continue it from your saved games."
-            : `${ownerName} can continue it later. You will find it in My games.`
-        }
+        title={isOwner ? t("saved.title") : t("saved.titleBy", { name: ownerName })}
+        sub={isOwner ? t("saved.sub") : t("saved.subBy", { name: ownerName })}
       />
       <button
         ref={okRef}
@@ -35,7 +34,7 @@ export function SavedNotice({ userId, onOk }: SavedNoticeProps) {
         className="turn-area__btn turn-area__btn--primary"
         onClick={onOk}
       >
-        OK
+        {t("common.ok")}
       </button>
     </div>
   );

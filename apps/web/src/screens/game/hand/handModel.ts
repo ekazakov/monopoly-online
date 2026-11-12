@@ -1,7 +1,8 @@
 import { SQUARES, groupSquares, isProperty, rentFor } from "@monopoly/game-engine";
 import type { GameState, SquareGroup } from "@monopoly/game-engine";
 import type { RedactedGameState } from "@monopoly/shared";
-import { GROUP_LABELS } from "./propertyActions.ts";
+import { currentLanguage, formatMoney, squareName } from "../../../i18n/index.ts";
+import type { Translate } from "../../../i18n/index.ts";
 
 /** Stack order in the hand (spec 4.6): the colour groups in board order, then stations, utilities. */
 export const GROUP_ORDER: readonly SquareGroup[] = [
@@ -47,20 +48,27 @@ export interface HandView {
   value: number;
 }
 
-export const money = (amount: number) => `$${amount.toLocaleString("en-US")}`;
+export const money = (amount: number) => formatMoney(amount, currentLanguage());
 
 // Reads only `ownership`, as `rentFor` does. The dice total matters for utilities only.
 const forEngine = (state: RedactedGameState) => state as unknown as GameState;
 
-function rentText(state: RedactedGameState, square: number, mortgaged: boolean): string {
-  if (mortgaged) return "No rent";
+function rentText(
+  state: RedactedGameState,
+  square: number,
+  mortgaged: boolean,
+  t: Translate,
+): string {
+  if (mortgaged) return t("hand.noRent");
   const info = SQUARES[square];
-  if (info?.kind === "utility") return `${rentFor(forEngine(state), square, 1)}× dice`;
-  return `Rent ${money(rentFor(forEngine(state), square, 0))}`;
+  if (info?.kind === "utility") {
+    return t("hand.rentDice", { count: rentFor(forEngine(state), square, 1) });
+  }
+  return t("hand.rent", { amount: money(rentFor(forEngine(state), square, 0)) });
 }
 
 /** The properties of one seat, grouped by colour. */
-export function handOf(state: RedactedGameState, seatId: string): HandView {
+export function handOf(state: RedactedGameState, seatId: string, t: Translate): HandView {
   const cards: HandCard[] = [];
   for (const [key, entry] of Object.entries(state.ownership)) {
     if (entry.ownerId !== seatId) continue;
@@ -69,13 +77,13 @@ export function handOf(state: RedactedGameState, seatId: string): HandView {
     if (!info || !isProperty(info)) continue;
     cards.push({
       square,
-      name: info.name,
+      name: squareName(square, t),
       group: info.group,
       kind: info.kind,
       price: info.price,
       houses: entry.houses,
       mortgaged: entry.mortgaged,
-      rent: rentText(state, square, entry.mortgaged),
+      rent: rentText(state, square, entry.mortgaged, t),
     });
   }
   cards.sort((a, b) => a.square - b.square);
@@ -86,7 +94,7 @@ export function handOf(state: RedactedGameState, seatId: string): HandView {
     if (inGroup.length === 0) continue;
     groups.push({
       group,
-      label: GROUP_LABELS[group],
+      label: t(`group.${group}`),
       color: `var(--hf-street-${group})`,
       cards: inGroup,
       complete: inGroup.length === groupSquares(group).length,
@@ -95,9 +103,9 @@ export function handOf(state: RedactedGameState, seatId: string): HandView {
   return { groups, count: cards.length, value: cards.reduce((sum, c) => sum + c.price, 0) };
 }
 
-export const buildingText = (houses: number) =>
+export const buildingText = (houses: number, t: Translate) =>
   houses === 0
-    ? "no buildings"
+    ? t("hand.noBuildings")
     : houses === 5
-      ? "hotel"
-      : `${houses} ${houses === 1 ? "house" : "houses"}`;
+      ? t("hand.hotel")
+      : t("count.houses", { count: houses });

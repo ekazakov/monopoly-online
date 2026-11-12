@@ -1,5 +1,6 @@
 import { useId } from "react";
 import type { ActionType } from "@monopoly/game-engine";
+import { useT } from "../../../i18n/index.ts";
 import { buildingText, money } from "./handModel.ts";
 import type { HandCard } from "./handModel.ts";
 import { ACTION_OF } from "./propertyActions.ts";
@@ -62,8 +63,9 @@ export interface PropertyDetailProps {
 }
 
 export function PropertyDetail({ id, card, actions, may, busy, onAction }: PropertyDetailProps) {
+  const t = useT();
   const refusal = (key: keyof typeof ACTION_OF, enabled: boolean) =>
-    enabled && may(ACTION_OF[key]) ? null : (actions.reason[key] ?? "Wait for your turn");
+    enabled && may(ACTION_OF[key]) ? null : (actions.reason[key] ?? t("hand.reason.waitTurn"));
   const canBuild = actions.canBuild && may("Build");
   const canSell = actions.canSell && may("SellBuilding");
   const canMortgage = actions.canMortgage && may("Mortgage");
@@ -72,17 +74,22 @@ export function PropertyDetail({ id, card, actions, may, busy, onAction }: Prope
     amount === null ? null : `${sign}${money(amount)}`;
 
   return (
-    <div id={id} className="property-hand__detail" role="group" aria-label={`${card.name} actions`}>
+    <div
+      id={id}
+      className="property-hand__detail"
+      role="group"
+      aria-label={t("hand.actionsLabel", { name: card.name })}
+    >
       <p className="property-hand__info">
         <strong>{card.name}</strong>
-        {` · ${card.mortgaged ? "mortgaged" : buildingText(card.houses)} · ${card.rent}`}
+        {` · ${card.mortgaged ? t("hand.mortgaged") : buildingText(card.houses, t)} · ${card.rent}`}
       </p>
       {actions.manageable ? (
         <div className="property-hand__actions">
           {card.kind === "street" ? (
             <>
               <ActionButton
-                label={card.houses === 4 ? "Build hotel" : "Build"}
+                label={card.houses === 4 ? t("hand.buildHotel") : t("hand.build")}
                 amount={dollars(actions.cost.build)}
                 allowed={canBuild}
                 reason={refusal("build", canBuild)}
@@ -90,7 +97,7 @@ export function PropertyDetail({ id, card, actions, may, busy, onAction }: Prope
                 onClick={() => onAction("Build")}
               />
               <ActionButton
-                label="Sell building"
+                label={t("hand.sellBuilding")}
                 amount={dollars(actions.cost.sell, "+")}
                 allowed={canSell}
                 reason={refusal("sell", canSell)}
@@ -102,7 +109,7 @@ export function PropertyDetail({ id, card, actions, may, busy, onAction }: Prope
           {card.mortgaged ? (
             <ActionButton
               key="mortgage"
-              label="Unmortgage"
+              label={t("hand.unmortgage")}
               amount={dollars(actions.cost.unmortgage)}
               allowed={canUnmortgage}
               reason={refusal("unmortgage", canUnmortgage)}
@@ -112,7 +119,7 @@ export function PropertyDetail({ id, card, actions, may, busy, onAction }: Prope
           ) : (
             <ActionButton
               key="mortgage"
-              label="Mortgage"
+              label={t("hand.mortgage")}
               amount={dollars(actions.cost.mortgage, "+")}
               allowed={canMortgage}
               reason={refusal("mortgage", canMortgage)}
@@ -122,7 +129,9 @@ export function PropertyDetail({ id, card, actions, may, busy, onAction }: Prope
           )}
         </div>
       ) : (
-        <p className="property-hand__viewonly">View only: {actions.notNow?.toLowerCase()}</p>
+        <p className="property-hand__viewonly">
+          {t("hand.viewOnly", { reason: actions.notNow?.toLowerCase() ?? "" })}
+        </p>
       )}
     </div>
   );

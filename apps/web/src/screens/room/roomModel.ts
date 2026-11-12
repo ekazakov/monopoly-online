@@ -1,5 +1,7 @@
 import { MAX_SEATS, type Game, type Seat } from "@monopoly/shared";
 import { isApiError } from "../../api/index.ts";
+import { joinNames } from "../../i18n/index.ts";
+import type { Translate } from "../../i18n/index.ts";
 
 export interface RoomView {
   isOwner: boolean;
@@ -29,18 +31,18 @@ export interface SeatLabels {
   playerRemovable: boolean;
 }
 
-export function seatLabels(game: Game, seat: Seat, userId: string): SeatLabels {
+export function seatLabels(game: Game, seat: Seat, userId: string, t: Translate): SeatLabels {
   const mine = seat.controllerUserId === userId;
   const controller = game.seats.find(
     (s) => s.kind === "user" && s.userId === seat.controllerUserId,
   );
-  let note = "Joined";
+  let note = t("room.seat.joined");
   if (seat.kind === "hotseat") {
     note = mine
-      ? "Plays on this device"
+      ? t("room.seat.thisDevice")
       : controller
-        ? `Plays on ${controller.name}'s device`
-        : "Plays on another device";
+        ? t("room.seat.deviceOf", { name: controller.name })
+        : t("room.seat.otherDevice");
   }
   return {
     host: seat.userId === game.ownerId,
@@ -60,29 +62,14 @@ export function seatLabels(game: Game, seat: Seat, userId: string): SeatLabels {
  * What the host reads in the restore room about the seats that have not claimed yet. Start is
  * never blocked: the game waits for the player whose turn it is (gameplay 3.2).
  */
-export function notBackHint(seats: readonly Seat[]): string {
+export function notBackHint(seats: readonly Seat[], t: Translate): string {
   const names = seats.filter((seat) => !seat.claimed).map((seat) => seat.name);
-  if (names.length === 0) return "All players are back.";
-  const list =
-    names.length === 1 ? names[0]! : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
-  const verb = names.length === 1 ? "is" : "are";
-  const wait =
-    names.length === 1
-      ? `If you start now, the game waits for ${names[0]} on ${names[0]}'s turn.`
-      : "If you start now, the game waits for each of them on their turn.";
-  return `${list} ${verb} not back. ${wait}`;
+  if (names.length === 0) return t("room.notBack.none");
+  if (names.length === 1) {
+    return t("room.notBack.one", { name: names[0]! });
+  }
+  return t("room.notBack.many", { list: joinNames(names, t) });
 }
-
-export const roomCopy = {
-  savedVisitor: "This game is saved. Only the players of the game can continue it.",
-  takenOnJoin:
-    "A seat in this game already uses your name. Ask the person who controls that seat to change its name, then try again.",
-  full: "This game is full.",
-  started: "This game has already started.",
-  notEnough: "Add at least one more player to start.",
-  seatTaken: "A seat already uses that name. Try another one.",
-  failed: "That did not work. Check the connection and try again.",
-} as const;
 
 export type RoomAction =
   | "join"
@@ -101,50 +88,48 @@ export type RoomAction =
  * "Waiting for Ravi to accept." for the invites that are still pending, or "" for none. The start
  * hint adds it, so the host knows who has not answered when they decide to start.
  */
-export function waitingForInvitees(invites: readonly { name: string }[]): string {
+export function waitingForInvitees(invites: readonly { name: string }[], t: Translate): string {
   const names = invites.map((invite) => invite.name);
   if (names.length === 0) return "";
-  const list =
-    names.length === 1 ? names[0]! : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
-  return `Waiting for ${list} to accept.`;
+  return t("room.waitingForInvitees", { list: joinNames(names, t) });
 }
 
-export function errorText(action: RoomAction, error: unknown): string {
+export function errorText(action: RoomAction, error: unknown, t: Translate): string {
   if (isApiError(error)) {
     switch (error.code) {
       case "seat_name_taken":
-        return action === "join" ? roomCopy.takenOnJoin : roomCopy.seatTaken;
+        return action === "join" ? t("room.error.takenOnJoin") : t("room.error.seatTaken");
       case "game_full":
-        return roomCopy.full;
+        return t("room.error.full");
       case "game_not_waiting":
-        return roomCopy.started;
+        return t("room.error.started");
       case "game_not_saved":
-        return "This game is not saved any more. It may have been continued or finished.";
+        return t("room.error.notSaved");
       case "not_enough_players":
-        return roomCopy.notEnough;
+        return t("room.notEnough");
       case "already_joined":
-        return "Already in this game.";
+        return t("room.error.alreadyJoined");
       case "already_invited":
-        return "Already invited. They have not answered yet.";
+        return t("room.error.alreadyInvited");
       case "cannot_invite_self":
-        return "You are already in this game.";
+        return t("room.error.inviteSelf");
       case "token_taken":
-        return "Another player just took that figure. Pick a different one.";
+        return t("room.error.tokenTaken");
       case "owner_cannot_leave":
-        return "The host cannot leave the game.";
+        return t("room.error.ownerLeave");
       case "not_a_member":
       case "not_your_seat":
-        return "You can only change the seats on your own device.";
+        return t("room.error.notYourSeat");
       case "not_game_owner":
-        return "Only the host can do that.";
+        return t("room.error.notOwner");
       case "cannot_remove_self":
-        return "The host cannot remove their own seat.";
+        return t("room.error.removeSelf");
       case "not_found":
-        if (action === "removePlayer") return "This player is already gone.";
+        if (action === "removePlayer") return t("room.error.playerGone");
         return action === "join" || action === "cancel"
-          ? "This game no longer exists. The host may have cancelled it."
-          : "This seat is already gone.";
+          ? t("room.error.gameGone")
+          : t("room.error.seatGone");
     }
   }
-  return roomCopy.failed;
+  return t("room.error.failed");
 }

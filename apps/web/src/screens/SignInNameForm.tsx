@@ -2,18 +2,11 @@ import { displayNameSchema, type User } from "@monopoly/shared";
 import type { UseMutationResult } from "@tanstack/react-query";
 import { useEffect, useId, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { ApiError } from "../api.ts";
+import { useT } from "../i18n/index.ts";
+import type { Translate } from "../i18n/index.ts";
 import "./SignInScreen.css";
 
 const NAME_MAX = 16;
-const copy = {
-  hint: "2 to 16 characters. Capital letters do not matter.",
-  valid: "Looks good. Press Continue.",
-  pending: "Signing you in…",
-  short: "Use at least 2 characters.",
-  long: "Use 16 characters or fewer.",
-  taken: "That name is taken. Try another one.",
-  failed: "We could not sign you in. Check the connection and try again.",
-} as const;
 
 type ProblemKey = "short" | "long" | "taken" | "failed";
 
@@ -23,18 +16,22 @@ function checkName(value: string): ProblemKey | null {
   return value.trim().length > NAME_MAX ? "long" : "short";
 }
 
-function serverProblem(error: unknown, value: string): { key: ProblemKey; text: string } {
+function serverProblem(
+  error: unknown,
+  value: string,
+  t: Translate,
+): { key: ProblemKey; text: string } {
   if (error instanceof ApiError) {
-    if (error.code === "name_taken") return { key: "taken", text: copy.taken };
+    if (error.code === "name_taken") return { key: "taken", text: t("nameForm.taken") };
     if (error.status === 400) {
       const local = checkName(value);
-      if (local) return { key: local, text: copy[local] };
+      if (local) return { key: local, text: t(`nameForm.${local}`) };
       const issue = error.issues.find((i) => i.path[0] === "name");
       if (issue) return { key: "short", text: issue.message };
     }
   }
   // 5xx, a lost connection and any other answer look the same to the user.
-  return { key: "failed", text: copy.failed };
+  return { key: "failed", text: t("nameForm.failed") };
 }
 
 export function Icon({ kind }: { kind: "ok" | "error" }) {
@@ -73,6 +70,7 @@ type NameFormProps = {
 
 /** The display name form of the guest sign-in and of the Google name step. */
 export function SignInNameForm({ mutation, onSuccess, onFailure }: NameFormProps) {
+  const t = useT();
   const inputRef = useRef<HTMLInputElement>(null);
   const inputId = useId();
   const hintId = `${inputId}-hint`;
@@ -91,7 +89,7 @@ export function SignInNameForm({ mutation, onSuccess, onFailure }: NameFormProps
   const busy = mutation.isPending || mutation.isSuccess;
   const length = value.trim().length;
   const local = checkName(value);
-  const problem = failure ?? (live && local ? { key: local, text: copy[local] } : null);
+  const problem = failure ?? (live && local ? { key: local, text: t(`nameForm.${local}`) } : null);
   // A failed request says nothing about the name, so the field is not marked invalid then.
   const fieldProblem = problem && problem.key !== "failed";
   const valid = !problem && !busy && !focused && local === null;
@@ -116,22 +114,25 @@ export function SignInNameForm({ mutation, onSuccess, onFailure }: NameFormProps
       onError: (error) => {
         if (onFailure?.(error)) return;
         setLive(true);
-        setFailure(serverProblem(error, value));
+        setFailure(serverProblem(error, value, t));
         inputRef.current?.focus();
       },
     });
   }
 
-  let hint: { text: string; tone: "plain" | "ok" | "error" } = { text: copy.hint, tone: "plain" };
-  if (busy) hint = { text: copy.pending, tone: "plain" };
+  let hint: { text: string; tone: "plain" | "ok" | "error" } = {
+    text: t("nameForm.hint"),
+    tone: "plain",
+  };
+  if (busy) hint = { text: t("nameForm.pending"), tone: "plain" };
   else if (problem) hint = { text: problem.text, tone: "error" };
-  else if (valid) hint = { text: copy.valid, tone: "ok" };
+  else if (valid) hint = { text: t("nameForm.valid"), tone: "ok" };
 
   return (
     <form className="sign-in__form" onSubmit={onSubmit} noValidate>
       <div className="sign-in__field">
         <label className="sign-in__label" htmlFor={inputId}>
-          Display name
+          {t("nameForm.label")}
         </label>
         <div
           className="sign-in__control"
@@ -147,7 +148,7 @@ export function SignInNameForm({ mutation, onSuccess, onFailure }: NameFormProps
             onChange={onChange}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
-            placeholder="Your name"
+            placeholder={t("nameForm.placeholder")}
             autoComplete="nickname"
             autoCapitalize="words"
             spellCheck={false}
@@ -181,7 +182,7 @@ export function SignInNameForm({ mutation, onSuccess, onFailure }: NameFormProps
         aria-busy={busy || undefined}
       >
         {busy && <span className="sign-in__spinner" aria-hidden="true" />}
-        {busy ? "Signing in" : "Continue"}
+        {busy ? t("nameForm.submitBusy") : t("nameForm.submit")}
       </button>
     </form>
   );

@@ -13,6 +13,7 @@ import {
   withClaims,
 } from "../../testing/fakeApi.ts";
 import { FakeRealtimeClient } from "../../testing/fakeRealtime.ts";
+import { tEn } from "../../testing/tEn.ts";
 import { createTestQueryClient, renderRoute } from "../../testing/render.tsx";
 import { notBackHint } from "./roomModel.ts";
 
@@ -259,14 +260,14 @@ describe("notBackHint", () => {
   test("names one player, two players, or everybody", () => {
     const seats = (flags: boolean[]) =>
       [marlow, tove, inesSeat, raviSeat].map((s, i) => ({ ...s, claimed: flags[i]! }));
-    expect(notBackHint(seats([true, true, true, true]))).toBe("All players are back.");
-    expect(notBackHint(seats([true, true, true, false]))).toBe(
+    expect(notBackHint(seats([true, true, true, true]), tEn)).toBe("All players are back.");
+    expect(notBackHint(seats([true, true, true, false]), tEn)).toBe(
       "Ravi is not back. If you start now, the game waits for Ravi on Ravi's turn.",
     );
-    expect(notBackHint(seats([true, true, false, false]))).toBe(
+    expect(notBackHint(seats([true, true, false, false]), tEn)).toBe(
       "Ines and Ravi are not back. If you start now, the game waits for each of them on their turn.",
     );
-    expect(notBackHint(seats([false, true, false, false]))).toMatch(
+    expect(notBackHint(seats([false, true, false, false]), tEn)).toMatch(
       /^Marlow, Ines and Ravi are not back\./,
     );
   });

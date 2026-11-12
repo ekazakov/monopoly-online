@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useT } from "../../../i18n/index.ts";
 import type { DiceValues } from "./useTurn.ts";
 
 const PIPS: Record<number, readonly (readonly [number, number])[]> = {
@@ -72,13 +73,14 @@ interface DiceProps {
 }
 
 export function Dice({ dice, stale = false, rolling = false }: DiceProps) {
+  const t = useT();
   const tumble = useTumble(rolling);
   const shown = rolling ? tumble : dice;
   const label = rolling
-    ? "Rolling the dice"
+    ? t("turn.dice.rolling")
     : !dice
-      ? "Dice: not rolled yet"
-      : `${stale ? "Last roll" : "Dice"}: ${dice[0]} and ${dice[1]}`;
+      ? t("turn.dice.none")
+      : t(stale ? "turn.dice.last" : "turn.dice.now", { a: dice[0], b: dice[1] });
   const dim = !rolling && (stale || !dice);
   return (
     <div

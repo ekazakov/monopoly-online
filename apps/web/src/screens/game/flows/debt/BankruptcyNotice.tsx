@@ -1,3 +1,4 @@
+import { useT } from "../../../../i18n/index.ts";
 import "./DebtView.css";
 
 // The short result after a bankruptcy (spec 5.2): shown in the board centre or the log for one
@@ -9,13 +10,12 @@ export function BankruptcyNotice({
   playerName: string;
   creditorName: string | null;
 }) {
+  const t = useT();
   return (
     <div className="debt-view debt-view--notice" role="status">
-      <p className="turn-area__status">{playerName} is out of the game</p>
+      <p className="turn-area__status">{t("debt.out", { name: playerName })}</p>
       <p className="turn-area__sub">
-        {creditorName === null
-          ? "Everything goes to the bank. The properties are auctioned."
-          : `${creditorName} receives the cash and the properties.`}
+        {creditorName === null ? t("debt.outBank") : t("debt.outPlayer", { name: creditorName })}
       </p>
     </div>
   );

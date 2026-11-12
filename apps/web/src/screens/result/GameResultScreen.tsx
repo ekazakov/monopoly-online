@@ -4,6 +4,7 @@ import type { GameResult, Seat, Standing, Token } from "@monopoly/shared";
 import { useEffect, useRef } from "react";
 import type { RefObject } from "react";
 import { gameResultQuery } from "../../game/index.ts";
+import { useT } from "../../i18n/index.ts";
 import { AvatarIcon } from "../game/rail/avatars.tsx";
 import { tokenLook } from "../../scene/colors.ts";
 import { formatMoney } from "../game/rail/PlayerRow.tsx";
@@ -19,6 +20,7 @@ export interface GameResultScreenProps {
 // The result of a finished game (design board "Game result"). It reads the result from the
 // server, so a reload shows the same screen. Focus goes to the heading when the content shows.
 export function GameResultScreen({ gameId, seats, userId }: GameResultScreenProps) {
+  const t = useT();
   const result = useQuery(gameResultQuery(gameId));
   const navigate = useNavigate();
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -43,11 +45,11 @@ export function GameResultScreen({ gameId, seats, userId }: GameResultScreenProp
             ref={headingRef}
             tabIndex={-1}
           >
-            Result not available
+            {t("result.unavailable")}
           </h1>
           <p className="result__error" role="alert">
             <ErrorIcon />
-            We could not load the result. Check the connection and try again.
+            {t("result.failed")}
           </p>
           <div className="result__actions">
             <button
@@ -55,10 +57,10 @@ export function GameResultScreen({ gameId, seats, userId }: GameResultScreenProp
               className="result__button result__button--primary"
               onClick={tryAgain}
             >
-              Try again
+              {t("roomScreen.retry")}
             </button>
             <button type="button" className="result__button" onClick={home}>
-              Back to home
+              {t("notFound.home")}
             </button>
           </div>
         </div>
@@ -70,11 +72,11 @@ export function GameResultScreen({ gameId, seats, userId }: GameResultScreenProp
     <main className="result" aria-labelledby="result-title">
       <div className="result__card">
         <Summary result={result.data} headingRef={headingRef} />
-        <h2 className="result__subtitle">Final standings</h2>
+        <h2 className="result__subtitle">{t("result.standings")}</h2>
         <Standings result={result.data} seats={seats} userId={userId} />
         <div className="result__actions">
           <button type="button" className="result__button result__button--primary" onClick={home}>
-            {result.data.winner ? "Back to home" : "OK"}
+            {result.data.winner ? t("notFound.home") : t("common.ok")}
           </button>
         </div>
       </div>
@@ -89,19 +91,19 @@ function Summary({
   result: GameResult;
   headingRef: RefObject<HTMLHeadingElement | null>;
 }) {
-  const rounds = result.rounds === 1 ? "1 round" : `${result.rounds} rounds`;
+  const t = useT();
   return (
     <header className="result__summary">
-      <div className="result__eyebrow">Game over</div>
+      <div className="result__eyebrow">{t("turn.phase.over")}</div>
       <h1 id="result-title" className="result__title" ref={headingRef} tabIndex={-1}>
         {result.winner
-          ? `${result.winner.name} wins`
-          : `Game finished by ${result.finishedBy ?? "the owner"}`}
+          ? t("result.wins", { name: result.winner.name })
+          : t("room.finished.title", { name: result.finishedBy ?? t("result.theOwner") })}
       </h1>
       <p className="result__rounds">
         {result.winner
-          ? `Last player left after ${rounds}.`
-          : `No winner. The game ended in round ${result.rounds}. Standings for information only.`}
+          ? t("result.lastLeft", { rounds: t("count.rounds", { count: result.rounds }) })
+          : t("result.noWinner", { round: result.rounds })}
       </p>
     </header>
   );
@@ -116,25 +118,26 @@ function Standings({
   seats: readonly Seat[];
   userId: string;
 }) {
+  const t = useT();
   const tokenOf = (seatId: string) => seats.find((seat) => seat.id === seatId)?.token ?? "dog";
   return (
     <div className="result__scroll">
       <table className="result__table">
-        <caption className="result__sr">Final standings</caption>
+        <caption className="result__sr">{t("result.standings")}</caption>
         <thead>
           <tr>
-            <th scope="col">Rank</th>
-            <th scope="col">Player</th>
+            <th scope="col">{t("result.rank")}</th>
+            <th scope="col">{t("result.player")}</th>
             <th scope="col" className="result__num">
-              Final cash
+              {t("result.cash")}
             </th>
             <th scope="col" className="result__num">
-              Properties
+              {t("result.properties")}
             </th>
             <th scope="col" className="result__num">
-              Net worth
+              {t("result.netWorth")}
             </th>
-            <th scope="col">Status</th>
+            <th scope="col">{t("result.status")}</th>
           </tr>
         </thead>
         <tbody>
@@ -161,6 +164,7 @@ function Row({
   token: Token;
   onDevice: boolean;
 }) {
+  const t = useT();
   const look = tokenLook(token);
   // A player who is out has no figures. One who was still in the game when the owner finished it
   // keeps them, but wins nothing.
@@ -176,14 +180,17 @@ function Row({
           <span
             className="result__avatar"
             role="img"
-            aria-label={`${standing.name}, ${look.label}`}
+            aria-label={t("room.avatarLabel", {
+              name: standing.name,
+              token: t(`token.${token}.label`),
+            })}
             style={{ borderColor: look.cssColor }}
           >
             <AvatarIcon kind={look.avatar} size={26} />
           </span>
           <span className="result__name">
             {standing.name}
-            {onDevice && <span className="result__tag">This device</span>}
+            {onDevice && <span className="result__tag">{t("room.tag.thisDevice")}</span>}
           </span>
         </div>
       </td>
@@ -192,7 +199,7 @@ function Row({
           {out ? (
             <>
               <span aria-hidden="true">—</span>
-              <span className="result__sr">none</span>
+              <span className="result__sr">{t("result.none")}</span>
             </>
           ) : index === 1 ? (
             value
@@ -209,36 +216,41 @@ function Row({
 }
 
 function StatusLabel({ standing }: { standing: Standing }) {
+  const t = useT();
   const { status, outRound } = standing;
   if (status === "winner") {
     return (
       <span className="result__status-label result__status-label--winner">
         <CrownIcon />
-        Winner
+        {t("result.winner")}
       </span>
     );
   }
   if (status === "in_game") {
-    return <span className="result__status-label">In the game</span>;
+    return <span className="result__status-label">{t("result.inGame")}</span>;
   }
   const bankrupt = status === "bankrupt";
   return (
     <span className="result__status-label result__status-label--out">
       {bankrupt ? <BankruptIcon /> : <ResignedIcon />}
-      {bankrupt ? "Bankrupt" : "Resigned"} · round {outRound}
+      {t("result.outRound", {
+        status: bankrupt ? t("rail.bankrupt") : t("result.resigned"),
+        round: outRound ?? "",
+      })}
     </span>
   );
 }
 
 function Loading() {
+  const t = useT();
   return (
-    <main className="result" aria-label="Game result">
+    <main className="result" aria-label={t("result.label")}>
       <div className="result__card" role="status" aria-live="polite" aria-busy="true">
         <div className="result__skeleton-head" aria-hidden="true">
           <span className="result__block result__block--title" />
           <span className="result__block result__block--line" />
         </div>
-        <div className="result__loading-text">Loading the result…</div>
+        <div className="result__loading-text">{t("result.loading")}</div>
         <div aria-hidden="true">
           {[0, 1, 2, 3].map((n) => (
             <div key={n} className="result__skeleton-row">

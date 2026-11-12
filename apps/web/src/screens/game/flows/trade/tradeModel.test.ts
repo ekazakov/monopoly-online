@@ -2,6 +2,7 @@ import { applyAction } from "@monopoly/game-engine";
 import type { GameState } from "@monopoly/game-engine";
 import { describe, expect, test } from "vite-plus/test";
 import { redact } from "../../../../game/fixtures.ts";
+import { tEn } from "../../../../testing/tEn.ts";
 import { canProposeTrade, checkTrade, emptySide, parseCash, proposingSeat } from "./tradeModel.ts";
 import type { SideDraft } from "./tradeModel.ts";
 import { a, b, c, fx } from "./tradeFixtures.tsx";
@@ -60,7 +61,7 @@ describe("checkTrade against the engine", () => {
   ];
 
   test.each(cases)("%s", (_name, partnerId, give, get) => {
-    const check = checkTrade(state, player(a.id), player(partnerId), give, get);
+    const check = checkTrade(state, player(a.id), player(partnerId), give, get, tEn);
     const sent =
       check.give && check.get
         ? applyAction(full, {
@@ -82,6 +83,7 @@ describe("checkTrade against the engine", () => {
       player(b.id),
       side({ squares: [1, 5] }),
       emptySide,
+      tEn,
     );
     expect(check.give?.squares).toEqual([5]);
     expect(check.blocker).toBeNull();

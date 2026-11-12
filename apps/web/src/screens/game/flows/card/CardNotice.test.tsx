@@ -14,6 +14,7 @@ import type { Step } from "../../../../game/fixtures.ts";
 import { GameStoreProvider } from "../../../../game/GameStoreProvider.tsx";
 import { createGameStore } from "../../../../game/store.ts";
 import { CardNotice, effectText, useCardNotice } from "./index.ts";
+import { tEn } from "../../../../testing/tEn.ts";
 
 const fx = recordFixture(1);
 const { a, b } = fx.seats;
@@ -204,22 +205,24 @@ describe("useCardNotice", () => {
 
 describe("effectText", () => {
   test("describes every kind of card effect", () => {
-    expect(effectText({ type: "move_to", square: 0 })).toBe("Advance to Start. Collect $200.");
-    expect(effectText({ type: "move_to", square: 21 })).toMatch(/if you pass Start\.$/);
-    expect(effectText({ type: "move_to", square: 39 })).not.toMatch(/pass Start/);
-    expect(effectText({ type: "move_nearest", target: "station" })).toMatch(/double/);
-    expect(effectText({ type: "move_nearest", target: "utility" })).toMatch(/10 × the total/);
-    expect(effectText({ type: "move_back", steps: 3 })).toBe("Move back 3 squares.");
-    expect(effectText({ type: "collect", amount: 150 })).toBe("Collect $150.");
-    expect(effectText({ type: "pay", amount: 15 })).toBe("Pay the bank $15.");
-    expect(effectText({ type: "pay_each_player", amount: 50 })).toBe("Pay each other player $50.");
-    expect(effectText({ type: "collect_from_each_player", amount: 10 })).toBe(
+    expect(effectText({ type: "move_to", square: 0 }, tEn)).toBe("Advance to Start. Collect $200.");
+    expect(effectText({ type: "move_to", square: 21 }, tEn)).toMatch(/if you pass Start\.$/);
+    expect(effectText({ type: "move_to", square: 39 }, tEn)).not.toMatch(/pass Start/);
+    expect(effectText({ type: "move_nearest", target: "station" }, tEn)).toMatch(/double/);
+    expect(effectText({ type: "move_nearest", target: "utility" }, tEn)).toMatch(/10 × the total/);
+    expect(effectText({ type: "move_back", steps: 3 }, tEn)).toBe("Move back 3 squares.");
+    expect(effectText({ type: "collect", amount: 150 }, tEn)).toBe("Collect $150.");
+    expect(effectText({ type: "pay", amount: 15 }, tEn)).toBe("Pay the bank $15.");
+    expect(effectText({ type: "pay_each_player", amount: 50 }, tEn)).toBe(
+      "Pay each other player $50.",
+    );
+    expect(effectText({ type: "collect_from_each_player", amount: 10 }, tEn)).toBe(
       "Collect $10 from every other player.",
     );
-    expect(effectText({ type: "repairs", perHouse: 25, perHotel: 100 })).toBe(
+    expect(effectText({ type: "repairs", perHouse: 25, perHotel: 100 }, tEn)).toBe(
       "Pay $25 per house and $100 per hotel you own.",
     );
-    expect(effectText({ type: "go_to_jail" })).toMatch(/^Go directly to Jail/);
-    expect(effectText({ type: "jail_free" })).toMatch(/^Keep it/);
+    expect(effectText({ type: "go_to_jail" }, tEn)).toMatch(/^Go directly to Jail/);
+    expect(effectText({ type: "jail_free" }, tEn)).toMatch(/^Keep it/);
   });
 });

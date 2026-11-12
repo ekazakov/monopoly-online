@@ -1,6 +1,7 @@
 import { useId, useMemo, useState } from "react";
 import type { RedactedGameState } from "@monopoly/shared";
 import { useGame, useGameActions } from "../../../../game/index.ts";
+import { errorMessage, useT } from "../../../../i18n/index.ts";
 import { formatMoney } from "../../turn/format.ts";
 import { GroupChip } from "./OfferColumn.tsx";
 import {
@@ -30,22 +31,23 @@ interface SideEditorProps {
 
 // One column of the builder: the properties, jail cards and cash that `owner` hands over.
 function SideEditor({ state, owner, draft, cashProblem, onChange }: SideEditorProps) {
+  const t = useT();
   const base = useId();
-  const properties = ownedProperties(state, owner.id);
+  const properties = ownedProperties(state, owner.id, t);
   const cashId = `${base}-cash`;
   const problemId = `${base}-cash-problem`;
 
   return (
-    <section className="trade-flow__column" aria-label={`${owner.name} gives`}>
-      <h3 className="trade-flow__heading">{owner.name} gives</h3>
+    <section className="trade-flow__column" aria-label={t("trade.gives", { name: owner.name })}>
+      <h3 className="trade-flow__heading">{t("trade.gives", { name: owner.name })}</h3>
 
       {properties.length === 0 && owner.heldJailCards.length === 0 && (
-        <p className="trade-flow__none">No properties or jail cards</p>
+        <p className="trade-flow__none">{t("trade.noAssets")}</p>
       )}
       <ul className="trade-flow__items">
         {properties.map((property) => {
           const reasonId = `${base}-lock-${property.square}`;
-          const note = propertyNote(property);
+          const note = propertyNote(property, t);
           return (
             <li key={property.square} className="trade-flow__pick">
               <label className="trade-flow__row">
@@ -81,14 +83,14 @@ function SideEditor({ state, owner, draft, cashProblem, onChange }: SideEditorPr
                 checked={draft.jailCards.includes(index)}
                 onChange={() => onChange({ ...draft, jailCards: toggle(draft.jailCards, index) })}
               />
-              <span className="trade-flow__name">{jailCardLabel(deck)}</span>
+              <span className="trade-flow__name">{jailCardLabel(deck, t)}</span>
             </label>
           </li>
         ))}
       </ul>
 
       <div className="trade-flow__cash">
-        <label htmlFor={cashId}>Cash from {owner.name}</label>
+        <label htmlFor={cashId}>{t("trade.cashFrom", { name: owner.name })}</label>
         <span className="trade-flow__cash-field">
           <span aria-hidden="true">$</span>
           <input
@@ -103,7 +105,9 @@ function SideEditor({ state, owner, draft, cashProblem, onChange }: SideEditorPr
             onChange={(event) => onChange({ ...draft, cash: event.target.value })}
           />
         </span>
-        <span className="trade-flow__available">of {formatMoney(owner.cash)}</span>
+        <span className="trade-flow__available">
+          {t("trade.of", { cash: formatMoney(owner.cash) })}
+        </span>
       </div>
       {cashProblem && (
         <p id={problemId} className="trade-flow__reason">
@@ -122,6 +126,7 @@ interface TradeBuilderProps {
 // The trade builder in the board centre (spec 4.5, 5.2: no modal). Pick a partner, then what each
 // side hands over. Propose sends `ProposeTrade`; the board centre then shows the response view.
 export function TradeBuilder({ userId, onClose }: TradeBuilderProps) {
+  const t = useT();
   const view = useGame(userId);
   const actions = useGameActions();
   const titleId = useId();
@@ -143,16 +148,16 @@ export function TradeBuilder({ userId, onClose }: TradeBuilderProps) {
     return (
       <section className="trade-flow" aria-labelledby={titleId}>
         <h2 id={titleId} className="trade-flow__title">
-          Propose a trade
+          {t("trade.propose")}
         </h2>
-        <p className="trade-flow__none">You cannot propose a trade now.</p>
+        <p className="trade-flow__none">{t("trade.cannot")}</p>
         <div className="trade-flow__actions">
           <button
             type="button"
             className="trade-flow__btn trade-flow__btn--outline"
             onClick={onClose}
           >
-            Close
+            {t("modal.close")}
           </button>
         </div>
       </section>
@@ -167,7 +172,7 @@ export function TradeBuilder({ userId, onClose }: TradeBuilderProps) {
         ? (partners[0]?.id ?? null)
         : null;
   const partner = partners.find((p) => p.id === partnerId) ?? null;
-  const check = checkTrade(state, proposer, partner, give, get);
+  const check = checkTrade(state, proposer, partner, give, get, t);
 
   const choose = (id: string) => {
     setChosen(id);
@@ -195,11 +200,11 @@ export function TradeBuilder({ userId, onClose }: TradeBuilderProps) {
       aria-busy={actions.pending || undefined}
     >
       <h2 id={titleId} className="trade-flow__title">
-        Propose a trade
+        {t("trade.propose")}
       </h2>
 
       <fieldset className="trade-flow__partners">
-        <legend>Trade with</legend>
+        <legend>{t("trade.with")}</legend>
         {partners.map((p) => (
           <label key={p.id} className="trade-flow__partner">
             <input
@@ -231,16 +236,20 @@ export function TradeBuilder({ userId, onClose }: TradeBuilderProps) {
             onChange={setGet}
           />
         ) : (
-          <section className="trade-flow__column" aria-label="Partner offer">
-            <p className="trade-flow__none">Choose a player to trade with.</p>
+          <section className="trade-flow__column" aria-label={t("trade.partnerOffer")}>
+            <p className="trade-flow__none">{t("trade.choosePartner")}</p>
           </section>
         )}
       </div>
 
       <p className="trade-flow__summary">
         {partner && check.give && check.get
-          ? `${proposer.name} gives ${summariseOffer(check.give)} · gets ${summariseOffer(check.get)}`
-          : "No offer yet"}
+          ? t("trade.summary", {
+              name: proposer.name,
+              give: summariseOffer(check.give, t),
+              get: summariseOffer(check.get, t),
+            })
+          : t("trade.noOffer")}
       </p>
       {check.blocker && (
         <p id={blockerId} className="trade-flow__reason">
@@ -254,7 +263,7 @@ export function TradeBuilder({ userId, onClose }: TradeBuilderProps) {
           className="trade-flow__btn trade-flow__btn--outline"
           onClick={onClose}
         >
-          Cancel
+          {t("trade.cancel")}
         </button>
         <button
           type="button"
@@ -263,14 +272,14 @@ export function TradeBuilder({ userId, onClose }: TradeBuilderProps) {
           aria-describedby={check.blocker ? blockerId : undefined}
           onClick={() => void propose()}
         >
-          Propose
+          {t("trade.proposeButton")}
         </button>
       </div>
 
       <div className="trade-flow__errors" role="status" aria-live="polite" aria-atomic="true">
         {error && (
           <p className="trade-flow__error" data-code={error.code}>
-            {error.message}
+            {errorMessage(error, t)}
           </p>
         )}
       </div>

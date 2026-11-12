@@ -389,13 +389,12 @@ describe("DebtView: pending and error", () => {
 
   test("shows a rejected action in the live region of the turn area", () => {
     const view = renderDebt(debtState({ ownership: brownSet }));
-    expect(screen.queryByText("Raise cash first")).not.toBeInTheDocument();
+    expect(screen.queryByText("Not enough cash. Raise cash first.")).not.toBeInTheDocument();
     view.update({ error: new ApiError(422, "insufficient_funds", "Raise cash first") });
-    expect(screen.getByText("Raise cash first")).toBeInTheDocument();
-    expect(screen.getByText("Raise cash first").closest("[aria-live]")).toHaveAttribute(
-      "aria-live",
-      "polite",
-    );
+    expect(screen.getByText("Not enough cash. Raise cash first.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Not enough cash. Raise cash first.").closest("[aria-live]"),
+    ).toHaveAttribute("aria-live", "polite");
   });
 });
 

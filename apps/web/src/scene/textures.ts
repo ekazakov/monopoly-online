@@ -1,4 +1,6 @@
 import * as THREE from "three";
+import { squareInfoName } from "../i18n/index.ts";
+import type { Translate } from "../i18n/index.ts";
 import type { Square } from "@monopoly/game-engine";
 import { drawGlyph } from "./avatarGlyphs.ts";
 import { GROUP_COLORS, SURFACE, UNKNOWN_OWNER_COLOR, markerColor, tokenLook } from "./colors.ts";
@@ -56,8 +58,8 @@ export function ownerBandLayout(priceWidth: number): OwnerBandLayout {
 }
 
 /** The price line under a square name, or an empty string when the square has none. */
-export function priceLabel(square: Square): string {
-  if (square.kind === "tax") return `Pay $${square.amount}`;
+export function priceLabel(square: Square, t: Translate): string {
+  if (square.kind === "tax") return t("board.pay", { amount: `$${square.amount}` });
   if ("price" in square) return `$${square.price}`;
   return "";
 }
@@ -171,7 +173,11 @@ function drawIcon(g: Ctx, square: Square, cx: number, cy: number) {
 }
 
 /** Top face of a side square: group band, name, icon or price. Local top is the inner edge. */
-export function squareTexture(square: Square, anisotropy: number): THREE.CanvasTexture {
+export function squareTexture(
+  square: Square,
+  anisotropy: number,
+  t: Translate,
+): THREE.CanvasTexture {
   return makeTexture(TILE_W, TILE_H, anisotropy, (g) => {
     g.fillStyle = SURFACE.paper;
     g.fillRect(0, 0, TILE_W, TILE_H);
@@ -184,7 +190,11 @@ export function squareTexture(square: Square, anisotropy: number): THREE.CanvasT
     g.textAlign = "center";
     g.textBaseline = "alphabetic";
     g.font = `700 58px ${DISPLAY}`;
-    const lines = wrapLines(square.name.toUpperCase(), 280, (t) => g.measureText(t).width);
+    const lines = wrapLines(
+      squareInfoName(square, t).toUpperCase(),
+      280,
+      (text) => g.measureText(text).width,
+    );
     let y = (street ? 120 : 0) + 64;
     for (const line of lines) {
       g.fillText(line, TILE_W / 2, y);
@@ -192,7 +202,7 @@ export function squareTexture(square: Square, anisotropy: number): THREE.CanvasT
     }
     if (!street) drawIcon(g, square, TILE_W / 2, 350);
     g.font = `600 ${PRICE_PX}px ${BODY}`;
-    const price = priceLabel(square);
+    const price = priceLabel(square, t);
     if (price) g.fillText(price, TILE_W / 2, priceBaseline(TILE_H));
   });
 }
@@ -256,7 +266,11 @@ function ownerBandTexture(
 type CornerKind = Extract<Square["kind"], "go" | "jail" | "free_parking" | "go_to_jail">;
 
 /** Top face of a corner square. */
-export function cornerTexture(kind: CornerKind, anisotropy: number): THREE.CanvasTexture {
+export function cornerTexture(
+  kind: CornerKind,
+  anisotropy: number,
+  t: Translate,
+): THREE.CanvasTexture {
   return makeTexture(CORNER_PX, CORNER_PX, anisotropy, (g) => {
     const w = CORNER_PX;
     g.fillStyle = SURFACE.paper;
@@ -266,11 +280,11 @@ export function cornerTexture(kind: CornerKind, anisotropy: number): THREE.Canva
     if (kind === "go") {
       g.fillStyle = ink;
       g.font = `600 36px ${BODY}`;
-      g.fillText("COLLECT $200", 280, 80);
-      g.fillText("SALARY AS YOU PASS", 280, 122);
+      g.fillText(t("board.collect"), 280, 80);
+      g.fillText(t("board.salary"), 280, 122);
       g.fillStyle = SURFACE.red;
       g.font = `700 200px ${DISPLAY}`;
-      g.fillText("START", 280, 370, 480);
+      g.fillText(t("board.start"), 280, 370, 480);
       g.strokeStyle = SURFACE.red;
       g.lineWidth = 22;
       g.lineCap = "round";
@@ -299,13 +313,13 @@ export function cornerTexture(kind: CornerKind, anisotropy: number): THREE.Canva
       }
       g.fillStyle = ink;
       g.font = `700 70px ${DISPLAY}`;
-      g.fillText("IN JAIL", 200, 340);
+      g.fillText(t("board.inJail"), 200, 340);
       g.font = `700 56px ${DISPLAY}`;
-      g.fillText("JUST VISITING", 280, 510);
+      g.fillText(t("board.visiting"), 280, 510);
     } else if (kind === "free_parking") {
       g.fillStyle = ink;
       g.font = `700 92px ${DISPLAY}`;
-      g.fillText("FREE", 280, 130);
+      g.fillText(t("board.free"), 280, 130);
       g.fillStyle = SURFACE.red;
       g.strokeStyle = ink;
       g.lineWidth = 9;
@@ -332,11 +346,11 @@ export function cornerTexture(kind: CornerKind, anisotropy: number): THREE.Canva
       g.fill();
       g.stroke();
       g.fillStyle = ink;
-      g.fillText("PARKING", 280, 510);
+      g.fillText(t("board.parking"), 280, 510);
     } else {
       g.fillStyle = ink;
       g.font = `700 92px ${DISPLAY}`;
-      g.fillText("GO TO", 280, 130);
+      g.fillText(t("board.goTo"), 280, 130);
       g.fillStyle = "#2a6fb0";
       g.strokeStyle = ink;
       g.lineWidth = 9;
@@ -360,7 +374,7 @@ export function cornerTexture(kind: CornerKind, anisotropy: number): THREE.Canva
       g.lineTo(345, 262);
       g.stroke();
       g.fillStyle = ink;
-      g.fillText("JAIL", 280, 530);
+      g.fillText(t("board.jail"), 280, 530);
     }
   });
 }
@@ -373,10 +387,12 @@ export function centreTexture(anisotropy: number): THREE.CanvasTexture {
   });
 }
 
-const CARD_LABELS = { chance: "CHANCE", chest: "CHEST" } as const;
-
 /** The back of the top card of a deck: the deck colour, a light inner border and the deck name. */
-export function cardBackTexture(deck: StackDeck, anisotropy: number): THREE.CanvasTexture {
+export function cardBackTexture(
+  deck: StackDeck,
+  anisotropy: number,
+  t: Translate,
+): THREE.CanvasTexture {
   const w = 560;
   const h = Math.round((w * CARD_D) / CARD_W);
   return makeTexture(w, h, anisotropy, (g) => {
@@ -389,7 +405,7 @@ export function cardBackTexture(deck: StackDeck, anisotropy: number): THREE.Canv
     g.font = `700 96px ${DISPLAY}`;
     g.textAlign = "center";
     g.textBaseline = "middle";
-    g.fillText(CARD_LABELS[deck], w / 2, h / 2);
+    g.fillText(t(`board.${deck}`), w / 2, h / 2);
   });
 }
 
@@ -418,39 +434,43 @@ export interface BoardTextures {
 }
 
 /** Draws every face of the board once. The caller owns the result and must call `dispose`. */
-export function createBoardTextures(squares: readonly Square[], anisotropy: number): BoardTextures {
+export function createBoardTextures(
+  squares: readonly Square[],
+  anisotropy: number,
+  t: Translate,
+): BoardTextures {
   const faces = squares.map((square) => {
     switch (square.kind) {
       case "go":
       case "jail":
       case "free_parking":
       case "go_to_jail":
-        return cornerTexture(square.kind, anisotropy);
+        return cornerTexture(square.kind, anisotropy, t);
       default:
-        return squareTexture(square, anisotropy);
+        return squareTexture(square, anisotropy, t);
     }
   });
   const bands = new Map<string, THREE.CanvasTexture>();
   const centre = centreTexture(anisotropy);
   const cardBacks = {
-    chance: cardBackTexture("chance", anisotropy),
-    chest: cardBackTexture("chest", anisotropy),
+    chance: cardBackTexture("chance", anisotropy, t),
+    chest: cardBackTexture("chest", anisotropy, t),
   };
   return {
     squares: faces,
     ownerBand(square, token, mortgaged) {
       const def = squares[square];
-      const label = def && def.kind !== "tax" ? priceLabel(def) : "";
+      const label = def && def.kind !== "tax" ? priceLabel(def, t) : "";
       const key = `${label}|${token ?? ""}|${mortgaged ? "m" : ""}`;
-      let t = bands.get(key);
-      if (!t) bands.set(key, (t = ownerBandTexture(label, token, mortgaged, anisotropy)));
-      return t;
+      let band = bands.get(key);
+      if (!band) bands.set(key, (band = ownerBandTexture(label, token, mortgaged, anisotropy)));
+      return band;
     },
     centre,
     cardBacks,
     dispose() {
-      for (const t of faces) t.dispose();
-      for (const t of bands.values()) t.dispose();
+      for (const face of faces) face.dispose();
+      for (const band of bands.values()) band.dispose();
       bands.clear();
       centre.dispose();
       cardBacks.chance.dispose();

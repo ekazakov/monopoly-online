@@ -1,6 +1,7 @@
 import type { PresenceStatus, Token } from "@monopoly/shared";
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
+import { currentLanguage, formatMoney as formatMoneyIn, useT } from "../../../i18n/index.ts";
 import { tokenLook } from "../../../scene/colors.ts";
 import { AvatarIcon } from "./avatars.tsx";
 import "./PlayerRail.css";
@@ -32,14 +33,7 @@ export interface PlayerRowProps {
   presence?: PresenceStatus;
 }
 
-const PRESENCE_LABELS: Record<PresenceStatus, string> = {
-  online: "Online",
-  reconnecting: "Reconnecting…",
-  away: "Away",
-};
-
-const money = new Intl.NumberFormat("en-US");
-export const formatMoney = (n: number) => `${n < 0 ? "−" : ""}$${money.format(Math.abs(n))}`;
+export const formatMoney = (n: number) => formatMoneyIn(n, currentLanguage());
 
 /** How long the cash change stays marked. */
 export const CASH_FLASH_MS = 1600;
@@ -60,8 +54,6 @@ function useCashChange(cash: number): number | null {
   return change;
 }
 
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-
 export function PlayerRow({
   name,
   token,
@@ -75,6 +67,7 @@ export function PlayerRow({
   debt,
   presence,
 }: PlayerRowProps) {
+  const t = useT();
   const look = tokenLook(token);
   const change = useCashChange(cash);
   const onTurn = active && !eliminated;
@@ -93,8 +86,12 @@ export function PlayerRow({
       <div className="player-row__text">
         <span className="player-row__name">
           <span className="player-row__name-text">{name}</span>
-          {device === "you" && <span className="player-row__tag player-row__tag--seat">You</span>}
-          {onTurn && <span className="player-row__tag player-row__tag--turn">Turn</span>}
+          {device === "you" && (
+            <span className="player-row__tag player-row__tag--seat">{t("room.tag.you")}</span>
+          )}
+          {onTurn && (
+            <span className="player-row__tag player-row__tag--turn">{t("rail.turn")}</span>
+          )}
         </span>
         <span
           className="player-row__cash"
@@ -103,7 +100,7 @@ export function PlayerRow({
           {eliminated ? (
             <>
               <span aria-hidden="true">—</span>
-              <span className="player-row__sr">no cash</span>
+              <span className="player-row__sr">{t("rail.noCash")}</span>
             </>
           ) : (
             <>
@@ -119,20 +116,22 @@ export function PlayerRow({
           )}
         </span>
         <span className="player-row__meta">
-          {device === "device" && <span>This device</span>}
+          {device === "device" && <span>{t("room.tag.thisDevice")}</span>}
           {device === "other" && presence && !eliminated && (
             <span className="player-row__presence" data-presence={presence}>
               <span className="player-row__dot" aria-hidden="true" />
-              {PRESENCE_LABELS[presence]}
+              {t(`presence.${presence}`)}
             </span>
           )}
-          {eliminated && <span>Bankrupt</span>}
-          {!eliminated && inJail && <span>In jail</span>}
+          {eliminated && <span>{t("rail.bankrupt")}</span>}
+          {!eliminated && inJail && <span>{t("turn.jail.title")}</span>}
           {!eliminated && jailCards > 0 && (
-            <span>{plural(jailCards, "jail card", "jail cards")}</span>
+            <span>{t("count.jailCards", { count: jailCards })}</span>
           )}
-          {!eliminated && debt !== null && debt > 0 && <span>Owes {formatMoney(debt)}</span>}
-          <span>{plural(properties, "property", "properties")}</span>
+          {!eliminated && debt !== null && debt > 0 && (
+            <span>{t("rail.owes", { amount: formatMoney(debt) })}</span>
+          )}
+          <span>{t("count.properties", { count: properties })}</span>
         </span>
       </div>
     </li>

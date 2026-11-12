@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 import { MAX_SEATS } from "@monopoly/shared";
 import type { LobbyGame, Token } from "@monopoly/shared";
+import { useT } from "../../i18n/index.ts";
 import { tokenLook } from "../../scene/colors.ts";
 import { AvatarIcon } from "../game/rail/avatars.tsx";
 import { timeAgo } from "./time.ts";
@@ -24,8 +25,9 @@ export function TokenStack({ tokens }: { tokens: readonly Token[] }) {
 
 /** "2 / 6", read as "2 of 6 seats". */
 export function SeatCount({ count }: { count: number }) {
+  const t = useT();
   return (
-    <span className="lobby__count" aria-label={`${count} of ${MAX_SEATS} seats`}>
+    <span className="lobby__count" aria-label={t("lobby.seatsOf", { count, max: MAX_SEATS })}>
       {count} / {MAX_SEATS}
     </span>
   );
@@ -43,34 +45,38 @@ export interface OpenGameRowProps {
 
 /** One row of Open games: Join, Open for a game the user is in, or Full. */
 export function OpenGameRow({ game, now, mine, busy, onJoin, onOpen }: OpenGameRowProps) {
+  const t = useT();
   const full = game.seatCount >= MAX_SEATS;
   return (
     <li className="lobby__row" data-full={(full && !mine) || undefined}>
       <div className="lobby__row-main">
         <span className="lobby__row-name">{game.name}</span>
         <span className="lobby__row-note">
-          Hosted by {game.ownerName} · created {timeAgo(game.createdAt, now)}
+          {t("lobby.hostedCreated", {
+            name: game.ownerName,
+            time: timeAgo(game.createdAt, now, t),
+          })}
         </span>
       </div>
       <TokenStack tokens={game.tokens} />
       <SeatCount count={game.seatCount} />
       {mine ? (
         <button type="button" className="lobby__button" onClick={() => onOpen(game)}>
-          Open
+          {t("lobby.row.open")}
         </button>
       ) : full ? (
         <button type="button" className="lobby__button" disabled>
-          Full
+          {t("lobby.row.full")}
         </button>
       ) : (
         <button
           type="button"
           className="lobby__button lobby__button--primary"
           disabled={busy}
-          aria-label={`Join ${game.name}`}
+          aria-label={t("lobby.row.joinLabel", { game: game.name })}
           onClick={() => onJoin(game.id)}
         >
-          Join
+          {t("lobby.row.join")}
         </button>
       )}
     </li>
@@ -90,6 +96,7 @@ export function SavedGameRow({
   onContinue: (game: LobbyGame) => void;
   onFinish: (game: LobbyGame) => void;
 }) {
+  const t = useT();
   const [confirming, setConfirming] = useState(false);
   const questionId = useId();
   return (
@@ -98,11 +105,11 @@ export function SavedGameRow({
         <span className="lobby__row-name">
           {game.name}
           <span className="lobby__status" data-status="saved">
-            Saved
+            {t("lobby.status.saved")}
           </span>
         </span>
         <span className="lobby__row-note">
-          You are the host · {game.seatCount} {game.seatCount === 1 ? "seat" : "seats"}
+          {t("lobby.youHostSeats", { seats: t("count.seats", { count: game.seatCount }) })}
         </span>
       </div>
       <TokenStack tokens={game.tokens} />
@@ -110,7 +117,7 @@ export function SavedGameRow({
       {confirming ? (
         <div className="lobby__confirm" role="group" aria-labelledby={questionId}>
           <p id={questionId} className="lobby__text">
-            Finish this game with no winner? You cannot undo this.
+            {t("lobby.saved.finishQuestion")}
           </p>
           <button
             type="button"
@@ -118,7 +125,7 @@ export function SavedGameRow({
             disabled={busy}
             onClick={() => setConfirming(false)}
           >
-            Keep game
+            {t("lobby.saved.keep")}
           </button>
           <button
             type="button"
@@ -126,7 +133,7 @@ export function SavedGameRow({
             disabled={busy}
             onClick={() => onFinish(game)}
           >
-            Finish game
+            {t("lobby.saved.finishGame")}
           </button>
         </div>
       ) : (
@@ -135,19 +142,19 @@ export function SavedGameRow({
             type="button"
             className="lobby__button"
             disabled={busy}
-            aria-label={`Finish ${game.name}`}
+            aria-label={t("lobby.saved.finishLabel", { game: game.name })}
             onClick={() => setConfirming(true)}
           >
-            Finish
+            {t("lobby.saved.finish")}
           </button>
           <button
             type="button"
             className="lobby__button lobby__button--primary"
             disabled={busy}
-            aria-label={`Continue ${game.name}`}
+            aria-label={t("lobby.saved.continueLabel", { game: game.name })}
             onClick={() => onContinue(game)}
           >
-            Continue
+            {t("lobby.saved.continue")}
           </button>
         </>
       )}
@@ -165,20 +172,29 @@ export function MyGameRow({
   userName: string;
   onOpen: (game: LobbyGame) => void;
 }) {
+  const t = useT();
   const waiting = game.status === "waiting";
   const saved = game.status === "saved";
-  const host = game.ownerName === userName ? "You are the host" : `Hosted by ${game.ownerName}`;
+  const host =
+    game.ownerName === userName
+      ? t("lobby.youHost")
+      : t("lobby.hostedBy", { name: game.ownerName });
+  const open = waiting || saved;
   return (
     <li className="lobby__row">
       <div className="lobby__row-main">
         <span className="lobby__row-name">
           {game.name}
           <span className="lobby__status" data-status={game.status}>
-            {waiting ? "Waiting" : saved ? "Saved" : "In progress"}
+            {waiting
+              ? t("lobby.status.waiting")
+              : saved
+                ? t("lobby.status.saved")
+                : t("lobby.status.inProgress")}
           </span>
         </span>
         <span className="lobby__row-note">
-          {host} · {game.seatCount} of {MAX_SEATS} seats
+          {t("lobby.myGameNote", { host, count: game.seatCount, max: MAX_SEATS })}
         </span>
       </div>
       <TokenStack tokens={game.tokens} />
@@ -186,10 +202,10 @@ export function MyGameRow({
       <button
         type="button"
         className="lobby__button"
-        aria-label={`${waiting || saved ? "Open" : "Resume"} ${game.name}`}
+        aria-label={t(open ? "lobby.row.openLabel" : "lobby.row.resumeLabel", { game: game.name })}
         onClick={() => onOpen(game)}
       >
-        {waiting || saved ? "Open" : "Resume"}
+        {open ? t("lobby.row.open") : t("lobby.row.resume")}
       </button>
     </li>
   );

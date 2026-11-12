@@ -124,13 +124,13 @@ export function LeaveGameMenu({ userId, onLeft }: LeaveGameMenuProps) {
     try {
       await actions.send({ type: "Resign" }, { seatId: choice.id, source: "menu" });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not resign. Try again.");
+      setError(cause instanceof Error ? cause.message : t("menu.resignFailed"));
       setSending(false);
       return;
     }
     setSending(false);
     if (seats.length > 1) {
-      setNotice(`${nameOf(choice)} resigned.`);
+      setNotice(t("menu.resigned", { name: nameOf(choice) }));
       setChosen(null);
       setStep("menu");
       return;
@@ -150,7 +150,7 @@ export function LeaveGameMenu({ userId, onLeft }: LeaveGameMenuProps) {
       setError(
         cause instanceof Error
           ? cause.message
-          : `Could not ${kind === "save" ? "save" : "finish"} the game. Try again.`,
+          : t(kind === "save" ? "menu.saveFailed" : "menu.finishFailed"),
       );
       setEnding(null);
       return;
@@ -166,11 +166,11 @@ export function LeaveGameMenu({ userId, onLeft }: LeaveGameMenuProps) {
 
   const resigning = seats.length > 0;
   const status = sending
-    ? "Resigning…"
+    ? t("menu.resigning")
     : ending === "save"
-      ? "Saving…"
+      ? t("menu.saving")
       : ending === "finish"
-        ? "Finishing…"
+        ? t("menu.finishing")
         : (error ?? notice ?? "");
 
   return (
@@ -183,7 +183,7 @@ export function LeaveGameMenu({ userId, onLeft }: LeaveGameMenuProps) {
         aria-controls={open ? panelId : undefined}
         onClick={() => (open ? close() : setOpen(true))}
       >
-        Menu
+        {t("menu.title")}
       </button>
       {open && (
         <div id={panelId} className="leave-menu__panel" aria-busy={busy || undefined}>
@@ -193,60 +193,56 @@ export function LeaveGameMenu({ userId, onLeft }: LeaveGameMenuProps) {
                 <>
                   <div className="leave-menu__row">
                     <p className="leave-menu__row-text">
-                      <span className="leave-menu__row-title">Save and exit</span>
-                      <span className="leave-menu__hint">
-                        Keep the game at the start of this turn
-                      </span>
+                      <span className="leave-menu__row-title">{t("menu.save.title")}</span>
+                      <span className="leave-menu__hint">{t("menu.save.hint")}</span>
                     </p>
                     <button
                       type="button"
                       className="leave-menu__btn"
-                      aria-label="Save and exit"
+                      aria-label={t("menu.save.title")}
                       onClick={() => {
                         setError(null);
                         setNotice(null);
                         setStep("save");
                       }}
                     >
-                      Save
+                      {t("menu.save.button")}
                     </button>
                   </div>
                   <div className="leave-menu__row">
                     <p className="leave-menu__row-text">
-                      <span className="leave-menu__row-title">Finish game</span>
-                      <span className="leave-menu__hint">End the game with no winner</span>
+                      <span className="leave-menu__row-title">{t("menu.finish.title")}</span>
+                      <span className="leave-menu__hint">{t("menu.finish.hint")}</span>
                     </p>
                     <button
                       type="button"
                       className="leave-menu__btn leave-menu__btn--danger"
-                      aria-label="Finish game"
+                      aria-label={t("menu.finish.title")}
                       onClick={() => {
                         setError(null);
                         setNotice(null);
                         setStep("finish");
                       }}
                     >
-                      Finish
+                      {t("menu.finish.button")}
                     </button>
                   </div>
                 </>
               )}
               <div className="leave-menu__row">
                 <p className="leave-menu__row-text">
-                  <span className="leave-menu__row-title">Reduce motion</span>
-                  <span className="leave-menu__hint">
-                    No animation. Follows your device until you change it
-                  </span>
+                  <span className="leave-menu__row-title">{t("menu.motion.title")}</span>
+                  <span className="leave-menu__hint">{t("menu.motion.hint")}</span>
                 </p>
                 <button
                   type="button"
                   role="switch"
                   className="leave-menu__btn"
-                  aria-label="Reduce motion"
+                  aria-label={t("menu.motion.title")}
                   aria-checked={reducedMotion}
                   onClick={() => setReducedMotion(!reducedMotion)}
                 >
-                  {reducedMotion ? "On" : "Off"}
+                  {reducedMotion ? t("menu.on") : t("menu.off")}
                 </button>
               </div>
               <div className="leave-menu__row">
@@ -303,22 +299,22 @@ export function LeaveGameMenu({ userId, onLeft }: LeaveGameMenuProps) {
               </div>
               <div className="leave-menu__row">
                 <p className="leave-menu__row-text">
-                  <span className="leave-menu__row-title">Sound</span>
-                  <span className="leave-menu__hint">Effects and music on this device</span>
+                  <span className="leave-menu__row-title">{t("menu.sound.title")}</span>
+                  <span className="leave-menu__hint">{t("menu.sound.hint")}</span>
                 </p>
                 <button
                   type="button"
                   role="switch"
                   className="leave-menu__btn"
-                  aria-label="Sound"
+                  aria-label={t("menu.sound.title")}
                   aria-checked={sound.enabled}
                   onClick={() => setSoundPreference({ enabled: !sound.enabled })}
                 >
-                  {sound.enabled ? "On" : "Off"}
+                  {sound.enabled ? t("menu.on") : t("menu.off")}
                 </button>
               </div>
               <label className="leave-menu__row leave-menu__volume">
-                <span className="leave-menu__row-title">Effects</span>
+                <span className="leave-menu__row-title">{t("menu.effects")}</span>
                 <input
                   type="range"
                   min={0}
@@ -332,7 +328,7 @@ export function LeaveGameMenu({ userId, onLeft }: LeaveGameMenuProps) {
                 />
               </label>
               <label className="leave-menu__row leave-menu__volume">
-                <span className="leave-menu__row-title">Music</span>
+                <span className="leave-menu__row-title">{t("menu.music")}</span>
                 <input
                   type="range"
                   min={0}
@@ -347,19 +343,19 @@ export function LeaveGameMenu({ userId, onLeft }: LeaveGameMenuProps) {
               </label>
               <div className="leave-menu__row">
                 <p className="leave-menu__row-text">
-                  <span className="leave-menu__row-title">Leave game</span>
+                  <span className="leave-menu__row-title">{t("menu.leave.title")}</span>
                   <span className="leave-menu__hint">
-                    {seats.length > 1 ? "Resign one of your players" : "Resign and leave the table"}
+                    {seats.length > 1 ? t("menu.leave.hintSeats") : t("menu.leave.hint")}
                   </span>
                 </p>
                 <button
                   ref={leaveRef}
                   type="button"
                   className="leave-menu__btn leave-menu__btn--danger"
-                  aria-label="Leave game"
+                  aria-label={t("menu.leave.title")}
                   onClick={openConfirm}
                 >
-                  Leave
+                  {t("menu.leave.button")}
                 </button>
               </div>
             </>
@@ -371,18 +367,14 @@ export function LeaveGameMenu({ userId, onLeft }: LeaveGameMenuProps) {
                 tabIndex={-1}
                 ref={headingRef}
               >
-                {step === "save" ? "Save and exit?" : "Finish this game?"}
+                {step === "save" ? t("menu.save.question") : t("menu.finish.question")}
               </h2>
               <p className="leave-menu__consequence">
-                {step === "finish" && "There is no winner. "}
-                {turnName
-                  ? `The game goes back to the start of ${turnName}'s turn.`
-                  : "The game goes back to the start of the turn."}
+                {step === "finish" && `${t("menu.noWinner")} `}
+                {turnName ? t("menu.backToTurnOf", { name: turnName }) : t("menu.backToTurn")}
               </p>
               <p className="leave-menu__hint">
-                {step === "save"
-                  ? "All players go to the lobby. You can continue the game from your saved games. The dice and cards stay the same."
-                  : "All players see the standings, for information only. You cannot undo this."}
+                {step === "save" ? t("menu.save.detail") : t("menu.finish.detail")}
               </p>
               <div className="leave-menu__actions">
                 <button
@@ -394,7 +386,7 @@ export function LeaveGameMenu({ userId, onLeft }: LeaveGameMenuProps) {
                     setStep("menu");
                   }}
                 >
-                  Keep playing
+                  {t("menu.keepPlaying")}
                 </button>
                 <button
                   type="button"
@@ -402,7 +394,7 @@ export function LeaveGameMenu({ userId, onLeft }: LeaveGameMenuProps) {
                   disabled={busy}
                   onClick={() => void endGame(step)}
                 >
-                  {step === "save" ? "Save and exit" : "Finish game"}
+                  {step === "save" ? t("menu.save.title") : t("menu.finish.title")}
                 </button>
               </div>
             </section>
@@ -414,15 +406,13 @@ export function LeaveGameMenu({ userId, onLeft }: LeaveGameMenuProps) {
                 tabIndex={-1}
                 ref={headingRef}
               >
-                Leave game?
+                {t("menu.leave.question")}
               </h2>
               {resigning ? (
                 <>
                   {seats.length > 1 && (
                     <fieldset className="leave-menu__seats">
-                      <legend className="leave-menu__hint">
-                        Choose who resigns. The other players on this device stay in the game.
-                      </legend>
+                      <legend className="leave-menu__hint">{t("menu.leave.choose")}</legend>
                       {seats.map((seat) => (
                         <label
                           key={seat.id}
@@ -450,20 +440,16 @@ export function LeaveGameMenu({ userId, onLeft }: LeaveGameMenuProps) {
                     </fieldset>
                   )}
                   <p className="leave-menu__consequence">
-                    {consequenceText(choice ? nameOf(choice) : null, activePlayers)}
+                    {consequenceText(choice ? nameOf(choice) : null, activePlayers, t)}
                   </p>
                   <p className="leave-menu__hint" id={`${panelId}-note`}>
-                    {auction
-                      ? "Wait for the auction to end. Resigning is not possible while an auction runs."
-                      : "Not possible while an auction runs. This can't be undone."}
+                    {auction ? t("menu.leave.auctionWait") : t("menu.leave.undone")}
                   </p>
                 </>
               ) : (
                 <p className="leave-menu__consequence">
-                  {isFinished(game, state)
-                    ? "The game is over."
-                    : "You are not playing in this game now."}{" "}
-                  You can leave the table.
+                  {isFinished(game, state) ? t("menu.leave.over") : t("menu.leave.notPlaying")}{" "}
+                  {t("menu.leave.canLeave")}
                 </p>
               )}
               <div className="leave-menu__actions">
@@ -476,7 +462,7 @@ export function LeaveGameMenu({ userId, onLeft }: LeaveGameMenuProps) {
                     setStep("menu");
                   }}
                 >
-                  Stay
+                  {t("menu.stay")}
                 </button>
                 {resigning ? (
                   <button
@@ -486,7 +472,7 @@ export function LeaveGameMenu({ userId, onLeft }: LeaveGameMenuProps) {
                     aria-describedby={`${panelId}-note`}
                     onClick={() => void resign()}
                   >
-                    Resign
+                    {t("menu.resign")}
                   </button>
                 ) : (
                   <button
@@ -494,7 +480,7 @@ export function LeaveGameMenu({ userId, onLeft }: LeaveGameMenuProps) {
                     className="leave-menu__btn leave-menu__btn--primary"
                     onClick={leaveWithoutSeat}
                   >
-                    Leave
+                    {t("menu.leave.button")}
                   </button>
                 )}
               </div>

@@ -1,3 +1,4 @@
+import { useT } from "../../../i18n/index.ts";
 import { useState } from "react";
 import type { Token } from "@monopoly/shared";
 import { useGame } from "../../../game/index.ts";
@@ -18,6 +19,7 @@ export interface TurnNotice {
  * mounts later than the action sees only the actions after its mount.
  */
 export function useTurnNotice(userId: string | null): TurnNotice | null {
+  const t = useT();
   const view = useGame(userId);
   const [mountVersion] = useState(view.version);
   if (view.version <= mountVersion) return null;
@@ -25,6 +27,8 @@ export function useTurnNotice(userId: string | null): TurnNotice | null {
   if (!ended || ended.type !== "TurnEnded") return null;
   const seat = view.game?.seats.find((s) => s.id === ended.nextPlayerId);
   const name =
-    seat?.name ?? view.state?.players.find((p) => p.id === ended.nextPlayerId)?.name ?? "A player";
+    seat?.name ??
+    view.state?.players.find((p) => p.id === ended.nextPlayerId)?.name ??
+    t("card.aPlayer");
   return { key: String(view.version), name, token: seat?.token ?? null };
 }

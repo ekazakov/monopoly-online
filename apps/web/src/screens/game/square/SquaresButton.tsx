@@ -1,3 +1,4 @@
+import { useT } from "../../../i18n/index.ts";
 import { useSquareView } from "./SquareViewContext.tsx";
 import "./Square.css";
 
@@ -5,9 +6,10 @@ import "./Square.css";
 // of properties, so a keyboard, a screen reader and a no-WebGL device reach the square detail.
 export function SquaresButton() {
   const { openList } = useSquareView();
+  const t = useT();
   return (
     <button type="button" className="squares-button" onClick={openList}>
-      Squares
+      {t("game.squares")}
     </button>
   );
 }

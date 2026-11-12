@@ -1,4 +1,6 @@
 import { useGame, useGameSelector } from "../../../game/index.ts";
+import { useT } from "../../../i18n/index.ts";
+import type { MessageKey } from "../../../i18n/index.ts";
 import { PlayerRow } from "./PlayerRow.tsx";
 import type { PlayerRowProps, SeatDevice } from "./PlayerRow.tsx";
 import "./PlayerRail.css";
@@ -8,14 +10,15 @@ interface RailEntry {
   row: PlayerRowProps;
 }
 
-const GROUPS: { device: "local" | "other"; label: string }[] = [
-  { device: "local", label: "This device" },
-  { device: "other", label: "Other devices" },
+const GROUPS: { device: "local" | "other"; label: MessageKey }[] = [
+  { device: "local", label: "room.tag.thisDevice" },
+  { device: "other", label: "rail.otherDevices" },
 ];
 
 // The rail of the game screen (spec 4.3 and 5.3): one row per seat in seat order, grouped by
 // device. The group headings show only when both groups exist, since one group needs no label.
 export function PlayerRail({ userId }: { userId: string }) {
+  const t = useT();
   const { game, state, mySeats, currentPlayer } = useGame(userId);
   const presence = useGameSelector((s) => s.presence);
   if (!game || !state) return <div className="player-rail" />;
@@ -62,10 +65,10 @@ export function PlayerRail({ userId }: { userId: string }) {
   return (
     <div className="player-rail">
       {groups.map((group) => (
-        <section key={group.device} className="player-rail__group" aria-label={group.label}>
+        <section key={group.device} className="player-rail__group" aria-label={t(group.label)}>
           {groups.length > 1 && (
             <h2 className="player-rail__heading" aria-hidden="true">
-              {group.label}
+              {t(group.label)}
             </h2>
           )}
           <ul className="player-rail__list">

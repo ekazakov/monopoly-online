@@ -1,4 +1,5 @@
 import { JAIL_FINE, MAX_JAIL_ATTEMPTS } from "@monopoly/game-engine";
+import { useT } from "../../../i18n/index.ts";
 import { ActionBar } from "./ActionBar.tsx";
 import { Dice } from "./Dice.tsx";
 import { formatMoney } from "./format.ts";
@@ -8,35 +9,38 @@ import type { Turn } from "./useTurn.ts";
 
 // `awaiting_jail_choice`: roll for doubles, pay the fine or use a Get Out of Jail Free card.
 export function JailView({ turn }: { turn: Turn }) {
+  const t = useT();
   const { dice, stale } = lastRoll(turn.view);
   const player = turn.view.currentPlayer;
   const attempt = (player?.jailTurns ?? 0) + 1;
   const last = attempt >= MAX_JAIL_ATTEMPTS;
   const fine = formatMoney(JAIL_FINE);
 
-  const sub = last
-    ? `Attempt ${attempt} of ${MAX_JAIL_ATTEMPTS}. If you miss, you pay the ${fine} fine and move.`
-    : `Attempt ${attempt} of ${MAX_JAIL_ATTEMPTS}. Roll doubles, pay ${fine} or use a card.`;
+  const sub = t(last ? "turn.jail.attemptLast" : "turn.jail.attempt", {
+    attempt,
+    max: MAX_JAIL_ATTEMPTS,
+    fine,
+  });
   const hasCard = (player?.heldJailCards.length ?? 0) > 0;
   const cashShort = player !== null && player.cash < JAIL_FINE;
 
   return (
     <>
       <Dice dice={dice} stale={stale} />
-      <Status title="In jail" sub={sub} />
+      <Status title={t("turn.jail.title")} sub={sub} />
       <ActionBar
         turn={turn}
         actions={[
-          { label: "Roll for doubles", action: { type: "RollDice" }, primary: true },
+          { label: t("turn.jail.roll"), action: { type: "RollDice" }, primary: true },
           {
-            label: `Pay ${fine}`,
+            label: t("turn.jail.pay", { fine }),
             action: { type: "PayJailFine" },
-            why: cashShort ? `Paying the fine needs ${fine} cash.` : undefined,
+            why: cashShort ? t("turn.jail.payShort", { fine }) : undefined,
           },
           {
-            label: hasCard ? "Use card" : "Use card (none)",
+            label: hasCard ? t("turn.jail.card") : t("turn.jail.cardNone"),
             action: { type: "UseJailCard" },
-            why: hasCard ? undefined : "You hold no Get Out of Jail Free card.",
+            why: hasCard ? undefined : t("turn.jail.cardWhy"),
           },
         ]}
       />

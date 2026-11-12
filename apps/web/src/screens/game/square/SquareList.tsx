@@ -2,7 +2,7 @@ import { SQUARES, groupSquares, isProperty } from "@monopoly/game-engine";
 import type { CSSProperties } from "react";
 import { useGame } from "../../../game/index.ts";
 import { GROUP_ORDER, money } from "../hand/handModel.ts";
-import { GROUP_LABELS } from "../hand/propertyActions.ts";
+import { squareName, useT } from "../../../i18n/index.ts";
 import { Modal } from "../modal/Modal.tsx";
 import "./Square.css";
 
@@ -18,19 +18,20 @@ export function SquareList({
   onClose: () => void;
 }) {
   const { game, state } = useGame(userId);
+  const t = useT();
   const ownerName = (square: number) => {
     const entry = state?.ownership[String(square)];
-    if (!entry) return "Not owned";
-    return game?.seats.find((seat) => seat.id === entry.ownerId)?.name ?? "Owned";
+    if (!entry) return t("square.notOwned");
+    return game?.seats.find((seat) => seat.id === entry.ownerId)?.name ?? t("square.owned");
   };
 
   return (
-    <Modal title="Properties" onClose={onClose}>
+    <Modal title={t("square.properties")} onClose={onClose}>
       <div className="square-list">
         {GROUP_ORDER.map((group) => (
           <section key={group} className="square-list__group">
-            <h3 className="square-list__heading">{GROUP_LABELS[group]}</h3>
-            <ul className="square-list__items" aria-label={GROUP_LABELS[group]}>
+            <h3 className="square-list__heading">{t(`group.${group}`)}</h3>
+            <ul className="square-list__items" aria-label={t(`group.${group}`)}>
               {groupSquares(group).map((square) => {
                 const info = SQUARES[square]!;
                 if (!isProperty(info)) return null;
@@ -43,7 +44,7 @@ export function SquareList({
                       onClick={() => onPick(square)}
                     >
                       <span className="square-list__chip" aria-hidden="true" />
-                      <span className="square-list__name">{info.name}</span>
+                      <span className="square-list__name">{squareName(square, t)}</span>
                       <span className="square-list__price">{money(info.price)}</span>
                       <span className="square-list__owner">{ownerName(square)}</span>
                     </button>

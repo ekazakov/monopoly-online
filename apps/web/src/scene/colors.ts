@@ -22,10 +22,6 @@ export function groupColor(group: SquareGroup): string {
 }
 
 export interface TokenLook {
-  /** What the figure is called, for labels such as "Horse, taken by Ann". */
-  label: string;
-  /** A short name that fits under the figure in the token picker. */
-  short: string;
   /** CSS colour: a `--hf-pawn-*` token. Purple and teal carry their value as the fallback. */
   cssColor: string;
   /** The same colour as hex, for Three.js and for canvas. */
@@ -42,48 +38,36 @@ export interface TokenLook {
  */
 export const TOKEN_LOOKS: Record<Token, TokenLook> = {
   dog: {
-    label: "Scottish terrier",
-    short: "Terrier",
     cssColor: "var(--hf-pawn-red)",
     hex: "#d9392f",
     metal: 0xe0463c,
     avatar: "dog",
   },
   cat: {
-    label: "Cat",
-    short: "Cat",
     cssColor: "var(--hf-pawn-blue)",
     hex: "#2f6fd0",
     metal: 0x3f7fe0,
     avatar: "cat",
   },
   penguin: {
-    label: "Penguin",
-    short: "Penguin",
     cssColor: "var(--hf-pawn-green)",
     hex: "#2fa05c",
     metal: 0x35b066,
     avatar: "penguin",
   },
   car: {
-    label: "Racing car",
-    short: "Car",
     cssColor: "var(--hf-pawn-gold)",
     hex: "#f0b429",
     metal: 0xf6c244,
     avatar: "car",
   },
   horse: {
-    label: "Horse",
-    short: "Horse",
     cssColor: "var(--hf-pawn-purple, #8e5fd6)",
     hex: "#8e5fd6",
     metal: 0x9d70e4,
     avatar: "horse",
   },
   duck: {
-    label: "Duck",
-    short: "Duck",
     cssColor: "var(--hf-pawn-teal, #27b3ad)",
     hex: "#27b3ad",
     metal: 0x33c4be,

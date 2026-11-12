@@ -5,6 +5,7 @@ import { useId, useState } from "react";
 import { claimSeats, finishGame, joinGame } from "../../api/games.ts";
 import { acceptInvite, declineInvite } from "../../api/lobby.ts";
 import { ApiError } from "../../api.ts";
+import { useT } from "../../i18n/index.ts";
 import { useSession, useSignOut } from "../../session/index.ts";
 import { OpenGameRow, MyGameRow, SavedGameRow } from "./GameRows.tsx";
 import { InviteInbox } from "./InviteInbox.tsx";
@@ -25,6 +26,7 @@ export function LobbyScreen() {
 }
 
 function Lobby({ userId, userName }: { userId: string; userName: string }) {
+  const t = useT();
   const signOut = useSignOut();
   const navigate = useNavigate();
   const now = useNow();
@@ -47,29 +49,29 @@ function Lobby({ userId, userName }: { userId: string; userName: string }) {
     onError: (error, gameId) => {
       // The user already has a seat: the room is the right place.
       if (error instanceof ApiError && error.code === "already_joined") openRoom(gameId);
-      else setNotice(noticeFor(error, "join"));
+      else setNotice(noticeFor(error, "join", t));
     },
   });
   const accept = useMutation({
     mutationFn: (invite: Invite) => acceptInvite(invite.id),
     onSuccess: (game) => openRoom(game.id),
-    onError: (error) => setNotice(noticeFor(error, "accept")),
+    onError: (error) => setNotice(noticeFor(error, "accept", t)),
   });
   const decline = useMutation({
     mutationFn: (invite: Invite) => declineInvite(invite.id),
-    onError: (error) => setNotice(noticeFor(error, "decline")),
+    onError: (error) => setNotice(noticeFor(error, "decline", t)),
   });
 
   // Continue takes the seats of the owner and opens the restore room, where the owner presses Start.
   const resume = useMutation({
     mutationFn: (game: LobbyGame) => claimSeats(game.id),
     onSuccess: (game) => openRoom(game.id),
-    onError: (error) => setNotice(noticeFor(error, "continue")),
+    onError: (error) => setNotice(noticeFor(error, "continue", t)),
   });
   const finish = useMutation({
     mutationFn: (game: LobbyGame) => finishGame(game.id),
     onSettled: () => void queryClient.invalidateQueries({ queryKey: myGamesQuery.queryKey }),
-    onError: (error) => setNotice(noticeFor(error, "finish")),
+    onError: (error) => setNotice(noticeFor(error, "finish", t)),
   });
   const savedBusy = resume.isPending || finish.isPending;
 
@@ -87,10 +89,10 @@ function Lobby({ userId, userName }: { userId: string; userName: string }) {
   return (
     <main className="screen lobby">
       <header className="lobby__top">
-        <h1>Lobby</h1>
+        <h1>{t("lobby.title")}</h1>
         <div className="lobby__who">
           <span>
-            Signed in as <strong>{userName}</strong>
+            {t("lobby.signedInAs")} <strong>{userName}</strong>
           </span>
           <button
             type="button"
@@ -100,12 +102,12 @@ function Lobby({ userId, userName }: { userId: string; userName: string }) {
               signOut.mutate(undefined, { onSuccess: () => void navigate({ to: "/sign-in" }) })
             }
           >
-            Sign out
+            {t("lobby.signOut")}
           </button>
         </div>
       </header>
-      {signOut.isError && <p role="alert">Could not sign out. Try again.</p>}
-      {reconnecting && <p role="status">Reconnecting… The lists may be out of date.</p>}
+      {signOut.isError && <p role="alert">{t("lobby.signOutFailed")}</p>}
+      {reconnecting && <p role="status">{t("lobby.reconnecting")}</p>}
 
       {notice && (
         <div className="lobby__notice" role="alert">
@@ -114,7 +116,7 @@ function Lobby({ userId, userName }: { userId: string; userName: string }) {
             <p>{notice.text}</p>
           </div>
           <button type="button" className="lobby__button" onClick={() => setNotice(null)}>
-            Dismiss
+            {t("lobby.dismiss")}
           </button>
         </div>
       )}
@@ -129,16 +131,16 @@ function Lobby({ userId, userName }: { userId: string; userName: string }) {
 
       <div className="lobby__columns">
         <section className="lobby__panel" aria-labelledby={openId}>
-          <h2 id={openId}>Open games</h2>
+          <h2 id={openId}>{t("lobby.open.title")}</h2>
           {games === null ? (
-            <p className="lobby__text">Loading games…</p>
+            <p className="lobby__text">{t("lobby.open.loading")}</p>
           ) : games.length === 0 ? (
             <div className="lobby__empty">
-              <h3>No open games</h3>
-              <p>Start one and invite friends by name or with a link.</p>
+              <h3>{t("lobby.open.emptyTitle")}</h3>
+              <p>{t("lobby.open.emptyText")}</p>
             </div>
           ) : (
-            <ul className="lobby__list" aria-label="Open games" aria-live="polite">
+            <ul className="lobby__list" aria-label={t("lobby.open.title")} aria-live="polite">
               {games.map((game) => (
                 <OpenGameRow
                   key={game.id}
@@ -152,7 +154,7 @@ function Lobby({ userId, userName }: { userId: string; userName: string }) {
               ))}
             </ul>
           )}
-          <p className="lobby__text">Games that have started leave this list.</p>
+          <p className="lobby__text">{t("lobby.open.footnote")}</p>
         </section>
 
         <NewGamePanel userName={userName} />
@@ -160,11 +162,9 @@ function Lobby({ userId, userName }: { userId: string; userName: string }) {
 
       {savedOwn.length > 0 && (
         <section className="lobby__panel" aria-labelledby={savedId}>
-          <h2 id={savedId}>Saved games</h2>
-          <p className="lobby__text">
-            Games you saved. Continue opens the room, where each player claims their seats.
-          </p>
-          <ul className="lobby__list" aria-label="Saved games">
+          <h2 id={savedId}>{t("lobby.saved.title")}</h2>
+          <p className="lobby__text">{t("lobby.saved.text")}</p>
+          <ul className="lobby__list" aria-label={t("lobby.saved.title")}>
             {savedOwn.map((game) => (
               <SavedGameRow
                 key={game.id}
@@ -179,23 +179,23 @@ function Lobby({ userId, userName }: { userId: string; userName: string }) {
       )}
 
       <section className="lobby__panel" aria-labelledby={mineId}>
-        <h2 id={mineId}>My games</h2>
-        <p className="lobby__text">Games you play in, on this device or another</p>
+        <h2 id={mineId}>{t("lobby.mine.title")}</h2>
+        <p className="lobby__text">{t("lobby.mine.text")}</p>
         {myGames.isPending ? (
-          <p className="lobby__text">Loading your games…</p>
+          <p className="lobby__text">{t("lobby.mine.loading")}</p>
         ) : myGames.isError ? (
           <div className="lobby__empty">
-            <p>Could not load your games.</p>
+            <p>{t("lobby.mine.failed")}</p>
             <button type="button" className="lobby__button" onClick={() => void myGames.refetch()}>
-              Try again
+              {t("lobby.mine.retry")}
             </button>
           </div>
         ) : others.length === 0 ? (
           <p className="lobby__text">
-            {savedOwn.length === 0 ? "You are not in a game yet." : "No other games."}
+            {savedOwn.length === 0 ? t("lobby.mine.none") : t("lobby.mine.noOthers")}
           </p>
         ) : (
-          <ul className="lobby__list" aria-label="My games">
+          <ul className="lobby__list" aria-label={t("lobby.mine.title")}>
             {others.map((game) => (
               <MyGameRow key={game.id} game={game} userName={userName} onOpen={openGame} />
             ))}

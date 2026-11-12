@@ -7,6 +7,7 @@ import {
   priceLabel,
   wrapLines,
 } from "./textures.ts";
+import { tEn } from "../testing/tEn.ts";
 
 // one unit per character, so a width is a character count
 const chars = (t: string) => t.length;
@@ -33,19 +34,24 @@ describe("wrapLines", () => {
 describe("priceLabel", () => {
   test("shows a price for each property kind", () => {
     const byKind = (kind: string) => SQUARES.find((s) => s.kind === kind)!;
-    expect(priceLabel(byKind("street"))).toBe("$60");
-    expect(priceLabel(byKind("station"))).toBe("$200");
-    expect(priceLabel(byKind("utility"))).toBe("$150");
+    expect(priceLabel(byKind("street"), tEn)).toBe("$60");
+    expect(priceLabel(byKind("station"), tEn)).toBe("$200");
+    expect(priceLabel(byKind("utility"), tEn)).toBe("$150");
   });
 
   test("shows the amount of a tax square", () => {
-    expect(priceLabel(SQUARES[4]!)).toBe("Pay $200");
-    expect(priceLabel(SQUARES[38]!)).toBe("Pay $100");
+    expect(priceLabel(SQUARES[4]!, tEn)).toBe("Pay $200");
+    expect(priceLabel(SQUARES[38]!, tEn)).toBe("Pay $100");
   });
 
   test("shows nothing for cards and corners", () => {
     for (const kind of ["chance", "chest", "go", "jail", "free_parking", "go_to_jail"]) {
-      expect(priceLabel(SQUARES.find((s) => s.kind === kind)!)).toBe("");
+      expect(
+        priceLabel(
+          SQUARES.find((s) => s.kind === kind)!,
+          tEn,
+        ),
+      ).toBe("");
     }
   });
 });
@@ -87,7 +93,7 @@ describe("owner band textures", () => {
 
   test("shares one texture for each price, owner and mortgage state, and disposes all", () => {
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
-    const textures = createBoardTextures(SQUARES, 1);
+    const textures = createBoardTextures(SQUARES, 1, tEn);
     const street = SQUARES.findIndex((s) => s.kind === "street");
     const a = textures.ownerBand(street, "cat", false);
     expect(textures.ownerBand(street, "cat", false)).toBe(a);

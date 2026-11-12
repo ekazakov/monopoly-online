@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useT } from "../../i18n/index.ts";
 
 interface Props {
   /** The joined player the host can remove. */
@@ -16,6 +17,7 @@ interface Props {
  * banned: the text says the player can join again with the game link.
  */
 export function RemovePlayer({ name, alsoRemoves, pending, onRemove }: Props) {
+  const t = useT();
   const [confirming, setConfirming] = useState(false);
   const openRef = useRef<HTMLButtonElement>(null);
   const keepRef = useRef<HTMLButtonElement>(null);
@@ -27,7 +29,7 @@ export function RemovePlayer({ name, alsoRemoves, pending, onRemove }: Props) {
         ref={openRef}
         type="button"
         className="room__button room__button--quiet"
-        aria-label={`Remove ${name}`}
+        aria-label={t("room.seat.removeLabel", { name })}
         aria-expanded={confirming}
         onClick={() => {
           setConfirming(true);
@@ -35,13 +37,14 @@ export function RemovePlayer({ name, alsoRemoves, pending, onRemove }: Props) {
           queueMicrotask(() => keepRef.current?.focus());
         }}
       >
-        Remove
+        {t("room.seat.remove")}
       </button>
       {confirming && (
         <div className="room__confirm room__seat-confirm" role="group" aria-labelledby={questionId}>
           <p id={questionId} className="room__text">
-            Remove {name} from this game? {name} can join again with the game link.
-            {alsoRemoves.length > 0 && ` ${alsoRemoves.join(", ")} on their device go too.`}
+            {t("room.removePlayer.question", { name })}
+            {alsoRemoves.length > 0 &&
+              ` ${t("room.removePlayer.alsoGo", { list: alsoRemoves.join(", ") })}`}
           </p>
           <div className="room__row">
             <button
@@ -53,7 +56,7 @@ export function RemovePlayer({ name, alsoRemoves, pending, onRemove }: Props) {
                 queueMicrotask(() => openRef.current?.focus());
               }}
             >
-              Keep
+              {t("room.removePlayer.keep")}
             </button>
             <button
               type="button"
@@ -62,7 +65,7 @@ export function RemovePlayer({ name, alsoRemoves, pending, onRemove }: Props) {
               aria-busy={pending || undefined}
               onClick={() => !pending && onRemove()}
             >
-              {pending ? "Removing" : "Remove"}
+              {pending ? t("room.removePlayer.pending") : t("room.seat.remove")}
             </button>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import { useCallback, useId } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
+import { useT } from "../../../i18n/index.ts";
 import "./Modal.css";
 
 interface ModalProps {
@@ -23,6 +24,7 @@ const BEHIND = ":scope > .game-layout__regions > :not(.game-layout__top)";
 // sits below the top bar, and the dialog makes the other regions inert by hand. Mount it as a child
 // of `.game-layout`, after the regions.
 export function Modal({ title, children, onClose, hideClose }: ModalProps) {
+  const t = useT();
   const titleId = useId();
   const closable = onClose !== undefined;
 
@@ -70,7 +72,12 @@ export function Modal({ title, children, onClose, hideClose }: ModalProps) {
               {title}
             </h2>
             {closable && !hideClose && (
-              <button type="button" className="modal__close" aria-label="Close" onClick={onClose}>
+              <button
+                type="button"
+                className="modal__close"
+                aria-label={t("modal.close")}
+                onClick={onClose}
+              >
                 ×
               </button>
             )}

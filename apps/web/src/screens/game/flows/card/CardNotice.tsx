@@ -1,3 +1,4 @@
+import { useT } from "../../../../i18n/index.ts";
 import { Modal } from "../../modal/Modal.tsx";
 import type { CardNoticeState } from "./useCardNotice.ts";
 import "./CardNotice.css";
@@ -6,10 +7,11 @@ import "./CardNotice.css";
 // device only; they send no action. The dialog is a child of the game layout (see `Modal`). The
 // parent owns `useCardNotice`, so the dialog and the phase dialog never show together.
 export function CardNotice({ notice }: { notice: CardNoticeState }) {
+  const t = useT();
   return (
     <Modal
       key={notice.key}
-      title={`${notice.drawerName} drew a card`}
+      title={t("card.drew", { name: notice.drawerName })}
       onClose={notice.dismiss}
       hideClose
     >
@@ -17,7 +19,7 @@ export function CardNotice({ notice }: { notice: CardNoticeState }) {
         <div
           className="card-notice__face"
           role="group"
-          aria-label={`${notice.deckLabel} card`}
+          aria-label={t("card.label", { deck: notice.deckLabel })}
           aria-live="polite"
         >
           <span className="card-notice__deck">{notice.deckLabel}</span>
@@ -25,7 +27,7 @@ export function CardNotice({ notice }: { notice: CardNoticeState }) {
           {notice.text && <p className="card-notice__text">{notice.text}</p>}
         </div>
         <button type="button" className="card-notice__ok" onClick={notice.dismiss}>
-          OK
+          {t("common.ok")}
         </button>
       </div>
     </Modal>

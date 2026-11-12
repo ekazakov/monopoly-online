@@ -2,6 +2,7 @@ import { SQUARES, isProperty } from "@monopoly/game-engine";
 import type { ActionType } from "@monopoly/game-engine";
 import { useId } from "react";
 import { mayActWith, useGame, useGameActions } from "../../../game/index.ts";
+import { errorMessage, squareName, useT } from "../../../i18n/index.ts";
 import { buildingText, handOf } from "../hand/handModel.ts";
 import { PropertyDetail } from "../hand/PropertyDetail.tsx";
 import { propertyActions } from "../hand/propertyActions.ts";
@@ -24,6 +25,7 @@ export function SquareDetail({
 }) {
   const view = useGame(userId);
   const { game, state } = view;
+  const t = useT();
   const actions = useGameActions();
   const detailId = useId();
   const info = SQUARES[square];
@@ -34,7 +36,7 @@ export function SquareDetail({
   const mine = owner ? view.mySeats.some((seat) => seat.id === owner.id) : false;
   const card =
     mine && owner
-      ? handOf(state, owner.id)
+      ? handOf(state, owner.id, t)
           .groups.flatMap((group) => group.cards)
           .find((c) => c.square === square)
       : undefined;
@@ -47,18 +49,18 @@ export function SquareDetail({
   };
 
   const ownerText = !entry
-    ? "Not owned. A player can buy it when they land on it."
-    : `Owned by ${owner?.name ?? "a player"}${
+    ? t("square.notOwnedLong")
+    : `${t("square.ownedBy", { name: owner?.name ?? t("square.aPlayer") })}${
         entry.mortgaged
-          ? " · mortgaged"
+          ? ` · ${t("hand.mortgaged")}`
           : info.kind === "street" && entry.houses > 0
-            ? ` · ${buildingText(entry.houses)}`
+            ? ` · ${buildingText(entry.houses, t)}`
             : ""
       }`;
   const { error, errorSource, pending } = actions;
 
   return (
-    <Modal key={square} title={info.name} onClose={onClose}>
+    <Modal key={square} title={squareName(square, t)} onClose={onClose}>
       <div className="square-detail">
         <PropertyCard square={info} />
         <p className="square-detail__owner">{ownerText}</p>
@@ -66,14 +68,14 @@ export function SquareDetail({
           <PropertyDetail
             id={detailId}
             card={card}
-            actions={propertyActions(state, owner.id, square)}
+            actions={propertyActions(state, owner.id, square, t)}
             may={may}
             busy={pending}
             onAction={run}
           />
         ) : null}
         <p className="square-detail__status" role="status" aria-live="polite" aria-atomic="true">
-          {error && errorSource === "square" ? error.message : ""}
+          {error && errorSource === "square" ? errorMessage(error, t) : ""}
         </p>
       </div>
     </Modal>

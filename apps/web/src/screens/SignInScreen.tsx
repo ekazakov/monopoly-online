@@ -1,22 +1,15 @@
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { GOOGLE_START_PATH, isApiError } from "../api/index.ts";
+import { useT } from "../i18n/index.ts";
 import { useAuthMethods, useGoogleName, useSignIn } from "../session/index.ts";
 import { Icon, SignInNameForm } from "./SignInNameForm.tsx";
 import "./SignInScreen.css";
 
 const route = getRouteApi("/sign-in");
 
-const copy = {
-  loading: "Loading the sign-in options…",
-  optionsFailed: "We could not load the sign-in options. Check the connection and try again.",
-  retry: "Try again",
-  oauthFailed: "Google did not sign you in. Try again, or ask the host to check the setup.",
-  googleKept:
-    "We keep only your Google account id. We do not keep your email, your Google name or your tokens.",
-} as const;
-
 function Frame({ title, lead, children }: { title: string; lead: string; children: ReactNode }) {
+  const t = useT();
   return (
     <div className="sign-in">
       <header className="sign-in__top">
@@ -24,7 +17,7 @@ function Frame({ title, lead, children }: { title: string; lead: string; childre
       </header>
       <main className="sign-in__main">
         <div className="sign-in__intro">
-          <p className="sign-in__eyebrow">Welcome</p>
+          <p className="sign-in__eyebrow">{t("signIn.welcome")}</p>
           <h1 className="sign-in__title">{title}</h1>
           {lead && <p className="sign-in__lead">{lead}</p>}
         </div>
@@ -60,11 +53,9 @@ function GoogleNameStep() {
   const { redirect } = route.useSearch();
   const navigate = useNavigate();
   const mutation = useGoogleName();
+  const t = useT();
   return (
-    <Frame
-      title="Pick a name to play"
-      lead="You are signed in with Google. Pick the name friends see at the table."
-    >
+    <Frame title={t("signIn.pickName")} lead={t("signIn.googleNameLead")}>
       <div className="sign-in__card">
         <SignInNameForm
           mutation={mutation}
@@ -93,29 +84,30 @@ function GuestForm() {
 export function SignInScreen() {
   const { error, step } = route.useSearch();
   const methods = useAuthMethods();
+  const t = useT();
 
   if (step === "name") return <GoogleNameStep />;
 
   if (methods.isPending) {
     return (
-      <Frame title="Sign in to play" lead="">
+      <Frame title={t("signIn.title")} lead="">
         <p className="sign-in__lead" role="status">
-          {copy.loading}
+          {t("signIn.loading")}
         </p>
       </Frame>
     );
   }
   if (methods.isError) {
     return (
-      <Frame title="Sign in to play" lead="">
+      <Frame title={t("signIn.title")} lead="">
         <div className="sign-in__card">
-          <Problem>{copy.optionsFailed}</Problem>
+          <Problem>{t("signIn.optionsFailed")}</Problem>
           <button
             type="button"
             className="sign-in__secondary"
             onClick={() => void methods.refetch()}
           >
-            {copy.retry}
+            {t("signIn.retry")}
           </button>
         </div>
       </Frame>
@@ -126,33 +118,27 @@ export function SignInScreen() {
   // Guest only is the first screen of the board: one form, no Google.
   if (!google) {
     return (
-      <Frame
-        title="Pick a name to play"
-        lead="Friends see this name at the table. No password. Names are unique, and capital letters do not matter."
-      >
+      <Frame title={t("signIn.pickName")} lead={t("signIn.guestLead")}>
         <div className="sign-in__card">{guest && <GuestForm />}</div>
       </Frame>
     );
   }
   return (
-    <Frame
-      title="Sign in to play"
-      lead="Sign in with Google. Friends see the name you pick at the table, not your Google name."
-    >
+    <Frame title={t("signIn.title")} lead={t("signIn.googleLead")}>
       <div className="sign-in__card">
-        {error === "oauth_failed" && <Problem>{copy.oauthFailed}</Problem>}
+        {error === "oauth_failed" && <Problem>{t("signIn.oauthFailed")}</Problem>}
         <GoogleButton>
-          {error === "oauth_failed" ? "Try again with Google" : "Continue with Google"}
+          {error === "oauth_failed" ? t("signIn.googleRetry") : t("signIn.googleContinue")}
         </GoogleButton>
         {guest ? (
           <>
             <div className="sign-in__separator" role="separator">
-              or, guest name
+              {t("signIn.orGuest")}
             </div>
             <GuestForm />
           </>
         ) : (
-          <p className="sign-in__note">{copy.googleKept}</p>
+          <p className="sign-in__note">{t("signIn.googleKept")}</p>
         )}
       </div>
     </Frame>

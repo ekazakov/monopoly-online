@@ -10,7 +10,11 @@ import {
   translate,
   useT,
 } from "./index.ts";
+import { CHANCE_CARDS, CHEST_CARDS, SQUARES } from "@monopoly/game-engine";
+import { TOKENS } from "@monopoly/shared";
 import { en } from "./en.ts";
+import { cardTitle, squareName } from "./gameNames.ts";
+import { errorMessage } from "./errors.ts";
 import { ru } from "./ru.ts";
 
 function deviceLanguages(tags: string[]) {
@@ -55,6 +59,35 @@ describe("language detection", () => {
 describe("translate", () => {
   test("the catalogues have the same keys", () => {
     expect(Object.keys(ru).sort()).toEqual(Object.keys(en).sort());
+  });
+
+  test("every square, card and token of the game has a text", () => {
+    SQUARES.forEach((square, index) => {
+      expect(translate("en", `square.${index}` as never)).toBe(square.name);
+      expect(squareName(index, (key, params) => translate("en", key, params))).toBe(square.name);
+    });
+    for (const card of [...CHANCE_CARDS, ...CHEST_CARDS]) {
+      expect(cardTitle(card.title, (key, params) => translate("ru", key, params))).not.toBe("");
+      expect(cardTitle(card.title, (key, params) => translate("en", key, params))).toBe(card.title);
+    }
+    for (const token of TOKENS) {
+      expect(en).toHaveProperty(`token.${token}.label`);
+      expect(en).toHaveProperty(`token.${token}.short`);
+    }
+  });
+
+  test("an error shows its catalogue text, else its message, else its code", () => {
+    const t = (key: Parameters<typeof translate>[1]) => translate("en", key);
+    expect(errorMessage({ code: "game_full", message: "server text" }, t)).toBe(
+      "This game is full.",
+    );
+    expect(errorMessage({ code: "invalid_bid", message: "Raise by $10" }, t)).toBe("Raise by $10");
+    expect(
+      errorMessage(Object.assign(new Error("offline"), { status: 0, code: "internal_error" }), t),
+    ).toBe("offline");
+    expect(errorMessage(new TypeError("Failed to fetch"), t)).toBe("Failed to fetch");
+    expect(errorMessage({ code: "mystery" }, t)).toBe("mystery");
+    expect(errorMessage(undefined, t)).toBe("Something went wrong. Try again.");
   });
 
   test("Russian plurals take the one, few and many forms", () => {

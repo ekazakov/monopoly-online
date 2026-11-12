@@ -3,9 +3,10 @@ import type { PropertySquare } from "@monopoly/game-engine";
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, test } from "vite-plus/test";
 import { PropertyCard, deedRows } from "./PropertyCard.tsx";
+import { tEn } from "../../../testing/tEn.ts";
 
 const byName = (name: string) => SQUARES.find((s) => s.name === name) as PropertySquare;
-const rows = (square: PropertySquare) => deedRows(square).map((r) => [r.label, r.value]);
+const rows = (square: PropertySquare) => deedRows(square, tEn).map((r) => [r.label, r.value]);
 
 describe("deedRows", () => {
   test("a street lists every rent, the building costs and the mortgage value", () => {
@@ -52,12 +53,12 @@ describe("deedRows", () => {
   test("a rule starts the cost block and the mortgage block", () => {
     const street = SQUARES.find((s) => s.kind === "street") as PropertySquare;
     expect(
-      deedRows(street)
+      deedRows(street, tEn)
         .filter((r) => r.rule)
         .map((r) => r.label),
     ).toEqual(["House cost"]);
     expect(
-      deedRows(byName("North Station"))
+      deedRows(byName("North Station"), tEn)
         .filter((r) => r.rule)
         .map((r) => r.label),
     ).toEqual(["Mortgage value"]);
@@ -71,6 +72,6 @@ describe("PropertyCard", () => {
     expect(screen.getByText("Title deed")).toBeInTheDocument();
     expect(screen.getByText("North Station")).toBeInTheDocument();
     const list = container.querySelector("dl")!;
-    expect(within(list).getAllByRole("term")).toHaveLength(deedRows(station).length);
+    expect(within(list).getAllByRole("term")).toHaveLength(deedRows(station, tEn).length);
   });
 });

@@ -1,46 +1,52 @@
 import { BOARD_SIZE, CHANCE_CARDS, CHEST_CARDS, SQUARES } from "@monopoly/game-engine";
 import type { Card, CardEffect } from "@monopoly/game-engine";
 import type { DeckName } from "@monopoly/shared";
+import { squareName } from "../../../../i18n/index.ts";
+import type { Translate } from "../../../../i18n/index.ts";
 import { formatMoney } from "../../turn/format.ts";
 
+/** English deck names, for the debug panel. The game screen uses `deckLabel`. */
 export const DECK_LABELS: Record<DeckName, string> = {
   chance: "Chance",
   chest: "Community Chest",
 };
+
+export const deckLabel = (deck: DeckName, t: Translate): string => t(`card.deck.${deck}`);
 
 export function cardAt(deck: DeckName, cardIndex: number): Card | undefined {
   return (deck === "chance" ? CHANCE_CARDS : CHEST_CARDS)[cardIndex];
 }
 
 /** What a card does, in the wording of the rules reference, Appendix C. */
-export function effectText(effect: CardEffect): string {
+export function effectText(effect: CardEffect, t: Translate): string {
   switch (effect.type) {
     case "move_to": {
-      const name = SQUARES[effect.square]?.name ?? "the square";
-      if (effect.square === 0) return `Advance to ${name}. Collect ${formatMoney(200)}.`;
+      const name = SQUARES[effect.square] ? squareName(effect.square, t) : t("effect.theSquare");
+      if (effect.square === 0) return t("effect.advanceStart", { name, amount: formatMoney(200) });
       // The last square is ahead of every start, so the token never passes Start on the way.
-      if (effect.square === BOARD_SIZE - 1) return `Advance to ${name}.`;
-      return `Advance to ${name}. Collect ${formatMoney(200)} if you pass Start.`;
+      if (effect.square === BOARD_SIZE - 1) return t("effect.advance", { name });
+      return t("effect.advancePass", { name, amount: formatMoney(200) });
     }
     case "move_nearest":
-      return effect.target === "station"
-        ? "Advance to the nearest Station. If it is unowned, you may buy it. If it is owned, pay the owner double the normal rent."
-        : "Advance to the nearest Utility. If it is unowned, you may buy it. If it is owned, roll the dice and pay the owner 10 × the total.";
+      return effect.target === "station" ? t("effect.nearestStation") : t("effect.nearestUtility");
     case "move_back":
-      return `Move back ${effect.steps} ${effect.steps === 1 ? "square" : "squares"}.`;
+      return t("effect.moveBack", { count: effect.steps });
     case "collect":
-      return `Collect ${formatMoney(effect.amount)}.`;
+      return t("effect.collect", { amount: formatMoney(effect.amount) });
     case "pay":
-      return `Pay the bank ${formatMoney(effect.amount)}.`;
+      return t("effect.pay", { amount: formatMoney(effect.amount) });
     case "pay_each_player":
-      return `Pay each other player ${formatMoney(effect.amount)}.`;
+      return t("effect.payEach", { amount: formatMoney(effect.amount) });
     case "collect_from_each_player":
-      return `Collect ${formatMoney(effect.amount)} from every other player.`;
+      return t("effect.collectEach", { amount: formatMoney(effect.amount) });
     case "repairs":
-      return `Pay ${formatMoney(effect.perHouse)} per house and ${formatMoney(effect.perHotel)} per hotel you own.`;
+      return t("effect.repairs", {
+        house: formatMoney(effect.perHouse),
+        hotel: formatMoney(effect.perHotel),
+      });
     case "go_to_jail":
-      return `Go directly to Jail. Do not pass Start, do not collect ${formatMoney(200)}.`;
+      return t("effect.goJail", { amount: formatMoney(200) });
     case "jail_free":
-      return "Keep it until needed, or trade it. It returns to the bottom of the deck when used.";
+      return t("effect.jailFree");
   }
 }

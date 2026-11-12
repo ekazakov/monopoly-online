@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useT } from "../../../i18n/index.ts";
 import { PROPOSE_PHASES, TradeBuilder, canProposeTrade } from "../flows/trade/index.ts";
 import { useMotionStep } from "../motion/index.ts";
 import { centrePhases } from "./centrePhases.ts";
@@ -13,6 +14,7 @@ import "./TurnArea.css";
 // element, because the layout `centre` cell is a size container. The Trade button opens the trade
 // builder in place of the phase view, in every phase where the engine allows `ProposeTrade`.
 export function TurnArea({ userId }: { userId: string }) {
+  const t = useT();
   const turn = useTurn(userId);
   const motion = useMotionStep();
   const { phase } = turn.view;
@@ -29,7 +31,7 @@ export function TurnArea({ userId }: { userId: string }) {
     return (
       <div className="turn-area turn-area--motion" aria-busy="true">
         <Dice dice={null} rolling />
-        <Status title="Rolling…" />
+        <Status title={t("turn.rolling")} />
       </div>
     );
   }
@@ -38,7 +40,7 @@ export function TurnArea({ userId }: { userId: string }) {
     return (
       <div className="turn-area turn-area--motion" aria-busy="true">
         {dice && !stale && <Dice dice={dice} />}
-        <Status title={motion.kind === "hold" ? "Drew a card" : "Moving…"} />
+        <Status title={motion.kind === "hold" ? t("turn.drewCard") : t("turn.moving")} />
       </div>
     );
   }
@@ -56,7 +58,7 @@ export function TurnArea({ userId }: { userId: string }) {
           className="turn-area__btn turn-area__btn--outline"
           onClick={() => setTrading(true)}
         >
-          Trade
+          {t("turn.trade")}
         </button>
       )}
       <ErrorNotice />

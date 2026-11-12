@@ -57,8 +57,8 @@ describe("tokenLook", () => {
     for (const t of TOKENS) expect(tokenLook(t).avatar).toBe(t);
   });
 
-  test("gives six tokens six different colours, metals and labels", () => {
-    for (const field of ["hex", "metal", "label"] as const) {
+  test("gives six tokens six different colours and metals", () => {
+    for (const field of ["hex", "metal"] as const) {
       expect(new Set(TOKENS.map((t) => tokenLook(t)[field])).size).toBe(6);
     }
   });

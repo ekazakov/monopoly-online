@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useT } from "../../i18n/index.ts";
 
 interface Props {
   /** A cancel is on its way. */
@@ -12,6 +13,7 @@ interface Props {
  * opened it.
  */
 export function CancelGame({ pending, onCancel }: Props) {
+  const t = useT();
   const [confirming, setConfirming] = useState(false);
   const openRef = useRef<HTMLButtonElement>(null);
   const keepRef = useRef<HTMLButtonElement>(null);
@@ -28,7 +30,7 @@ export function CancelGame({ pending, onCancel }: Props) {
           queueMicrotask(() => keepRef.current?.focus());
         }}
       >
-        Cancel game
+        {t("room.cancel.open")}
       </button>
     );
   }
@@ -36,7 +38,7 @@ export function CancelGame({ pending, onCancel }: Props) {
   return (
     <div className="room__confirm" role="group" aria-labelledby="room-cancel-question">
       <p id="room-cancel-question" className="room__text">
-        Cancel this game? Everyone leaves, and the link stops working.
+        {t("room.cancel.question")}
       </p>
       <div className="room__row">
         <button
@@ -48,7 +50,7 @@ export function CancelGame({ pending, onCancel }: Props) {
             queueMicrotask(() => openRef.current?.focus());
           }}
         >
-          Keep game
+          {t("room.cancel.keep")}
         </button>
         <button
           type="button"
@@ -57,7 +59,7 @@ export function CancelGame({ pending, onCancel }: Props) {
           aria-busy={pending || undefined}
           onClick={() => !pending && onCancel()}
         >
-          {pending ? "Cancelling" : "Cancel game"}
+          {pending ? t("room.cancel.pending") : t("room.cancel.open")}
         </button>
       </div>
     </div>

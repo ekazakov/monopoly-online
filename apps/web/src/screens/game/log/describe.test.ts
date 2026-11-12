@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vite-plus/test";
 import type { GameEvent, GameEventType } from "@monopoly/shared";
 import { recordFixture } from "../../../game/fixtures.ts";
+import { tEn } from "../../../testing/tEn.ts";
 import { describeEvent, formatMoney, playerName } from "./describe.ts";
 import type { LogTone } from "./describe.ts";
 
@@ -176,17 +177,17 @@ describe("describeEvent", () => {
 
   test.each(Object.entries(TABLE))("%s", (type, [event, text, tone]) => {
     expect(event.type).toBe(type);
-    const line = describeEvent(event, ctx);
+    const line = describeEvent(event, ctx, tEn);
     expect(line.text).toBe(text);
     expect(line.tone).toBe(tone);
     const joined = line.parts.map((part) =>
-      typeof part === "string" ? part : playerName(ctx, part.playerId),
+      typeof part === "string" ? part : playerName(ctx, part.playerId, tEn),
     );
     expect(joined.join("")).toBe(text);
   });
 
   test("the parts hold the players in the order of the text", () => {
-    const line = describeEvent(TABLE.RentPaid[0], ctx);
+    const line = describeEvent(TABLE.RentPaid[0], ctx, tEn);
     expect(line.parts.filter((part) => typeof part !== "string")).toEqual([
       { playerId: c.id },
       { playerId: a.id },
@@ -195,7 +196,7 @@ describe("describeEvent", () => {
   });
 
   test("doubles, hotels and automatic passes get their own words", () => {
-    const text = (event: GameEvent) => describeEvent(event, ctx).text;
+    const text = (event: GameEvent) => describeEvent(event, ctx, tEn).text;
     expect(text({ type: "DiceRolled", playerId: a.id, dice: [3, 3] })).toBe(
       "Ann rolled 3 and 3 (doubles).",
     );
@@ -259,7 +260,7 @@ describe("describeEvent", () => {
 
   test("debug edits of deeds and tokens", () => {
     const text = (change: Extract<GameEvent, { type: "StateEdited" }>["change"]) =>
-      describeEvent({ type: "StateEdited", playerId: a.id, change }, ctx).text;
+      describeEvent({ type: "StateEdited", playerId: a.id, change }, ctx, tEn).text;
     expect(text({ kind: "deed", square: 1, ownerId: b.id, houses: 2, mortgaged: false })).toBe(
       "Ann (debug): Driftwood Lane given to Bo, 2 houses.",
     );
@@ -285,22 +286,24 @@ describe("describeEvent", () => {
 
   test("card texts come from the decks", () => {
     expect(
-      describeEvent({ type: "CardDrawn", playerId: a.id, deck: "chest", cardIndex: 1 }, ctx).text,
+      describeEvent({ type: "CardDrawn", playerId: a.id, deck: "chest", cardIndex: 1 }, ctx, tEn)
+        .text,
     ).toBe("Ann drew a Chest card: Bank error.");
     expect(
-      describeEvent({ type: "CardDrawn", playerId: a.id, deck: "chest", cardIndex: 99 }, ctx).text,
+      describeEvent({ type: "CardDrawn", playerId: a.id, deck: "chest", cardIndex: 99 }, ctx, tEn)
+        .text,
     ).toBe("Ann drew a Chest card: a card.");
   });
 
   test("an unknown player reads as a player", () => {
-    expect(describeEvent({ type: "SentToJail", playerId: "nobody" }, ctx).text).toBe(
+    expect(describeEvent({ type: "SentToJail", playerId: "nobody" }, ctx, tEn).text).toBe(
       "A player was sent to jail.",
     );
   });
 
   test("an icon is set for every line that is not plain talk", () => {
-    expect(describeEvent(TABLE.PassedGo[0], ctx).icon).toBe("coin");
-    expect(describeEvent(TABLE.SentToJail[0], ctx).icon).toBe("jail");
+    expect(describeEvent(TABLE.PassedGo[0], ctx, tEn).icon).toBe("coin");
+    expect(describeEvent(TABLE.SentToJail[0], ctx, tEn).icon).toBe("jail");
   });
 
   test("every event of a seeded game reads as a clean line", () => {
@@ -308,7 +311,7 @@ describe("describeEvent", () => {
     for (const step of fx.steps) {
       for (const event of step.events) {
         seen.add(event.type);
-        const line = describeEvent(event, ctx);
+        const line = describeEvent(event, ctx, tEn);
         expect(line.text).toMatch(/^\S.*[.!]$/);
         expect(line.text).not.toMatch(/undefined|NaN|\[object|A player|square \d/);
       }

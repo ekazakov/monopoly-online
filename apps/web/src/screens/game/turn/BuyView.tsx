@@ -1,4 +1,5 @@
 import { SQUARES, isProperty } from "@monopoly/game-engine";
+import { useT } from "../../../i18n/index.ts";
 import { ActionBar } from "./ActionBar.tsx";
 import { formatMoney } from "./format.ts";
 import { PropertyCard } from "./PropertyCard.tsx";
@@ -15,6 +16,7 @@ export function propertyForSale(turn: Turn) {
 // the content of the purchase dialog (`PhaseModal`) with the full title deed. The dialog title is
 // "<name> is for sale". The board centre shows only `BuyStatusView`.
 export function BuyView({ turn }: { turn: Turn }) {
+  const t = useT();
   const player = turn.view.currentPlayer;
   const square = propertyForSale(turn);
   if (!player || !square) return null;
@@ -27,14 +29,17 @@ export function BuyView({ turn }: { turn: Turn }) {
         turn={turn}
         actions={[
           {
-            label: `Buy ${formatMoney(square.price)}`,
+            label: t("turn.buy", { price: formatMoney(square.price) }),
             action: { type: "BuyProperty" },
             primary: true,
             why: short
-              ? `Not enough cash: ${formatMoney(player.cash)} of ${formatMoney(square.price)}. Auction it instead.`
+              ? t("turn.buyShort", {
+                  cash: formatMoney(player.cash),
+                  price: formatMoney(square.price),
+                })
               : undefined,
           },
-          { label: "Auction", action: { type: "DeclineProperty" } },
+          { label: t("turn.auction"), action: { type: "DeclineProperty" } },
         ]}
       />
     </>

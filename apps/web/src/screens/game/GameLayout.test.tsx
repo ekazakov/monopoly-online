@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, test } from "vite-plus/test";
 import { GameLayout, type GameLayoutProps } from "./GameLayout.tsx";
 import { GAME_REGIONS, GAME_REGION_LABELS, GAME_TAB_ORDER, type GameRegion } from "./regions.ts";
+import { tEn } from "../../testing/tEn.ts";
 
 const landmarkRole: Record<GameRegion, string> = {
   rail: "complementary",
@@ -28,7 +29,9 @@ describe("GameLayout", () => {
 
   test.each(GAME_REGIONS)("the %s region has its landmark and label", (region) => {
     render(<GameLayout />);
-    const landmark = screen.getByRole(landmarkRole[region], { name: GAME_REGION_LABELS[region] });
+    const landmark = screen.getByRole(landmarkRole[region], {
+      name: tEn(GAME_REGION_LABELS[region]),
+    });
     expect(landmark).toHaveAttribute("data-region", region);
   });
 
@@ -36,7 +39,7 @@ describe("GameLayout", () => {
     render(<GameLayout {...slotContent()} />);
     for (const region of GAME_REGIONS) {
       const landmark = screen.getByRole(landmarkRole[region], {
-        name: GAME_REGION_LABELS[region],
+        name: tEn(GAME_REGION_LABELS[region]),
       });
       expect(within(landmark).getByRole("button")).toHaveTextContent(`${region} button`);
     }

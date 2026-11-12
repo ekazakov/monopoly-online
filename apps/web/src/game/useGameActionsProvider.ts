@@ -1,6 +1,7 @@
 import type { ActionInput } from "@monopoly/shared";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError } from "../api.ts";
+import { currentLanguage, translate } from "../i18n/index.ts";
 import { ActionApiError, useRealtimeClient } from "../realtime/index.ts";
 import type { ActionSource, GameActions } from "./actions.ts";
 import { seatThatMayAct } from "./selectors.ts";
@@ -12,12 +13,9 @@ interface Attempt {
   clientActionId: string;
 }
 
+// Status 0 means that no answer came, so the message is made here and not by the server.
 const networkError = () =>
-  new ApiError(
-    0,
-    "internal_error",
-    "No connection to the server. Check the network and try again.",
-  );
+  new ApiError(0, "internal_error", translate(currentLanguage(), "error.network"));
 
 /**
  * The real `GameActions` for the game route: sends through the realtime client with the store
@@ -51,7 +49,11 @@ export function useGameActionsProvider(
       const seatId = options.seatId ?? seatThatMayAct(game, state, userId, action.type)?.id;
       setFailure(null);
       if (!seatId) {
-        const error = new ApiError(403, "not_your_seat", "None of your seats may do that now.");
+        const error = new ApiError(
+          403,
+          "not_your_seat",
+          translate(currentLanguage(), "error.noSeat"),
+        );
         setFailure({ error, source: options.source ?? null });
         throw error;
       }

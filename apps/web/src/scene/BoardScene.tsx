@@ -16,6 +16,7 @@ import type { MotionPlayback } from "./motion.ts";
 import type { ScenePlayer } from "./model.ts";
 import { createResources } from "./resources.ts";
 import { CardStacks } from "./CardStacks.tsx";
+import { useT } from "../i18n/index.ts";
 import { createBoardTextures, whenBoardFontsReady } from "./textures.ts";
 import { Tile } from "./Tile.tsx";
 import { Tokens, useStudioEnvironment } from "./Tokens.tsx";
@@ -51,10 +52,11 @@ function hasWebGL(): boolean {
 }
 
 function Unavailable() {
+  const t = useT();
   return (
     <div
       role="img"
-      aria-label="The 3D board is not available on this device"
+      aria-label={t("board.unavailable")}
       data-testid="board-unavailable"
       style={{ width: "100%", height: "100%" }}
     />
@@ -149,11 +151,13 @@ function Scene({
   }, [theme, resources, invalidate]);
 
   const epoch = useFontEpoch();
+  // `t` changes with the language, so the labels on the board are drawn again
+  const t = useT();
   const textures = useMemo(
-    () => createBoardTextures(SQUARES, gl.capabilities.getMaxAnisotropy()),
+    () => createBoardTextures(SQUARES, gl.capabilities.getMaxAnisotropy(), t),
     // the epoch is not read: a new value only asks for a fresh draw once the fonts are there
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [gl, epoch],
+    [gl, epoch, t],
   );
   useEffect(() => () => textures.dispose(), [textures]);
 

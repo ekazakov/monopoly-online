@@ -4,6 +4,7 @@ import { Navigate, getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { isApiError } from "../api/index.ts";
+import { useT } from "../i18n/index.ts";
 import { useGameSounds } from "../audio/useGameSounds.ts";
 import {
   GameActionsContext,
@@ -65,6 +66,7 @@ function Message({ title, children }: { title: string; children?: ReactNode }) {
 }
 
 function GameRoute({ gameId }: { gameId: string }) {
+  const t = useT();
   const store = useGameStore();
   const navigate = useNavigate();
   const { data: user } = useSession();
@@ -114,21 +116,21 @@ function GameRoute({ gameId }: { gameId: string }) {
   const actions = useGameActionsProvider(gameId, userId, () => void refetch());
   const sounds = useGameSounds(userId);
 
-  if (room.isPending) return <Message title="Loading the game" />;
+  if (room.isPending) return <Message title={t("roomScreen.loading")} />;
   if (room.isError) {
     if (isApiError(room.error, "not_found")) return <NotFoundScreen />;
     if (isApiError(room.error, "not_a_member")) {
       return (
-        <Message title="Not your game">
-          <p>You have no seat in this game.</p>
+        <Message title={t("room.notYours.title")}>
+          <p>{t("room.notYours.text")}</p>
         </Message>
       );
     }
     return (
-      <Message title="Could not load the game">
+      <Message title={t("roomScreen.failed")}>
         <p>{room.error.message}</p>
         <button type="button" onClick={() => void room.refetch()}>
-          Try again
+          {t("roomScreen.retry")}
         </button>
       </Message>
     );
@@ -138,8 +140,8 @@ function GameRoute({ gameId }: { gameId: string }) {
   }
   if (!seated) {
     return (
-      <Message title="Not your game">
-        <p>You have no seat in this game.</p>
+      <Message title={t("room.notYours.title")}>
+        <p>{t("room.notYours.text")}</p>
       </Message>
     );
   }
@@ -234,6 +236,7 @@ function Centre({
   saved: boolean;
   onSavedOk: () => void;
 }) {
+  const t = useT();
   if (saved) {
     return (
       <div className="game-centre">
@@ -245,7 +248,7 @@ function Centre({
     <div className="game-centre">
       {loadFailed && (
         <p className="game-placeholder" role="alert">
-          Could not load the game state.
+          {t("game.stateFailed")}
         </p>
       )}
       <TurnArea userId={userId} />

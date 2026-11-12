@@ -1,4 +1,5 @@
 import { ApiError } from "../../api.ts";
+import type { Translate } from "../../i18n/index.ts";
 
 /** A message above the lists: the answer to a join or an accept that did not work. */
 export interface LobbyNotice {
@@ -13,24 +14,25 @@ export interface LobbyNotice {
 export function noticeFor(
   error: unknown,
   action: "join" | "accept" | "decline" | "continue" | "finish",
+  t: Translate,
 ): LobbyNotice {
   if (error instanceof ApiError) {
     if (error.code === "game_full" || error.code === "game_not_waiting") {
       return {
-        title: "This game is full",
-        text: "The last seat went while you were joining. Pick another game.",
+        title: t("lobby.notice.full.title"),
+        text: t("lobby.notice.full.text"),
       };
     }
     if (error.code === "seat_name_taken") {
       return {
-        title: "Your name is taken in this game",
-        text: "A seat in this game has your name. Pick another game.",
+        title: t("lobby.notice.nameTaken.title"),
+        text: t("lobby.notice.nameTaken.text"),
       };
     }
     if (error.code === "not_found") {
       return {
-        title: "This game is gone",
-        text: "The host cancelled it, or the invite is no longer valid.",
+        title: t("lobby.notice.gone.title"),
+        text: t("lobby.notice.gone.text"),
       };
     }
   }
@@ -40,12 +42,11 @@ export function noticeFor(
       (error.code === "game_not_saved" || error.code === "game_not_active")
     ) {
       return {
-        title: "This game has changed",
-        text: "It is not saved any more. Check My games.",
+        title: t("lobby.notice.changed.title"),
+        text: t("lobby.notice.changed.text"),
       };
     }
-    return { title: `Could not ${action} the game`, text: "Try again." };
+    return { title: t(`lobby.notice.failed.${action}`), text: t("lobby.notice.tryAgain") };
   }
-  const what = action === "join" ? "join the game" : `${action} the invite`;
-  return { title: `Could not ${what}`, text: "Try again." };
+  return { title: t(`lobby.notice.failed.${action}`), text: t("lobby.notice.tryAgain") };
 }

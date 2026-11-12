@@ -1,4 +1,5 @@
 import { mayAct } from "../../../../game/index.ts";
+import { useT } from "../../../../i18n/index.ts";
 import { Waiting } from "../../turn/ActionBar.tsx";
 import type { CentrePhaseProps } from "../../turn/index.ts";
 import { OfferColumn } from "./OfferColumn.tsx";
@@ -8,14 +9,15 @@ import "./TradeFlow.css";
 // The proposer withdraws the offer. A device with no seat in the trade only waits. A rejected
 // action shows through the error notice of the turn area, which wraps every phase view.
 export function TradeResponseView({ turn }: CentrePhaseProps) {
+  const t = useT();
   const { game, state } = turn.view;
   const trade = state?.trade ?? null;
-  const nameOf = (id: string) => state?.players.find((p) => p.id === id)?.name ?? "Player";
+  const nameOf = (id: string) => state?.players.find((p) => p.id === id)?.name ?? t("trade.player");
 
   if (!state || !trade) {
     return (
-      <section className="trade-flow trade-flow--response" aria-label="Trade offer">
-        <h2 className="trade-flow__title">Trade offer</h2>
+      <section className="trade-flow trade-flow--response" aria-label={t("turn.phase.trade")}>
+        <h2 className="trade-flow__title">{t("turn.phase.trade")}</h2>
         <Waiting turn={turn} />
       </section>
     );
@@ -30,11 +32,11 @@ export function TradeResponseView({ turn }: CentrePhaseProps) {
   return (
     <section
       className="trade-flow trade-flow--response"
-      aria-label="Trade offer"
+      aria-label={t("turn.phase.trade")}
       aria-busy={turn.pending || undefined}
     >
       <h2 className="trade-flow__title">
-        {mayAnswer ? `Trade offer from ${from}` : `${from} offers a trade to ${to}`}
+        {mayAnswer ? t("trade.from", { name: from }) : t("trade.offers", { from, to })}
       </h2>
 
       <div className="trade-flow__columns">
@@ -53,7 +55,7 @@ export function TradeResponseView({ turn }: CentrePhaseProps) {
               disabled={turn.pending}
               onClick={() => turn.send({ type: "CancelTrade" })}
             >
-              Withdraw offer
+              {t("trade.withdraw")}
             </button>
           )}
           {mayAnswer && (
@@ -64,7 +66,7 @@ export function TradeResponseView({ turn }: CentrePhaseProps) {
                 disabled={turn.pending}
                 onClick={() => turn.send({ type: "RejectTrade" })}
               >
-                Decline
+                {t("lobby.invites.decline")}
               </button>
               <button
                 type="button"
@@ -72,7 +74,7 @@ export function TradeResponseView({ turn }: CentrePhaseProps) {
                 disabled={turn.pending}
                 onClick={() => turn.send({ type: "AcceptTrade" })}
               >
-                Accept
+                {t("lobby.invites.accept")}
               </button>
             </>
           )}

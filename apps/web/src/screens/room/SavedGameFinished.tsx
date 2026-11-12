@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useT } from "../../i18n/index.ts";
 
 /**
  * What every seated client sees when the host finishes a saved game while they have its room open
@@ -11,6 +12,7 @@ export function SavedGameFinished({
   hostName: string;
   onSeeResult: () => void;
 }) {
+  const t = useT();
   const headingRef = useRef<HTMLHeadingElement>(null);
   // The room the user was reading changed under them: the heading takes the focus.
   useEffect(() => headingRef.current?.focus(), []);
@@ -22,17 +24,15 @@ export function SavedGameFinished({
       <main className="room__main">
         <section className="room__panel" role="status">
           <h1 ref={headingRef} tabIndex={-1} className="room__title">
-            Game finished by {hostName}
+            {t("room.finished.title", { name: hostName })}
           </h1>
-          <p className="room__text">
-            {hostName} finished this saved game. The standings are on the result page.
-          </p>
+          <p className="room__text">{t("room.finished.text", { name: hostName })}</p>
           <button
             type="button"
             className="room__button room__button--primary"
             onClick={onSeeResult}
           >
-            See the result
+            {t("room.finished.see")}
           </button>
         </section>
       </main>

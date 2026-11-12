@@ -1,8 +1,9 @@
 import { useState } from "react";
 import type { DeckName } from "@monopoly/shared";
 import { useGame } from "../../../../game/index.ts";
+import { cardTitle, useT } from "../../../../i18n/index.ts";
 import { useMotionRelease, useMotionStep } from "../../motion/index.ts";
-import { cardAt, DECK_LABELS, effectText } from "./cardText.ts";
+import { cardAt, deckLabel, effectText } from "./cardText.ts";
 
 export interface CardNoticeState {
   /** `<version>:<index of the event>`. It changes for every card, so a view can restart its entry motion. */
@@ -38,6 +39,7 @@ export interface CardNoticeState {
  * the other: OK on the first shows the second.
  */
 export function useCardNotice(userId: string | null): CardNoticeState | null {
+  const t = useT();
   const view = useGame(userId);
   const [mountVersion] = useState(view.version);
   const [dismissed, setDismissed] = useState<ReadonlySet<string>>(new Set());
@@ -55,13 +57,13 @@ export function useCardNotice(userId: string | null): CardNoticeState | null {
     const drawerName =
       view.state?.players.find((p) => p.id === event.playerId)?.name ??
       view.game?.seats.find((seat) => seat.id === event.playerId)?.name ??
-      "A player";
+      t("card.aPlayer");
     return {
       key,
       deck: event.deck,
-      deckLabel: DECK_LABELS[event.deck],
-      title: card?.title ?? "A card",
-      text: card ? effectText(card.effect) : "",
+      deckLabel: deckLabel(event.deck, t),
+      title: card ? cardTitle(card.title, t) : t("card.aCard"),
+      text: card ? effectText(card.effect, t) : "",
       drawerId: event.playerId,
       drawerName,
       mine: view.mySeats.some((seat) => seat.id === event.playerId),

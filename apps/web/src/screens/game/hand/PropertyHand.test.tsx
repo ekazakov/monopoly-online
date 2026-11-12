@@ -441,7 +441,7 @@ describe("PropertyHand: pending and errors", () => {
       ),
     });
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Build evenly: build on a street with fewer buildings first",
+      "Build and sell evenly across the colour group.",
     );
   });
 

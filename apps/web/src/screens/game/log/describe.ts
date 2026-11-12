@@ -1,5 +1,13 @@
 import { CHANCE_CARDS, CHEST_CARDS, SQUARES } from "@monopoly/game-engine";
 import type { DebugChange, DeckName, GameEvent, Seat, TradeOffer } from "@monopoly/shared";
+import {
+  cardTitle as cardTitleIn,
+  currentLanguage,
+  formatMoney as formatMoneyIn,
+  joinNames,
+  squareName as squareNameIn,
+} from "../../../i18n/index.ts";
+import type { MessageKey, Params, Translate } from "../../../i18n/index.ts";
 
 /** How a line is styled. The text always says the same thing: tone adds emphasis, never meaning. */
 export type LogTone = "neutral" | "gain" | "loss" | "alert";
@@ -36,21 +44,21 @@ export interface DescribeContext {
   seats: readonly Pick<Seat, "id" | "name">[];
 }
 
-export function playerName(ctx: DescribeContext, playerId: string): string {
-  return ctx.seats.find((seat) => seat.id === playerId)?.name ?? "A player";
+export function playerName(ctx: DescribeContext, playerId: string, t: Translate): string {
+  return ctx.seats.find((seat) => seat.id === playerId)?.name ?? t("card.aPlayer");
 }
 
 /** "$1,500". A negative amount reads "−$20". */
 export function formatMoney(amount: number): string {
-  return `${amount < 0 ? "−" : ""}$${Math.abs(amount).toLocaleString("en-US")}`;
+  return formatMoneyIn(amount, currentLanguage());
 }
 
+// The debug lines (StateEdited) stay in English: the debug panel is a developer tool.
 const squareName = (square: number) => SQUARES[square]?.name ?? `square ${square}`;
 const deckLabel = (deck: DeckName) => (deck === "chance" ? "Chance" : "Chest");
 const cardTitle = (deck: DeckName, index: number) =>
   (deck === "chance" ? CHANCE_CARDS : CHEST_CARDS)[index]?.title ?? "a card";
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
-const building = (houses: number) => (houses >= 5 ? "a hotel" : "a house");
 
 type Value = string | number | LogPart | readonly LogPart[];
 
@@ -76,46 +84,65 @@ function parts(strings: TemplateStringsArray, ...values: Value[]): LogPart[] {
   return result;
 }
 
-/** "A", "A and B", "A, B and C". */
-function listOf(items: readonly LogPart[]): LogPart[] {
+type Param = string | number | LogPart | readonly LogPart[];
+
+/**
+ * The parts of a line from a catalogue text. A player in `params` stays a part, so the view can
+ * style the name: the player is marked in the text, and the marks split the translated text again.
+ */
+function say(t: Translate, key: MessageKey, params: Record<string, Param> = {}): LogPart[] {
+  const refs: LogPart[] = [];
+  const mark = (part: LogPart) =>
+    typeof part === "string" ? part : `\uE000${refs.push(part) - 1}\uE000`;
+  const flat: Params = {};
+  for (const [name, value] of Object.entries(params)) {
+    if (typeof value === "string" || typeof value === "number") flat[name] = value;
+    else if (Array.isArray(value))
+      flat[name] = joinNames((value as readonly LogPart[]).map(mark), t);
+    else flat[name] = mark(value as LogPart);
+  }
   const result: LogPart[] = [];
-  items.forEach((item, i) => {
-    if (i > 0) result.push(i === items.length - 1 ? " and " : ", ");
-    result.push(item);
-  });
+  t(key, flat)
+    .split(/\uE000(\d+)\uE000/)
+    .forEach((piece, i) => {
+      if (i % 2 === 1) result.push(refs[Number(piece)]!);
+      else if (piece !== "") result.push(piece);
+    });
   return result;
 }
 
-function offerText(offer: TradeOffer): string {
+const deckName = (deck: DeckName, t: Translate) => t(`deck.${deck}`);
+const buildingName = (houses: number, t: Translate) => t(houses >= 5 ? "log.aHotel" : "log.aHouse");
+
+function offerText(offer: TradeOffer, t: Translate): string {
   const items = [
-    ...offer.squares.map(squareName),
+    ...offer.squares.map((square) => squareNameIn(square, t)),
     ...(offer.cash > 0 ? [formatMoney(offer.cash)] : []),
-    ...offer.jailCards.map((deck) => `Get Out of Jail Free (${deckLabel(deck)})`),
+    ...offer.jailCards.map((deck) => t("trade.jailCard", { deck: deckName(deck, t) })),
   ];
-  return items.length > 0 ? items.join(" + ") : "nothing";
+  return items.length > 0 ? items.join(" + ") : t("trade.nothing");
 }
 
-const reasonText = {
-  tax: "tax",
-  rent: "rent",
-  card: "a card",
-  fine: "a fine",
-} as const;
-
-function creditorParts(creditor: { type: "bank" } | { type: "player"; id: string }): LogPart[] {
-  return creditor.type === "bank" ? ["the bank"] : [who(creditor.id)];
+function creditorOf(
+  creditor: { type: "bank" } | { type: "player"; id: string },
+  t: Translate,
+): LogPart {
+  return creditor.type === "bank" ? t("debt.theBank") : who(creditor.id);
 }
 
-function assetsText(event: Extract<GameEvent, { type: "AssetsTransferred" }>): string {
+function assetsText(
+  event: Extract<GameEvent, { type: "AssetsTransferred" }>,
+  t: Translate,
+): string {
   const cash = event.cash.reduce((sum, share) => sum + share.amount, 0);
   const items = [
-    ...(event.squares.length > 0 ? [plural(event.squares.length, "property", "properties")] : []),
+    ...(event.squares.length > 0 ? [t("count.properties", { count: event.squares.length })] : []),
     ...(event.jailCards.length > 0
-      ? [plural(event.jailCards.length, "Get Out of Jail Free card", "Get Out of Jail Free cards")]
+      ? [t("count.jailCardsFree", { count: event.jailCards.length })]
       : []),
     ...(cash > 0 ? [formatMoney(cash)] : []),
   ];
-  return items.length > 0 ? items.join(", ") : "nothing";
+  return items.length > 0 ? items.join(", ") : t("trade.nothing");
 }
 
 /**
@@ -147,7 +174,7 @@ function debugParts(change: DebugChange): LogPart[] {
   }
 }
 
-export function describeEvent(event: GameEvent, ctx: DescribeContext): LogLine {
+export function describeEvent(event: GameEvent, ctx: DescribeContext, t: Translate): LogLine {
   const line = (
     tone: LogTone,
     icon: LogIconName | undefined,
@@ -155,13 +182,14 @@ export function describeEvent(event: GameEvent, ctx: DescribeContext): LogLine {
     content: LogPart[],
   ): LogLine => ({
     text: content
-      .map((part) => (typeof part === "string" ? part : playerName(ctx, part.playerId)))
+      .map((part) => (typeof part === "string" ? part : playerName(ctx, part.playerId, t)))
       .join(""),
     tone,
     ...(icon ? { icon } : {}),
     playerId,
     parts: content,
   });
+  const sq = (square: number) => squareNameIn(square, t);
 
   switch (event.type) {
     case "DiceRolled": {
@@ -170,7 +198,7 @@ export function describeEvent(event: GameEvent, ctx: DescribeContext): LogLine {
         "neutral",
         "dice",
         event.playerId,
-        parts`${who(event.playerId)} rolled ${a} and ${b}${a === b ? " (doubles)" : ""}.`,
+        say(t, a === b ? "log.diceDoubles" : "log.dice", { who: who(event.playerId), a, b }),
       );
     }
     case "PlayerMoved":
@@ -178,42 +206,62 @@ export function describeEvent(event: GameEvent, ctx: DescribeContext): LogLine {
         "neutral",
         "move",
         event.playerId,
-        parts`${who(event.playerId)} moved to ${squareName(event.to)}.`,
+        say(t, "log.moved", { who: who(event.playerId), square: sq(event.to) }),
       );
     case "PassedGo":
       return line(
         "gain",
         "coin",
         event.playerId,
-        parts`${who(event.playerId)} collected ${formatMoney(event.amount)} passing Start.`,
+        say(t, "log.passedGo", { who: who(event.playerId), amount: formatMoney(event.amount) }),
       );
     case "PropertyBought":
       return line(
         "neutral",
         "property",
         event.playerId,
-        parts`${who(event.playerId)} bought ${squareName(event.square)} for ${formatMoney(event.price)}.`,
+        say(t, "log.bought", {
+          who: who(event.playerId),
+          square: sq(event.square),
+          price: formatMoney(event.price),
+        }),
       );
     case "RentPaid":
       return line(
         "loss",
         "coin",
         event.payerId,
-        parts`${who(event.payerId)} paid ${formatMoney(event.amount)} rent to ${who(event.ownerId)}.`,
+        say(t, "log.rent", {
+          who: who(event.payerId),
+          amount: formatMoney(event.amount),
+          owner: who(event.ownerId),
+        }),
       );
     case "TaxPaid":
       return line(
         "loss",
         "coin",
         event.playerId,
-        parts`${who(event.playerId)} paid ${formatMoney(event.amount)} ${squareName(event.square)}.`,
+        say(t, "log.tax", {
+          who: who(event.playerId),
+          amount: formatMoney(event.amount),
+          square: sq(event.square),
+        }),
       );
     case "CardDrawn":
       return line(
         "neutral",
         "card",
         event.playerId,
-        parts`${who(event.playerId)} drew a ${deckLabel(event.deck)} card: ${cardTitle(event.deck, event.cardIndex)}.`,
+        say(t, "log.card", {
+          who: who(event.playerId),
+          deck: deckName(event.deck, t),
+          title:
+            cardTitleIn(
+              (event.deck === "chance" ? CHANCE_CARDS : CHEST_CARDS)[event.cardIndex]?.title ?? "",
+              t,
+            ) || t("log.aCard"),
+        }),
       );
     case "CashChanged":
       return event.amount < 0
@@ -221,56 +269,85 @@ export function describeEvent(event: GameEvent, ctx: DescribeContext): LogLine {
             "loss",
             "coin",
             event.playerId,
-            parts`${who(event.playerId)} paid ${formatMoney(-event.amount)}.`,
+            say(t, "log.paid", { who: who(event.playerId), amount: formatMoney(-event.amount) }),
           )
         : line(
             "gain",
             "coin",
             event.playerId,
-            parts`${who(event.playerId)} collected ${formatMoney(event.amount)}.`,
+            say(t, "log.collected", {
+              who: who(event.playerId),
+              amount: formatMoney(event.amount),
+            }),
           );
     case "BuildingBuilt":
       return line(
         "neutral",
         "build",
         event.playerId,
-        parts`${who(event.playerId)} built ${building(event.houses)} on ${squareName(event.square)} for ${formatMoney(event.cost)}.`,
+        say(t, "log.built", {
+          who: who(event.playerId),
+          building: buildingName(event.houses, t),
+          square: sq(event.square),
+          cost: formatMoney(event.cost),
+        }),
       );
     case "BuildingSold":
-      // `houses` counts what is left. A hotel sale leaves 4 houses.
       return line(
         "gain",
         "build",
         event.playerId,
-        parts`${who(event.playerId)} sold ${building(event.houses + 1)} on ${squareName(event.square)} for ${formatMoney(event.refund)}.`,
+        say(t, "log.soldBuilding", {
+          who: who(event.playerId),
+          building: buildingName(event.houses + 1, t),
+          square: sq(event.square),
+          refund: formatMoney(event.refund),
+        }),
       );
     case "PropertyMortgaged":
       return line(
         "gain",
         "property",
         event.playerId,
-        parts`${who(event.playerId)} mortgaged ${squareName(event.square)} for ${formatMoney(event.amount)}.`,
+        say(t, "log.mortgaged", {
+          who: who(event.playerId),
+          square: sq(event.square),
+          amount: formatMoney(event.amount),
+        }),
       );
     case "PropertyUnmortgaged":
       return line(
         "loss",
         "property",
         event.playerId,
-        parts`${who(event.playerId)} unmortgaged ${squareName(event.square)} for ${formatMoney(event.cost)}.`,
+        say(t, "log.unmortgaged", {
+          who: who(event.playerId),
+          square: sq(event.square),
+          cost: formatMoney(event.cost),
+        }),
       );
     case "DebtIncurred":
       return line(
         "alert",
         "debt",
         event.debtorId,
-        parts`${who(event.debtorId)} owes ${creditorParts(event.creditor)} ${formatMoney(event.amount)} for ${reasonText[event.reason]}.`,
+        say(t, "log.owes", {
+          who: who(event.debtorId),
+          creditor: creditorOf(event.creditor, t),
+          amount: formatMoney(event.amount),
+          reason: t(`log.reason.${event.reason}`),
+        }),
       );
     case "DebtPaid":
       return line(
         "loss",
         "debt",
         event.debtorId,
-        parts`${who(event.debtorId)} paid a ${formatMoney(event.amount)} debt to ${creditorParts(event.creditor)}.`,
+        say(t, "log.debtPaid", {
+          who: who(event.debtorId),
+          amount: formatMoney(event.amount),
+          creditor: creditorOf(event.creditor, t),
+        }),
       );
     case "BankruptcyDeclared":
       return line(
@@ -278,108 +355,134 @@ export function describeEvent(event: GameEvent, ctx: DescribeContext): LogLine {
         "end",
         event.playerId,
         event.creditorIds.length > 0
-          ? parts`${who(event.playerId)} went bankrupt to ${listOf(event.creditorIds.map(who))}.`
-          : parts`${who(event.playerId)} went bankrupt to the bank.`,
+          ? say(t, "log.bankrupt", { who: who(event.playerId), to: event.creditorIds.map(who) })
+          : say(t, "log.bankruptBank", { who: who(event.playerId) }),
       );
     case "AssetsTransferred":
       return line(
         "alert",
         "property",
         event.fromId,
-        parts`${who(event.fromId)}'s assets went to ${event.toId === null ? "the bank" : who(event.toId)}: ${assetsText(event)}.`,
+        say(t, "log.assets", {
+          who: who(event.fromId),
+          to: event.toId === null ? t("debt.theBank") : who(event.toId),
+          assets: assetsText(event, t),
+        }),
       );
     case "PlayerResigned":
-      return line("alert", "end", event.playerId, parts`${who(event.playerId)} resigned.`);
-    case "PlayerEliminated":
       return line(
         "alert",
         "end",
         event.playerId,
-        parts`${who(event.playerId)} is out of the game.`,
+        say(t, "log.resigned", { who: who(event.playerId) }),
       );
+    case "PlayerEliminated":
+      return line("alert", "end", event.playerId, say(t, "log.out", { who: who(event.playerId) }));
     case "AuctionStarted":
       return line(
         "neutral",
         "auction",
         null,
-        parts`Auction for ${squareName(event.square)} started. Bidders: ${listOf(event.bidderIds.map(who))}.`,
+        say(t, "log.auctionStarted", {
+          square: sq(event.square),
+          bidders: event.bidderIds.map(who),
+        }),
       );
     case "BidPlaced":
       return line(
         "neutral",
         "auction",
         event.playerId,
-        parts`${who(event.playerId)} bid ${formatMoney(event.amount)}.`,
+        say(t, "log.bid", { who: who(event.playerId), amount: formatMoney(event.amount) }),
       );
     case "BidPassed":
       return line(
         "neutral",
         "auction",
         event.playerId,
-        parts`${who(event.playerId)} passed${event.auto ? " automatically" : ""}.`,
+        say(t, event.auto ? "log.passedAuto" : "log.passed", { who: who(event.playerId) }),
       );
     case "AuctionEnded":
       return event.winnerId === null
-        ? line(
-            "neutral",
-            "auction",
-            null,
-            parts`No one bid on ${squareName(event.square)}. It stays unowned.`,
-          )
+        ? line("neutral", "auction", null, say(t, "log.noBids", { square: sq(event.square) }))
         : line(
             "neutral",
             "auction",
             event.winnerId,
-            parts`${who(event.winnerId)} won ${squareName(event.square)} at auction for ${formatMoney(event.price)}.`,
+            say(t, "log.won", {
+              who: who(event.winnerId),
+              square: sq(event.square),
+              price: formatMoney(event.price),
+            }),
           );
     case "TradeProposed":
       return line(
         "neutral",
         "trade",
         event.fromId,
-        parts`${who(event.fromId)} proposed a trade to ${who(event.toId)}: gives ${offerText(event.give)}, gets ${offerText(event.get)}.`,
+        say(t, "log.tradeProposed", {
+          from: who(event.fromId),
+          to: who(event.toId),
+          give: offerText(event.give, t),
+          get: offerText(event.get, t),
+        }),
       );
     case "TradeAccepted":
       return line(
         "gain",
         "trade",
         event.toId,
-        parts`${who(event.toId)} accepted the trade from ${who(event.fromId)}.`,
+        say(t, "log.tradeAccepted", { to: who(event.toId), from: who(event.fromId) }),
       );
     case "TradeRejected":
       return line(
         "neutral",
         "trade",
         event.toId,
-        parts`${who(event.toId)} rejected the trade from ${who(event.fromId)}.`,
+        say(t, "log.tradeRejected", { to: who(event.toId), from: who(event.fromId) }),
       );
     case "TradeCancelled":
       return line(
         "neutral",
         "trade",
         event.fromId,
-        parts`${who(event.fromId)} cancelled the trade offer to ${who(event.toId)}.`,
+        say(t, "log.tradeCancelled", { from: who(event.fromId), to: who(event.toId) }),
       );
     case "FinePaid":
       return line(
         "loss",
         "jail",
         event.playerId,
-        parts`${who(event.playerId)} paid the ${formatMoney(event.amount)} jail fine.`,
+        say(t, "log.fine", { who: who(event.playerId), amount: formatMoney(event.amount) }),
       );
     case "SentToJail":
-      return line("alert", "jail", event.playerId, parts`${who(event.playerId)} was sent to jail.`);
+      return line(
+        "alert",
+        "jail",
+        event.playerId,
+        say(t, "log.sentToJail", { who: who(event.playerId) }),
+      );
     case "LeftJail":
-      return line("gain", "jail", event.playerId, parts`${who(event.playerId)} left jail.`);
+      return line(
+        "gain",
+        "jail",
+        event.playerId,
+        say(t, "log.leftJail", { who: who(event.playerId) }),
+      );
     case "TurnEnded":
       return line(
         "neutral",
         "turn",
         event.playerId,
-        parts`${who(event.playerId)} ended the turn. ${who(event.nextPlayerId)} is next.`,
+        say(t, "log.turnEnded", { who: who(event.playerId), next: who(event.nextPlayerId) }),
       );
     case "GameEnded":
-      return line("gain", "end", event.winnerId, parts`${who(event.winnerId)} won the game!`);
+      return line(
+        "gain",
+        "end",
+        event.winnerId,
+        say(t, "log.wonGame", { who: who(event.winnerId) }),
+      );
     case "StateEdited":
       return line("alert", undefined, event.playerId, [
         ...parts`${who(event.playerId)} (debug): `,

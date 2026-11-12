@@ -5,9 +5,10 @@ import type {
   GameState,
   Phase,
   PropertySquare,
-  SquareGroup,
 } from "@monopoly/game-engine";
 import type { RedactedGameState } from "@monopoly/shared";
+import { currentLanguage, errorMessage, formatMoney } from "../../../i18n/index.ts";
+import type { Translate } from "../../../i18n/index.ts";
 
 // The engine actions read only what the redacted state keeps (`ownership`, `players`, `turn`,
 // `auction`, `trade`). The drift test of this file runs them on a full engine state and on the
@@ -16,19 +17,6 @@ const forEngine = (state: RedactedGameState) => state as unknown as GameState;
 
 export const MANAGE_ACTIONS = ["Build", "SellBuilding", "Mortgage", "Unmortgage"] as const;
 export type ManageAction = (typeof MANAGE_ACTIONS)[number];
-
-export const GROUP_LABELS: Record<SquareGroup, string> = {
-  brown: "Brown",
-  sky: "Sky",
-  pink: "Pink",
-  orange: "Orange",
-  red: "Red",
-  yellow: "Yellow",
-  green: "Green",
-  navy: "Navy",
-  station: "Stations",
-  utility: "Utilities",
-};
 
 export interface PropertyActions {
   canBuild: boolean;
@@ -63,20 +51,20 @@ const WINDOW_CODES: readonly GameError["code"][] = [
   "wrong_phase",
 ];
 
-function phaseReason(phase: Phase): string {
+function phaseReason(phase: Phase, t: Translate): string {
   switch (phase) {
     case "awaiting_debt":
-      return "Settle the debt first";
+      return t("hand.reason.debt");
     case "awaiting_buy_decision":
-      return "Decide on the property first";
+      return t("hand.reason.buy");
     case "awaiting_bid":
-      return "Wait for the auction to end";
+      return t("hand.reason.auction");
     case "awaiting_trade_response":
-      return "Answer the trade first";
+      return t("hand.reason.trade");
     case "game_over":
-      return "The game is over";
+      return t("hand.reason.over");
     default:
-      return "Not now";
+      return t("hand.reason.notNow");
   }
 }
 
@@ -86,44 +74,45 @@ function reasonFor(
   info: PropertySquare,
   phase: Phase,
   needed: number | null,
+  t: Translate,
 ): string {
   switch (error.code) {
     case "unknown_player":
-      return "Not a player of this game";
+      return t("hand.reason.notPlayer");
     case "player_inactive":
-      return "Out of the game";
+      return t("hand.reason.out");
     case "not_your_turn":
-      return "Wait for your turn";
+      return t("hand.reason.waitTurn");
     case "wrong_phase":
-      return phaseReason(phase);
+      return phaseReason(phase, t);
     case "not_owner":
-      return "Not your property";
+      return t("hand.reason.notOwner");
     case "not_a_street":
-      return "Only streets take buildings";
+      return t("hand.reason.notStreet");
     case "not_a_property":
-      return "Not a property";
+      return t("hand.reason.notProperty");
     case "incomplete_group":
-      return `Needs the full ${GROUP_LABELS[info.group]} set`;
+      return t("hand.reason.fullSet", { group: t(`group.${info.group}`) });
     case "group_mortgaged":
-      return "Lift the mortgage on the set first";
+      return t("hand.reason.liftMortgage");
     case "max_buildings":
-      return "Already has a hotel";
+      return t("hand.reason.hotel");
     case "uneven_build":
-      return type === "Build"
-        ? "Build on a street with fewer buildings first"
-        : "Sell from a street with more buildings first";
+      return type === "Build" ? t("hand.reason.evenBuild") : t("hand.reason.evenSell");
     case "no_buildings":
-      return "No buildings to sell";
+      return t("hand.reason.noBuildings");
     case "already_mortgaged":
-      return "Already mortgaged";
+      return t("hand.reason.mortgaged");
     case "not_mortgaged":
-      return "Not mortgaged";
+      return t("hand.reason.notMortgaged");
     case "has_buildings":
-      return "Sell the buildings first";
+      return t("hand.reason.sellFirst");
     case "insufficient_funds":
-      return needed === null ? "Not enough cash" : `Needs $${needed.toLocaleString("en-US")}`;
+      return needed === null
+        ? t("hand.reason.noCash")
+        : t("hand.reason.needs", { amount: formatMoney(needed, currentLanguage()) });
     default:
-      return error.message;
+      return errorMessage(error, t);
   }
 }
 
@@ -136,6 +125,7 @@ export function propertyActions(
   state: RedactedGameState,
   seatId: string,
   square: number,
+  t: Translate,
 ): PropertyActions {
   const info = SQUARES[square];
   const property = info && isProperty(info) ? info : null;
@@ -154,7 +144,7 @@ export function propertyActions(
   };
 
   const refusal = (type: ManageAction): GameError | null => {
-    if (!property) return { code: "not_a_property", message: "Not a property" };
+    if (!property) return { code: "not_a_property", message: t("hand.reason.notProperty") };
     const result = applyAction(forEngine(state), { type, playerId: seatId, square });
     return result.ok ? null : result.error;
   };
@@ -168,8 +158,8 @@ export function propertyActions(
     !error
       ? null
       : property
-        ? reasonFor(type, error, property, state.turn.phase, needed[type])
-        : error.message;
+        ? reasonFor(type, error, property, state.turn.phase, needed[type], t)
+        : t("hand.reason.notProperty");
   const reason = {
     build: textOf("Build", refusals.build),
     sell: textOf("SellBuilding", refusals.sell),

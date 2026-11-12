@@ -1,5 +1,6 @@
 import { seatNameSchema } from "@monopoly/shared";
 import { useId, useState, type FormEvent, type RefObject } from "react";
+import { useT } from "../../i18n/index.ts";
 import { errorText } from "./roomModel.ts";
 import type { useRoomActions } from "./useRoomActions.ts";
 
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export function AddSeatForm({ add, inputRef }: Props) {
+  const t = useT();
   const inputId = useId();
   const hintId = `${inputId}-hint`;
   const [value, setValue] = useState("");
@@ -19,9 +21,7 @@ export function AddSeatForm({ add, inputRef }: Props) {
     if (add.isPending) return;
     const parsed = seatNameSchema.safeParse(value);
     if (!parsed.success) {
-      setProblem(
-        value.trim().length > 16 ? "Use 16 characters or fewer." : "Use at least 2 characters.",
-      );
+      setProblem(value.trim().length > 16 ? t("nameForm.long") : t("nameForm.short"));
       inputRef.current?.focus();
       return;
     }
@@ -32,7 +32,7 @@ export function AddSeatForm({ add, inputRef }: Props) {
         inputRef.current?.focus();
       },
       onError: (error) => {
-        setProblem(errorText("add", error));
+        setProblem(errorText("add", error, t));
         inputRef.current?.focus();
       },
     });
@@ -41,14 +41,12 @@ export function AddSeatForm({ add, inputRef }: Props) {
   return (
     <section className="room__panel" aria-labelledby="room-add">
       <h2 id="room-add" className="room__h2">
-        Add a player on this device
+        {t("room.add.title")}
       </h2>
-      <p className="room__text">
-        For someone sitting with you. You pass your device between their turns.
-      </p>
+      <p className="room__text">{t("room.add.text")}</p>
       <form className="room__row" onSubmit={onSubmit} noValidate>
         <label className="room__sr" htmlFor={inputId}>
-          Name
+          {t("room.add.label")}
         </label>
         <input
           ref={inputRef}
@@ -60,7 +58,7 @@ export function AddSeatForm({ add, inputRef }: Props) {
             setValue(event.target.value);
             setProblem(null);
           }}
-          placeholder="Name"
+          placeholder={t("room.add.label")}
           autoComplete="off"
           spellCheck={false}
           readOnly={add.isPending}
@@ -73,13 +71,11 @@ export function AddSeatForm({ add, inputRef }: Props) {
           aria-disabled={add.isPending || undefined}
           aria-busy={add.isPending || undefined}
         >
-          {add.isPending ? "Adding" : "Add seat"}
+          {add.isPending ? t("room.add.adding") : t("room.add.submit")}
         </button>
       </form>
       <p id={hintId} className="room__hint" data-tone={problem ? "error" : undefined}>
-        <span role={problem ? "alert" : undefined}>
-          {problem ?? "2 to 16 characters. Each name is used once in a game."}
-        </span>
+        <span role={problem ? "alert" : undefined}>{problem ?? t("room.add.hint")}</span>
       </p>
     </section>
   );

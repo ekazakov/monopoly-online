@@ -1,6 +1,7 @@
 import { TOKENS } from "@monopoly/shared";
 import type { Game, Seat, Token } from "@monopoly/shared";
 import type { CSSProperties } from "react";
+import { useT } from "../../i18n/index.ts";
 import { tokenLook } from "../../scene/colors.ts";
 import { AvatarIcon } from "../game/rail/avatars.tsx";
 
@@ -22,17 +23,21 @@ export const controlledSeats = (game: Game, userId: string): Seat[] =>
  * is pressed. The server decides a race, so a refused pick leaves the old figure in place.
  */
 export function TokenPicker({ game, userId, pendingSeatId, onPick }: Props) {
+  const t = useT();
   const seats = controlledSeats(game, userId);
   if (seats.length === 0) return null;
   const several = seats.length > 1;
   return (
     <section className="room__panel" aria-labelledby="room-tokens">
       <h2 id="room-tokens" className="room__h2">
-        {several ? "Tokens" : "Your token"}
+        {several ? t("room.tokens.several") : t("room.tokens.yours")}
       </h2>
-      <p className="room__text">Pick a figure. Taken ones are greyed out.</p>
+      <p className="room__text">{t("room.tokens.text")}</p>
       {seats.map((seat) => {
-        const label = seat.userId === userId ? "Your token" : `${seat.name}'s token`;
+        const label =
+          seat.userId === userId
+            ? t("room.tokens.yours")
+            : t("room.tokens.of", { name: seat.name });
         return (
           <div
             key={seat.id}
@@ -45,6 +50,7 @@ export function TokenPicker({ game, userId, pendingSeatId, onPick }: Props) {
             <div className="room__tokens">
               {TOKENS.map((token) => {
                 const look = tokenLook(token);
+                const tokenName = t(`token.${token}.label`);
                 const owner = game.seats.find((s) => s.token === token);
                 const taken = owner !== undefined && owner.id !== seat.id;
                 return (
@@ -54,13 +60,19 @@ export function TokenPicker({ game, userId, pendingSeatId, onPick }: Props) {
                     className="room__token"
                     style={{ "--token-color": look.cssColor } as CSSProperties}
                     aria-pressed={seat.token === token}
-                    aria-label={taken ? `${look.label}, taken by ${owner.name}` : look.label}
+                    aria-label={
+                      taken
+                        ? t("room.tokens.taken", { token: tokenName, name: owner.name })
+                        : tokenName
+                    }
                     disabled={taken}
                     // A pick that is on its way blocks another one, but keeps the focus here.
                     onClick={() => pendingSeatId === null && onPick(seat, token)}
                   >
                     <AvatarIcon kind={look.avatar} size={30} />
-                    <span className="room__token-name">{taken ? owner.name : look.short}</span>
+                    <span className="room__token-name">
+                      {taken ? owner.name : t(`token.${token}.short`)}
+                    </span>
                   </button>
                 );
               })}

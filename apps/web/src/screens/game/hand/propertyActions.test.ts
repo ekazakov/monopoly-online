@@ -2,6 +2,7 @@ import { applyAction } from "@monopoly/game-engine";
 import type { ActionType, GameState } from "@monopoly/game-engine";
 import { describe, expect, test } from "vite-plus/test";
 import { recordFixture } from "../../../game/fixtures.ts";
+import { tEn } from "../../../testing/tEn.ts";
 import { BEACON_HILL, NORTH_STATION, POWER_WORKS, SKY, deal, skyWith } from "./fixtures.ts";
 import type { DealSpec, Who } from "./fixtures.ts";
 import { MANAGE_ACTIONS, propertyActions } from "./propertyActions.ts";
@@ -9,7 +10,7 @@ import { MANAGE_ACTIONS, propertyActions } from "./propertyActions.ts";
 const sky = (spec: DealSpec = {}) => deal({ deeds: skyWith([0, 0, 0]), ...spec });
 
 function actionsOf(game: ReturnType<typeof deal>, square: number, who: Who = "a") {
-  return propertyActions(game.state, game.id(who), square);
+  return propertyActions(game.state, game.id(who), square, tEn);
 }
 
 describe("propertyActions: a full colour set", () => {
@@ -256,7 +257,7 @@ describe("propertyActions: the engine agrees (drift)", () => {
   ) {
     for (const playerId of ids) {
       for (let square = 0; square < 40; square++) {
-        const a = propertyActions(game.state, playerId, square);
+        const a = propertyActions(game.state, playerId, square, tEn);
         for (const [key, type] of Object.entries(types)) {
           const engine = applyAction(game.full, { type, playerId, square } as never);
           expect(a[key as keyof typeof a], `${type} ${square} ${playerId}`).toBe(engine.ok);

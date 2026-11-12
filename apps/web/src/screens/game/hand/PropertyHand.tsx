@@ -2,6 +2,8 @@ import type { ActionType } from "@monopoly/game-engine";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { CSSProperties, FocusEvent, ReactNode } from "react";
 import { mayActWith, useGame, useGameActions } from "../../../game/index.ts";
+import { errorMessage, useT } from "../../../i18n/index.ts";
+import type { Translate } from "../../../i18n/index.ts";
 import { buildingText, handOf, money } from "./handModel.ts";
 import type { HandCard, HandGroup } from "./handModel.ts";
 import { PropertyDetail } from "./PropertyDetail.tsx";
@@ -64,10 +66,11 @@ function Tick() {
   );
 }
 
-const groupName = (group: HandGroup) =>
-  `${group.label}${group.cards.length > 1 ? ` · ${group.cards.length}` : ""}${group.complete ? ", set complete" : ""}`;
+const groupName = (group: HandGroup, t: Translate) =>
+  `${group.label}${group.cards.length > 1 ? ` · ${group.cards.length}` : ""}${group.complete ? `, ${t("hand.setComplete")}` : ""}`;
 
 function CardFace({ card, color, complete }: { card: HandCard; color: string; complete: boolean }) {
+  const t = useT();
   const pips =
     card.houses === 5 ? (
       <HotelIcon />
@@ -88,14 +91,18 @@ function CardFace({ card, color, complete }: { card: HandCard; color: string; co
         <span className="property-hand__price">{money(card.price)}</span>
       </span>
       <span className="property-hand__pips">
-        {card.mortgaged ? <span className="property-hand__tag">Mortgaged</span> : pips}
+        {card.mortgaged ? (
+          <span className="property-hand__tag">{t("hand.tagMortgaged")}</span>
+        ) : (
+          pips
+        )}
       </span>
     </>
   );
 }
 
-const cardName = (card: HandCard) =>
-  `${card.name}, ${money(card.price)}, ${card.mortgaged ? "mortgaged" : buildingText(card.houses)}, ${card.rent}`;
+const cardName = (card: HandCard, t: Translate) =>
+  `${card.name}, ${money(card.price)}, ${card.mortgaged ? t("hand.mortgaged") : buildingText(card.houses, t)}, ${card.rent}`;
 
 interface GridProps {
   groups: HandGroup[];
@@ -104,6 +111,7 @@ interface GridProps {
 
 // Collapsed cards are a visual preview; the invisible hand control handles keyboard access.
 function Grid({ groups, onPin }: GridProps) {
+  const t = useT();
   return (
     <div className="property-hand__grid" aria-hidden="true" onClick={onPin}>
       {groups.map((group) => {
@@ -112,7 +120,7 @@ function Grid({ groups, onPin }: GridProps) {
           <ul
             className="property-hand__col"
             key={group.group}
-            aria-label={groupName(group)}
+            aria-label={groupName(group, t)}
             style={{ "--n": count } as CSSProperties}
           >
             {group.cards.map((card, i) => (
@@ -136,6 +144,7 @@ function Grid({ groups, onPin }: GridProps) {
 // The hand shows the acting seat when it belongs to this device. Otherwise it shows the seat
 // picked in the switcher, or the last seat of this device that acted (gameplay doc, section 3).
 export function PropertyHand({ userId }: PropertyHandProps) {
+  const t = useT();
   const view = useGame(userId);
   const { game, state } = view;
   const actions = useGameActions();
@@ -185,7 +194,7 @@ export function PropertyHand({ userId }: PropertyHandProps) {
     if (debtOpen) setMode("pinned");
   }
 
-  const hand = useMemo(() => (state && seat ? handOf(state, seat.id) : null), [state, seat]);
+  const hand = useMemo(() => (state && seat ? handOf(state, seat.id, t) : null), [state, seat, t]);
 
   useEffect(() => {
     return () => {
@@ -261,10 +270,10 @@ export function PropertyHand({ userId }: PropertyHandProps) {
   };
 
   const may = (type: ActionType) => mayActWith(game, state, seat.id, type);
-  const title = `${seat.name}'s properties`;
+  const title = t("hand.title", { name: seat.name });
   const switcher: ReactNode =
     actingMine === null && candidates.length > 1 ? (
-      <div className="property-hand__switcher" role="group" aria-label="Show properties of">
+      <div className="property-hand__switcher" role="group" aria-label={t("hand.switcher")}>
         {candidates.map((s) => (
           <button
             key={s.id}
@@ -301,7 +310,7 @@ export function PropertyHand({ userId }: PropertyHandProps) {
         onBlur={onBlur}
       >
         <p className="property-hand__status" role="status" aria-live="polite" aria-atomic="true">
-          {error && errorSource === "hand" ? error.message : ""}
+          {error && errorSource === "hand" ? errorMessage(error, t) : ""}
         </p>
         <button
           ref={toggleRef}
@@ -309,7 +318,7 @@ export function PropertyHand({ userId }: PropertyHandProps) {
           className="property-hand__tab"
           aria-expanded={open}
           aria-controls={open ? panelId : undefined}
-          aria-label={`${title}, ${hand.count} ${hand.count === 1 ? "property" : "properties"}, ${money(hand.value)}`}
+          aria-label={`${title}, ${t("count.properties", { count: hand.count })}, ${money(hand.value)}`}
           onMouseDown={() => {
             tabWasOpen.current = open;
           }}
@@ -322,10 +331,12 @@ export function PropertyHand({ userId }: PropertyHandProps) {
           {open ? (
             <>
               <header className="property-hand__manage-header">
-                <h2>Manage properties · {seat.name}</h2>
+                <h2>{t("hand.manage", { name: seat.name })}</h2>
                 <p>
-                  Cash {money(state.players.find((player) => player.id === seat.id)?.cash ?? 0)} ·{" "}
-                  {hand.count} properties
+                  {t("hand.cashProperties", {
+                    cash: money(state.players.find((player) => player.id === seat.id)?.cash ?? 0),
+                    count: hand.count,
+                  })}
                 </p>
                 {switcher}
               </header>
@@ -336,7 +347,7 @@ export function PropertyHand({ userId }: PropertyHandProps) {
                 tabIndex={0}
               >
                 {hand.count === 0 ? (
-                  <p className="property-hand__empty">No properties yet.</p>
+                  <p className="property-hand__empty">{t("hand.empty")}</p>
                 ) : null}
                 {hand.groups.map((group) => (
                   <section key={group.group} className="property-hand__manage-group">
@@ -344,11 +355,11 @@ export function PropertyHand({ userId }: PropertyHandProps) {
                       {group.label}{" "}
                       {group.complete ? (
                         <span>
-                          <Tick /> Set complete
+                          <Tick /> {t("hand.setCompleteTitle")}
                         </span>
                       ) : null}
                     </h3>
-                    <ul aria-label={groupName(group)}>
+                    <ul aria-label={groupName(group, t)}>
                       {group.cards.map((card) => {
                         const rowId = `${detailId}-${card.square}`;
                         return (
@@ -360,12 +371,14 @@ export function PropertyHand({ userId }: PropertyHandProps) {
                             <div
                               className="property-hand__property"
                               role="group"
-                              aria-label={cardName(card)}
+                              aria-label={cardName(card, t)}
                             >
                               <strong>{card.name}</strong>
                               <span>
-                                {card.mortgaged ? "Mortgaged" : buildingText(card.houses)} ·{" "}
-                                {card.rent}
+                                {card.mortgaged
+                                  ? t("hand.tagMortgaged")
+                                  : buildingText(card.houses, t)}{" "}
+                                · {card.rent}
                               </span>
                               <span className="property-hand__buildings" aria-hidden="true">
                                 {card.houses === 5 ? (
@@ -380,7 +393,7 @@ export function PropertyHand({ userId }: PropertyHandProps) {
                             <PropertyDetail
                               id={rowId}
                               card={card}
-                              actions={propertyActions(state, seat.id, card.square)}
+                              actions={propertyActions(state, seat.id, card.square, t)}
                               may={may}
                               busy={pending}
                               onAction={(type) => {

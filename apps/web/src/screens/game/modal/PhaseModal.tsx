@@ -1,4 +1,5 @@
 import { SQUARES } from "@monopoly/game-engine";
+import { squareInfoName, useT } from "../../../i18n/index.ts";
 import { AuctionView } from "../flows/auction/index.ts";
 import { useMotionStep } from "../motion/index.ts";
 import { BuyView, propertyForSale } from "../turn/BuyView.tsx";
@@ -11,6 +12,7 @@ import { Modal } from "./Modal.tsx";
 // device with no seat to act gets no dialog and follows the phase in the board centre. The dialog
 // waits while the dice and the token move. It must be a child of the game layout.
 export function PhaseModal({ userId }: { userId: string }) {
+  const t = useT();
   const turn = useTurn(userId);
   const moving = useMotionStep() !== null;
   const { phase } = turn.view;
@@ -19,7 +21,7 @@ export function PhaseModal({ userId }: { userId: string }) {
   const property = propertyForSale(turn);
   if (phase === "awaiting_buy_decision" && property) {
     return (
-      <Modal key={phase} title={`${property.name} is for sale`}>
+      <Modal key={phase} title={t("turn.forSale", { name: squareInfoName(property, t) })}>
         <BuyView turn={turn} />
       </Modal>
     );
@@ -28,7 +30,12 @@ export function PhaseModal({ userId }: { userId: string }) {
     const auction = turn.view.state?.auction;
     const square = auction ? SQUARES[auction.square] : undefined;
     return (
-      <Modal key={phase} title={square ? `Auction: ${square.name}` : "Auction"}>
+      <Modal
+        key={phase}
+        title={
+          square ? t("turn.auctionOf", { name: squareInfoName(square, t) }) : t("turn.auction")
+        }
+      >
         <AuctionView turn={turn} inDialog />
       </Modal>
     );

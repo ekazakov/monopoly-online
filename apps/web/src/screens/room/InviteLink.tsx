@@ -1,8 +1,10 @@
 import { useEffect, useId, useRef, useState } from "react";
+import { useT } from "../../i18n/index.ts";
 
 type Copied = "idle" | "copied" | "manual";
 
 export function InviteLink({ gameId }: { gameId: string }) {
+  const t = useT();
   const url = `${window.location.origin}/games/${gameId}`;
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -29,12 +31,12 @@ export function InviteLink({ gameId }: { gameId: string }) {
   return (
     <section className="room__panel" aria-labelledby="room-invite">
       <h2 id="room-invite" className="room__h2">
-        Invite link
+        {t("room.link.title")}
       </h2>
-      <p className="room__text">Anyone with the link can join while seats are free.</p>
+      <p className="room__text">{t("room.link.text")}</p>
       <div className="room__row">
         <label className="room__sr" htmlFor={inputId}>
-          Link
+          {t("room.link.label")}
         </label>
         <input
           ref={inputRef}
@@ -46,12 +48,12 @@ export function InviteLink({ gameId }: { gameId: string }) {
           onFocus={(event) => event.currentTarget.select()}
         />
         <button type="button" className="room__button" onClick={() => void copy()}>
-          {copied === "copied" ? "Copied" : "Copy"}
+          {copied === "copied" ? t("room.link.copied") : t("room.link.copy")}
         </button>
       </div>
       <p className="room__hint" role="status" aria-live="polite">
-        {copied === "copied" && "Link copied. Paste it anywhere to invite people."}
-        {copied === "manual" && "The link is selected. Press Ctrl+C or Cmd+C to copy it."}
+        {copied === "copied" && t("room.link.copiedHint")}
+        {copied === "manual" && t("room.link.manualHint")}
       </p>
     </section>
   );

@@ -1,5 +1,7 @@
 import { useId } from "react";
 import type { ActionInput, PresenceStatus } from "@monopoly/shared";
+import { useT } from "../../../i18n/index.ts";
+import type { Translate } from "../../../i18n/index.ts";
 import type { Turn } from "./useTurn.ts";
 
 export interface TurnAction {
@@ -59,7 +61,8 @@ export function ActionBar({ turn, actions }: ActionBarProps) {
  */
 export function Waiting({ turn }: { turn: Pick<Turn, "actorName" | "actorPresence" | "isOwner"> }) {
   const { actorName: name, actorPresence: presence, isOwner } = turn;
-  const text = waitingText(name, presence);
+  const t = useT();
+  const text = waitingText(name, presence, t);
   return (
     <>
       <p className="turn-area__waiting">
@@ -67,9 +70,7 @@ export function Waiting({ turn }: { turn: Pick<Turn, "actorName" | "actorPresenc
         {text.title}
       </p>
       {text.sub && <p className="turn-area__sub">{text.sub}</p>}
-      {isOwner && presence === "away" && (
-        <p className="turn-area__sub">You can also save or finish the game in the Menu.</p>
-      )}
+      {isOwner && presence === "away" && <p className="turn-area__sub">{t("turn.menuHint")}</p>}
     </>
   );
 }
@@ -77,19 +78,20 @@ export function Waiting({ turn }: { turn: Pick<Turn, "actorName" | "actorPresenc
 export function waitingText(
   name: string,
   presence: PresenceStatus | null,
+  t: Translate,
 ): { title: string; sub: string | null } {
-  if (!name) return { title: "Waiting for the game", sub: null };
+  if (!name) return { title: t("turn.waitingGame"), sub: null };
   if (presence === "away") {
     return {
-      title: `Waiting for ${name} to return`,
-      sub: `The game continues when ${name} returns.`,
+      title: t("turn.waitingReturn", { name }),
+      sub: t("turn.continuesReturn", { name }),
     };
   }
   if (presence === "reconnecting") {
     return {
-      title: `${name} is reconnecting…`,
-      sub: "The game continues when the connection returns.",
+      title: t("turn.reconnecting", { name }),
+      sub: t("turn.continuesConnection"),
     };
   }
-  return { title: `Waiting for ${name}`, sub: null };
+  return { title: t("turn.waitingFor", { name }), sub: null };
 }

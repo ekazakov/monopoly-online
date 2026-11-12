@@ -1,6 +1,7 @@
 import { displayNameSchema } from "@monopoly/shared";
 import { useId, useRef, useState, type FormEvent } from "react";
 import { isApiError } from "../../api/index.ts";
+import { useT } from "../../i18n/index.ts";
 import { errorText } from "./roomModel.ts";
 import type { useRoomActions } from "./useRoomActions.ts";
 
@@ -16,6 +17,7 @@ type Result = { tone: "ok" | "error"; text: string };
  * invite shows as a row in the player list, which the room announces itself.
  */
 export function InvitePanel({ invite }: Props) {
+  const t = useT();
   const inputId = useId();
   const resultId = `${inputId}-result`;
   const inputRef = useRef<HTMLInputElement>(null);
@@ -25,8 +27,8 @@ export function InvitePanel({ invite }: Props) {
   function fail(name: string, error: unknown) {
     const text =
       isApiError(error) && error.code === "user_not_found"
-        ? `No player called "${name}". Check the spelling, or share the invite link instead.`
-        : errorText("invite", error);
+        ? t("room.invite.userNotFound", { name })
+        : errorText("invite", error, t);
     setResult({ tone: "error", text });
     inputRef.current?.focus();
   }
@@ -38,8 +40,7 @@ export function InvitePanel({ invite }: Props) {
     if (!parsed.success) {
       setResult({
         tone: "error",
-        text:
-          value.trim().length > 16 ? "Use 16 characters or fewer." : "Use at least 2 characters.",
+        text: value.trim().length > 16 ? t("nameForm.long") : t("nameForm.short"),
       });
       inputRef.current?.focus();
       return;
@@ -50,7 +51,7 @@ export function InvitePanel({ invite }: Props) {
       onSuccess: (game) => {
         // The room answers with the invite under the exact name of the player.
         const sent = game.invites.find((i) => i.name.toLowerCase() === name.toLowerCase());
-        setResult({ tone: "ok", text: `Invite sent to ${sent?.name ?? name}.` });
+        setResult({ tone: "ok", text: t("room.invite.sent", { name: sent?.name ?? name }) });
         setValue("");
         inputRef.current?.focus();
       },
@@ -61,14 +62,12 @@ export function InvitePanel({ invite }: Props) {
   return (
     <section className="room__panel" aria-labelledby="room-invite">
       <h2 id="room-invite" className="room__h2">
-        Invite by name
+        {t("room.invite.title")}
       </h2>
-      <p className="room__text">
-        The player sees the invite in their lobby at once. It does not hold a seat.
-      </p>
+      <p className="room__text">{t("room.invite.text")}</p>
       <form className="room__row" onSubmit={onSubmit} noValidate>
         <label className="room__sr" htmlFor={inputId}>
-          Player name
+          {t("room.invite.label")}
         </label>
         <input
           ref={inputRef}
@@ -80,7 +79,7 @@ export function InvitePanel({ invite }: Props) {
             setValue(event.target.value);
             setResult(null);
           }}
-          placeholder="Player name"
+          placeholder={t("room.invite.label")}
           autoComplete="off"
           spellCheck={false}
           readOnly={invite.isPending}
@@ -93,12 +92,12 @@ export function InvitePanel({ invite }: Props) {
           aria-disabled={invite.isPending || undefined}
           aria-busy={invite.isPending || undefined}
         >
-          {invite.isPending ? "Inviting" : "Invite"}
+          {invite.isPending ? t("room.invite.inviting") : t("room.invite.submit")}
         </button>
       </form>
       <p id={resultId} className="room__hint" data-tone={result?.tone}>
         <span role={result ? (result.tone === "error" ? "alert" : "status") : undefined}>
-          {result?.text ?? "Type the exact name. Capital letters do not matter."}
+          {result?.text ?? t("room.invite.hint")}
         </span>
       </p>
     </section>

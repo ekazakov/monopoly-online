@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 import { ApiError } from "../../api.ts";
+import { tEn } from "../../testing/tEn.ts";
 import { noticeFor } from "./notices.ts";
 import { timeAgo } from "./time.ts";
 
@@ -11,30 +12,32 @@ describe("noticeFor", () => {
 
   test.each(["game_full", "game_not_waiting"] as const)("%s is the full notice", (code) => {
     for (const action of ["join", "accept"] as const) {
-      expect(noticeFor(new ApiError(409, code, code), action)).toEqual(full);
+      expect(noticeFor(new ApiError(409, code, code), action, tEn)).toEqual(full);
     }
   });
 
   test("seat_name_taken names the problem", () => {
-    expect(noticeFor(new ApiError(409, "seat_name_taken", "x"), "accept")).toEqual({
+    expect(noticeFor(new ApiError(409, "seat_name_taken", "x"), "accept", tEn)).toEqual({
       title: "Your name is taken in this game",
       text: "A seat in this game has your name. Pick another game.",
     });
   });
 
   test("not_found says the game is gone", () => {
-    expect(noticeFor(new ApiError(404, "not_found", "x"), "join").title).toBe("This game is gone");
+    expect(noticeFor(new ApiError(404, "not_found", "x"), "join", tEn).title).toBe(
+      "This game is gone",
+    );
   });
 
   test("anything else is a retry notice that names the action", () => {
     const error = new ApiError(500, "internal_error", "x");
-    expect(noticeFor(error, "join")).toEqual({
+    expect(noticeFor(error, "join", tEn)).toEqual({
       title: "Could not join the game",
       text: "Try again.",
     });
-    expect(noticeFor(error, "accept").title).toBe("Could not accept the invite");
-    expect(noticeFor(error, "decline").title).toBe("Could not decline the invite");
-    expect(noticeFor(new TypeError("Failed to fetch"), "join").title).toBe(
+    expect(noticeFor(error, "accept", tEn).title).toBe("Could not accept the invite");
+    expect(noticeFor(error, "decline", tEn).title).toBe("Could not decline the invite");
+    expect(noticeFor(new TypeError("Failed to fetch"), "join", tEn).title).toBe(
       "Could not join the game",
     );
   });
@@ -55,11 +58,11 @@ describe("timeAgo", () => {
     [24 * 60 * MIN, "1 d ago"],
     [3 * 24 * 60 * MIN, "3 d ago"],
   ])("%i ms ago reads %j", (ms, text) => {
-    expect(timeAgo(ago(ms), now)).toBe(text);
+    expect(timeAgo(ago(ms), now, tEn)).toBe(text);
   });
 
   test("a time in the future, or a bad time, reads as just now", () => {
-    expect(timeAgo(ago(-5 * MIN), now)).toBe("just now");
-    expect(timeAgo("not a time", now)).toBe("just now");
+    expect(timeAgo(ago(-5 * MIN), now, tEn)).toBe("just now");
+    expect(timeAgo("not a time", now, tEn)).toBe("just now");
   });
 });

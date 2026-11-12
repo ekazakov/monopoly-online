@@ -334,7 +334,7 @@ describe("TurnArea: pending and errors", () => {
     const view = renderTurn({ phase: "awaiting_roll" }, fx.ownerId, { error });
     const region = screen.getByRole("status");
     expect(region).toHaveAttribute("aria-live", "polite");
-    expect(within(region).getByText("The action is not allowed in this phase")).toBeInTheDocument();
+    expect(within(region).getByText("That is not possible now.")).toBeInTheDocument();
     expect(region.querySelector("[data-code]")).toHaveAttribute("data-code", "wrong_phase");
 
     await userEvent.click(within(region).getByRole("button", { name: "Dismiss" }));
@@ -344,7 +344,7 @@ describe("TurnArea: pending and errors", () => {
     view.update({ error });
     expect(screen.getByRole("status")).toBeEmptyDOMElement();
     view.update({ error: new ApiError(422, "insufficient_funds", "Not enough cash") });
-    expect(screen.getByText("Not enough cash")).toBeInTheDocument();
+    expect(screen.getByText("Not enough cash. Raise cash first.")).toBeInTheDocument();
   });
 
   test("keeps the live region in the DOM while there is no error", () => {
@@ -415,11 +415,11 @@ describe("TurnArea: error source", () => {
 
   test("shows an error with no source", () => {
     renderTurn({ phase: "awaiting_roll" }, fx.ownerId, { error });
-    expect(screen.getByText("Not now")).toBeInTheDocument();
+    expect(screen.getByText("That is not possible now.")).toBeInTheDocument();
   });
 
   test("leaves the error of the hand and the menu to them", () => {
     renderTurn({ phase: "awaiting_roll" }, fx.ownerId, { error, errorSource: "hand" });
-    expect(screen.queryByText("Not now")).not.toBeInTheDocument();
+    expect(screen.queryByText("That is not possible now.")).not.toBeInTheDocument();
   });
 });

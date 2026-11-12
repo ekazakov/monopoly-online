@@ -1,6 +1,7 @@
 import { useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import { mySeats, useGameSelector } from "../../../game/index.ts";
+import { useT } from "../../../i18n/index.ts";
 import type { Token } from "@monopoly/shared";
 import { tokenLook } from "../../../scene/colors.ts";
 import { describeEvent, playerName } from "./describe.ts";
@@ -32,6 +33,7 @@ export function GameLog({ userId }: GameLogProps) {
   const game = useGameSelector((s) => s.game);
   const events = useGameSelector((s) => s.events);
   const dropped = useGameSelector((s) => s.droppedEvents);
+  const t = useT();
 
   const [open, setOpen] = useState(false);
   const [atEnd, setAtEnd] = useState(true);
@@ -52,9 +54,9 @@ export function GameLog({ userId }: GameLogProps) {
     return events.map(({ event, version }, i) => ({
       key: dropped + i,
       fresh: baseVersion !== null && version > baseVersion,
-      line: describeEvent(event, ctx),
+      line: describeEvent(event, ctx, t),
     }));
-  }, [events, dropped, ctx, baseVersion]);
+  }, [events, dropped, ctx, baseVersion, t]);
   const tokenOf = useMemo(() => new Map(seats?.map((s) => [s.id, s.token])), [seats]);
   const mine = useMemo(() => new Set(mySeats(game, userId).map((s) => s.id)), [game, userId]);
 
@@ -114,16 +116,14 @@ export function GameLog({ userId }: GameLogProps) {
             id={listId}
             className="game-log__list"
             role="log"
-            aria-label="Game log"
+            aria-label={t("log.gameLog")}
             aria-live="polite"
             aria-relevant="additions"
             tabIndex={open ? 0 : -1}
             onScroll={onScroll}
           >
-            {dropped > 0 && (
-              <p className="game-log__line game-log__note">Earlier entries are not shown.</p>
-            )}
-            {lines.length === 0 && <p className="game-log__line game-log__note">No events yet.</p>}
+            {dropped > 0 && <p className="game-log__line game-log__note">{t("log.earlier")}</p>}
+            {lines.length === 0 && <p className="game-log__line game-log__note">{t("log.none")}</p>}
             {lines.map(({ key, line, fresh }) => (
               <p
                 key={key}
@@ -152,7 +152,7 @@ export function GameLog({ userId }: GameLogProps) {
                         className="game-log__name"
                         style={{ color: colorOf(part.playerId) }}
                       >
-                        {playerName(ctx, part.playerId)}
+                        {playerName(ctx, part.playerId, t)}
                       </b>
                     ),
                   )}
@@ -166,7 +166,7 @@ export function GameLog({ userId }: GameLogProps) {
             className="game-log__toggle"
             aria-expanded={open}
             aria-controls={listId}
-            aria-label={open ? "Collapse game log" : "Expand game log"}
+            aria-label={open ? t("log.collapse") : t("log.expand")}
             onClick={() => setOpenAt(!open)}
           >
             <svg
@@ -187,7 +187,7 @@ export function GameLog({ userId }: GameLogProps) {
         </div>
         {open && !atEnd && (
           <button type="button" className="game-log__jump" onClick={jumpToLatest}>
-            Jump to latest
+            {t("log.jump")}
           </button>
         )}
       </div>

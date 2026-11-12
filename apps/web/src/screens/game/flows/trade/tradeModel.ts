@@ -9,6 +9,8 @@ import type { GameState, SquareGroup } from "@monopoly/game-engine";
 import type { DeckName, Game, RedactedGameState, TradeOffer } from "@monopoly/shared";
 import { seatThatMayAct } from "../../../../game/index.ts";
 import type { Turn } from "../../turn/index.ts";
+import { errorMessage, squareName } from "../../../../i18n/index.ts";
+import type { Translate } from "../../../../i18n/index.ts";
 import { formatMoney } from "../../turn/format.ts";
 
 type Player = RedactedGameState["players"][number];
@@ -17,12 +19,8 @@ type Player = RedactedGameState["players"][number];
 // keeps. If a change in the engine needs `rng` or `decks`, the drift test of this module fails.
 const forEngine = (state: RedactedGameState) => state as unknown as GameState;
 
-export const DECK_LABELS: Readonly<Record<DeckName, string>> = {
-  chance: "Chance",
-  chest: "Chest",
-};
-
-export const jailCardLabel = (deck: DeckName) => `Get Out of Jail Free (${DECK_LABELS[deck]})`;
+export const jailCardLabel = (deck: DeckName, t: Translate) =>
+  t("trade.jailCard", { deck: t(`deck.${deck}`) });
 
 export const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
@@ -44,32 +42,37 @@ function groupHasBuildings(state: RedactedGameState, group: SquareGroup): boolea
 }
 
 /** The properties a player owns, in board order, with the reason one cannot be traded. */
-export function ownedProperties(state: RedactedGameState, playerId: string): OwnedProperty[] {
+export function ownedProperties(
+  state: RedactedGameState,
+  playerId: string,
+  t: Translate,
+): OwnedProperty[] {
   const result: OwnedProperty[] = [];
   SQUARES.forEach((info, square) => {
     const entry = state.ownership[String(square)];
     if (!entry || entry.ownerId !== playerId || !isProperty(info)) return;
     result.push({
       square,
-      name: info.name,
+      name: squareName(square, t),
       group: info.group,
       price: info.price,
       mortgaged: entry.mortgaged,
       houses: entry.houses,
-      locked: groupHasBuildings(state, info.group)
-        ? "Sell the buildings of this colour group first"
-        : null,
+      locked: groupHasBuildings(state, info.group) ? t("trade.locked") : null,
     });
   });
   return result;
 }
 
 /** The text that follows a property name in a list: buildings and mortgage. */
-export function propertyNote(property: Pick<OwnedProperty, "houses" | "mortgaged">): string {
+export function propertyNote(
+  property: Pick<OwnedProperty, "houses" | "mortgaged">,
+  t: Translate,
+): string {
   const parts: string[] = [];
-  if (property.houses === 5) parts.push("hotel");
-  else if (property.houses > 0) parts.push(`${property.houses}h`);
-  if (property.mortgaged) parts.push("mortgaged");
+  if (property.houses === 5) parts.push(t("hand.hotel"));
+  else if (property.houses > 0) parts.push(t("trade.houses", { count: property.houses }));
+  if (property.mortgaged) parts.push(t("hand.mortgaged"));
   return parts.join(", ");
 }
 
@@ -100,19 +103,24 @@ export interface SideCheck {
 }
 
 /** Turns the draft of one side into an offer. Squares that cannot be traded now are dropped. */
-export function checkSide(state: RedactedGameState, owner: Player, draft: SideDraft): SideCheck {
+export function checkSide(
+  state: RedactedGameState,
+  owner: Player,
+  draft: SideDraft,
+  t: Translate,
+): SideCheck {
   const cash = parseCash(draft.cash);
   if (cash === null) {
-    return { offer: null, cashProblem: "Enter a whole number of dollars, 0 or more" };
+    return { offer: null, cashProblem: t("trade.cashWhole") };
   }
   if (cash > owner.cash) {
     return {
       offer: null,
-      cashProblem: `${owner.name} has only ${formatMoney(owner.cash)}`,
+      cashProblem: t("trade.cashOnly", { name: owner.name, cash: formatMoney(owner.cash) }),
     };
   }
   const tradable = new Set(
-    ownedProperties(state, owner.id)
+    ownedProperties(state, owner.id, t)
       .filter((property) => property.locked === null)
       .map((property) => property.square),
   );
@@ -151,10 +159,11 @@ export function checkTrade(
   partner: Player | null,
   giveDraft: SideDraft,
   getDraft: SideDraft,
+  t: Translate,
 ): TradeCheck {
-  const giveSide = checkSide(state, proposer, giveDraft);
+  const giveSide = checkSide(state, proposer, giveDraft, t);
   const getSide = partner
-    ? checkSide(state, partner, getDraft)
+    ? checkSide(state, partner, getDraft, t)
     : { offer: null, cashProblem: null };
   const result: TradeCheck = {
     give: giveSide.offer,
@@ -163,12 +172,12 @@ export function checkTrade(
     getCashProblem: getSide.cashProblem,
     blocker: null,
   };
-  if (!partner) return { ...result, blocker: "Choose a player to trade with" };
+  if (!partner) return { ...result, blocker: t("trade.choose") };
   if (!giveSide.offer || !getSide.offer) {
     return { ...result, blocker: giveSide.cashProblem ?? getSide.cashProblem };
   }
   if (isEmptyOffer(giveSide.offer) && isEmptyOffer(getSide.offer)) {
-    return { ...result, blocker: "Add cash, a property or a jail card to the trade" };
+    return { ...result, blocker: t("trade.addSomething") };
   }
   const engine = handleProposeTrade(forEngine(state), {
     type: "ProposeTrade",
@@ -177,7 +186,7 @@ export function checkTrade(
     give: giveSide.offer,
     get: getSide.offer,
   });
-  return { ...result, blocker: engine.ok ? null : engine.error.message };
+  return { ...result, blocker: engine.ok ? null : errorMessage(engine.error, t) };
 }
 
 /** Phases in which the engine accepts `ProposeTrade`. */
@@ -204,11 +213,12 @@ export const canProposeTrade = (turn: Turn): boolean =>
   !turn.pending && proposingSeat(turn.view.game, turn.view.state, turn.userId) !== null;
 
 /** "2 properties + $50 + 1 jail card", or "nothing". */
-export function summariseOffer(offer: TradeOffer): string {
+export function summariseOffer(offer: TradeOffer, t: Translate): string {
   const parts: string[] = [];
-  if (offer.squares.length > 0) parts.push(plural(offer.squares.length, "property", "properties"));
+  if (offer.squares.length > 0) parts.push(t("count.properties", { count: offer.squares.length }));
   if (offer.cash > 0) parts.push(formatMoney(offer.cash));
-  if (offer.jailCards.length > 0)
-    parts.push(plural(offer.jailCards.length, "jail card", "jail cards"));
-  return parts.length > 0 ? parts.join(" + ") : "nothing";
+  if (offer.jailCards.length > 0) {
+    parts.push(t("count.jailCards", { count: offer.jailCards.length }));
+  }
+  return parts.length > 0 ? parts.join(" + ") : t("trade.nothing");
 }

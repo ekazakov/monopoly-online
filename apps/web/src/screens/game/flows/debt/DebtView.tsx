@@ -1,6 +1,8 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { RedactedGameState } from "@monopoly/shared";
 import { useGameActions } from "../../../../game/index.ts";
+import { useT } from "../../../../i18n/index.ts";
+import type { Translate } from "../../../../i18n/index.ts";
 import { ActionBar } from "../../turn/ActionBar.tsx";
 import type { CentrePhaseProps } from "../../turn/centrePhases.ts";
 import { formatMoney } from "../../turn/format.ts";
@@ -18,8 +20,11 @@ import "./DebtView.css";
 
 type State = RedactedGameState;
 
-const debtLabel = (state: State, debt: DebtSummary["first"]) =>
-  `${reasonLabel(debt.reason)} to ${creditorName(state, debt.creditor)}`;
+const debtLabel = (state: State, debt: DebtSummary["first"], t: Translate) =>
+  t("debt.label", {
+    reason: reasonLabel(debt.reason, t),
+    to: creditorName(state, debt.creditor, t),
+  });
 
 // `awaiting_debt`: the player on turn owes money that their cash does not cover. The assets do
 // (the engine declares the bankruptcy at once when they do not), so the player raises cash by
@@ -33,27 +38,29 @@ export function DebtView({ turn }: CentrePhaseProps) {
 }
 
 function DebtWatch({ turn, summary }: { turn: Turn; summary: DebtSummary | null }) {
+  const t = useT();
   const { state } = turn.view;
   const name = summary?.debtorName ?? turn.actorName;
   return (
     <div className="debt-view">
       <Status
-        title="Debt to settle"
+        title={t("turn.phase.debt")}
         sub={
           state && summary
-            ? `${debtLabel(state, summary.first)}: ${formatMoney(summary.first.amount)}`
+            ? `${debtLabel(state, summary.first, t)}: ${formatMoney(summary.first.amount)}`
             : undefined
         }
       />
       <p className="turn-area__waiting">
         <span className="turn-area__spinner" aria-hidden="true" />
-        {name ? `Waiting for ${name} to settle a debt` : "Waiting for the game"}
+        {name ? t("debt.waiting", { name }) : t("turn.waitingGame")}
       </p>
     </div>
   );
 }
 
 function DebtorPanel({ turn, state, summary }: { turn: Turn; state: State; summary: DebtSummary }) {
+  const t = useT();
   const { first, later, shortfall, cash, debtorName } = summary;
   const short = shortfall > 0;
   const laterTotal = later.reduce((sum, debt) => sum + debt.amount, 0);
@@ -64,10 +71,10 @@ function DebtorPanel({ turn, state, summary }: { turn: Turn; state: State; summa
   return (
     <div className="debt-view">
       <div className="debt-view__head">
-        {shared && <span className="debt-view__label">{debtorName} owes</span>}
-        <span className="debt-view__label">{debtLabel(state, first)}</span>
+        {shared && <span className="debt-view__label">{t("debt.owes", { name: debtorName })}</span>}
+        <span className="debt-view__label">{debtLabel(state, first, t)}</span>
         <span className="debt-view__amount">{formatMoney(first.amount)}</span>
-        <span className="debt-view__cash">Cash {formatMoney(cash)}</span>
+        <span className="debt-view__cash">{t("debt.cash", { amount: formatMoney(cash) })}</span>
       </div>
       <p
         className={`debt-view__short${short ? "" : " debt-view__short--ok"}`}
@@ -75,19 +82,21 @@ function DebtorPanel({ turn, state, summary }: { turn: Turn; state: State; summa
         aria-live="polite"
         aria-atomic="true"
       >
-        {short ? `Still short by ${formatMoney(shortfall)}` : "Your cash covers it"}
+        {short ? t("debt.short", { amount: formatMoney(shortfall) }) : t("debt.covered")}
       </p>
       {later.length > 0 && (
         <p className="turn-area__sub">
-          After this you owe {formatMoney(laterTotal)} more ({later.length}{" "}
-          {later.length === 1 ? "debt" : "debts"}).
+          {t("debt.later", {
+            amount: formatMoney(laterTotal),
+            debts: t("count.debts", { count: later.length }),
+          })}
         </p>
       )}
 
       {confirming ? (
         <BankruptcyConfirm
           turn={turn}
-          text={consequenceText(state, summary.debtorId)}
+          text={consequenceText(state, summary.debtorId, t)}
           onCancel={() => {
             setDeclined(true);
             setConfirming(false);
@@ -99,19 +108,15 @@ function DebtorPanel({ turn, state, summary }: { turn: Turn; state: State; summa
             turn={turn}
             actions={[
               {
-                label: `Pay ${formatMoney(first.amount)}`,
+                label: t("debt.pay", { amount: formatMoney(first.amount) }),
                 action: { type: "PayDebt" },
                 primary: true,
-                why: short ? `Raise ${formatMoney(shortfall)} more first.` : undefined,
+                why: short ? t("debt.raiseMore", { amount: formatMoney(shortfall) }) : undefined,
               },
             ]}
           />
           {short && <RaiseCash turn={turn} state={state} summary={summary} />}
-          {summary.hopeless && (
-            <p className="turn-area__sub">
-              Your assets cannot cover this debt, even if you sell everything.
-            </p>
-          )}
+          {summary.hopeless && <p className="turn-area__sub">{t("debt.hopeless")}</p>}
           <BankruptcyStart
             turn={turn}
             focusOnMount={declined}
@@ -124,14 +129,15 @@ function DebtorPanel({ turn, state, summary }: { turn: Turn; state: State; summa
 }
 
 function RaiseCash({ turn, state, summary }: { turn: Turn; state: State; summary: DebtSummary }) {
-  const { options, hiddenMortgages } = raiseOptions(state, summary.debtorId);
+  const t = useT();
+  const { options, hiddenMortgages } = raiseOptions(state, summary.debtorId, t);
   const base = useId();
 
   return (
-    <section className="debt-view__raise" aria-label="Raise cash">
-      <h3 className="debt-view__raise-title">Raise cash</h3>
+    <section className="debt-view__raise" aria-label={t("debt.raise")}>
+      <h3 className="debt-view__raise-title">{t("debt.raise")}</h3>
       {options.length === 0 ? (
-        <p className="debt-view__none">You have nothing left to sell or mortgage.</p>
+        <p className="debt-view__none">{t("debt.nothing")}</p>
       ) : (
         <ul className="debt-view__rows">
           {options.map((option) => (
@@ -139,16 +145,13 @@ function RaiseCash({ turn, state, summary }: { turn: Turn; state: State; summary
           ))}
         </ul>
       )}
-      {hiddenMortgages > 0 && (
-        <p className="debt-view__note">
-          Sell the buildings of a colour group before you mortgage it.
-        </p>
-      )}
+      {hiddenMortgages > 0 && <p className="debt-view__note">{t("debt.sellFirst")}</p>}
     </section>
   );
 }
 
 function RaiseRow({ turn, option, id }: { turn: Turn; option: RaiseOption; id: string }) {
+  const t = useT();
   const sell = option.kind === "sell";
   const type = sell ? "SellBuilding" : "Mortgage";
   const money = formatMoney(option.amount);
@@ -162,7 +165,9 @@ function RaiseRow({ turn, option, id }: { turn: Turn; option: RaiseOption; id: s
       />
       <span className="debt-view__what">
         <strong>{option.name}</strong>
-        <span id={id}>{option.refusal ?? (sell ? `Has ${option.detail}` : "Mortgage value")}</span>
+        <span id={id}>
+          {option.refusal ?? (sell ? t("debt.has", { detail: option.detail }) : t("deed.mortgage"))}
+        </span>
       </span>
       <button
         type="button"
@@ -170,13 +175,13 @@ function RaiseRow({ turn, option, id }: { turn: Turn; option: RaiseOption; id: s
         disabled={turn.pending || option.refusal !== null || !turn.can(type)}
         aria-label={
           sell
-            ? `Sell one building on ${option.name} for ${money}`
-            : `Mortgage ${option.name} for ${money}`
+            ? t("debt.sellLabel", { name: option.name, amount: money })
+            : t("debt.mortgageLabel", { name: option.name, amount: money })
         }
         aria-describedby={id}
         onClick={() => turn.send({ type, square: option.square })}
       >
-        {sell ? "Sell" : "Mortgage"} +{money}
+        {sell ? t("debt.sell") : t("hand.mortgage")} +{money}
       </button>
     </li>
   );
@@ -192,6 +197,7 @@ function BankruptcyStart({
   focusOnMount: boolean;
   onStart: () => void;
 }) {
+  const t = useT();
   const ref = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (focusOnMount) ref.current?.focus();
@@ -205,7 +211,7 @@ function BankruptcyStart({
       disabled={turn.pending}
       onClick={onStart}
     >
-      Declare bankruptcy
+      {t("debt.bankruptcy")}
     </button>
   );
 }
@@ -222,6 +228,7 @@ function BankruptcyConfirm({
   text: string;
   onCancel: () => void;
 }) {
+  const t = useT();
   const actions = useGameActions();
   const titleId = useId();
   const seatId = turn.actor?.id;
@@ -232,10 +239,10 @@ function BankruptcyConfirm({
   return (
     <div className="debt-view__confirm" role="group" aria-labelledby={titleId}>
       <p className="debt-view__confirm-title" id={titleId}>
-        Declare bankruptcy?
+        {t("debt.confirmTitle")}
       </p>
       <p className="debt-view__confirm-text">{text}</p>
-      <p className="debt-view__confirm-text">This cannot be undone.</p>
+      <p className="debt-view__confirm-text">{t("debt.undone")}</p>
       <div className="turn-area__actions">
         <button
           type="button"
@@ -243,7 +250,7 @@ function BankruptcyConfirm({
           onClick={onCancel}
           ref={keep}
         >
-          Keep playing
+          {t("menu.keepPlaying")}
         </button>
         <button
           type="button"
@@ -254,7 +261,7 @@ function BankruptcyConfirm({
             void Promise.resolve(actions.send({ type: "Resign" }, { seatId })).catch(() => {});
           }}
         >
-          Declare bankruptcy
+          {t("debt.bankruptcy")}
         </button>
       </div>
     </div>
