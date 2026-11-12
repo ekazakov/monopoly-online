@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { isApiError } from "../../api/index.ts";
 import { useT } from "../../i18n/index.ts";
 import { useRealtimeStatus, useTopic } from "../../realtime/index.ts";
+import { PreferenceSwitches } from "../PreferenceSwitches.tsx";
 import { AddSeatForm } from "./AddSeatForm.tsx";
 import { CancelGame } from "./CancelGame.tsx";
 import { GameCancelled } from "./GameCancelled.tsx";
@@ -199,6 +200,7 @@ export function Room({ game, userId }: { game: Game; userId: string }) {
     <div className="room">
       <header className="room__top">
         <span className="room__brand">Harborfront</span>
+        <PreferenceSwitches />
         <Link to="/" className="room__back">
           {t("room.home")}
         </Link>

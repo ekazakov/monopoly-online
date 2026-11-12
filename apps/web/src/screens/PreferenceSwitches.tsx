@@ -15,8 +15,8 @@ const THEMES = ["system", "light", "dark"] as const satisfies readonly ThemePref
 const LANGUAGE_CHOICES = ["system", ...LANGUAGES] as const satisfies readonly LanguagePreference[];
 
 /**
- * The language and the theme of this device, for the screens that have no game Menu: sign-in
- * and the lobby. The Menu of the game has the same choices. Both change at once and stay after a
+ * The language and the theme of this device, for the screens that have no game Menu: sign-in,
+ * the lobby and the room. The Menu of the game has the same choices. Both change at once and stay after a
  * reload (see `hf.lang` and `hf.theme`).
  */
 export function PreferenceSwitches() {
