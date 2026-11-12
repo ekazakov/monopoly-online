@@ -1,8 +1,9 @@
 import type { GameEvent } from "@monopoly/shared";
 
 // The sound cues of the game and the events that play them. Pure, so the map has unit tests. The
-// dice and token cues come from the motion steps (see `useGameSounds`), and the money cues come
-// from the change of each balance (`moneyCues`), not from this map.
+// dice and token cues come from the motion steps (see `useGameSounds`). The coin ring comes from
+// the change of each balance (`moneyCues`). The sad coin cue is only for a tax and for a card that
+// takes money, so it is in this map.
 
 export const CUE_NAMES = [
   "dice-shake",
@@ -70,11 +71,24 @@ export function cuesFor(
     }
     cues.push(rate === undefined ? { name, gain } : { name, gain, rate });
   };
+  // A cue that plays one time for one action, as loud as the loudest player it is for.
+  const addOnce = (name: CueName, gain: number) => {
+    const known = cues.find((cue) => cue.name === name);
+    if (known) known.gain = Math.max(known.gain, gain);
+    else cues.push({ name, gain });
+  };
   const gameEnds = events.some((event) => event.type === "GameEnded");
 
   events.forEach((event, index) => {
     if (options.skip?.has(index)) return;
     switch (event.type) {
+      case "TaxPaid":
+        addOnce("coin-out", gainOf(event.playerId));
+        break;
+      case "CashChanged":
+        // A card that takes money. A card that gives money rings the coins with the balance.
+        if (event.amount < 0) addOnce("coin-out", gainOf(event.playerId));
+        break;
       case "PropertyBought":
         add("stamp", gainOf(event.playerId));
         break;
@@ -140,22 +154,16 @@ export function cashOf(players: readonly { id: string; cash: number }[]): CashMa
 }
 
 /**
- * The money cues of one action: a coin ring if a balance went up, and a sad cue if a balance went
- * down. Each plays one time at most, as loud as the loudest player it is for. A player that is not
- * in `before` has no known change.
+ * The coin ring of one action: it plays one time if the balance of any player went up, as loud as
+ * the loudest player it is for. A player that is not in `before` has no known change. The sad
+ * cue for a payment is not here: `cuesFor` plays it for a tax and for a card that takes money.
  */
 export function moneyCues(before: CashMap, after: CashMap, me: ReadonlySet<string>): Cue[] {
   let up = 0;
-  let down = 0;
   for (const [playerId, cash] of after) {
     const old = before.get(playerId);
-    if (old === undefined || old === cash) continue;
-    const gain = me.has(playerId) ? 1 : OTHER_GAIN;
-    if (cash > old) up = Math.max(up, gain);
-    else down = Math.max(down, gain);
+    if (old === undefined || cash <= old) continue;
+    up = Math.max(up, me.has(playerId) ? 1 : OTHER_GAIN);
   }
-  const cues: Cue[] = [];
-  if (up > 0) cues.push({ name: "coin-in", gain: up });
-  if (down > 0) cues.push({ name: "coin-out", gain: down });
-  return cues;
+  return up > 0 ? [{ name: "coin-in", gain: up }] : [];
 }

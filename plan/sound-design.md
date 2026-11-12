@@ -8,7 +8,7 @@ This document describes the sound effects and the ambient music of the game scre
 | -------------------- | ---------------------------------------------------------------------------------------------------------- |
 | `engine.ts`          | One Web Audio context with a master bus, an effects bus, and a music bus. Loads and plays the cue files.   |
 | `soundPreference.ts` | The sound settings of the device in localStorage: `hf.sound`, `hf.sound.effects`, and `hf.sound.music`.    |
-| `cues.ts`            | The cue names, their file paths, `cuesFor` (game events to result cues), and `moneyCues` (cash changes). |
+| `cues.ts`            | The cue names, their file paths, `cuesFor` (game events to result cues), and `moneyCues` (the coin ring for a cash gain). |
 | `useGameSounds.ts`   | The motion listener that plays the cues in time with the dice and the tokens. It also starts the music.  |
 | `music.ts`           | The generative ambient music. It uses oscillators and filtered noise, with no file.                       |
 
@@ -38,7 +38,7 @@ Thus a reload or a reconnect plays no old sounds. The rent sound comes at the en
 | `whoosh`, `land`            | Jump step, for example "go back 3 squares".                                    |
 | `card`                      | `CardDrawn`. A card that moves the token plays it with the hold step.          |
 | `coin-in`                   | The cash of a player goes up in the action, for any reason.                    |
-| `coin-out`                  | The cash of a player goes down in the action, for any reason.                  |
+| `coin-out`                  | `TaxPaid`, and `CashChanged` with a loss (a card that takes money).            |
 | `stamp`                     | `PropertyBought`.                                                              |
 | `build`, `unbuild`          | `BuildingBuilt`, `BuildingSold`.                                               |
 | `paper`                     | `PropertyMortgaged`, and `PropertyUnmortgaged` at a higher pitch.              |
@@ -49,7 +49,7 @@ Thus a reload or a reconnect plays no old sounds. The rent sound comes at the en
 | `bell`                      | `TurnEnded` for a next player on this device.                                  |
 | `win`, `end`                | `GameEnded`: `win` for a winner on this device, else `end`.                    |
 
-The money cues compare the cash of each player before and after the action, as the player rail does. One action plays one `coin-in` and one `coin-out` at most. The seats of this device come from `mySeats`. On a shared device every local seat counts, so each local turn rings the bell. The cues of other players play at 55% gain.
+The `coin-in` cue compares the cash of each player before and after the action, as the player rail does. Thus any gain rings the coins, for example rent, Go, a card, or an auction sale. The `coin-out` cue comes only from a tax or from a card that takes money. Rent, a jail fine, a purchase, and a debt payment have no sad cue. One action plays one `coin-in` and one `coin-out` at most. The seats of this device come from `mySeats`. On a shared device every local seat counts, so each local turn rings the bell. The cues of other players play at 55% gain.
 
 ## Files
 

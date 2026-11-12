@@ -48,32 +48,56 @@ describe("cuesFor", () => {
   });
 });
 
-describe("moneyCues", () => {
+describe("coin cues", () => {
   const cash = (entries: Record<string, number>) => new Map(Object.entries(entries));
 
-  test("a balance that goes up rings the coins, and one that goes down plays the sad cue", () => {
+  test("the coins ring for a balance that goes up, as loud as the loudest player", () => {
     expect(moneyCues(cash({ p1: 1500 }), cash({ p1: 1700 }), me)).toEqual([
       { name: "coin-in", gain: 1 },
     ]);
-    expect(moneyCues(cash({ p1: 1500 }), cash({ p1: 1350 }), me)).toEqual([
-      { name: "coin-out", gain: 1 },
-    ]);
-  });
-
-  test("rent between two players plays both cues one time, as loud as the loudest player", () => {
     const before = cash({ p1: 1500, p2: 1500, p3: 1500 });
     expect(moneyCues(before, cash({ p1: 1450, p2: 1550, p3: 1500 }), me)).toEqual([
       { name: "coin-in", gain: OTHER_GAIN },
-      { name: "coin-out", gain: 1 },
     ]);
-    // a player pays the bank and two others: still one sad cue
-    expect(moneyCues(before, cash({ p1: 1500, p2: 1400, p3: 1400 }), me)).toEqual([
-      { name: "coin-out", gain: OTHER_GAIN },
+    expect(moneyCues(before, cash({ p1: 1550, p2: 1550, p3: 1400 }), me)).toEqual([
+      { name: "coin-in", gain: 1 },
     ]);
   });
 
-  test("no change and players with no known balance give no cue", () => {
+  test("a balance that goes down, no change and an unknown balance give no coin ring", () => {
+    expect(moneyCues(cash({ p1: 1500 }), cash({ p1: 1350 }), me)).toEqual([]);
     expect(moneyCues(cash({ p1: 1500 }), cash({ p1: 1500 }), me)).toEqual([]);
     expect(moneyCues(cash({}), cash({ p1: 1500 }), me)).toEqual([]);
+  });
+
+  test("the sad cue is only for a tax and for a card that takes money", () => {
+    expect(names([{ type: "TaxPaid", playerId: "p1", square: 4, amount: 200 }])).toEqual([
+      "coin-out",
+    ]);
+    expect(names([{ type: "CashChanged", playerId: "p1", amount: -50, reason: "card" }])).toEqual([
+      "coin-out",
+    ]);
+    // a card that gives money, rent, a fine, a purchase and a debt payment have no sad cue
+    expect(names([{ type: "CashChanged", playerId: "p1", amount: 50, reason: "card" }])).toEqual(
+      [],
+    );
+    expect(
+      names([
+        { type: "RentPaid", payerId: "p1", ownerId: "p2", square: 1, amount: 4 },
+        { type: "FinePaid", playerId: "p1", amount: 50 },
+        { type: "PropertyBought", playerId: "p1", square: 1, price: 60 },
+        { type: "DebtPaid", debtorId: "p1", creditor: { type: "bank" }, amount: 20 },
+      ]),
+    ).toEqual(["stamp"]);
+  });
+
+  test("one action plays one sad cue, as loud as the loudest player it is for", () => {
+    const events: GameEvent[] = [
+      { type: "CashChanged", playerId: "p2", amount: -50, reason: "card" },
+      { type: "CashChanged", playerId: "p3", amount: 50, reason: "card" },
+      { type: "CashChanged", playerId: "p1", amount: -50, reason: "card" },
+    ];
+    expect(cuesFor(events, me)).toEqual([{ name: "coin-out", gain: 1 }]);
+    expect(cuesFor(events.slice(0, 1), me)).toEqual([{ name: "coin-out", gain: OTHER_GAIN }]);
   });
 });

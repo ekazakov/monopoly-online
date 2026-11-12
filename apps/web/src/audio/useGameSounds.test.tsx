@@ -48,33 +48,55 @@ describe("createSoundPlayer", () => {
   test("result cues wait for the end of the motion and play one after the other", () => {
     const { played, play } = recorder();
     const { listener } = createSoundPlayer(me, play, withCash({ p1: 1500 }));
-    const events: GameEvent[] = [{ type: "PropertyBought", playerId: "p1", square: 1, price: 60 }];
-    listener.onAction!(events, withCash({ p1: 1440 }));
+    const events: GameEvent[] = [
+      { type: "TaxPaid", playerId: "p1", square: 4, amount: 200 },
+      { type: "PropertyBought", playerId: "p2", square: 1, price: 60 },
+    ];
+    listener.onAction!(events, withCash({ p1: 1300, p2: 1500 }));
     expect(played).toEqual([]);
     listener.onIdle!();
-    // the event cue first, then the money cue
+    // the cues of the events first, in order
     expect(played).toEqual([
-      { name: "stamp", delay: 0 },
-      { name: "coin-out", delay: RESULT_GAP_S },
+      { name: "coin-out", delay: 0 },
+      { name: "stamp", delay: RESULT_GAP_S },
     ]);
     listener.onIdle!();
     expect(played).toHaveLength(2);
   });
 
+  test("a payment that is not a tax or a card is silent, and a gain rings the coins last", () => {
+    const { played, play } = recorder();
+    const { listener } = createSoundPlayer(me, play, withCash({ p1: 1500, p2: 1500 }));
+    const rent: GameEvent = {
+      type: "RentPaid",
+      payerId: "p1",
+      ownerId: "p2",
+      square: 1,
+      amount: 4,
+    };
+    listener.onAction!([rent], withCash({ p1: 1496, p2: 1504 }));
+    listener.onIdle!();
+    expect(played.map((p) => p.name)).toEqual(["coin-in"]);
+    played.length = 0;
+    listener.onAction!(
+      [{ type: "PropertyBought", playerId: "p1", square: 1, price: 60 }],
+      withCash({ p1: 1436, p2: 1504 }),
+    );
+    listener.onIdle!();
+    expect(played.map((p) => p.name)).toEqual(["stamp"]);
+  });
+
   test("news that is not live drops the waiting cues and moves the cash baseline", () => {
     const { played, play } = recorder();
     const { listener } = createSoundPlayer(me, play, withCash({ p1: 1500 }));
-    listener.onAction!(
-      [{ type: "TaxPaid", playerId: "p1", square: 4, amount: 200 }],
-      withCash({ p1: 1300 }),
-    );
+    listener.onAction!([{ type: "PassedGo", playerId: "p1", amount: 200 }], withCash({ p1: 1700 }));
     listener.onSettle!(withCash({ p1: 2000 }));
     listener.onIdle!();
     expect(played).toEqual([]);
     // the next live action compares with the settled cash, not with the old one
-    listener.onAction!([], withCash({ p1: 1900 }));
+    listener.onAction!([], withCash({ p1: 2100 }));
     listener.onIdle!();
-    expect(played.map((p) => p.name)).toEqual(["coin-out"]);
+    expect(played.map((p) => p.name)).toEqual(["coin-in"]);
   });
 
   test("a card that moves the token plays with its hold step, not again at the end", () => {
