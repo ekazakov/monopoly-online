@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { SURFACE, markerColor } from "./colors.ts";
+import { SURFACE } from "./colors.ts";
 import {
   CARD_D,
   CARD_T,
@@ -29,7 +29,7 @@ export function createResources() {
     corner: new THREE.BoxGeometry(CORNER_SIZE, CELL_H, CORNER_SIZE),
     bar: new THREE.BoxGeometry(CELL_W, 0.05, 0.3),
     marker: new THREE.BoxGeometry(CELL_W, 0.018, MARKER_DEPTH),
-    /** The price on top of the marker. */
+    /** The owner band (chip and price) on top of the marker. */
     markerPrice: new THREE.PlaneGeometry(CELL_W, MARKER_DEPTH),
     /** One card of a stack, and the plane with the card back on top of the top card. */
     card: new THREE.BoxGeometry(CARD_W, CARD_T, CARD_D),
@@ -50,9 +50,10 @@ export function createResources() {
     houseRoof: standard(SURFACE.houseRoof, 0.5),
     hotel: standard(SURFACE.hotel, 0.5),
     hotelRoof: standard(SURFACE.hotelRoof, 0.5),
+    /** The owner marker. Neutral: the owner chip on its top tells who owns the square. */
+    marker: standard(SURFACE.markerBand, 0.45),
   };
   const barMaterials = new Map<string, THREE.MeshStandardMaterial>();
-  const markerMaterials = new Map<string, THREE.MeshStandardMaterial>();
 
   return {
     geometries,
@@ -63,27 +64,12 @@ export function createResources() {
       if (!m) barMaterials.set(hex, (m = standard(hex, 0.5)));
       return m;
     },
-    /** Owner marker material, one per colour and mortgage state; a mortgaged deed is dimmed. */
-    markerMaterial(hex: string, dim: boolean) {
-      const key = `${hex}${dim ? "-dim" : ""}`;
-      let m = markerMaterials.get(key);
-      if (!m) {
-        m = new THREE.MeshStandardMaterial({ color: markerColor(hex, dim), roughness: 0.45 });
-        markerMaterials.set(key, m);
-      }
-      return m;
-    },
     dispose() {
       for (const g of Object.values(geometries)) g.dispose();
-      for (const m of [
-        ...Object.values(materials),
-        ...barMaterials.values(),
-        ...markerMaterials.values(),
-      ]) {
+      for (const m of [...Object.values(materials), ...barMaterials.values()]) {
         m.dispose();
       }
       barMaterials.clear();
-      markerMaterials.clear();
     },
   };
 }

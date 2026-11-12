@@ -102,6 +102,8 @@ export const SURFACE = {
   edge: "#cdd6c6",
   centre: "#cfe3cc",
   paper: "#eef4e9",
+  /** The owner band at the outer edge of an owned square. Neutral, so it never looks like a group. */
+  markerBand: "#d3ddcd",
   ink: "#17211b",
   zoneInk: "#2f4a3b",
   base: "#1d2b24",
@@ -139,8 +141,8 @@ export const contrastRatio = (a: string, b: string) => {
 const MORTGAGED_MARKER_SHARE = 0.45;
 
 /**
- * Colour of the owner marker. A mortgaged deed is dimmed by mixing the colour with the paper, so the
- * marker stays opaque and hides the price drawn on the square under it.
+ * A colour on the owner band: the ring of the owner chip, or the ink of its glyph and price. A
+ * mortgaged deed dims it by mixing it with the paper, so the band still hides the square price.
  */
 export function markerColor(hex: string, mortgaged: boolean): string {
   if (!mortgaged) return hex;
@@ -152,11 +154,4 @@ export function markerColor(hex: string, mortgaged: boolean): string {
       .toString(16)
       .padStart(2, "0");
   return `#${mix(1)}${mix(3)}${mix(5)}`;
-}
-
-/** Colour of the price on a marker: the board ink or white, whichever reads better on `background`. */
-export function markerInk(background: string): string {
-  return contrastRatio(background, SURFACE.ink) >= contrastRatio(background, "#ffffff")
-    ? SURFACE.ink
-    : "#ffffff";
 }

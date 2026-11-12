@@ -12,7 +12,6 @@ import {
   contrastRatio,
   groupColor,
   markerColor,
-  markerInk,
   tokenLook,
 } from "./colors.ts";
 
@@ -71,6 +70,7 @@ describe("board surface colours", () => {
     expect(token("edge")).toBe(SURFACE.edge);
     expect(token("centre")).toBe(SURFACE.centre);
     expect(token("paper")).toBe(SURFACE.paper);
+    expect(token("marker-band")).toBe(SURFACE.markerBand);
     expect(token("board-ink")).toBe(SURFACE.ink);
     expect(token("zone-ink")).toBe(SURFACE.zoneInk);
     expect(token("base")).toBe(SURFACE.base);
@@ -86,29 +86,21 @@ describe("board surface colours", () => {
 });
 
 describe("owner marker colours", () => {
-  test("a marker that is not mortgaged keeps the owner colour", () => {
+  test("a deed that is not mortgaged keeps the owner colour", () => {
     expect(markerColor("#d9392f", false)).toBe("#d9392f");
   });
 
-  test("a mortgaged marker is opaque and lighter, so it still hides the square price", () => {
+  test("a mortgaged deed gives an opaque, lighter colour", () => {
     expect(markerColor("#000000", true)).toBe("#838680");
     expect(markerColor("#d9392f", true)).toMatch(/^#[0-9a-f]{6}$/);
   });
 
-  test("the price is white on dark colours and ink on light colours", () => {
-    expect(markerInk(TOKEN_LOOKS.horse.hex)).toBe("#ffffff");
-    expect(markerInk(TOKEN_LOOKS.cat.hex)).toBe("#ffffff");
-    expect(markerInk(TOKEN_LOOKS.car.hex)).toBe(SURFACE.ink);
-    expect(markerInk(UNKNOWN_OWNER_COLOR)).toBe(SURFACE.ink);
-  });
-
-  test("every price has a contrast of at least 3 on every owner colour, mortgaged or not", () => {
-    for (const { hex } of Object.values(TOKEN_LOOKS)) {
-      for (const mortgaged of [false, true]) {
-        const bg = markerColor(hex, mortgaged);
-        const ink = markerInk(bg);
-        expect(contrastRatio(bg, ink)).toBeGreaterThanOrEqual(3);
-      }
+  test("the glyph on the white chip reads, mortgaged or not, and the price reads on the band", () => {
+    for (const mortgaged of [false, true]) {
+      expect(contrastRatio("#ffffff", markerColor(SURFACE.ink, mortgaged))).toBeGreaterThanOrEqual(
+        3,
+      );
     }
+    expect(contrastRatio(SURFACE.markerBand, SURFACE.ink)).toBeGreaterThanOrEqual(4.5);
   });
 });

@@ -1,8 +1,10 @@
 import * as THREE from "three";
 import type { Square } from "@monopoly/game-engine";
-import { GROUP_COLORS, SURFACE } from "./colors.ts";
+import { drawGlyph } from "./avatarGlyphs.ts";
+import { GROUP_COLORS, SURFACE, UNKNOWN_OWNER_COLOR, markerColor, tokenLook } from "./colors.ts";
 import { CARD_D, CARD_W } from "./layout.ts";
 import type { StackDeck } from "./layout.ts";
+import type { AvatarKind } from "./sculpt.ts";
 
 export const DISPLAY = '"Barlow Condensed", "Arial Narrow", sans-serif';
 export const BODY = '"Barlow", system-ui, sans-serif';
@@ -14,6 +16,44 @@ const CENTRE_PX = 1024;
 /** Depth of the owner marker on the square texture: the price sits in this band (BUG-9). */
 const PRICE_BAND_PX = 96;
 const PRICE_PX = 46;
+/** The owner chip on the owner band: its radius, its ring and the space around it. */
+const CHIP_R = 42;
+const CHIP_RING_PX = 8;
+const BAND_PAD_PX = 8;
+/** The glyph is small on the screen, so its outlines are thicker than in the player rail. */
+const CHIP_GLYPH_WEIGHT = 1.8;
+
+/** The width of the owner band texture, in pixels. */
+export const OWNER_BAND_W = TILE_W;
+
+export interface OwnerBandLayout {
+  /** The centre and the radius of the owner chip. */
+  chipX: number;
+  chipR: number;
+  /** The centre of the price, and the scale of its font (1 or less). */
+  priceX: number;
+  priceScale: number;
+}
+
+/**
+ * Where the owner chip and the price go on the owner band. The chip is at the left side and the
+ * price is centred in the rest. A price wider than that room gets a smaller font, so the chip
+ * never covers it (BUG-9). With no price, the chip is centred.
+ */
+export function ownerBandLayout(priceWidth: number): OwnerBandLayout {
+  if (priceWidth <= 0) {
+    return { chipX: OWNER_BAND_W / 2, chipR: CHIP_R, priceX: OWNER_BAND_W / 2, priceScale: 1 };
+  }
+  const chipX = BAND_PAD_PX + CHIP_R;
+  const left = chipX + CHIP_R + BAND_PAD_PX;
+  const room = OWNER_BAND_W - BAND_PAD_PX - left;
+  return {
+    chipX,
+    chipR: CHIP_R,
+    priceX: left + room / 2,
+    priceScale: Math.min(1, room / priceWidth),
+  };
+}
 
 /** The price line under a square name, or an empty string when the square has none. */
 export function priceLabel(square: Square): string {
@@ -162,14 +202,54 @@ function priceBaseline(height: number): number {
   return height - PRICE_BAND_PX / 2 + PRICE_PX * 0.35;
 }
 
-/** The price in white on a transparent canvas, for the plane on top of the owner marker. */
-function priceTexture(label: string, anisotropy: number): THREE.CanvasTexture {
-  return makeTexture(TILE_W, PRICE_BAND_PX, anisotropy, (g) => {
-    g.fillStyle = "#ffffff";
-    g.textAlign = "center";
-    g.textBaseline = "alphabetic";
+/**
+ * The owner band on top of the owner marker: a neutral band with the owner chip and the price.
+ * The chip is white, with the owner glyph in board ink and a ring in the owner colour, so the
+ * glyph alone tells who owns the square. A mortgaged deed dims the ring and the glyph. The price
+ * keeps the full ink, so it stays readable on the band.
+ */
+function ownerBandTexture(
+  label: string,
+  token: AvatarKind | undefined,
+  mortgaged: boolean,
+  anisotropy: number,
+): THREE.CanvasTexture {
+  return makeTexture(OWNER_BAND_W, PRICE_BAND_PX, anisotropy, (g) => {
+    g.fillStyle = SURFACE.markerBand;
+    g.fillRect(0, 0, OWNER_BAND_W, PRICE_BAND_PX);
     g.font = `600 ${PRICE_PX}px ${BODY}`;
-    g.fillText(label, TILE_W / 2, priceBaseline(PRICE_BAND_PX));
+    const layout = ownerBandLayout(label ? g.measureText(label).width : 0);
+    const glyphInk = markerColor(SURFACE.ink, mortgaged);
+    const ring = markerColor(token ? tokenLook(token).hex : UNKNOWN_OWNER_COLOR, mortgaged);
+    const cy = PRICE_BAND_PX / 2;
+
+    g.beginPath();
+    g.arc(layout.chipX, cy, layout.chipR - CHIP_RING_PX / 2, 0, Math.PI * 2);
+    g.fillStyle = "#ffffff";
+    g.fill();
+    g.lineWidth = CHIP_RING_PX;
+    g.strokeStyle = ring;
+    g.stroke();
+    if (token) {
+      const size = (layout.chipR - CHIP_RING_PX) * 1.6;
+      drawGlyph(
+        g,
+        token,
+        layout.chipX - size / 2,
+        cy - size / 2,
+        size,
+        glyphInk,
+        CHIP_GLYPH_WEIGHT,
+      );
+    }
+
+    if (label) {
+      g.fillStyle = SURFACE.ink;
+      g.textAlign = "center";
+      g.textBaseline = "alphabetic";
+      g.font = `600 ${Math.floor(PRICE_PX * layout.priceScale)}px ${BODY}`;
+      g.fillText(label, layout.priceX, priceBaseline(PRICE_BAND_PX));
+    }
   });
 }
 
@@ -326,8 +406,11 @@ export async function whenBoardFontsReady(timeoutMs = 1500): Promise<void> {
 export interface BoardTextures {
   /** Top face texture per square index. */
   squares: THREE.CanvasTexture[];
-  /** White price text for the owner marker, per square index. Squares with no price have none. */
-  prices: (THREE.CanvasTexture | undefined)[];
+  /**
+   * The owner band of a deed on `square`. Drawn on the first call and kept, so squares with the
+   * same price, owner and mortgage state share one texture.
+   */
+  ownerBand(square: number, token: AvatarKind | undefined, mortgaged: boolean): THREE.CanvasTexture;
   centre: THREE.CanvasTexture;
   /** The back of the top card of each deck. */
   cardBacks: Record<StackDeck, THREE.CanvasTexture>;
@@ -347,14 +430,7 @@ export function createBoardTextures(squares: readonly Square[], anisotropy: numb
         return squareTexture(square, anisotropy);
     }
   });
-  const byLabel = new Map<string, THREE.CanvasTexture>();
-  const prices = squares.map((square) => {
-    const label = square.kind === "tax" ? "" : priceLabel(square);
-    if (!label) return undefined;
-    let t = byLabel.get(label);
-    if (!t) byLabel.set(label, (t = priceTexture(label, anisotropy)));
-    return t;
-  });
+  const bands = new Map<string, THREE.CanvasTexture>();
   const centre = centreTexture(anisotropy);
   const cardBacks = {
     chance: cardBackTexture("chance", anisotropy),
@@ -362,12 +438,20 @@ export function createBoardTextures(squares: readonly Square[], anisotropy: numb
   };
   return {
     squares: faces,
-    prices,
+    ownerBand(square, token, mortgaged) {
+      const def = squares[square];
+      const label = def && def.kind !== "tax" ? priceLabel(def) : "";
+      const key = `${label}|${token ?? ""}|${mortgaged ? "m" : ""}`;
+      let t = bands.get(key);
+      if (!t) bands.set(key, (t = ownerBandTexture(label, token, mortgaged, anisotropy)));
+      return t;
+    },
     centre,
     cardBacks,
     dispose() {
       for (const t of faces) t.dispose();
-      for (const t of byLabel.values()) t.dispose();
+      for (const t of bands.values()) t.dispose();
+      bands.clear();
       centre.dispose();
       cardBacks.chance.dispose();
       cardBacks.chest.dispose();

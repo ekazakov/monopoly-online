@@ -1,6 +1,12 @@
 import { SQUARES } from "@monopoly/game-engine";
-import { describe, expect, test } from "vite-plus/test";
-import { priceLabel, wrapLines } from "./textures.ts";
+import { afterEach, describe, expect, test, vi } from "vite-plus/test";
+import {
+  OWNER_BAND_W,
+  createBoardTextures,
+  ownerBandLayout,
+  priceLabel,
+  wrapLines,
+} from "./textures.ts";
 
 // one unit per character, so a width is a character count
 const chars = (t: string) => t.length;
@@ -41,5 +47,57 @@ describe("priceLabel", () => {
     for (const kind of ["chance", "chest", "go", "jail", "free_parking", "go_to_jail"]) {
       expect(priceLabel(SQUARES.find((s) => s.kind === kind)!)).toBe("");
     }
+  });
+});
+
+describe("ownerBandLayout", () => {
+  const place = (width: number) => {
+    const l = ownerBandLayout(width);
+    const half = (width * l.priceScale) / 2;
+    return {
+      l,
+      clear: l.chipX + l.chipR <= l.priceX - half,
+      inside: l.priceX + half <= OWNER_BAND_W,
+    };
+  };
+
+  test("puts the chip left of the price, clear of it, at full size", () => {
+    const { l, clear, inside } = place(100);
+    expect(l.priceScale).toBe(1);
+    expect(clear).toBe(true);
+    expect(inside).toBe(true);
+  });
+
+  test("makes a wide price smaller, so the chip never covers it", () => {
+    const { l, clear, inside } = place(400);
+    expect(l.priceScale).toBeLessThan(1);
+    expect(clear).toBe(true);
+    expect(inside).toBe(true);
+  });
+
+  test("centres the chip when there is no price", () => {
+    expect(ownerBandLayout(0).chipX).toBe(OWNER_BAND_W / 2);
+  });
+});
+
+describe("owner band textures", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  test("shares one texture for each price, owner and mortgage state, and disposes all", () => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+    const textures = createBoardTextures(SQUARES, 1);
+    const street = SQUARES.findIndex((s) => s.kind === "street");
+    const a = textures.ownerBand(street, "cat", false);
+    expect(textures.ownerBand(street, "cat", false)).toBe(a);
+    const b = textures.ownerBand(street, "dog", false);
+    const c = textures.ownerBand(street, "cat", true);
+    const d = textures.ownerBand(street, undefined, false);
+    expect(new Set([a, b, c, d]).size).toBe(4);
+
+    const spies = [a, b, c, d].map((t) => vi.spyOn(t, "dispose"));
+    textures.dispose();
+    for (const spy of spies) expect(spy).toHaveBeenCalledOnce();
   });
 });

@@ -23,6 +23,9 @@ export interface TokenModel {
 export interface DeedModel {
   square: number;
   ownerId: string;
+  /** The token of the owner, for the glyph on the owner chip. Unknown owners have none. */
+  ownerToken: Token | undefined;
+  /** The ring of the owner chip. */
   ownerColor: string;
   houses: number;
   mortgaged: boolean;
@@ -72,6 +75,7 @@ export function buildSceneModel(
       return {
         square: Number(key),
         ownerId: deed.ownerId,
+        ownerToken: token,
         ownerColor: token === undefined ? UNKNOWN_OWNER_COLOR : tokenLook(token).hex,
         houses: deed.houses,
         mortgaged: deed.mortgaged,

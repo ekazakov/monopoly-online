@@ -222,18 +222,21 @@ function Scene({
 
       <CardStacks resources={resources} backs={textures.cardBacks} />
 
-      {SQUARES.map((_, i) => (
-        <Tile
-          key={i}
-          square={i}
-          texture={textures.squares[i]!}
-          priceTexture={textures.prices[i]}
-          resources={resources}
-          deed={deeds.get(i)}
-          highlighted={highlightSquare === i}
-          onSelect={onSquareClick}
-        />
-      ))}
+      {SQUARES.map((_, i) => {
+        const deed = deeds.get(i);
+        return (
+          <Tile
+            key={i}
+            square={i}
+            texture={textures.squares[i]!}
+            bandTexture={deed && textures.ownerBand(i, deed.ownerToken, deed.mortgaged)}
+            resources={resources}
+            deed={deed}
+            highlighted={highlightSquare === i}
+            onSelect={onSquareClick}
+          />
+        );
+      })}
 
       <Tokens
         tokens={model.tokens}
