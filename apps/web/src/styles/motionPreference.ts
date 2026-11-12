@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { createPreference, readKey, writeKey } from "../preferences/store.ts";
 
 /**
  * The reduced motion setting. The user can follow the device (`system`) or choose in the game
@@ -10,20 +11,28 @@ export type MotionPreference = "system" | "reduce" | "full";
 const STORAGE_KEY = "hf.motion";
 const QUERY = "(prefers-reduced-motion: reduce)";
 
-const listeners = new Set<() => void>();
-
 function systemReduces(): boolean {
   return window.matchMedia?.(QUERY).matches ?? false;
 }
 
-export function readMotionPreference(): MotionPreference {
-  try {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
+/** The CSS reads `data-motion` on the root element, so one switch serves all the styles. */
+function applyAttribute() {
+  document.documentElement.dataset.motion = isReducedMotion() ? "reduce" : "full";
+}
+
+const motion = createPreference<MotionPreference>({
+  keys: [STORAGE_KEY],
+  read: () => {
+    const stored = readKey(STORAGE_KEY);
+    // a blocked storage reads as nothing stored, so the device setting decides
     return stored === "reduce" || stored === "full" ? stored : "system";
-  } catch {
-    // Storage can be blocked. The device setting then decides.
-    return "system";
-  }
+  },
+  write: (value) => writeKey(STORAGE_KEY, value === "system" ? null : value),
+  onChange: applyAttribute,
+});
+
+export function readMotionPreference(): MotionPreference {
+  return motion.get();
 }
 
 /** True when motion must be off, by the choice of the user or else by the device. */
@@ -32,24 +41,8 @@ export function isReducedMotion(): boolean {
   return preference === "system" ? systemReduces() : preference === "reduce";
 }
 
-/** The CSS reads `data-motion` on the root element, so one switch serves all the styles. */
-function applyAttribute() {
-  document.documentElement.dataset.motion = isReducedMotion() ? "reduce" : "full";
-}
-
-function notify() {
-  applyAttribute();
-  for (const listener of listeners) listener();
-}
-
 export function setMotionPreference(preference: MotionPreference) {
-  try {
-    if (preference === "system") window.localStorage.removeItem(STORAGE_KEY);
-    else window.localStorage.setItem(STORAGE_KEY, preference);
-  } catch {
-    // Not kept, but the change still holds until the page closes.
-  }
-  notify();
+  motion.set(preference);
 }
 
 /**
@@ -64,25 +57,16 @@ export function setReducedMotion(reduced: boolean) {
 export function startMotionPreference(): () => void {
   applyAttribute();
   const query = window.matchMedia?.(QUERY);
-  const onStorage = (event: StorageEvent) => {
-    if (event.key === null || event.key === STORAGE_KEY) notify();
-  };
-  query?.addEventListener("change", notify);
-  window.addEventListener("storage", onStorage);
+  const onDevice = () => motion.refresh();
+  query?.addEventListener("change", onDevice);
+  const stopTabs = motion.start();
   return () => {
-    query?.removeEventListener("change", notify);
-    window.removeEventListener("storage", onStorage);
-  };
-}
-
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
+    query?.removeEventListener("change", onDevice);
+    stopTabs();
   };
 }
 
 /** Whether the game must show no animation now. */
 export function useReducedMotion(): boolean {
-  return useSyncExternalStore(subscribe, isReducedMotion);
+  return useSyncExternalStore(motion.subscribe, isReducedMotion);
 }
