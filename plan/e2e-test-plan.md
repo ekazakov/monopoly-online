@@ -279,7 +279,14 @@ T09 found that the API's public room metadata was shown to a stranger as a start
 | Script | What it checks |
 | --- | --- |
 | `reduced-motion.spec.ts`: a roll on the no-WebGL board goes straight to the next action | `data-motion` is `reduce`, the page has no `canvas`, "Moving…" does not show, and Buy shows at once |
+| `language.spec.ts` L1: a context with the locale `ru-RU` shows Russian text from sign-in to the game | `lang` is `ru`, and the Russian sign-in title, room, log and Roll button show |
+| `language.spec.ts` L2: the Menu language choice beats the device language | `lang` follows the choice, and it holds after a reload |
+| `preferences.spec.ts` P1: the theme choice | `data-theme` holds after a reload, and Device follows `prefers-color-scheme` |
+| `preferences.spec.ts` P2: the no motion choice | `data-motion` follows the switch against the device setting, and it holds after a reload |
+| `preferences.spec.ts` P3: blocked storage | A `localStorage` that throws does not break sign-in, the game or the Menu choices. A choice holds until the reload |
 | `motion.spec.ts`: a roll on the 3D board shows the moving token, then the next action | `data-motion` is `full`, a `canvas` is visible, "Moving…" shows on Alice's device, then Buy shows on Bob's device |
+
+Device preference keys in `localStorage`, for the tests that read or set them: `hf.theme` (`light` or `dark`; no key means Device), `hf.lang` (`en` or `ru`; no key means Device), `hf.motion` (`reduce` or `full`; no key means the device setting), and `hf.sound`, `hf.sound.effects` and `hf.sound.music` (sound). The suite keeps the device language `en-US` and reduced motion. A test that needs another value sets the context `locale` or `colorScheme`, or uses the Menu. The dev-only TanStack devtools read `localStorage` without a guard, so a test with blocked storage does not check page errors.
 
 ### Not in E2E
 
