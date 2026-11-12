@@ -214,7 +214,7 @@ test("T20: reload in mid-turn keeps cash, the deed and phase, and the next actio
   await bob.page
     .getByRole("button", { name: new RegExp(`^${bob.name}'s properties, 1 property,`) })
     .click();
-  await expect(bob.page.getByRole("button", { name: /^Anchor Street, \$140,/ })).toBeVisible();
+  await expect(bob.page.getByRole("group", { name: /^Anchor Street, \$140,/ })).toBeVisible();
   await bob.page.getByRole("button", { name: "Next turn", exact: true }).click();
   for (const device of [alice, bob]) {
     await expect(device.page.getByRole("log", { name: "Game log" })).toContainText(

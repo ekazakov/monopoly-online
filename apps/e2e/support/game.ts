@@ -128,8 +128,12 @@ export async function startTable(browser: Browser, tag: string): Promise<Table> 
   return { alice, bob, roomUrl, gameUrl: `${roomUrl}/play` };
 }
 
-/** What a device can do now, in the order that the loop tries it. */
+/**
+ * What a device can do now, in the order that the loop tries it. A drawn card shows a dialog on
+ * every device that covers the turn actions, so OK comes first.
+ */
 const ACTIONS: Array<[string, RegExp]> = [
+  ["ok", /^OK$/],
   ["roll", /^Roll( again)?$/i],
   ["buy", /^Buy \$/],
   ["next", /^Next turn$/i],
