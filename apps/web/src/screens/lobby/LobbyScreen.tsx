@@ -7,6 +7,7 @@ import { acceptInvite, declineInvite } from "../../api/lobby.ts";
 import { ApiError } from "../../api.ts";
 import { useT } from "../../i18n/index.ts";
 import { useSession, useSignOut } from "../../session/index.ts";
+import { PreferenceSwitches } from "../PreferenceSwitches.tsx";
 import { OpenGameRow, MyGameRow, SavedGameRow } from "./GameRows.tsx";
 import { InviteInbox } from "./InviteInbox.tsx";
 import { NewGamePanel } from "./NewGamePanel.tsx";
@@ -91,6 +92,7 @@ function Lobby({ userId, userName }: { userId: string; userName: string }) {
       <header className="lobby__top">
         <h1>{t("lobby.title")}</h1>
         <div className="lobby__who">
+          <PreferenceSwitches />
           <span>
             {t("lobby.signedInAs")} <strong>{userName}</strong>
           </span>

@@ -114,3 +114,25 @@ test("P3: blocked storage does not break the app, and a choice holds until the p
   await page.reload();
   await expect(page.getByRole("button", { name: "Roll", exact: true })).toBeVisible();
 });
+
+test("P4: the sign-in and lobby screens have the language and theme switches", async ({
+  browser,
+}) => {
+  const run = Math.random().toString(36).slice(2, 6);
+  const host = await createDevice(browser, `Switch${run}`);
+  const { page } = host;
+  await page.goto("/");
+  await page.getByLabel("Language").selectOption("ru");
+  await expect(page.locator("html")).toHaveAttribute("lang", "ru");
+  await expect(page.getByRole("heading", { name: "Выберите имя для игры" })).toBeVisible();
+  await page.getByLabel("Тема").selectOption("dark");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+
+  await page.getByPlaceholder("Ваше имя").fill(host.name);
+  await page.getByRole("button", { name: "Продолжить" }).click();
+  await expect(page.getByRole("button", { name: "Создать игру" })).toBeVisible();
+  await page.getByLabel("Язык").selectOption("en");
+  await expect(page.getByRole("button", { name: "Create game" })).toBeVisible();
+  await page.getByLabel("Theme").selectOption("light");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+});

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { GOOGLE_START_PATH, isApiError } from "../api/index.ts";
 import { useT } from "../i18n/index.ts";
 import { useAuthMethods, useGoogleName, useSignIn } from "../session/index.ts";
+import { PreferenceSwitches } from "./PreferenceSwitches.tsx";
 import { Icon, SignInNameForm } from "./SignInNameForm.tsx";
 import "./SignInScreen.css";
 
@@ -14,6 +15,7 @@ function Frame({ title, lead, children }: { title: string; lead: string; childre
     <div className="sign-in">
       <header className="sign-in__top">
         <span className="sign-in__brand">Harborfront</span>
+        <PreferenceSwitches />
       </header>
       <main className="sign-in__main">
         <div className="sign-in__intro">

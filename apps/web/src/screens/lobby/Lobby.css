@@ -17,6 +17,7 @@
 
 .lobby__who {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--hf-space-12);
   color: var(--hf-ink-soft);

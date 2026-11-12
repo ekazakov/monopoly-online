@@ -1,0 +1,46 @@
+/* The language and theme choices of the screens outside the game. Tokens only. */
+.prefs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--hf-space-12);
+}
+
+.prefs__field {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hf-space-8);
+  color: var(--hf-ink-soft);
+}
+
+.prefs__label {
+  font: var(--hf-type-label);
+  letter-spacing: var(--hf-track-label);
+  text-transform: uppercase;
+}
+
+.prefs__select {
+  min-height: var(--hf-target);
+  padding: 0 var(--hf-space-12);
+  background: var(--hf-panel);
+  border: 1px solid var(--hf-panel-line);
+  border-radius: var(--hf-radius-control);
+  color: var(--hf-ink);
+  font: inherit;
+}
+
+.prefs__select:focus-visible {
+  outline: 2px solid var(--hf-focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 520px) {
+  .prefs__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}

@@ -11,7 +11,10 @@
 
 .sign-in__top {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
+  gap: var(--hf-space-12);
   padding: var(--hf-space-12) var(--hf-space-24);
   border-bottom: 1px solid var(--hf-panel-line);
 }
