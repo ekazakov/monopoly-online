@@ -1,6 +1,6 @@
 # Bug fix plan
 
-This plan gives the fix approach, the size, and the order for each open entry in [open-bugs.md](open-bugs.md). It records the review of 2026-11-09. No bug is fixed yet. When a fix is done, set its status in `open-bugs.md` and mark the task here.
+This plan gives the fix approach, the size, and the order for each open entry in [open-bugs.md](open-bugs.md). It records the review of 2026-11-09. When a fix is done, set its status in `open-bugs.md` and mark the task here.
 
 File paths in the web app are relative to `apps/web/src/` unless the path starts with `apps/`, `packages/`, `plan/` or `artifacts/`. Paths that start with `turn/`, `hand/`, `flows/`, `handoff/`, `motion/`, `debug/` or `log/` are in `apps/web/src/screens/game/`. Line numbers are from the review and can move. Check the source before an edit.
 
@@ -274,10 +274,10 @@ Tasks:
 
 ## Open decisions
 
-1. **Debug variable name (BUG-17).** For example `DEBUG_MODE_ENABLED`, in the style of `GUEST_SIGN_IN_ENABLED`.
+1. **Debug variable name (BUG-17).** Resolved: `DEBUG_MODE_ENABLED`, in the style of `GUEST_SIGN_IN_ENABLED`.
 2. **Owner marker or price (BUG-9).** Decided: price on a deeper marker. Spec open question 5 (owner marker that does not rely on colour) is related.
-3. **Toast text for other handoffs (BUG-15).** The text for an auction bid or a trade answer between hot-seat seats, for example "Cara, answer the trade".
-4. **Event limit in the snapshot message (BUG-14).** All events of the game, or the last N. The log store keeps at most 2000 events (`game/store.ts:11`).
+3. **Toast text for other handoffs (BUG-15).** Resolved: no toast for an auction bid or a trade answer between hot-seat seats. The toast shows for turn changes only.
+4. **Event limit in the snapshot message (BUG-14).** Resolved: the snapshot message carries all events of the game (`readEventLog` in `apps/api/src/realtime/resume.ts`).
 
 ## Validation
 

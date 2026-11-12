@@ -128,8 +128,8 @@ The tasks F4 to F16 turn the open scenarios of the plan into work. A scenario co
 
 ### G. Close
 
-- [ ] **Manual session run (G1).** Two browser profiles and one hot-seat seat. Fix the defects that you find.
-- [ ] **Milestone 3 close (G2).** Roadmap status and change log. "As built" notes. Sync `artifacts/`.
+- [x] **Manual session run (G1).** Two browser profiles and one hot-seat seat. Fix the defects that you find.
+- [x] **Milestone 3 close (G2).** Roadmap status and change log. "As built" notes. Sync `artifacts/`.
 
 ## Order and dependencies
 

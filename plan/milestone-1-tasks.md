@@ -81,7 +81,7 @@ Mark a task `[x]` in the commit that completes it. Design for F6 is done (board 
 - [x] **H6. Property hand.** Collapsed and expanded; build, sell, mortgage, unmortgage from the hand.
 - [x] **H7. Board-centre flows.** Auction, trade, card draw, debt/pay, bankruptcy, Leave game (resign; on a shared device it asks which seat resigns). No modals (spec 5.2). One task per flow.
 - [x] **H8. Hot-seat handoff.** Pass-device prompt when the acting seat changes to another hot-seat seat on the same device (gameplay 3).
-- [ ] **H9. Dice and token animation** from events. Moved to M2: [Dice and token animation (H)](milestone-2-tasks.md#h-dice-and-token-animation-moved-from-m1-h9).
+- [x] **H9. Dice and token animation** from events. Moved to M2: [Dice and token animation (H)](milestone-2-tasks.md#h-dice-and-token-animation-moved-from-m1-h9).
 - [x] **H10a. Result artboard.** A "Game result" board in the design system: winner, final standings, Back to home. Ask before adding it to the canvas.
 - [x] **H10. Game end / result screen.** Winner and final standings, per the H10a board. The game route shows it when the status is `finished`, also after a reload.
 
@@ -89,7 +89,7 @@ Mark a task `[x]` in the commit that completes it. Design for F6 is done (board 
 
 - [x] **I1. Playwright setup** (done in M3 F1, `apps/e2e`) against `pnpm dev`, with the seed flag.
 - [x] **I2. E2E script.** (done in M3 F2 and F3) Two browser contexts plus one hot-seat seat: create, join by link, add hot-seat, start, play a short seeded script (roll, buy, rent, a hot-seat handoff, trade, end turn).
-- [ ] **I3. Finish a full game.** Manual run: two profiles + one hot-seat finish a game on `localhost` (milestone done condition). Fix defects found.
+- [x] **I3. Finish a full game.** Manual run: two profiles + one hot-seat finish a game on `localhost` (milestone done condition). Fix defects found.
 - [ ] **I4. Docs.** Update the roadmap status, the README (how to run), and sync `artifacts/game-screen` or the design system if the port changed them.
 
 ## API decisions

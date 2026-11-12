@@ -485,9 +485,9 @@ Gameplay questions (player limits, disconnects, trades, house rules, timer, bots
 7. **Board density.** Squares are about 60px on desktop and 50px on tablet landscape, yet each holds a name, price, up to 6 tokens, an owner marker and up to 4 houses. The 9 × 9 centre (about 430px) must also hold a title deed, an auction or a debt state. Does it fit?
 8. **Inspecting other players.** There is no way yet to see an opponent's properties or cash, which trades and rent decisions need. Where does it live (tap an avatar on the rail)?
 9. **Tablet portrait strip.** The horizontal player strip doesn't fit 6 players at 768px.
-10. **Expanded hand overlap.** The expanded hand covers the lower board. Does it ever hide something the player needs, such as the centre during an auction?
+10. ~~**Expanded hand overlap.**~~ Outdated: the property hand redesign (4.6) replaced this layout.
 11. ~~**Modals.**~~ Closed: the purchase decision, the auction, the card reveal and the square detail use a modal dialog (5.2). The purchase and the auction show only on the device that has a seat to act (decided 2026-11-09, before the Menu was moved above the dialog; it could show on every device now). The top bar, with the Menu, stays above a phase dialog.
-12. **Wireframe data.** Marlow shows $1,500 cash yet holds about $1,210 of properties at purchase price. The sample data should be made consistent.
+12. ~~**Wireframe data.**~~ Outdated: the sample data is no longer a concern.
 
 ---
 

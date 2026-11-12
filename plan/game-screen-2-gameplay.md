@@ -172,7 +172,7 @@ The design spec lists these as screens (R-G4 to R-G8). **For now none of them is
 
 ## 6. Questions and decisions
 
-Questions 1 to 23 are closed. The decision for each one is below. Questions 24 and 25 are open.
+Questions 1 to 24 are closed. The decision for each one is below. Question 25 is open.
 
 1. [x] Players: 2 to 6 in total, with any number on one device.
 2. [x] A disconnected player's turn: a 60-second grace time, then the player is away and the game waits for them (3.2). The autopilot is postponed.
