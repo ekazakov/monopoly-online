@@ -104,6 +104,12 @@
 
 .game-layout__centre {
   grid-area: centre;
+  /*
+   * The board canvas fills the screen, so the board centre is the screen centre. The rail column
+   * grows with the player names and the spacer does not, so the centre spans all the columns to
+   * stay on the board centre. It lets the pointer through to the rail under it.
+   */
+  grid-column: 1 / -1;
   position: relative;
   z-index: 2;
   display: grid;
