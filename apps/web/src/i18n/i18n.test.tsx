@@ -61,6 +61,29 @@ describe("translate", () => {
     expect(Object.keys(ru).sort()).toEqual(Object.keys(en).sort());
   });
 
+  test("Russian keeps the parameters of each English text, and is translated", () => {
+    const params = (text: string) =>
+      [...new Set([...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]!))].sort();
+    const forms = (message: string | Record<string, string>) =>
+      typeof message === "string" ? [message] : Object.values(message);
+    // the same in both languages, on purpose: a number, a sign or a name that is not translated
+    const SAME = new Set(["common.ok", "room.avatarLabel"]);
+    const problems: string[] = [];
+    for (const key of Object.keys(en) as (keyof typeof en)[]) {
+      const english = forms(en[key] as string | Record<string, string>);
+      const russian = forms(ru[key] as string | Record<string, string>);
+      if (russian.length < english.length) problems.push(`${key}: forms`);
+      for (const form of russian) {
+        if (params(form).join() !== params(english.at(-1)!).join())
+          problems.push(`${key}: parameters`);
+      }
+      if (!SAME.has(key) && JSON.stringify(russian) === JSON.stringify(english)) {
+        problems.push(`${key}: not translated`);
+      }
+    }
+    expect(problems).toEqual([]);
+  });
+
   test("every square, card and token of the game has a text", () => {
     SQUARES.forEach((square, index) => {
       expect(translate("en", `square.${index}` as never)).toBe(square.name);

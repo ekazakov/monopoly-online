@@ -85,6 +85,9 @@ export function wrapLines(
   return lines;
 }
 
+/** The widest a square name may be on its texture. A wider line is squeezed to fit. */
+const NAME_MAX_W = 280;
+
 type Ctx = CanvasRenderingContext2D;
 
 function makeTexture(w: number, h: number, anisotropy: number, draw: (g: Ctx) => void) {
@@ -192,12 +195,13 @@ export function squareTexture(
     g.font = `700 58px ${DISPLAY}`;
     const lines = wrapLines(
       squareInfoName(square, t).toUpperCase(),
-      280,
+      NAME_MAX_W,
       (text) => g.measureText(text).width,
     );
     let y = (street ? 120 : 0) + 64;
     for (const line of lines) {
-      g.fillText(line, TILE_W / 2, y);
+      // a long word stays whole in `wrapLines`, so the canvas squeezes it to the width of the label
+      g.fillText(line, TILE_W / 2, y, NAME_MAX_W);
       y += 56;
     }
     if (!street) drawIcon(g, square, TILE_W / 2, 350);

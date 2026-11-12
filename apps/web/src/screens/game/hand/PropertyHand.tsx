@@ -335,7 +335,7 @@ export function PropertyHand({ userId }: PropertyHandProps) {
                 <p>
                   {t("hand.cashProperties", {
                     cash: money(state.players.find((player) => player.id === seat.id)?.cash ?? 0),
-                    count: hand.count,
+                    properties: t("count.properties", { count: hand.count }),
                   })}
                 </p>
                 {switcher}

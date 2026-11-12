@@ -510,7 +510,7 @@ export const en = {
   "hand.title": "{name}'s properties",
   "hand.switcher": "Show properties of",
   "hand.manage": "Manage properties · {name}",
-  "hand.cashProperties": "Cash {cash} · {count} properties",
+  "hand.cashProperties": "Cash {cash} · {properties}",
   "hand.empty": "No properties yet.",
   // Squares
   "square.notOwned": "Not owned",
