@@ -5,6 +5,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { startAudio } from "./audio/engine.ts";
 import { startSoundPreference } from "./audio/soundPreference.ts";
+import { startLanguagePreference } from "./i18n/index.ts";
 import { RealtimeProvider } from "./realtime/index.ts";
 import { createQueryClient } from "./queryClient.ts";
 import { createAppRouter } from "./router.tsx";
@@ -15,6 +16,7 @@ import "./styles.css";
 
 startMotionPreference();
 startThemePreference();
+startLanguagePreference();
 startSoundPreference();
 startAudio();
 

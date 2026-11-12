@@ -14,11 +14,19 @@ import { tokenLook } from "../../../../scene/colors.ts";
 import { setReducedMotion, useReducedMotion } from "../../../../styles/motionPreference.ts";
 import { setThemePreference, useThemePreference } from "../../../../styles/themePreference.ts";
 import type { ThemePreference } from "../../../../styles/themePreference.ts";
+import {
+  LANGUAGES,
+  LANGUAGE_NAMES,
+  setLanguagePreference,
+  useLanguagePreference,
+  useT,
+} from "../../../../i18n/index.ts";
+import type { LanguagePreference, MessageKey } from "../../../../i18n/index.ts";
 
-const THEMES: ReadonlyArray<[ThemePreference, string]> = [
-  ["system", "Device"],
-  ["light", "Light"],
-  ["dark", "Dark"],
+const THEMES: ReadonlyArray<[ThemePreference, MessageKey]> = [
+  ["system", "menu.theme.system"],
+  ["light", "menu.theme.light"],
+  ["dark", "menu.theme.dark"],
 ];
 import { consequenceText } from "./consequence.ts";
 import "./LeaveGameMenu.css";
@@ -41,6 +49,8 @@ export function LeaveGameMenu({ userId, onLeft }: LeaveGameMenuProps) {
   const actions = useGameActions();
   const reducedMotion = useReducedMotion();
   const theme = useThemePreference();
+  const language = useLanguagePreference();
+  const t = useT();
   const sound = useSoundPreference();
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -242,9 +252,9 @@ export function LeaveGameMenu({ userId, onLeft }: LeaveGameMenuProps) {
               <div className="leave-menu__row">
                 <p className="leave-menu__row-text">
                   <span className="leave-menu__row-title" id={`${panelId}-theme`}>
-                    Theme
+                    {t("menu.theme")}
                   </span>
-                  <span className="leave-menu__hint">Device follows your system setting</span>
+                  <span className="leave-menu__hint">{t("menu.theme.hint")}</span>
                 </p>
                 <div
                   className="leave-menu__choice"
@@ -259,7 +269,34 @@ export function LeaveGameMenu({ userId, onLeft }: LeaveGameMenuProps) {
                       aria-pressed={theme === value}
                       onClick={() => setThemePreference(value)}
                     >
-                      {label}
+                      {t(label)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="leave-menu__row">
+                <p className="leave-menu__row-text">
+                  <span className="leave-menu__row-title" id={`${panelId}-language`}>
+                    {t("menu.language")}
+                  </span>
+                  <span className="leave-menu__hint">{t("menu.language.hint")}</span>
+                </p>
+                <div
+                  className="leave-menu__choice"
+                  role="group"
+                  aria-labelledby={`${panelId}-language`}
+                >
+                  {(["system", ...LANGUAGES] as const).map((value: LanguagePreference) => (
+                    <button
+                      key={value}
+                      type="button"
+                      className={`leave-menu__btn${language === value ? " leave-menu__btn--primary" : ""}`}
+                      aria-pressed={language === value}
+                      // a language name is in its own language, so a reader can find it
+                      lang={value === "system" ? undefined : value}
+                      onClick={() => setLanguagePreference(value)}
+                    >
+                      {value === "system" ? t("menu.language.system") : LANGUAGE_NAMES[value]}
                     </button>
                   ))}
                 </div>
