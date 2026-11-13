@@ -57,6 +57,8 @@ The first command adds the host key to `~/.ssh/known_hosts`. The second command 
 pnpm server:setup
 ```
 
+After the first run, you can see the changes of a run before you make them: `pnpm server:setup --check --diff`. Do not use `--check` for the first run. Check mode cannot install Docker from a repository that it did not add yet.
+
 If you cannot sign in after a run, use the server console in the Kamatera panel. Sign in as root with the password, and delete `/etc/ssh/sshd_config.d/10-harborfront.conf`.
 
 ## Deploy

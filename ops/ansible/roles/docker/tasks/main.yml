@@ -18,6 +18,15 @@
     status_code: [200, 404]
   register: docker_release_check
   when: docker_source == 'docker'
+  check_mode: false
+
+# deb822_repository needs this Python module on the server.
+- name: Install the module for the apt repository file
+  ansible.builtin.apt:
+    name: python3-debian
+    state: present
+    update_cache: true
+  when: docker_source == 'docker'
 
 - name: Stop when the Docker repository does not support this release
   ansible.builtin.fail:
@@ -59,6 +68,14 @@
 
 # Docker keeps container logs without a limit by default. Three files of 10 MB
 # for each container, the same limits as compose.yaml in the repository root.
+- name: Create the Docker settings folder
+  ansible.builtin.file:
+    path: /etc/docker
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
 - name: Set log limits for all containers
   ansible.builtin.copy:
     dest: /etc/docker/daemon.json

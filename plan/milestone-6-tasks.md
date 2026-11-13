@@ -9,7 +9,7 @@
 
 **Done when** these steps pass:
 
-1. `pnpm deploy:prod` builds, sends and starts a new image. `/api/ready` passes on the VPS. `pnpm deploy:prod --rollback` starts the previous image.
+1. `pnpm deploy:prod` builds, sends and starts a new image. `/api/ready` passes on the VPS. `pnpm deploy:rollback` starts the previous image.
 2. `https://play.<domain>` opens the web app. Google sign-in works. A game streams through nginx, also after more than 100 seconds with no action.
 3. After a reboot of the VPS, the app starts again with no manual step.
 4. The daily backup runs. One backup was restored on the VPS. The pull script copied the backups to the local machine.

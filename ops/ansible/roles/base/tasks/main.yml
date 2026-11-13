@@ -85,6 +85,14 @@
 
 # The systemd journal can grow to 10% of the disk by default. On a 10 GB disk
 # that is too much next to the images and the backups.
+- name: Create the journald drop-in folder
+  ansible.builtin.file:
+    path: /etc/systemd/journald.conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
 - name: Limit the size of the systemd journal
   ansible.builtin.copy:
     dest: /etc/systemd/journald.conf.d/10-harborfront.conf
@@ -130,6 +138,8 @@
   ansible.builtin.command: swapon --show=NAME --noheadings
   register: base_swap_active
   changed_when: false
+  # Read-only, so it also runs with --check. The next task needs its output.
+  check_mode: false
 
 - name: Turn on the swap file
   ansible.builtin.command: swapon /swapfile

@@ -98,14 +98,20 @@
           vars:
             start_tag: "{{ previous_tag }}"
 
-        # Swap the tags, so a second rollback goes forward again.
-        - name: Keep the rolled-back tag as the previous tag
+        # Swap the tag and the migration count, so a second rollback goes
+        # forward again to the newer image and its schema.
+        - name: Keep the rolled-back tag and its migration count
           ansible.builtin.copy:
-            dest: "{{ app_dir }}/.previous-tag"
+            dest: "{{ app_dir }}/{{ item.file }}"
             owner: "{{ deploy_user }}"
             group: "{{ deploy_user }}"
             mode: "0640"
-            content: "{{ current_tag }}\n"
+            content: "{{ item.value }}\n"
+          loop:
+            - { file: .previous-tag, value: "{{ current_tag }}" }
+            - { file: .previous-migrations, value: "{{ migrations_before }}" }
+          loop_control:
+            label: "{{ item.file }}"
 
         - name: Show the result of the rollback
           ansible.builtin.debug:

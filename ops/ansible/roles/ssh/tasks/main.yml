@@ -16,6 +16,7 @@
   delegate_to: localhost
   become: false
   changed_when: false
+  check_mode: false
 
 # Ubuntu reads the files in sshd_config.d/ before sshd_config, and the first
 # value of a setting wins. The name starts with "10-", so it also comes before
@@ -43,6 +44,7 @@
   ansible.builtin.command: /usr/sbin/sshd -T
   register: ssh_effective
   changed_when: false
+  check_mode: false
 
 - name: Make sure that root sign-in and password sign-in are closed
   ansible.builtin.assert:
@@ -53,3 +55,5 @@
       Another sshd file sets PermitRootLogin or PasswordAuthentication first.
       Read "sshd -T" and the files in /etc/ssh/sshd_config.d/ on the server.
     quiet: true
+  # With --check the file above is not written, so the result is not known.
+  when: not ansible_check_mode
