@@ -1,0 +1,59 @@
+---
+# Role "nginx": installs Nginx and serves a placeholder page for the domain.
+# The HTTPS part is added later by the certbot role, which runs vhost.yml again.
+
+- name: Install Nginx
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+    # Refresh the package lists first, but not more than once per hour.
+    update_cache: true
+    cache_valid_time: 3600
+
+# Nginx serves files from this folder. Let's Encrypt also reads its check
+# file from here (see the "acme-challenge" location in the template).
+- name: Create the web root
+  ansible.builtin.file:
+    path: "{{ web_root }}"
+    state: directory
+    # www-data is the user that Nginx runs as, so Nginx can read the files.
+    owner: www-data
+    group: www-data
+    mode: "0755"
+
+# A page to prove that the server works, before the real site exists.
+- name: Create the placeholder page
+  ansible.builtin.copy:
+    dest: "{{ web_root }}/index.html"
+    owner: www-data
+    group: www-data
+    mode: "0644"
+    # Write the file only if it does not exist. A later run must not
+    # overwrite a page that you replaced with your own content.
+    force: false
+    content: |
+      <!doctype html>
+      <title>{{ domain }}</title>
+      <h1>{{ domain }}</h1>
+      <p>Nginx works.</p>
+
+# Ubuntu enables a default site that answers on port 80. Remove it, so that
+# it does not compete with our virtual host.
+- name: Remove the default Nginx site
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  # Ask for a reload at the end of the play (see handlers/main.yml).
+  notify: Reload nginx
+
+# The virtual host tasks live in their own file, because the certbot role
+# runs the same tasks again after it gets the certificate.
+- name: Configure the virtual host
+  ansible.builtin.include_tasks: vhost.yml
+
+# Start Nginx now and at every boot.
+- name: Make sure that Nginx is enabled and running
+  ansible.builtin.service:
+    name: nginx
+    state: started
+    enabled: true

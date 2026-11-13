@@ -1,0 +1,8 @@
+---
+# A handler is a task that runs only when another task asks for it with
+# "notify", and only once at the end of the play, even if several tasks asked.
+# A reload applies new settings without dropping open connections.
+- name: Reload nginx
+  ansible.builtin.service:
+    name: nginx
+    state: reloaded

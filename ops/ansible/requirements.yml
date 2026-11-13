@@ -1,0 +1,14 @@
+---
+# Ansible collections that this project needs. A collection is a package of
+# modules. Some modules are not part of the small core of Ansible, so we
+# install them from Ansible Galaxy (the public package store).
+#
+# Install with:
+#   ansible-galaxy collection install -r requirements.yml -p ~/.ansible/collections
+# The -p path makes ansible-lint find them. See README.md.
+collections:
+  # Provides the "ufw" module, which the firewall role uses.
+  - name: community.general
+  # Provides the "authorized_key" module, which the base role uses to add
+  # your SSH key to the new user.
+  - name: ansible.posix

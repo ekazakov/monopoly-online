@@ -1,0 +1,5 @@
+# Private values. Each has a committed *.example file.
+inventory.ini
+group_vars/all/local.yml
+# The image file that deploy.yml makes on the Mac.
+.artifacts/

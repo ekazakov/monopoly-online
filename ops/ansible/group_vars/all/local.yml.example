@@ -1,0 +1,26 @@
+---
+# Copy this file to local.yml and fill in your values.
+# local.yml is in .gitignore, so your private values stay out of the
+# repository. Ansible loads it after defaults.yml, so these values win.
+# Add any other variable from defaults.yml here to override it.
+
+# The public IP of your server.
+server_ip: "203.0.113.10"
+# The public key that the base role copies to the deploy user.
+deploy_user_public_key_file: "~/.ssh/id_ed25519.pub"
+
+# Google sign-in (Google Cloud console, OAuth client of type "Web application").
+# Before the domain exists, use the localhost redirect and an SSH tunnel.
+app_google_client_id: "1234567890-abc.apps.googleusercontent.com"
+app_google_client_secret: "replace-me"
+app_google_redirect_uri: "http://localhost:8787/api/auth/google/callback"
+
+# Grafana Cloud OTLP (task D1). Leave empty until then.
+# app_otel_endpoint: ""
+# app_otel_headers: ""
+
+# Section E, after you buy the domain:
+# domain: play.example.com
+# admin_email: you@example.com
+# Uncomment for a test run (untrusted certificate, high rate limits).
+# certbot_staging: true

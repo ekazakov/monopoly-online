@@ -1,0 +1,155 @@
+---
+# Role "base": brings a new Ubuntu server to a safe, up-to-date state and
+# creates a normal user with sudo rights.
+# Every task here is idempotent: a second run changes nothing.
+
+# A fresh cloud image can be weeks old. This installs the latest patches,
+# including security fixes, before the server serves any traffic.
+- name: Update apt cache and upgrade all packages
+  ansible.builtin.apt:
+    # Download the newest package lists first.
+    update_cache: true
+    # "dist" also installs new dependencies that an upgrade needs.
+    upgrade: dist
+    # Skip the list download if it is less than one hour old. This makes
+    # repeated runs faster.
+    cache_valid_time: 3600
+
+# This package installs future security updates by itself, so the server does
+# not become outdated after this run.
+- name: Install unattended-upgrades
+  ansible.builtin.apt:
+    name: unattended-upgrades
+    state: present
+
+# The package needs this file to know that it must run every day.
+# The first line refreshes the package lists. The second line installs updates.
+# "1" means every 1 day.
+- name: Enable automatic security updates
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    owner: root
+    group: root
+    # rw for the owner, read-only for others.
+    mode: "0644"
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+
+# Daily work should not use root. A named user with sudo limits the damage
+# of a leaked key, and sudo writes a log of who ran which command.
+- name: Create the sudo user
+  ansible.builtin.user:
+    name: "{{ deploy_user }}"
+    shell: /bin/bash
+    # Add the user to the "sudo" group, which grants administrator rights.
+    groups: sudo
+    # Keep the user's other groups. Without this, Ansible would remove them.
+    append: true
+    create_home: true
+
+# The new user has no password, so sudo could not ask for one. This file lets
+# the user run sudo without a password. The login still needs the SSH key.
+- name: Allow the sudo user to run sudo without a password
+  ansible.builtin.copy:
+    dest: "/etc/sudoers.d/90-{{ deploy_user }}"
+    owner: root
+    group: root
+    # sudo refuses files that others can write, so use read-only for the owner and group.
+    mode: "0440"
+    content: "{{ deploy_user }} ALL=(ALL) NOPASSWD:ALL\n"
+    # Check the new file with visudo before it replaces the old one. A syntax
+    # error in a sudoers file can lock everyone out of sudo.
+    validate: /usr/sbin/visudo -cf %s
+
+# Copy your public SSH key to the new user, so you can log in as that user.
+# The lookup reads the key file on your Mac (the machine that runs Ansible).
+- name: Add the SSH public key to the sudo user
+  ansible.posix.authorized_key:
+    user: "{{ deploy_user }}"
+    key: "{{ lookup('ansible.builtin.file', deploy_user_public_key_file | expanduser) }}"
+    state: present
+
+# sqlite3: the deploy backup (deploy.yml) and the daily backup (task C1) use
+# its ".backup" command, which is safe while the API writes (WAL mode).
+# rsync: the backup pull script copies the backups to the Mac (task C2).
+- name: Install the tools for backups
+  ansible.builtin.apt:
+    name: [sqlite3, rsync]
+    state: present
+
+# Log times in UTC, the same as the API and Grafana Cloud.
+- name: Set the time zone to UTC
+  community.general.timezone:
+    name: Etc/UTC
+
+# The systemd journal can grow to 10% of the disk by default. On a 10 GB disk
+# that is too much next to the images and the backups.
+- name: Limit the size of the systemd journal
+  ansible.builtin.copy:
+    dest: /etc/systemd/journald.conf.d/10-harborfront.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [Journal]
+      SystemMaxUse={{ journald_max_use }}
+  notify: Restart journald
+
+# --- Swap --------------------------------------------------------------------
+# The server has 1 GB RAM. Without swap, "docker load" and Node at the same
+# time can start the OOM killer. To change the size later, run
+# "swapoff /swapfile && rm /swapfile" on the server and run this role again.
+
+- name: Look for the swap file
+  ansible.builtin.stat:
+    path: /swapfile
+  register: base_swapfile
+
+- name: Create the swap file
+  ansible.builtin.command: "fallocate -l {{ swap_size_mb }}M /swapfile"
+  when: not base_swapfile.stat.exists
+  changed_when: true
+
+# Only root may read the swap file, because it can hold memory of any process.
+- name: Set the mode of the swap file
+  ansible.builtin.file:
+    path: /swapfile
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Format the swap file
+  ansible.builtin.command: mkswap /swapfile
+  when: not base_swapfile.stat.exists
+  changed_when: true
+
+# "swapon --show" lists the active swap areas. Turn the file on only if it is
+# not in the list.
+- name: Read the active swap areas
+  ansible.builtin.command: swapon --show=NAME --noheadings
+  register: base_swap_active
+  changed_when: false
+
+- name: Turn on the swap file
+  ansible.builtin.command: swapon /swapfile
+  when: "'/swapfile' not in base_swap_active.stdout_lines"
+  changed_when: true
+
+- name: Turn on the swap file at boot
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    line: "/swapfile none swap sw 0 0"
+    state: present
+
+# 10: use swap only when RAM is almost full. The default (60) moves memory of
+# Node to the disk too early, and the game gets slow.
+- name: Use swap only when RAM is almost full
+  ansible.posix.sysctl:
+    name: vm.swappiness
+    value: "10"
+    sysctl_file: /etc/sysctl.d/90-harborfront.conf
+    state: present
+
+# Root sign-in and password sign-in are closed in the "ssh" role, the last role
+# of site.yml. It first makes sure that {{ deploy_user }} can sign in.

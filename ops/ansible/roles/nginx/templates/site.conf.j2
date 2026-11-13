@@ -1,0 +1,88 @@
+{# Jinja comments, like this one, do not appear in the output file. #}
+{# Variables: site_domains, web_root, domain, hsts_max_age, and has_cert (set in vhost.yml). #}
+{# has_cert is false before the certificate exists, and true after that. #}
+# Managed by Ansible. Do not edit by hand.
+# Your changes would be lost at the next run. Change the template instead.
+
+# Port 80 (HTTP) block.
+server {
+    listen 80;
+    # The same for IPv6.
+    listen [::]:80;
+    # Answer requests for these host names.
+    server_name {{ site_domains | join(' ') }};
+    # Do not show the nginx version in error pages and headers.
+    server_tokens off;
+
+    # Let's Encrypt asks for a file at this path to check that we control the
+    # domain. It must stay on HTTP and must not redirect, so it comes before
+    # the redirect rule.
+    location /.well-known/acme-challenge/ {
+        root {{ web_root }};
+    }
+
+{% if has_cert %}
+    # The certificate exists. Send every other request to HTTPS.
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# Port 443 (HTTPS) block. It appears only after the certificate exists,
+# because Nginx does not start if the certificate files are missing.
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name {{ site_domains | join(' ') }};
+    server_tokens off;
+
+    ssl_certificate     /etc/letsencrypt/live/{{ domain }}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/{{ domain }}/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_session_cache   shared:SSL:10m;
+    ssl_session_timeout 1d;
+
+    # Browsers use HTTPS only for this site, for hsts_max_age seconds.
+    add_header Strict-Transport-Security "max-age={{ hsts_max_age }}" always;
+
+    # The API does not compress the web build (the three.js bundle is large).
+    # Do not add text/event-stream here: gzip holds the game stream back, and
+    # the live updates stop.
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+    gzip_min_length 1024;
+
+    # The app: the web build and /api, on one origin (the API serves both).
+    location / {
+        proxy_pass http://127.0.0.1:8787;
+
+        # Keep-alive to the app, and no "Connection: close" from the client.
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+
+        # nginx sets these headers itself and replaces any client values.
+        # The origin check of the API trusts X-Forwarded-Host and
+        # X-Forwarded-Proto (apps/api/src/auth/middleware.ts).
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-For $remote_addr;
+
+        # SSE: send each event at once, and keep a quiet stream open. The API
+        # sends a heartbeat each 15 s and the header X-Accel-Buffering: no.
+        proxy_buffering off;
+        proxy_read_timeout 1h;
+    }
+}
+{% else %}
+    # No certificate yet. Show the placeholder page and not the app: the
+    # session cookie of the API works only on HTTPS.
+    root {{ web_root }};
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
+{% endif %}

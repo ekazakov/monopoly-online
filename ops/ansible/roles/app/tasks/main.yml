@@ -1,0 +1,59 @@
+---
+# Role "app": the app folder, the compose file and the production settings.
+# It does not start the app. deploy.yml loads an image and starts it.
+#
+#   {{ app_dir }}/compose.yaml   the app service (from templates/compose.yaml.j2)
+#   {{ app_dir }}/app.env        production settings with secrets, mode 0600
+#   {{ app_dir }}/.env           HARBORFRONT_TAG=<tag>, written by deploy.yml
+#   {{ app_dir }}/data/          the SQLite database, mounted at /data
+#   {{ app_dir }}/backups/       database backups (deploy.yml, task C1)
+#   {{ app_dir }}/images/        image files during a deploy
+
+- name: Create the app folder
+  ansible.builtin.file:
+    path: "{{ app_dir }}"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0750"
+
+# The API runs as the "node" user of the image (UID 1000), so that user must
+# own the database folder.
+- name: Create the database folder
+  ansible.builtin.file:
+    path: "{{ app_dir }}/data"
+    state: directory
+    owner: "{{ app_uid }}"
+    group: "{{ app_gid }}"
+    mode: "0750"
+
+- name: Create the backup and image folders
+  ansible.builtin.file:
+    path: "{{ app_dir }}/{{ item }}"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0750"
+  loop: [backups, images]
+
+- name: Write the compose file
+  ansible.builtin.template:
+    src: compose.yaml.j2
+    dest: "{{ app_dir }}/compose.yaml"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0640"
+  notify: Recreate the app
+
+# no_log and diff: false keep the Google secret and the Grafana token out of the
+# output, also with --check --diff.
+- name: Write the production settings
+  ansible.builtin.template:
+    src: app.env.j2
+    dest: "{{ app_dir }}/app.env"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0600"
+  no_log: true
+  diff: false
+  notify: Recreate the app

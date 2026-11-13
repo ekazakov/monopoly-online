@@ -1,0 +1,23 @@
+# The inventory lists the servers that Ansible controls.
+# Copy this file to inventory.ini and edit it. The real inventory.ini is in
+# .gitignore, because it describes how to log in to your own machine.
+#
+# [web] is a group name. site.yml, deploy.yml and verify.yml have "hosts: web",
+# so every server in this group gets the playbooks.
+
+# Option 1 (recommended): use a host alias from ~/.ssh/config, for example:
+#   Host harborfront
+#     HostName 203.0.113.10
+#     User deploy
+#     IdentityFile ~/.ssh/id_ed25519
+# Ansible runs the system "ssh" command, so HostName, User, and IdentityFile
+# come from your SSH config. This keeps the IP address out of this file.
+# On the first run, the deploy user does not exist yet: add "-u root".
+[web]
+harborfront
+
+# Option 2: write everything here.
+#   ansible_user                  the account to log in with (root on the first run)
+#   ansible_ssh_private_key_file  the private key that matches the key in Kamatera
+# [web]
+# 203.0.113.10 ansible_user=deploy ansible_ssh_private_key_file=~/.ssh/id_ed25519

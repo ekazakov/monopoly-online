@@ -1,0 +1,17 @@
+---
+# Start the app again with the new settings, but only if deploy.yml already
+# started it once (the .env file has the tag). Open game streams close for a
+# few seconds, and the browsers connect again.
+- name: Look for the deployed tag
+  ansible.builtin.stat:
+    path: "{{ app_dir }}/.env"
+  register: app_tag_file
+  listen: Recreate the app
+
+- name: Start the app with the new settings
+  ansible.builtin.command:
+    cmd: "docker compose up -d --force-recreate --wait --wait-timeout {{ deploy_wait_timeout }}"
+    chdir: "{{ app_dir }}"
+  when: app_tag_file.stat.exists
+  changed_when: true
+  listen: Recreate the app

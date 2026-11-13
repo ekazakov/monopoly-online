@@ -1,0 +1,68 @@
+---
+# The server setup playbook. It lists what Ansible does and in which order.
+# Run it from the repository root with: pnpm server:setup
+# The first run, as root: pnpm server:setup -u root
+# Run one part only with tags: pnpm server:setup --tags nginx
+- name: Set up the Harborfront server
+  # Run on every server in the [web] group of inventory.ini.
+  hosts: web
+  # Run all tasks as root through sudo. Package, firewall, and Nginx changes
+  # need root rights.
+  become: true
+
+  # pre_tasks run before the roles.
+  pre_tasks:
+    # Stop early, with a clear message, if a required value is missing.
+    # This is cheaper than a failure in the middle of the run.
+    - name: Make sure that the server and app variables are set
+      ansible.builtin.assert:
+        that:
+          # The certbot role compares DNS with this value.
+          - server_ip | length > 0
+          # The API does not start in production without Google sign-in.
+          - app_google_client_id | length > 0
+          - app_google_client_secret | length > 0
+          - app_google_redirect_uri is match('^https?://')
+        fail_msg: >-
+          Set server_ip, app_google_client_id, app_google_client_secret and
+          app_google_redirect_uri in group_vars/all/local.yml.
+          See local.yml.example.
+        quiet: true
+      # "always" runs this task even when you select other tags with --tags.
+      tags: [always]
+
+    # The domain is optional until section E of the milestone 6 tasks.
+    - name: Make sure that the domain variables are correct
+      ansible.builtin.assert:
+        that:
+          # A bare host name such as play.example.com. This rejects "https://..."
+          # and a trailing slash, which break DNS, Nginx, and Certbot.
+          - domain is match('^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$')
+          # Let's Encrypt refuses addresses at example.com.
+          - not admin_email.endswith('@example.com')
+        fail_msg: >-
+          The domain must be a bare name such as play.example.com, without
+          https:// or a slash. Set admin_email to your own address.
+        quiet: true
+      when: domain | length > 0
+      tags: [always]
+
+  # The order matters:
+  #   base      first, so the server is up to date and the user exists.
+  #   firewall  before Nginx, so ports 80 and 443 are open when Nginx starts.
+  #   docker    before app, because the app runs in a container.
+  #   app       the app folder, compose.yaml and app.env. deploy.yml starts the app.
+  #   nginx     before certbot, because Let's Encrypt checks the domain
+  #             through Nginx on port 80. Only when a domain is set.
+  #   certbot   needs the firewall, Nginx, and DNS. Only when a domain is set.
+  #   ssh       last. It closes root sign-in after it makes sure that the
+  #             deploy user can sign in.
+  # Each role has a tag with its own name, so you can run one role alone.
+  roles:
+    - { role: base, tags: [base] }
+    - { role: firewall, tags: [firewall] }
+    - { role: docker, tags: [docker] }
+    - { role: app, tags: [app] }
+    - { role: nginx, tags: [nginx], when: domain | length > 0 }
+    - { role: certbot, tags: [certbot], when: domain | length > 0 }
+    - { role: ssh, tags: [ssh] }

@@ -1,0 +1,6 @@
+---
+# On Ubuntu the service is "ssh", not "sshd".
+- name: Reload ssh
+  ansible.builtin.service:
+    name: ssh
+    state: reloaded

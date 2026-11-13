@@ -1,0 +1,6 @@
+---
+# Handlers run once, at the end of the play, and only when a task notified them.
+- name: Restart journald
+  ansible.builtin.service:
+    name: systemd-journald
+    state: restarted

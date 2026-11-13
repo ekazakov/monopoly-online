@@ -1,0 +1,33 @@
+# {{ ansible_managed }}
+# The production app. The Ansible role "app" writes this file, and deploy.yml
+# starts it. The log limits and the health check are the same as in compose.yaml
+# in the repository root: the health check comes from the image (/api/ready).
+name: harborfront
+
+services:
+  app:
+    # deploy.yml writes HARBORFRONT_TAG to the .env file next to this file.
+    image: {{ app_image }}:${HARBORFRONT_TAG:?run deploy.yml first}
+    env_file: app.env
+    environment:
+      PORT: "8787"
+      DB_PATH: /data/monopoly.db
+      # JSON lines. The image has no pino-pretty.
+      LOG_PRETTY: "false"
+      NODE_OPTIONS: "{{ app_node_options }}"
+    # Only on the loopback address. Ports that Docker publishes go around ufw,
+    # and nginx must be the only way in, because the API trusts the
+    # X-Forwarded-Host and X-Forwarded-Proto headers that nginx sets.
+    ports:
+      - "127.0.0.1:8787:8787"
+    volumes:
+      - {{ app_dir }}/data:/data
+    restart: unless-stopped
+    # The API stops in about 1 s. The limit of the shutdown is 8 s.
+    stop_grace_period: 10s
+    mem_limit: {{ app_mem_limit }}
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"

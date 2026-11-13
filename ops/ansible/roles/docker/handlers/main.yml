@@ -1,0 +1,7 @@
+---
+# A restart stops the running containers. "restart: unless-stopped" in the app
+# compose file starts the app again.
+- name: Restart docker
+  ansible.builtin.service:
+    name: docker
+    state: restarted

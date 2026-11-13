@@ -32,4 +32,7 @@ apps/e2e/blob-report
 .DS_Store
 artifacts
 plan
+# Server setup, local compose settings and dashboards. The Dockerfile does not read them, and
+# ops/ansible/.artifacts holds the image file of the deploy.
+ops
 *.log

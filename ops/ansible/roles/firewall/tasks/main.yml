@@ -1,0 +1,38 @@
+---
+# Role "firewall": blocks all incoming network traffic except SSH, HTTP,
+# and HTTPS. ufw is the standard firewall tool on Ubuntu.
+
+- name: Install ufw
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+
+# The SSH rule must exist before the firewall turns on. Otherwise the firewall
+# cuts the SSH session and Ansible cannot connect again.
+# If that happens, use the Kamatera web console and run: sudo ufw allow 22/tcp
+- name: Allow SSH (port 22)
+  community.general.ufw:
+    rule: allow
+    port: "22"
+    proto: tcp
+
+# Port 80 is for HTTP. Let's Encrypt uses it to check your domain, and Nginx
+# uses it to redirect visitors to HTTPS. Port 443 is for HTTPS.
+# We open the ports by number and not by the "Nginx Full" profile, because
+# that profile exists only after Nginx is installed, and this role runs first.
+- name: Allow HTTP and HTTPS
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop:
+    - "80"
+    - "443"
+
+# Turn the firewall on with a default of "deny incoming". Only the ports
+# allowed above stay open. Outgoing traffic stays allowed, so updates work.
+- name: Deny other incoming traffic and enable the firewall
+  community.general.ufw:
+    state: enabled
+    policy: deny
+    direction: incoming

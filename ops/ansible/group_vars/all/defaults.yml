@@ -1,0 +1,113 @@
+---
+# Shared defaults. This file is public. Do not put private values here.
+# Put your own values in local.yml in this folder. Ansible loads the files of
+# a folder in alphabetical order. local.yml comes after defaults.yml, so a
+# value in local.yml wins. Do not rename defaults.yml to a name that sorts
+# after local.yml.
+# See local.yml.example.
+#
+# "group_vars/all" means that these values apply to every host in every group.
+
+# --- Server -------------------------------------------------------------------
+
+# Public IP of the server. The certbot role checks that DNS returns this
+# value, so a wrong DNS record fails early and with a clear message.
+server_ip: ""
+
+# Sudo user that the base role creates. Ansible and the deploy sign in as this
+# user after the first run. The ssh role closes root sign-in.
+deploy_user: deploy
+
+# Public key that is copied to deploy_user, so you can log in as that user.
+# The path is on your Mac, because Ansible reads it there.
+deploy_user_public_key_file: "~/.ssh/id_ed25519.pub"
+
+# Swap file size in MB. The server has 1 GB RAM. Swap stops the OOM killer when
+# "docker load" and Node run at the same time. 1 GB is 10% of the 10 GB disk.
+swap_size_mb: 1024
+
+# The most disk space that the systemd journal can use.
+journald_max_use: 200M
+
+# Where Docker comes from:
+#   docker  the Docker apt repository (newest Docker Engine and compose plugin).
+#   ubuntu  the Ubuntu packages docker.io and docker-compose-v2. Use this when
+#           the Docker repository does not support the Ubuntu release yet.
+docker_source: docker
+
+# --- App ----------------------------------------------------------------------
+
+# The app folder on the server: compose.yaml, app.env, data, backups.
+app_dir: /srv/harborfront
+
+# UID and GID of the "node" user in the prod image. The data folder gets this
+# owner, so the API can write the database.
+app_uid: 1000
+app_gid: 1000
+
+# Memory limit of the app container, and the Node heap limit inside it.
+app_mem_limit: 600m
+app_node_options: "--max-old-space-size=384"
+
+# Log level of the API (pino).
+app_log_level: info
+
+# Google sign-in. The API does not start in production without all three.
+# Put the values in local.yml. Before the domain exists, the redirect address is
+# http://localhost:8787/api/auth/google/callback (through an SSH tunnel).
+app_google_client_id: ""
+app_google_client_secret: ""
+app_google_redirect_uri: ""
+
+# OpenTelemetry export to Grafana Cloud (task D1). Empty values turn telemetry
+# off. Put the headers in local.yml, because they contain the access token.
+app_otel_endpoint: ""
+app_otel_headers: ""
+app_otel_traces_sampler_arg: "1.0"
+
+# --- Deploy -------------------------------------------------------------------
+
+# The image name. deploy.yml adds the git commit as the tag.
+app_image: harborfront
+
+# The longest time in seconds that the deploy waits for /api/ready.
+deploy_wait_timeout: 90
+
+# --- Domain and HTTPS (section E of the milestone 6 tasks) ---------------------
+
+# Domain name, for example play.example.com. Empty until you buy the domain.
+# When it is empty, site.yml skips the nginx and certbot roles.
+# Its DNS A record must point to the server IP. Use a bare name: no https://
+# and no slash. Nginx uses it as server_name, and Certbot requests the
+# certificate for it.
+domain: ""
+
+# Email address for Let's Encrypt. Let's Encrypt writes to it when a
+# certificate is about to expire and renewal has failed.
+admin_email: admin@example.com
+
+# Set to true for test runs. Staging certificates are not trusted by browsers
+# but they have much higher rate limits than production ones.
+certbot_staging: false
+
+# Set to true to replace an existing staging certificate with a real one.
+# If certbot_staging is false and the certificate on the server came from the
+# staging server, the certbot role deletes it and requests a real one.
+# A real certificate is never deleted by this variable, so it is safe to leave
+# it on. Without it, the certificate request is skipped when any certificate
+# already exists.
+certbot_force: false
+
+# Names that the certificate and Nginx cover. The DNS A record of each name
+# must point to the server.
+site_domains:
+  - "{{ domain }}"
+
+# Folder for the placeholder page and the Let's Encrypt HTTP check (webroot
+# mode). The app itself is behind the proxy, not in this folder.
+web_root: "/var/www/{{ domain }}/html"
+
+# HSTS max-age in seconds. One day at the start. A long value together with a
+# broken certificate keeps the players out until the certificate is fixed.
+# After the manual run (F1), set it to 31536000 (one year).
+hsts_max_age: 86400

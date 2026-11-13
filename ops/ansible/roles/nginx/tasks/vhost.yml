@@ -1,0 +1,43 @@
+---
+# This file renders the virtual host (the Nginx settings for our domain).
+# The nginx role runs it first, without a certificate. The certbot role runs
+# it again after it gets the certificate, so the HTTPS block appears.
+# The template is the single source of truth, so a rerun never removes the
+# HTTPS settings. This is why we do not let Certbot edit the Nginx file itself.
+
+# The template needs to know whether HTTPS settings can be used. Nginx does
+# not start if the settings point to a certificate file that does not exist.
+- name: Check whether the certificate exists
+  ansible.builtin.stat:
+    path: "/etc/letsencrypt/live/{{ domain }}/fullchain.pem"
+  register: nginx_vhost_cert
+
+- name: Write the virtual host file
+  ansible.builtin.template:
+    src: site.conf.j2
+    dest: "/etc/nginx/sites-available/{{ domain }}.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  vars:
+    # The template reads this flag to decide if it adds the HTTPS block.
+    has_cert: "{{ nginx_vhost_cert.stat.exists }}"
+  notify: Reload nginx
+
+# Nginx loads only the files in sites-enabled. The usual Debian practice is
+# to keep the file in sites-available and link it, so you can disable a site
+# by removing the link.
+- name: Enable the virtual host
+  ansible.builtin.file:
+    src: "/etc/nginx/sites-available/{{ domain }}.conf"
+    dest: "/etc/nginx/sites-enabled/{{ domain }}.conf"
+    state: link
+  notify: Reload nginx
+
+# The reload handler runs at the end of the play, after this check.
+# If the configuration is invalid, the play stops here and Nginx keeps its
+# old working configuration.
+- name: Make sure that the Nginx configuration is valid
+  ansible.builtin.command: nginx -t
+  # The command only reads. It never changes the server, so never report "changed".
+  changed_when: false

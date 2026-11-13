@@ -1,0 +1,91 @@
+---
+# Role "docker": installs Docker Engine and the compose plugin, sets log limits
+# for all containers, and lets the deploy user run docker.
+# Source: https://docs.docker.com/engine/install/ubuntu/ (Ubuntu 26.04 is listed).
+
+- name: Make sure that docker_source has a known value
+  ansible.builtin.assert:
+    that: docker_source in ['docker', 'ubuntu']
+    fail_msg: 'docker_source must be "docker" or "ubuntu", not "{{ docker_source }}".'
+    quiet: true
+
+# Stop with a clear message if the Docker repository has no packages for this
+# Ubuntu release, instead of an apt error later.
+- name: Make sure that the Docker repository supports this Ubuntu release
+  ansible.builtin.uri:
+    url: "https://download.docker.com/linux/ubuntu/dists/{{ ansible_distribution_release }}/Release"
+    method: HEAD
+    status_code: [200, 404]
+  register: docker_release_check
+  when: docker_source == 'docker'
+
+- name: Stop when the Docker repository does not support this release
+  ansible.builtin.fail:
+    msg: >-
+      download.docker.com has no packages for Ubuntu "{{ ansible_distribution_release }}".
+      Set docker_source: ubuntu in group_vars/all/local.yml and run again.
+  when:
+    - docker_source == 'docker'
+    - docker_release_check.status == 404
+
+# deb822_repository downloads the key to /etc/apt/keyrings and writes
+# /etc/apt/sources.list.d/docker.sources, the same files as the Docker guide.
+- name: Add the Docker apt repository
+  ansible.builtin.deb822_repository:
+    name: docker
+    types: [deb]
+    uris: https://download.docker.com/linux/ubuntu
+    suites: ["{{ ansible_distribution_release }}"]
+    components: [stable]
+    architectures: ["{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }}"]
+    signed_by: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+  when: docker_source == 'docker'
+
+# No buildx on the server: the deploy builds the image on the Mac.
+- name: Install Docker from the Docker repository
+  ansible.builtin.apt:
+    name: [docker-ce, docker-ce-cli, containerd.io, docker-compose-plugin]
+    state: present
+    update_cache: true
+  when: docker_source == 'docker'
+
+- name: Install Docker from the Ubuntu packages
+  ansible.builtin.apt:
+    name: [docker.io, docker-compose-v2]
+    state: present
+    update_cache: true
+  when: docker_source == 'ubuntu'
+
+# Docker keeps container logs without a limit by default. Three files of 10 MB
+# for each container, the same limits as compose.yaml in the repository root.
+- name: Set log limits for all containers
+  ansible.builtin.copy:
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      {
+        "log-driver": "json-file",
+        "log-opts": { "max-size": "10m", "max-file": "3" }
+      }
+  notify: Restart docker
+
+# Membership of the "docker" group gives root rights on this server. This is
+# accepted: the deploy user already has sudo.
+- name: Let the deploy user run docker
+  ansible.builtin.user:
+    name: "{{ deploy_user }}"
+    groups: docker
+    append: true
+
+- name: Make sure that Docker is enabled and running
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: true
+
+# The deploy user gets the new group only on a new SSH connection.
+- name: Close the SSH connection, so the next tasks get the docker group
+  ansible.builtin.meta: reset_connection
