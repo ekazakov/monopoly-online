@@ -1,0 +1,366 @@
+---
+# The deploy playbook. Run it from the repository root:
+#   pnpm deploy:prod                 build, send and start the current commit
+#   pnpm deploy:rollback             start the previous image again
+# Options (add after the command, for example pnpm deploy:prod -e skip_checks=true):
+#   -e skip_checks=true              do not run "pnpm ready" first
+#   -e allow_dirty=true              deploy a tree with changes that are not committed
+#   -e rollback_force=true           roll back also when the database has newer migrations
+#
+# Files on the server (see the "app" role):
+#   .env              HARBORFRONT_TAG=<tag> of the running image
+#   .previous-tag     the tag before the last deploy, for the rollback
+#   .previous-migrations  the migration count before the last deploy
+#   backups/pre-deploy-*.db  a backup before each deploy (the last 3 are kept)
+- name: Deploy Harborfront
+  hosts: web
+  # Root, because the database folder belongs to the "node" user of the image.
+  become: true
+
+  vars:
+    rollback: false
+    rollback_force: false
+    skip_checks: false
+    allow_dirty: false
+    repo_root: "{{ playbook_dir | dirname | dirname }}"
+    artifacts_dir: "{{ playbook_dir }}/.artifacts"
+    db_file: "{{ app_dir }}/data/monopoly.db"
+    # x86_64 servers need an amd64 image. The Mac is arm64, so the build is slow.
+    image_platform: "{{ 'linux/amd64' if ansible_architecture == 'x86_64' else 'linux/arm64' }}"
+
+  tasks:
+    # --- State on the server ----------------------------------------------------
+
+    # The .env file does not exist before the first deploy.
+    - name: Read the running tag
+      ansible.builtin.slurp:
+        src: "{{ app_dir }}/.env"
+      register: deploy_current
+      failed_when: false
+
+    - name: Read the previous tag
+      ansible.builtin.command: "cat {{ app_dir }}/.previous-tag"
+      register: deploy_previous
+      changed_when: false
+      failed_when: false
+
+    # The number of applied migrations. 0 when the database or the table does not
+    # exist yet (the first deploy).
+    - name: Count the applied migrations
+      ansible.builtin.shell: >-
+        test -f {{ db_file }} &&
+        sqlite3 -readonly {{ db_file }} 'select count(*) from kysely_migration' 2>/dev/null
+        || echo 0
+      register: deploy_migrations_before
+      changed_when: false
+
+    - name: Keep the state in facts
+      ansible.builtin.set_fact:
+        current_tag: >-
+          {{ (deploy_current.content | b64decode | trim | replace('HARBORFRONT_TAG=', ''))
+          if deploy_current.content is defined else '' }}
+        previous_tag: "{{ deploy_previous.stdout | trim if deploy_previous.rc == 0 else '' }}"
+        migrations_before: "{{ deploy_migrations_before.stdout | trim | int }}"
+
+    # --- Rollback ---------------------------------------------------------------
+
+    - name: Roll back to the previous image
+      when: rollback | bool
+      block:
+        - name: Make sure that there is a previous image
+          ansible.builtin.assert:
+            that: previous_tag | length > 0
+            fail_msg: "There is no previous tag in {{ app_dir }}/.previous-tag. Nothing to roll back to."
+            quiet: true
+
+        - name: Read the migration count of the previous deploy
+          ansible.builtin.command: "cat {{ app_dir }}/.previous-migrations"
+          register: deploy_previous_migrations
+          changed_when: false
+          failed_when: false
+
+        # The old code with a newer schema can fail or lose data. Restore the
+        # pre-deploy backup instead (see ops/ansible/README.md), or force it.
+        - name: Stop when the database has newer migrations than the previous image knows
+          ansible.builtin.assert:
+            that: >-
+              rollback_force | bool or
+              migrations_before | int <= (deploy_previous_migrations.stdout | default('0') | trim | int)
+            fail_msg: >-
+              The database has {{ migrations_before }} migrations, but the previous image
+              ran with {{ deploy_previous_migrations.stdout | default('0') | trim }}.
+              Restore the pre-deploy backup with the old image (README.md, "Restore"),
+              or add -e rollback_force=true.
+            quiet: true
+
+        - name: Start the previous image
+          ansible.builtin.include_tasks: tasks/start.yml
+          vars:
+            start_tag: "{{ previous_tag }}"
+
+        # Swap the tags, so a second rollback goes forward again.
+        - name: Keep the rolled-back tag as the previous tag
+          ansible.builtin.copy:
+            dest: "{{ app_dir }}/.previous-tag"
+            owner: "{{ deploy_user }}"
+            group: "{{ deploy_user }}"
+            mode: "0640"
+            content: "{{ current_tag }}\n"
+
+        - name: Show the result of the rollback
+          ansible.builtin.debug:
+            msg: "Rolled back from {{ current_tag }} to {{ previous_tag }}."
+
+        - name: Stop here after a rollback
+          ansible.builtin.meta: end_host
+
+    # --- On the Mac: checks, tag and image ---------------------------------------
+
+    # The git module clones repositories. It cannot read the status.
+    - name: Read the git status # noqa: command-instead-of-module
+      ansible.builtin.command:
+        cmd: git status --porcelain
+        chdir: "{{ repo_root }}"
+      delegate_to: localhost
+      become: false
+      register: deploy_git_status
+      changed_when: false
+
+    - name: Stop when the tree has changes that are not committed
+      ansible.builtin.assert:
+        that: allow_dirty | bool or deploy_git_status.stdout | length == 0
+        fail_msg: >-
+          The git tree has changes that are not committed. Commit them, or add
+          -e allow_dirty=true for a test deploy.
+        quiet: true
+
+    - name: Read the commit # noqa: command-instead-of-module
+      ansible.builtin.command:
+        cmd: git rev-parse --short HEAD
+        chdir: "{{ repo_root }}"
+      delegate_to: localhost
+      become: false
+      register: deploy_commit
+      changed_when: false
+
+    # A dirty tree gets its own tag, so two different images never share a tag.
+    - name: Make the image tag
+      ansible.builtin.set_fact:
+        deploy_tag: >-
+          {{ deploy_commit.stdout | trim }}{{
+          ('-dirty-' ~ now(utc=true, fmt='%Y%m%d%H%M%S'))
+          if deploy_git_status.stdout | length > 0 else '' }}
+
+    # The roadmap rule: checks, tests and builds pass before each deploy.
+    - name: Run pnpm ready
+      ansible.builtin.command:
+        cmd: pnpm ready
+        chdir: "{{ repo_root }}"
+      delegate_to: localhost
+      become: false
+      changed_when: false
+      when: not (skip_checks | bool)
+
+    - name: Look for the image on the server
+      ansible.builtin.command: "docker image inspect {{ app_image }}:{{ deploy_tag }}"
+      register: deploy_image_on_server
+      changed_when: false
+      failed_when: false
+
+    - name: Build and send the image
+      when: deploy_image_on_server.rc != 0
+      block:
+        - name: Build the image on the Mac
+          ansible.builtin.command:
+            argv:
+              - docker
+              - buildx
+              - build
+              - --platform
+              - "{{ image_platform }}"
+              - --tag
+              - "{{ app_image }}:{{ deploy_tag }}"
+              - --load
+              - "{{ repo_root }}"
+          delegate_to: localhost
+          become: false
+          changed_when: true
+
+        - name: Create the local folder for the image file
+          ansible.builtin.file:
+            path: "{{ artifacts_dir }}"
+            state: directory
+            mode: "0755"
+          delegate_to: localhost
+          become: false
+
+        - name: Save the image to a file
+          ansible.builtin.shell: >-
+            set -o pipefail &&
+            docker save {{ app_image }}:{{ deploy_tag }}
+            | gzip > {{ artifacts_dir }}/{{ app_image }}-{{ deploy_tag }}.tar.gz
+          args:
+            executable: /bin/bash
+          delegate_to: localhost
+          become: false
+          changed_when: true
+
+        - name: Copy the image file to the server
+          ansible.builtin.copy:
+            src: "{{ artifacts_dir }}/{{ app_image }}-{{ deploy_tag }}.tar.gz"
+            dest: "{{ app_dir }}/images/{{ app_image }}-{{ deploy_tag }}.tar.gz"
+            owner: "{{ deploy_user }}"
+            group: "{{ deploy_user }}"
+            mode: "0640"
+
+        - name: Load the image on the server
+          ansible.builtin.command: "docker load -i {{ app_dir }}/images/{{ app_image }}-{{ deploy_tag }}.tar.gz"
+          changed_when: true
+
+      always:
+        # The disk is small. Remove the image files also when a step failed.
+        - name: Remove the image file on the server
+          ansible.builtin.file:
+            path: "{{ app_dir }}/images/{{ app_image }}-{{ deploy_tag }}.tar.gz"
+            state: absent
+
+        - name: Remove the image file on the Mac
+          ansible.builtin.file:
+            path: "{{ artifacts_dir }}/{{ app_image }}-{{ deploy_tag }}.tar.gz"
+            state: absent
+          delegate_to: localhost
+          become: false
+
+    # --- Backup and start ----------------------------------------------------------
+
+    # One name for the backup, set once, so the rescue finds the same file.
+    - name: Name the backup file
+      ansible.builtin.set_fact:
+        backup_file: "{{ app_dir }}/backups/pre-deploy-{{ now(utc=true, fmt='%Y%m%d%H%M%S') }}-{{ deploy_tag }}.db"
+      when: migrations_before | int > 0
+
+    # ".backup" makes a full copy while the API writes (WAL mode). The copy has
+    # no -wal file, so it can replace the database as it is.
+    - name: Make a backup before the start
+      ansible.builtin.command:
+        argv: [sqlite3, "{{ db_file }}", ".backup '{{ backup_file }}'"]
+      when: backup_file is defined
+      changed_when: true
+
+    - name: Check the backup
+      ansible.builtin.command:
+        argv: [sqlite3, -readonly, "{{ backup_file }}", "PRAGMA integrity_check"]
+      register: deploy_backup_check
+      changed_when: false
+      failed_when: deploy_backup_check.stdout | trim != 'ok'
+      when: backup_file is defined
+
+    - name: Start the new image
+      block:
+        - name: Start the new image
+          ansible.builtin.include_tasks: tasks/start.yml
+          vars:
+            start_tag: "{{ deploy_tag }}"
+
+      rescue:
+        - name: Count the migrations after the failed start
+          ansible.builtin.shell: >-
+            sqlite3 -readonly {{ db_file }} 'select count(*) from kysely_migration' 2>/dev/null || echo 0
+          register: deploy_migrations_after
+          changed_when: false
+
+        # The new image ran a migration. The old code must not run on the new
+        # schema, so put the backup back first.
+        - name: Restore the backup when the new image changed the schema
+          when:
+            - backup_file is defined
+            - deploy_migrations_after.stdout | trim | int != migrations_before | int
+          block:
+            - name: Stop the app
+              ansible.builtin.command:
+                cmd: docker compose stop app
+                chdir: "{{ app_dir }}"
+              changed_when: true
+
+            # The -wal and -shm files belong to the new schema. If they stay,
+            # SQLite applies them to the old file and breaks it.
+            - name: Remove the WAL files of the new schema
+              ansible.builtin.file:
+                path: "{{ db_file }}{{ item }}"
+                state: absent
+              loop: [-wal, -shm]
+
+            - name: Put the backup back
+              ansible.builtin.copy:
+                src: "{{ backup_file }}"
+                dest: "{{ db_file }}"
+                remote_src: true
+                owner: "{{ app_uid }}"
+                group: "{{ app_gid }}"
+                mode: "0640"
+
+        - name: Start the image that ran before
+          ansible.builtin.include_tasks: tasks/start.yml
+          vars:
+            start_tag: "{{ current_tag }}"
+          when: current_tag | length > 0
+
+        - name: Stop with the reason
+          ansible.builtin.fail:
+            msg: >-
+              The new image {{ deploy_tag }} did not become ready.
+              {{ ('The app runs ' ~ current_tag ~ ' again.') if current_tag | length > 0 else 'No app runs.' }}
+              {{ 'The database backup was restored.' if (backup_file is defined
+                 and deploy_migrations_after.stdout | trim | int != migrations_before | int) else '' }}
+              Read the log with: docker compose -f {{ app_dir }}/compose.yaml logs app
+
+    # --- After a good start -----------------------------------------------------------
+
+    - name: Keep the tag and the migration count for a rollback
+      ansible.builtin.copy:
+        dest: "{{ app_dir }}/{{ item.file }}"
+        owner: "{{ deploy_user }}"
+        group: "{{ deploy_user }}"
+        mode: "0640"
+        content: "{{ item.value }}\n"
+      loop:
+        - { file: .previous-tag, value: "{{ current_tag }}" }
+        - { file: .previous-migrations, value: "{{ migrations_before }}" }
+      loop_control:
+        label: "{{ item.file }}"
+      when:
+        - current_tag | length > 0
+        - current_tag != deploy_tag
+
+    - name: List the pre-deploy backups
+      ansible.builtin.find:
+        paths: "{{ app_dir }}/backups"
+        patterns: "pre-deploy-*.db"
+      register: deploy_backups
+
+    - name: Keep the last 3 pre-deploy backups
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ (deploy_backups.files | sort(attribute='mtime', reverse=true))[3:] }}"
+      loop_control:
+        label: "{{ item.path | basename }}"
+
+    # !unsafe: the Go template {{.Tag}} is for docker, not for Ansible.
+    - name: List the images # noqa: jinja[invalid]
+      ansible.builtin.command:
+        argv: [docker, image, ls, "{{ app_image }}", !unsafe "--format={{.Tag}}"]
+      register: deploy_images
+      changed_when: false
+
+    # Keep the running image and the one before it.
+    - name: Remove the older images
+      ansible.builtin.command: "docker image rm {{ app_image }}:{{ item }}"
+      loop: "{{ deploy_images.stdout_lines | reject('equalto', '<none>') | difference([deploy_tag, current_tag]) }}"
+      changed_when: true
+
+    - name: Show the result
+      ansible.builtin.debug:
+        msg: >-
+          {{ deploy_tag }} runs.
+          {{ ('Roll back to ' ~ current_tag ~ ' with: pnpm deploy:rollback') if current_tag | length > 0 and current_tag != deploy_tag else '' }}

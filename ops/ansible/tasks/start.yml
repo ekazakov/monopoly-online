@@ -1,0 +1,30 @@
+---
+# Start one image tag and wait until the app is ready. deploy.yml includes this
+# file for a deploy, for a rescue and for a rollback.
+# Input: start_tag.
+
+- name: Write the tag of the image to start
+  ansible.builtin.copy:
+    dest: "{{ app_dir }}/.env"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0640"
+    content: "HARBORFRONT_TAG={{ start_tag }}\n"
+
+# --wait waits for the health check of the image (/api/ready). It fails when the
+# container stops or is not healthy before the time limit.
+- name: Start the app
+  ansible.builtin.command:
+    cmd: "docker compose up -d --wait --wait-timeout {{ deploy_wait_timeout }}"
+    chdir: "{{ app_dir }}"
+  changed_when: true
+
+# A second check from outside the container, on the same address as nginx uses.
+- name: Make sure that the app is ready
+  ansible.builtin.uri:
+    url: http://127.0.0.1:8787/api/ready
+    status_code: 200
+  register: start_ready
+  retries: 5
+  delay: 2
+  until: start_ready.status == 200

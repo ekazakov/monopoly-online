@@ -1,0 +1,155 @@
+---
+# The production settings check (task B4). Run it from the repository root
+# after a deploy: pnpm server:verify
+# It changes nothing. It sends requests to the app on 127.0.0.1:8787, on the
+# server, so it works before the domain exists.
+- name: Check the production settings
+  hosts: web
+  become: true
+
+  vars:
+    app_url: http://127.0.0.1:8787
+
+  tasks:
+    - name: Read the running tag
+      ansible.builtin.slurp:
+        src: "{{ app_dir }}/.env"
+      register: verify_env
+      failed_when: false
+
+    - name: Keep the running tag
+      ansible.builtin.set_fact:
+        verify_tag: >-
+          {{ (verify_env.content | b64decode | trim | replace('HARBORFRONT_TAG=', ''))
+          if verify_env.content is defined else '' }}
+
+    - name: Make sure that an image runs
+      ansible.builtin.assert:
+        that: verify_tag | length > 0
+        fail_msg: "No tag in {{ app_dir }}/.env. Run pnpm deploy:prod first."
+        quiet: true
+
+    - name: Check the readiness route
+      ansible.builtin.uri:
+        url: "{{ app_url }}/api/ready"
+        status_code: 200
+
+    # The web app reads this route. It must show Google only, and no debug mode.
+    - name: Read the sign-in methods
+      ansible.builtin.uri:
+        url: "{{ app_url }}/api/auth/methods"
+        return_content: true
+      register: verify_methods
+
+    - name: Make sure that only Google sign-in is on, and debug mode is off
+      ansible.builtin.assert:
+        that:
+          - verify_methods.json.google
+          - not verify_methods.json.guest
+          - not verify_methods.json.debug
+        fail_msg: "The sign-in methods are {{ verify_methods.json }}. Expected google only, no guest, no debug."
+        quiet: true
+
+    # The Origin is the same as the request URL, so the origin check passes, and
+    # the answer comes from the route: 404 "Guest sign-in is off".
+    - name: Make sure that guest sign-in is refused
+      ansible.builtin.uri:
+        url: "{{ app_url }}/api/session"
+        method: POST
+        headers:
+          Origin: "{{ app_url }}"
+        body_format: json
+        body: { name: "Settings check" }
+        status_code: 404
+
+    # This route sets the state cookies before the redirect to Google. In
+    # production they must be Secure and HttpOnly, the same as the session cookie
+    # (apps/api/src/auth/cookie.ts).
+    - name: Start a Google sign-in
+      ansible.builtin.uri:
+        url: "{{ app_url }}/api/auth/google/start"
+        follow_redirects: none
+        status_code: 302
+      register: verify_google
+
+    - name: Make sure that the cookies are Secure and HttpOnly
+      ansible.builtin.assert:
+        that:
+          - verify_google.set_cookie is defined
+          - "'Secure' in verify_google.set_cookie"
+          - "'HttpOnly' in verify_google.set_cookie"
+          - verify_google.location is match('^https://accounts\\.google\\.com/')
+        fail_msg: "The Google start answer has the cookies '{{ verify_google.set_cookie | default('') }}'."
+        quiet: true
+
+    # The last "starting" line of the API log has the settings without secrets.
+    - name: Read the app log
+      ansible.builtin.command:
+        cmd: docker compose logs --no-color --no-log-prefix app
+        chdir: "{{ app_dir }}"
+      register: verify_logs
+      changed_when: false
+      no_log: true
+
+    - name: Make sure that the log has no secrets
+      ansible.builtin.assert:
+        that:
+          - app_google_client_secret not in verify_logs.stdout
+          - app_otel_headers | length == 0 or app_otel_headers not in verify_logs.stdout
+        fail_msg: "The app log contains a secret from app.env. Read the log on the server."
+        quiet: true
+      no_log: true
+
+    - name: Find the start line
+      ansible.builtin.set_fact:
+        verify_start: >-
+          {{ (verify_logs.stdout_lines | select('search', '"msg":"starting"') | list | last) | from_json }}
+
+    - name: Make sure that the app started with the production settings
+      ansible.builtin.assert:
+        that:
+          - verify_start.nodeEnv == 'production'
+          - not verify_start.debugMode
+          - not verify_start.fixedSeed
+          - verify_start.presenceGraceMs is none
+          - not verify_start.signIn.guest
+          - verify_start.signIn.google
+        fail_msg: "The start line is {{ verify_start }}."
+        quiet: true
+
+    # The API must refuse to start with debug mode in production
+    # (apps/api/src/auth/config.ts). No volume is mounted, so the real database is
+    # not touched. The empty endpoint keeps this run out of the telemetry.
+    - name: Start the image with debug mode on
+      ansible.builtin.command:
+        argv:
+          - timeout
+          - "60"
+          - docker
+          - run
+          - --rm
+          - --env-file
+          - "{{ app_dir }}/app.env"
+          - --env
+          - DEBUG_MODE_ENABLED=true
+          - --env
+          - OTEL_EXPORTER_OTLP_ENDPOINT=
+          - "{{ app_image }}:{{ verify_tag }}"
+      register: verify_debug_start
+      changed_when: false
+      failed_when: false
+      no_log: true
+
+    - name: Make sure that the start with debug mode failed
+      ansible.builtin.assert:
+        that:
+          - verify_debug_start.rc != 0
+          - "'DEBUG_MODE_ENABLED=true is not allowed' in (verify_debug_start.stdout ~ verify_debug_start.stderr)"
+        fail_msg: >-
+          The image did not refuse debug mode in production (exit code
+          {{ verify_debug_start.rc }}. 124 means that it ran for 60 s).
+        quiet: true
+
+    - name: Show the result
+      ansible.builtin.debug:
+        msg: "The production settings of {{ verify_tag }} are correct."
