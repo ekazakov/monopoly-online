@@ -10,16 +10,16 @@ Write responses in ASD-STE100 Simplified Technical English. Use the terms in [GL
 
 This is a pnpm workspace for a browser property-trading game. It supports remote players and hot-seat players on a shared device.
 
-| Path                   | Responsibility                                                                                                   |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `apps/web`             | React, TanStack Router and Query, and the three.js board through React Three Fiber and drei.                     |
-| `apps/api`             | Hono on Node, cookie sessions, rooms, game actions, SSE, presence, and SQLite through Kysely and better-sqlite3. |
-| `packages/game-engine` | Pure TypeScript game rules, a reducer, and seeded random numbers. No I/O.                                        |
-| `packages/shared`      | Zod schemas and types for requests, responses, errors, redacted state, and stream messages.                      |
-| `apps/e2e`             | Playwright browser tests with a dedicated database and seeded API server.                                        |
-| `artifacts`            | Standalone copies of the design system and game screen prototype.                                                |
-| `plan`                 | Game rules, API contracts, design specifications, and milestone task lists.                                      |
-| `ops`                  | Compose settings (`local.env`) and the Grafana dashboard and provisioning files for the local telemetry stack.   |
+| Path                   | Responsibility                                                                                                                         |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web`             | React, TanStack Router and Query, and the three.js board through React Three Fiber and drei.                                           |
+| `apps/api`             | Hono on Node, cookie sessions, rooms, game actions, SSE, presence, and SQLite through Kysely and better-sqlite3.                       |
+| `packages/game-engine` | Pure TypeScript game rules, a reducer, and seeded random numbers. No I/O.                                                              |
+| `packages/shared`      | Zod schemas and types for requests, responses, errors, redacted state, and stream messages.                                            |
+| `apps/e2e`             | Playwright browser tests with a dedicated database and seeded API server.                                                              |
+| `artifacts`            | Standalone copies of the design system and game screen prototype.                                                                      |
+| `plan`                 | Game rules, API contracts, design specifications, and milestone task lists.                                                            |
+| `ops`                  | Compose settings (`local.env`), the Grafana dashboard and provisioning files, and the Ansible server setup and deploy (`ops/ansible`). |
 
 Read the relevant documents before a change:
 
@@ -84,6 +84,8 @@ Run these commands from the repository root:
 | `pnpm e2e:docker`                                                | Run the Playwright suite against the prod Docker image.                                    |
 | `docker compose up` / `docker compose --profile dev up dev lgtm` | Start the prod image and the local Grafana stack, or the dev target with hot reload.       |
 | `pnpm artifact:game-screen` / `pnpm artifact:design-system`      | Serve the local artifacts on ports 8791 and 8792.                                          |
+| `pnpm server:setup` / `pnpm server:verify`                       | Set up the production VPS, or check its production settings, with Ansible.                 |
+| `pnpm deploy:prod` / `pnpm deploy:rollback`                      | Deploy the current commit to the VPS, or start the previous image again.                   |
 
 For a format fix, use `pnpm exec vp fmt <changed-files>`. Avoid formatting unrelated files. Import test helpers from `vite-plus/test`, as the existing tests do.
 

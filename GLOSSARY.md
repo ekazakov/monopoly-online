@@ -178,7 +178,7 @@ Package [packages/game-engine](packages/game-engine/README.md). Pure functions, 
 | Term                | Meaning                                                                                                                  | Where used                                        |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------- |
 | VPS                 | The one Kamatera server that runs the prod image. Do not write "droplet" (the old DigitalOcean plan) or "server" for it  | [milestone-6-tasks.md](plan/milestone-6-tasks.md) |
-| Production settings | The env file `/srv/harborfront/app.env` on the VPS. The template is `ops/prod/app.env.example`                           | [milestone-6-tasks.md](plan/milestone-6-tasks.md) |
+| Production settings | The env file `/srv/harborfront/app.env` on the VPS. The Ansible template is `ops/ansible/roles/app/templates/app.env.j2` | [milestone-6-tasks.md](plan/milestone-6-tasks.md) |
 | Deploy, rollback    | Deploy: build, send and start a new image with `pnpm deploy:prod`. Rollback: start the previous image again              | [milestone-6-tasks.md](plan/milestone-6-tasks.md) |
 | Backup, restore     | Backup: a checked copy of the SQLite file, made each day on the VPS. Restore: put a backup back in place of the database | [milestone-6-tasks.md](plan/milestone-6-tasks.md) |
 | Reverse proxy       | nginx on the VPS. It ends TLS and sends the requests to the app. M7 removes it                                           | [milestone-6-tasks.md](plan/milestone-6-tasks.md) |

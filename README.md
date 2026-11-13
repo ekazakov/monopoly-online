@@ -4,15 +4,16 @@ A property-trading board game that you play in the browser.
 
 ## Structure
 
-| Path                   | Content                                                                                      |
-| ---------------------- | -------------------------------------------------------------------------------------------- |
-| `apps/web`             | Frontend. React, TanStack Query, three.js through React Three Fiber and drei.                |
-| `apps/api`             | Backend. Hono on Node, SQLite (better-sqlite3), Kysely queries.                              |
-| `packages/shared`      | Zod schemas and the API error format. The API and the web use them.                          |
-| `packages/game-engine` | The game rules as a pure module. See its [README](packages/game-engine/README.md).           |
-| `artifacts/`           | Standalone copies of the design system and game screen prototype.                            |
-| `plan/`                | Specifications, game rules and the [implementation roadmap](plan/implementation-roadmap.md). |
-| `GLOSSARY.md`          | [Project terms](GLOSSARY.md): what each term means and where it is used.                     |
+| Path                   | Content                                                                                                          |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `apps/web`             | Frontend. React, TanStack Query, three.js through React Three Fiber and drei.                                    |
+| `apps/api`             | Backend. Hono on Node, SQLite (better-sqlite3), Kysely queries.                                                  |
+| `packages/shared`      | Zod schemas and the API error format. The API and the web use them.                                              |
+| `packages/game-engine` | The game rules as a pure module. See its [README](packages/game-engine/README.md).                               |
+| `artifacts/`           | Standalone copies of the design system and game screen prototype.                                                |
+| `plan/`                | Specifications, game rules and the [implementation roadmap](plan/implementation-roadmap.md).                     |
+| `ops/`                 | Local compose settings, the Grafana dashboard, and the [Ansible server setup and deploy](ops/ansible/README.md). |
+| `GLOSSARY.md`          | [Project terms](GLOSSARY.md): what each term means and where it is used.                                         |
 
 The toolchain is [Vite+](https://viteplus.dev) (`vite-plus`). It supplies Vite, Vitest, Oxlint, Oxfmt and tsdown.
 
@@ -142,6 +143,17 @@ docker compose --profile e2e up --wait e2e
 This starts the production image with the settings of the browser tests on port 8787, with a new in-memory database. `pnpm e2e:docker` uses it: it builds the image, runs the whole browser suite against `http://localhost:8787` (one origin, no Vite), and removes the container. Stop the other servers first, because it needs port 8787. The test flags are refused when `NODE_ENV` is `production`, so this profile does not test the production settings.
 
 If you run the API on the host with `pnpm dev`, send its telemetry to the stack with `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318`.
+
+## Deploy to the VPS
+
+Ansible in `ops/ansible/` sets up the production VPS and deploys the prod image. Ansible runs on your Mac. Read [ops/ansible/README.md](ops/ansible/README.md) for the first setup, the SSH tunnel and the restore steps.
+
+| Command                | Purpose                                                                                      |
+| ---------------------- | -------------------------------------------------------------------------------------------- |
+| `pnpm server:setup`    | Set up the VPS: packages, user, swap, firewall, Docker, the app folder, nginx and certbot.   |
+| `pnpm deploy:prod`     | Run `pnpm ready`, build the image, send it, make a backup, start it, and check `/api/ready`. |
+| `pnpm deploy:rollback` | Start the previous image again.                                                              |
+| `pnpm server:verify`   | Check the production settings of the running app.                                            |
 
 ## Artifacts
 
