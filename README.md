@@ -154,6 +154,7 @@ Ansible in `ops/ansible/` sets up the production VPS and deploys the prod image.
 | `pnpm deploy:prod`     | Run `pnpm ready`, build the image, send it, make a backup, start it, and check `/api/ready`. |
 | `pnpm deploy:rollback` | Start the previous image again.                                                              |
 | `pnpm server:verify`   | Check the production settings of the running app.                                            |
+| `pnpm server:cert`     | Replace the staging certificate with a real Let's Encrypt certificate.                       |
 
 ## Artifacts
 

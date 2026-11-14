@@ -86,6 +86,7 @@ Run these commands from the repository root:
 | `pnpm artifact:game-screen` / `pnpm artifact:design-system`      | Serve the local artifacts on ports 8791 and 8792.                                          |
 | `pnpm server:setup` / `pnpm server:verify`                       | Set up the production VPS, or check its production settings, with Ansible.                 |
 | `pnpm deploy:prod` / `pnpm deploy:rollback`                      | Deploy the current commit to the VPS, or start the previous image again.                   |
+| `pnpm server:cert`                                               | Replace the staging certificate with a real Let's Encrypt certificate.                     |
 
 For a format fix, use `pnpm exec vp fmt <changed-files>`. Avoid formatting unrelated files. Import test helpers from `vite-plus/test`, as the existing tests do.
 

@@ -105,6 +105,16 @@ It makes sure of these results:
 - The start log shows the production settings and no secrets.
 - The image refuses to start with debug mode on.
 
+## Real certificate
+
+With `certbot_staging: true` in `local.yml`, the certificate is a test certificate, and browsers do not trust it. Use it to test the setup, because the staging server has no rate limits. To get a real certificate, run:
+
+```bash
+pnpm server:cert
+```
+
+The command sets `certbot_staging=false` and `certbot_force=true` for this run only. Then set `certbot_staging: false` in `local.yml`, so that later runs of `pnpm server:setup` keep the real certificate.
+
 ## Open the app before the domain exists
 
 The app listens only on `127.0.0.1:8787` of the server. Open an SSH tunnel:
