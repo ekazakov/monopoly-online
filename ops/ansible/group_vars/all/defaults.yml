@@ -20,7 +20,7 @@ deploy_user: deploy
 
 # Public key that is copied to deploy_user, so you can log in as that user.
 # The path is on your Mac, because Ansible reads it there.
-deploy_user_public_key_file: "~/.ssh/id_ed25519.pub"
+deploy_user_public_key_file: ""
 
 # Swap file size in MB. The server has 1 GB RAM. Swap stops the OOM killer when
 # "docker load" and Node run at the same time. 1 GB is 10% of the 10 GB disk.
@@ -84,11 +84,11 @@ domain: ""
 
 # Email address for Let's Encrypt. Let's Encrypt writes to it when a
 # certificate is about to expire and renewal has failed.
-admin_email: admin@example.com
+admin_email:
 
 # Set to true for test runs. Staging certificates are not trusted by browsers
 # but they have much higher rate limits than production ones.
-certbot_staging: false
+certbot_staging: true
 
 # Set to true to replace an existing staging certificate with a real one.
 # If certbot_staging is false and the certificate on the server came from the
