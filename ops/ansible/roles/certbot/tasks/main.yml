@@ -108,6 +108,20 @@
     - certbot_existing_staging.rc is defined
     - certbot_existing_staging.rc == 0
 
+# Let's Encrypt downloads the check file through Nginx on port 80. Nginx must
+# run our virtual host now. A handler would run at the end of the play, which
+# is too late, and a failed earlier run can leave a changed file with no reload.
+- name: Look for the certificate before the request
+  ansible.builtin.stat:
+    path: "/etc/letsencrypt/live/{{ domain }}/fullchain.pem"
+  register: certbot_cert_before
+
+- name: Load the virtual host in Nginx before the request
+  ansible.builtin.service:
+    name: nginx
+    state: reloaded
+  when: not certbot_cert_before.stat.exists
+
 # "certonly" gets the certificate and does not change any web server file.
 # "--cert-name" fixes the folder name in /etc/letsencrypt/live/, so the Nginx
 # template can use a known path.

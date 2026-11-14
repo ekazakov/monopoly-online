@@ -3,36 +3,47 @@
 # site.yml, so a mistake here cannot stop the other roles in the middle of a run.
 #
 # If you are locked out, open the server console in the Kamatera panel, sign in
-# as root with the password, and delete /etc/ssh/sshd_config.d/10-harborfront.conf.
+# as root with the password, and delete the block between the two "ANSIBLE
+# MANAGED BLOCK (harborfront)" lines at the top of /etc/ssh/sshd_config.
 
 # Stop before any change if the deploy user cannot sign in with the key.
 # BatchMode=yes: no password question, so a missing key fails at once.
 # The host is the inventory name: the alias in ~/.ssh/config, or the IP.
+# The task runs on localhost, so "ansible_host" alone would name localhost.
+# "hostvars" gives the values of the real server.
 - name: Make sure that the deploy user can sign in with the SSH key
   ansible.builtin.command: >-
     ssh -o BatchMode=yes -o ConnectTimeout=10
-    {{ ('-i ' ~ ansible_ssh_private_key_file) if ansible_ssh_private_key_file is defined else '' }}
-    {{ deploy_user }}@{{ ansible_host | default(inventory_hostname) }} true
+    {{ ('-i ' ~ hostvars[inventory_hostname].ansible_ssh_private_key_file) if hostvars[inventory_hostname].ansible_ssh_private_key_file is defined else '' }}
+    {{ deploy_user }}@{{ hostvars[inventory_hostname].ansible_host | default(inventory_hostname) }} true
   delegate_to: localhost
   become: false
   changed_when: false
   check_mode: false
 
-# Ubuntu reads the files in sshd_config.d/ before sshd_config, and the first
-# value of a setting wins. The name starts with "10-", so it also comes before
-# the "50-cloud-init.conf" file of cloud images, which can allow passwords.
+# The first value of a setting wins in sshd. The block goes to the top of
+# sshd_config, so it comes before every other line: the old values in the
+# same file, and the files in sshd_config.d/ (cloud images can allow passwords
+# there). A drop-in file does not work on every image. The Kamatera image has
+# no "Include" line in sshd_config, so sshd does not read sshd_config.d/.
 - name: Close root sign-in and password sign-in
-  ansible.builtin.copy:
-    dest: /etc/ssh/sshd_config.d/10-harborfront.conf
-    owner: root
-    group: root
-    mode: "0644"
-    content: |
+  ansible.builtin.blockinfile:
+    path: /etc/ssh/sshd_config
+    insertbefore: BOF
+    marker: "# {mark} ANSIBLE MANAGED BLOCK (harborfront)"
+    block: |
       PermitRootLogin no
       PasswordAuthentication no
       KbdInteractiveAuthentication no
-    # Check the full configuration with the new file before it is used.
+    # Check the full configuration with the new block before it is used.
     validate: /usr/sbin/sshd -t -f %s
+  notify: Reload ssh
+
+# An earlier version of this role wrote this file. It is not needed now.
+- name: Delete the old drop-in file
+  ansible.builtin.file:
+    path: /etc/ssh/sshd_config.d/10-harborfront.conf
+    state: absent
   notify: Reload ssh
 
 # Apply the change now, so the check below reads the active configuration.
@@ -46,14 +57,30 @@
   changed_when: false
   check_mode: false
 
+# For the failure message: every line that sets these values, with its file.
+# grep exit code 1 means no match, and it is not an error here.
+- name: Find the files that set the sign-in values
+  ansible.builtin.command:
+    argv:
+      - grep
+      - -rEin
+      - '^\s*(Include|PermitRootLogin|PasswordAuthentication|KbdInteractiveAuthentication|Match)'
+      - /etc/ssh/sshd_config
+      - /etc/ssh/sshd_config.d/
+  register: ssh_setting_lines
+  failed_when: ssh_setting_lines.rc > 1
+  changed_when: false
+  check_mode: false
+
 - name: Make sure that root sign-in and password sign-in are closed
   ansible.builtin.assert:
     that:
       - "'permitrootlogin no' in ssh_effective.stdout_lines"
       - "'passwordauthentication no' in ssh_effective.stdout_lines"
     fail_msg: >-
-      Another sshd file sets PermitRootLogin or PasswordAuthentication first.
-      Read "sshd -T" and the files in /etc/ssh/sshd_config.d/ on the server.
+      sshd does not use the block at the top of sshd_config.
+      Effective values: {{ ssh_effective.stdout_lines | select('match', '^(permitrootlogin|passwordauthentication|kbdinteractiveauthentication) ') | list }}.
+      Lines in the files: {{ ssh_setting_lines.stdout_lines }}.
     quiet: true
   # With --check the file above is not written, so the result is not known.
   when: not ansible_check_mode
