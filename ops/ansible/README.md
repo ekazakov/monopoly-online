@@ -2,14 +2,16 @@
 
 This folder sets up the production VPS, deploys the prod image and checks the production settings. It is section B of the [milestone 6 tasks](../../plan/milestone-6-tasks.md). Ansible runs on your Mac and connects to the server over SSH. Nothing is installed on the server for Ansible except Python, which Ubuntu has.
 
-| File                          | Purpose                                                                                                                 |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `site.yml`                    | Server setup: packages, user, swap, firewall, Docker, app folder, nginx and certbot (only with a domain), SSH hardening |
-| `deploy.yml`                  | Build the image on the Mac, send it, make a backup, start it, and roll back                                             |
-| `verify.yml`                  | Check the production settings of the running app. It changes nothing                                                    |
-| `group_vars/all/defaults.yml` | Public default values                                                                                                   |
-| `group_vars/all/local.yml`    | Your private values: IP, Google client secret, Grafana token. Not in git                                                |
-| `inventory.ini`               | The server alias. Not in git                                                                                            |
+| File                          | Purpose                                                                               |
+| ----------------------------- | ------------------------------------------------------------------------------------- |
+| `site.yml`                    | The full setup: `server.yml`, then `app.yml`, then SSH hardening                      |
+| `server.yml`                  | Server setup: packages, user, swap, firewall and Docker. It has no Harborfront values |
+| `app.yml`                     | App setup: app folder and settings, nginx and certbot (only with a domain)            |
+| `deploy.yml`                  | Build the image on the Mac, send it, make a backup, start it, and roll back           |
+| `verify.yml`                  | Check the production settings of the running app. It changes nothing                  |
+| `group_vars/all/defaults.yml` | Public default values                                                                 |
+| `group_vars/all/local.yml`    | Your private values: IP, Google client secret, Grafana token. Not in git              |
+| `inventory.ini`               | The server alias. Not in git                                                          |
 
 ## Roles
 
@@ -22,6 +24,8 @@ This folder sets up the production VPS, deploys the prod image and checks the pr
 | `nginx`    | The reverse proxy to `127.0.0.1:8787`, with the SSE settings. It runs only with a `domain` value                                             |
 | `certbot`  | The Let's Encrypt certificate and its renewal. It runs only with a `domain` value                                                            |
 | `ssh`      | Closes root sign-in and password sign-in, after it makes sure that `deploy` can sign in                                                      |
+
+`site.yml` runs the roles in the sequence of this table. `server.yml` has `base`, `firewall` and `docker`. `app.yml` has `app`, `nginx` and `certbot`. The `ssh` role is a separate last step of `site.yml`. The first run connects as root, and no play can connect as root after this role.
 
 ## Setup on the Mac
 
@@ -58,6 +62,14 @@ pnpm server:setup
 ```
 
 After the first run, you can see the changes of a run before you make them: `pnpm server:setup --check --diff`. Do not use `--check` for the first run. Check mode cannot install Docker from a repository that it did not add yet.
+
+To apply a change of the app settings, the domain or the Nginx site, run only the app playbook:
+
+```bash
+pnpm app:setup
+```
+
+This command needs the Google values in `local.yml`. `ansible-playbook server.yml` in this folder does not need them. If `app.env` or `compose.yaml` changes, the run recreates the app container.
 
 If you cannot sign in after a run, use the server console in the Kamatera panel. Sign in as root with the password, and delete the block between the two `ANSIBLE MANAGED BLOCK (harborfront)` lines at the top of `/etc/ssh/sshd_config`. Then run `systemctl reload ssh`.
 
@@ -152,11 +164,11 @@ Delete the `-wal` and `-shm` files before the copy. They belong to the old file,
 Run these commands in this folder:
 
 ```bash
-ansible-playbook site.yml deploy.yml verify.yml --syntax-check
+ansible-playbook site.yml server.yml app.yml deploy.yml verify.yml --syntax-check
 ```
 
 ```bash
-ansible-lint site.yml deploy.yml verify.yml
+ansible-lint site.yml server.yml app.yml deploy.yml verify.yml
 ```
 
 If the linter prints `couldn't resolve module/action`, a collection is missing. Run the `ansible-galaxy` command again.

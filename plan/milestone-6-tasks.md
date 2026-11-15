@@ -41,7 +41,7 @@
 | Topic | Decision |
 | --- | --- |
 | Host | One Kamatera VPS: 1 vCPU, 1 GB RAM, 10 GB disk, Ubuntu 26.04. One API process |
-| Provisioning | Ansible in `ops/ansible/` (decided 2026-11-13). `site.yml` runs the roles `base`, `firewall`, `docker`, `app`, `nginx`, `certbot` and `ssh`. It is idempotent: a second run changes nothing. `pnpm server:setup`. The private values are in `ops/ansible/group_vars/all/local.yml`, which is not in git |
+| Provisioning | Ansible in `ops/ansible/` (decided 2026-11-13). `site.yml` runs `server.yml` (the roles `base`, `firewall` and `docker`), `app.yml` (the roles `app`, `nginx` and `certbot`) and then the `ssh` role. `pnpm app:setup` runs `app.yml` alone. It is idempotent: a second run changes nothing. `pnpm server:setup`. The private values are in `ops/ansible/group_vars/all/local.yml`, which is not in git |
 | Server base | The user `deploy` with sudo and in the `docker` group. SSH with keys only: the `ssh` role closes root and password sign-in after it makes sure that `deploy` can sign in. ufw allows only 22, 80 and 443. unattended-upgrades on. A 1 GB swap file with swappiness 10. A journald limit of 200 MB |
 | Docker | Docker Engine and the compose plugin from the Docker apt repository (Ubuntu 26.04 is supported). `docker_source: ubuntu` uses the Ubuntu packages `docker.io` and `docker-compose-v2` instead |
 | Reverse proxy | nginx and certbot from the Ubuntu packages, on the host and not in a container. The roles `nginx` and `certbot` run only with a `domain` value. The site file is `ops/ansible/roles/nginx/templates/site.conf.j2`. M7 removes both |
@@ -143,6 +143,6 @@ After you buy the domain, do these tasks.
 
 ## Critical files
 
-- New: `ops/ansible/` (playbooks `site.yml`, `deploy.yml` and `verify.yml`, the roles, and the README), and later a `backup` role and `scripts/pull-backups.sh`
+- New: `ops/ansible/` (playbooks `site.yml`, `server.yml`, `app.yml`, `deploy.yml` and `verify.yml`, the roles, and the README), and later a `backup` role and `scripts/pull-backups.sh`
 - Changed: root `package.json` (the `server:*` and `deploy:*` scripts), `.dockerignore` (`ops`), `.gitignore` (`backups/`), `apps/api/src/metrics.ts` and its test, `ops/grafana/dashboards/harborfront.json`
 - Reused: `Dockerfile` (the `prod` target and the health check), `compose.yaml` (the `x-logging` limits), `apps/api/src/otel.ts` (the telemetry switch), `apps/api/src/shutdown.ts`

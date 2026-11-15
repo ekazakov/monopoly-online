@@ -157,6 +157,7 @@ Ansible in `ops/ansible/` sets up the production VPS and deploys the prod image.
 | Command                | Purpose                                                                                      |
 | ---------------------- | -------------------------------------------------------------------------------------------- |
 | `pnpm server:setup`    | Set up the VPS: packages, user, swap, firewall, Docker, the app folder, nginx and certbot.   |
+| `pnpm app:setup`       | Apply only the app part: the app folder and settings, nginx and certbot.                     |
 | `pnpm deploy:prod`     | Run `pnpm ready`, build the image, send it, make a backup, start it, and check `/api/ready`. |
 | `pnpm deploy:rollback` | Start the previous image again.                                                              |
 | `pnpm server:verify`   | Check the production settings of the running app.                                            |

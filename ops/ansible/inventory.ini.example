@@ -2,7 +2,7 @@
 # Copy this file to inventory.ini and edit it. The real inventory.ini is in
 # .gitignore, because it describes how to log in to your own machine.
 #
-# [web] is a group name. site.yml, deploy.yml and verify.yml have "hosts: web",
+# [web] is a group name. server.yml, app.yml, deploy.yml and verify.yml have "hosts: web",
 # so every server in this group gets the playbooks.
 
 # Option 1 (recommended): use a host alias from ~/.ssh/config, for example:

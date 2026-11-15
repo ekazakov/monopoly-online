@@ -1,0 +1,24 @@
+---
+# The server playbook. It makes a new Ubuntu server ready for an app in Docker.
+# It has no Harborfront values, so it needs no Google or domain settings.
+# pnpm server:setup runs it as the first part of site.yml.
+# Run it alone from this folder with: ansible-playbook server.yml
+# The ssh role is not here. site.yml runs it last, after app.yml.
+- name: Set up the server
+  # Run on every server in the [web] group of inventory.ini.
+  hosts: web
+  # Run all tasks as root through sudo. Package and firewall changes need root
+  # rights.
+  become: true
+
+  # The order matters:
+  #   base      first, so the server is up to date and the user exists.
+  #   firewall  before Nginx (app.yml), so ports 80 and 443 are open when
+  #             Nginx starts.
+  #   docker    before the app role (app.yml), because the app runs in a
+  #             container.
+  # Each role has a tag with its own name, so you can run one role alone.
+  roles:
+    - { role: base, tags: [base] }
+    - { role: firewall, tags: [firewall] }
+    - { role: docker, tags: [docker] }

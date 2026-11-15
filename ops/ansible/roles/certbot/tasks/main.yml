@@ -11,7 +11,7 @@
   ansible.builtin.debug:
     msg:
       - "certbot_staging is true. The certificate comes from the Let's Encrypt STAGING server. Browsers do not trust it."
-      - "To switch to a real certificate, run: ansible-playbook site.yml --tags certbot -e certbot_staging=false -e certbot_force=true"
+      - "To switch to a real certificate, run: ansible-playbook app.yml --tags certbot -e certbot_staging=false -e certbot_force=true"
       - "certbot_force=true deletes the existing staging certificate first. Without it, the request is skipped, because a certificate file already exists."
   when: certbot_staging | bool
 

@@ -76,7 +76,7 @@ deploy_wait_timeout: 90
 # --- Domain and HTTPS (section E of the milestone 6 tasks) ---------------------
 
 # Domain name, for example play.example.com. Empty until you buy the domain.
-# When it is empty, site.yml skips the nginx and certbot roles.
+# When it is empty, app.yml skips the nginx and certbot roles.
 # Its DNS A record must point to the server IP. Use a bare name: no https://
 # and no slash. Nginx uses it as server_name, and Certbot requests the
 # certificate for it.

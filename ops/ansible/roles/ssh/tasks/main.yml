@@ -1,6 +1,7 @@
 ---
-# Role "ssh": closes root sign-in and password sign-in. It is the last role of
-# site.yml, so a mistake here cannot stop the other roles in the middle of a run.
+# Role "ssh": closes root sign-in and password sign-in. It is the last step of
+# site.yml, after server.yml and app.yml, so a mistake here cannot stop the
+# other roles in the middle of a run.
 #
 # If you are locked out, open the server console in the Kamatera panel, sign in
 # as root with the password, and delete the block between the two "ANSIBLE

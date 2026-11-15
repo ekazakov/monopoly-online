@@ -25,8 +25,9 @@
     "openapi": "node apps/api/scripts/generate-openapi.ts",
     "db:purge": "pnpm --filter @monopoly/api db:purge",
     "server:setup": "cd ops/ansible && ansible-playbook site.yml",
+    "app:setup": "cd ops/ansible && ansible-playbook app.yml",
     "server:verify": "cd ops/ansible && ansible-playbook verify.yml",
-    "server:cert": "cd ops/ansible && ansible-playbook site.yml --tags certbot -e certbot_staging=false -e certbot_force=true",
+    "server:cert": "cd ops/ansible && ansible-playbook app.yml --tags certbot -e certbot_staging=false -e certbot_force=true",
     "deploy:prod": "cd ops/ansible && ansible-playbook deploy.yml",
     "deploy:rollback": "cd ops/ansible && ansible-playbook deploy.yml -e rollback=true",
     "graph:dashboard": "export GRAPH_DIR=\"$PWD\" && cd ~/.claude/plugins/cache/understand-anything/understand-anything/2.9.8/packages/dashboard && npx vite --host 127.0.0.1"

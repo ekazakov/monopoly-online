@@ -69,25 +69,26 @@ Do not set `--use-openssl-ca` and `--use-system-ca` together in `NODE_OPTIONS`.
 
 Run these commands from the repository root:
 
-| Command                                                          | Purpose                                                                                    |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `pnpm install`                                                   | Install workspace dependencies.                                                            |
-| `pnpm dev`                                                       | Start web on port 5173 and API on port 8787. The web server proxies `/api`.                |
-| `pnpm check`                                                     | Check formatting, lint, and types through Vite+.                                           |
-| `pnpm test`                                                      | Run workspace unit and integration tests. Does not run Playwright.                         |
-| `pnpm --filter @monopoly/game-engine test`                       | Run one package's tests; use the corresponding package name for API, web, or shared tests. |
-| `pnpm build`                                                     | Build the apps.                                                                            |
-| `pnpm knip` / `pnpm knip:prod`                                   | Find unused files, exports, and dependencies. `knip:prod` ignores tests; it is a report.   |
-| `pnpm ready`                                                     | Run checks, Knip, unit and integration tests, and builds.                                  |
-| `pnpm openapi`                                                   | Regenerate `apps/api/openapi.json` from the API routes.                                    |
-| `pnpm e2e`                                                       | Run the Playwright browser suite.                                                          |
-| `pnpm e2e:ui` / `pnpm e2e:video` / `pnpm e2e:report`             | Open the test UI, record videos, or open the last HTML report.                             |
-| `pnpm e2e:docker`                                                | Run the Playwright suite against the prod Docker image.                                    |
-| `docker compose up` / `docker compose --profile dev up dev lgtm` | Start the prod image and the local Grafana stack, or the dev target with hot reload.       |
-| `pnpm artifact:game-screen` / `pnpm artifact:design-system`      | Serve the local artifacts on ports 8791 and 8792.                                          |
-| `pnpm server:setup` / `pnpm server:verify`                       | Set up the production VPS, or check its production settings, with Ansible.                 |
-| `pnpm deploy:prod` / `pnpm deploy:rollback`                      | Deploy the current commit to the VPS, or start the previous image again.                   |
-| `pnpm server:cert`                                               | Replace the staging certificate with a real Let's Encrypt certificate.                     |
+| Command                                                          | Purpose                                                                                      |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `pnpm install`                                                   | Install workspace dependencies.                                                              |
+| `pnpm dev`                                                       | Start web on port 5173 and API on port 8787. The web server proxies `/api`.                  |
+| `pnpm check`                                                     | Check formatting, lint, and types through Vite+.                                             |
+| `pnpm test`                                                      | Run workspace unit and integration tests. Does not run Playwright.                           |
+| `pnpm --filter @monopoly/game-engine test`                       | Run one package's tests; use the corresponding package name for API, web, or shared tests.   |
+| `pnpm build`                                                     | Build the apps.                                                                              |
+| `pnpm knip` / `pnpm knip:prod`                                   | Find unused files, exports, and dependencies. `knip:prod` ignores tests; it is a report.     |
+| `pnpm ready`                                                     | Run checks, Knip, unit and integration tests, and builds.                                    |
+| `pnpm openapi`                                                   | Regenerate `apps/api/openapi.json` from the API routes.                                      |
+| `pnpm e2e`                                                       | Run the Playwright browser suite.                                                            |
+| `pnpm e2e:ui` / `pnpm e2e:video` / `pnpm e2e:report`             | Open the test UI, record videos, or open the last HTML report.                               |
+| `pnpm e2e:docker`                                                | Run the Playwright suite against the prod Docker image.                                      |
+| `docker compose up` / `docker compose --profile dev up dev lgtm` | Start the prod image and the local Grafana stack, or the dev target with hot reload.         |
+| `pnpm artifact:game-screen` / `pnpm artifact:design-system`      | Serve the local artifacts on ports 8791 and 8792.                                            |
+| `pnpm server:setup` / `pnpm server:verify`                       | Set up the production VPS, or check its production settings, with Ansible.                   |
+| `pnpm deploy:prod` / `pnpm deploy:rollback`                      | Deploy the current commit to the VPS, or start the previous image again.                     |
+| `pnpm app:setup`                                                 | Apply only the app part of the server setup: the app folder and settings, nginx and certbot. |
+| `pnpm server:cert`                                               | Replace the staging certificate with a real Let's Encrypt certificate.                       |
 
 For a format fix, use `pnpm exec vp fmt <changed-files>`. Avoid formatting unrelated files. Import test helpers from `vite-plus/test`, as the existing tests do.
 
