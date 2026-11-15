@@ -35,6 +35,9 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "knip": "catalog:",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   },

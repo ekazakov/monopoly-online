@@ -8,7 +8,9 @@
     "packages/shared/src/*.ts": ["duplicates", "types"]
   },
   "workspaces": {
-    ".": {},
+    ".": {
+      "ignoreDependencies": ["oxfmt", "oxlint", "oxlint-tsgolint"]
+    },
     "apps/api": {
       "entry": ["src/index.ts!", "src/telemetry.ts!", "scripts/*.ts", "src/test-fixtures/*.ts"],
       "project": [
