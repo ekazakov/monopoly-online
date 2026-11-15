@@ -31,6 +31,9 @@
   become: false
   # dig only reads, so never report "changed".
   changed_when: false
+  # Run this task also in check mode (--check). Ansible skips "command" tasks
+  # in check mode, and the next task would then see an empty DNS answer.
+  check_mode: false
   # Keep the answers for the next task.
   register: certbot_dns
 
