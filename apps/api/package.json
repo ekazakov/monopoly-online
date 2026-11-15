@@ -19,7 +19,6 @@
   "dependencies": {
     "@hono/node-server": "catalog:",
     "@hono/zod-openapi": "catalog:",
-    "@hono/zod-validator": "catalog:",
     "@opentelemetry/api": "catalog:",
     "@opentelemetry/instrumentation": "catalog:",
     "@opentelemetry/instrumentation-pino": "catalog:",

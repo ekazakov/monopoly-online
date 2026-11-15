@@ -17,9 +17,11 @@
     "e2e:report": "pnpm --filter @monopoly/e2e e2e:report",
     "check": "vp check",
     "fmt": "vp fmt",
+    "knip": "knip",
+    "knip:prod": "knip --production",
     "artifact:game-screen": "node artifacts/serve.mjs game-screen 8791",
     "artifact:design-system": "node artifacts/serve.mjs design-system 8792",
-    "ready": "vp check && vp run -r test && vp run -r build",
+    "ready": "vp check && knip && vp run -r test && vp run -r build",
     "openapi": "node apps/api/scripts/generate-openapi.ts",
     "db:purge": "pnpm --filter @monopoly/api db:purge",
     "server:setup": "cd ops/ansible && ansible-playbook site.yml",
@@ -31,6 +33,7 @@
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "knip": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   },

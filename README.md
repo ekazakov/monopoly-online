@@ -103,6 +103,12 @@ pnpm check
 This command does the format, lint and type checks. To fix format errors, use `pnpm exec vp check --fix`.
 
 ```bash
+pnpm knip
+```
+
+This command uses [Knip](https://knip.dev) to find unused files, unused exports, and unused dependencies. Its configuration is in `knip.json`. `pnpm ready` also runs it. `pnpm knip:prod` ignores test files, so it also shows code that only tests use. It is a report and not a gate.
+
+```bash
 pnpm test
 ```
 

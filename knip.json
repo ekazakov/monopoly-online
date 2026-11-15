@@ -1,0 +1,31 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignore": ["artifacts/**"],
+  "ignoreBinaries": ["ansible-playbook"],
+  "ignoreExportsUsedInFile": true,
+  "ignoreIssues": {
+    "apps/api/src/db/schema.ts": ["types"],
+    "packages/shared/src/*.ts": ["duplicates", "types"]
+  },
+  "workspaces": {
+    ".": {},
+    "apps/api": {
+      "entry": ["src/index.ts!", "src/telemetry.ts!", "scripts/*.ts", "src/test-fixtures/*.ts"],
+      "project": [
+        "src/**/*.ts!",
+        "scripts/*.ts",
+        "!src/**/*test-helpers.ts!",
+        "!src/test-fixtures/**!"
+      ],
+      "ignoreDependencies": ["@opentelemetry/instrumentation", "pino-pretty"]
+    },
+    "apps/web": {
+      "project": ["src/**/*.{ts,tsx}!", "!src/testing/**!", "!src/**/*{F,f}ixtures.{ts,tsx}!"]
+    },
+    "apps/e2e": { "entry": ["scripts/*.ts"], "project": ["**/*.ts"] },
+    "packages/*": {
+      "includeEntryExports": true,
+      "project": ["src/**/*.ts!", "!src/**/test-helpers.ts!"]
+    }
+  }
+}

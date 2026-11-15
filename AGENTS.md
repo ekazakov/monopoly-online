@@ -77,7 +77,8 @@ Run these commands from the repository root:
 | `pnpm test`                                                      | Run workspace unit and integration tests. Does not run Playwright.                         |
 | `pnpm --filter @monopoly/game-engine test`                       | Run one package's tests; use the corresponding package name for API, web, or shared tests. |
 | `pnpm build`                                                     | Build the apps.                                                                            |
-| `pnpm ready`                                                     | Run checks, unit and integration tests, and builds.                                        |
+| `pnpm knip` / `pnpm knip:prod`                                   | Find unused files, exports, and dependencies. `knip:prod` ignores tests; it is a report.   |
+| `pnpm ready`                                                     | Run checks, Knip, unit and integration tests, and builds.                                  |
 | `pnpm openapi`                                                   | Regenerate `apps/api/openapi.json` from the API routes.                                    |
 | `pnpm e2e`                                                       | Run the Playwright browser suite.                                                          |
 | `pnpm e2e:ui` / `pnpm e2e:video` / `pnpm e2e:report`             | Open the test UI, record videos, or open the last HTML report.                             |
