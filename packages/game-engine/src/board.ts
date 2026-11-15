@@ -1,6 +1,5 @@
 export const BOARD_SIZE = 40;
 export const JAIL_SQUARE = 10;
-export const GO_SQUARE = 0;
 
 export type StreetGroup = "brown" | "sky" | "pink" | "orange" | "red" | "yellow" | "green" | "navy";
 

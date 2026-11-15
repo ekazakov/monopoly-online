@@ -1,6 +1,6 @@
 import { useContext, useRef, useSyncExternalStore } from "react";
 import type { ActionType } from "@monopoly/game-engine";
-import type { Game, Phase, RedactedGameState, Seat } from "@monopoly/shared";
+import type { Phase, RedactedGameState, Seat } from "@monopoly/shared";
 import { GameStoreContext } from "./context.ts";
 import {
   actingSeat,
@@ -88,8 +88,4 @@ export function useGame(userId: string | null): GameView {
 /** Whether the user may do the action now with one of their seats. */
 export function useMayAct(userId: string | null, type?: ActionType): boolean {
   return useGameSelector((s) => mayAct(s.game, s.state, userId, type));
-}
-
-export function useGameRoom(): Game | null {
-  return useGameSelector((s) => s.game);
 }

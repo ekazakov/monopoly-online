@@ -19,4 +19,4 @@
  */
 export { TradeBuilder } from "./TradeBuilder.tsx";
 export { TradeResponseView } from "./TradeResponseView.tsx";
-export { canProposeTrade, proposingSeat, PROPOSE_PHASES } from "./tradeModel.ts";
+export { canProposeTrade, PROPOSE_PHASES } from "./tradeModel.ts";

@@ -1,5 +1,4 @@
 export {
-  GOOGLE_COOKIE_PATH,
   clearGoogleCookie,
   clearSessionCookie,
   readGoogleCookie,
@@ -7,14 +6,13 @@ export {
   setGoogleCookie,
   setSessionCookie,
 } from "./cookie.ts";
-export { readAuthConfig, readDebugMode, type AuthConfig, type GoogleConfig } from "./config.ts";
+export { readAuthConfig, readDebugMode } from "./config.ts";
 export { createArcticGoogle, type GoogleProvider } from "./google.ts";
 export { createPendingSignIns, PENDING_TTL_MS, type PendingSignIns } from "./pending.ts";
 export { checkOrigin, parseOrigins, requireSession } from "./middleware.ts";
 export {
   SESSION_TTL_MS,
   TOUCH_INTERVAL_MS,
-  GOOGLE_PROVIDER,
   createGoogleUserSession,
   createGuestSession,
   createSessionForGoogleSubject,

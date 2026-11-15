@@ -23,7 +23,6 @@ export interface DealSpec {
 }
 
 export const SKY = [6, 8, 9] as const;
-export const BROWN = [1, 3] as const;
 export const NORTH_STATION = 5;
 export const POWER_WORKS = 12;
 export const BEACON_HILL = 21;

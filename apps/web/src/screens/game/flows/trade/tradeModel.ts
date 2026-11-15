@@ -22,8 +22,6 @@ const forEngine = (state: RedactedGameState) => state as unknown as GameState;
 export const jailCardLabel = (deck: DeckName, t: Translate) =>
   t("trade.jailCard", { deck: t(`deck.${deck}`) });
 
-export const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-
 export interface OwnedProperty {
   square: number;
   name: string;
