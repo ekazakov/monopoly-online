@@ -13,7 +13,7 @@
 # Ubuntu release, instead of an apt error later.
 - name: Make sure that the Docker repository supports this Ubuntu release
   ansible.builtin.uri:
-    url: "https://download.docker.com/linux/ubuntu/dists/{{ ansible_distribution_release }}/Release"
+    url: "https://download.docker.com/linux/ubuntu/dists/{{ ansible_facts['distribution_release'] }}/Release"
     method: HEAD
     status_code: [200, 404]
   register: docker_release_check
@@ -31,7 +31,7 @@
 - name: Stop when the Docker repository does not support this release
   ansible.builtin.fail:
     msg: >-
-      download.docker.com has no packages for Ubuntu "{{ ansible_distribution_release }}".
+      download.docker.com has no packages for Ubuntu "{{ ansible_facts['distribution_release'] }}".
       Set docker_source: ubuntu in group_vars/all/local.yml and run again.
   when:
     - docker_source == 'docker'
@@ -44,9 +44,9 @@
     name: docker
     types: [deb]
     uris: https://download.docker.com/linux/ubuntu
-    suites: ["{{ ansible_distribution_release }}"]
+    suites: ["{{ ansible_facts['distribution_release'] }}"]
     components: [stable]
-    architectures: ["{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }}"]
+    architectures: ["{{ 'amd64' if ansible_facts['architecture'] == 'x86_64' else 'arm64' }}"]
     signed_by: https://download.docker.com/linux/ubuntu/gpg
     state: present
   when: docker_source == 'docker'

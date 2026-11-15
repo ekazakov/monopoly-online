@@ -26,7 +26,7 @@
     artifacts_dir: "{{ playbook_dir }}/.artifacts"
     db_file: "{{ app_dir }}/data/monopoly.db"
     # x86_64 servers need an amd64 image. The Mac is arm64, so the build is slow.
-    image_platform: "{{ 'linux/amd64' if ansible_architecture == 'x86_64' else 'linux/arm64' }}"
+    image_platform: "{{ 'linux/amd64' if ansible_facts['architecture'] == 'x86_64' else 'linux/arm64' }}"
 
   tasks:
     # --- State on the server ----------------------------------------------------
