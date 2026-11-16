@@ -1,7 +1,8 @@
 /*
  * Turn notice (spec 5.3, BUG-15). Tokens only. It is the handoff screen without the button: a scrim
- * at 70% opacity, a figure, the name and a sentence. The notice fades in over 500 ms, stays for
- * one second, and fades out over 500 ms: a 2-second run. While it shows, the scrim takes the
+ * at 70% opacity, a figure, the name and a sentence. The notice fades in over 100 ms, stays for
+ * 625 ms, and fades out over 175 ms: a 900 ms run. The text is white and 50% larger than the
+ * type tokens. While it shows, the scrim takes the
  * pointer and the game regions are inert, so the action controls are disabled. The scrim sits
  * below the top bar (z-index 5, as the dialog scrim does), so the log and the Menu keep working.
  * The host lets the pointer through when no notice shows.
@@ -22,7 +23,7 @@
   padding: var(--hf-space-16);
   background: rgba(9, 16, 23, 0.7);
   pointer-events: auto;
-  animation: turn-toast-fade 2000ms linear both;
+  animation: turn-toast-fade 900ms linear both;
 }
 
 @keyframes turn-toast-fade {
@@ -30,11 +31,11 @@
     opacity: 0;
   }
 
-  25% {
+  11.111% {
     opacity: 1;
   }
 
-  75% {
+  80.556% {
     opacity: 1;
   }
 
@@ -48,7 +49,7 @@
   flex-direction: column;
   align-items: center;
   gap: var(--hf-space-8);
-  max-width: 460px;
+  max-width: 690px;
   text-align: center;
 }
 
@@ -76,22 +77,22 @@
 
 .turn-toast__eyebrow {
   margin: 0;
-  color: var(--hf-accent);
-  font: var(--hf-type-label);
+  color: #ffffff;
+  font: 600 21px/1 var(--hf-font-body);
   letter-spacing: var(--hf-track-label);
   text-transform: uppercase;
 }
 
 .turn-toast__name {
   margin: 0;
-  color: var(--hf-ink);
-  font: var(--hf-type-display-m);
+  color: #ffffff;
+  font: 700 33px/1.1 var(--hf-font-display);
   letter-spacing: var(--hf-track-display-m);
   text-transform: uppercase;
 }
 
 .turn-toast__text {
   margin: 0;
-  color: var(--hf-ink-soft);
-  font: var(--hf-type-body);
+  color: #ffffff;
+  font: 500 24px/1.5 var(--hf-font-body);
 }

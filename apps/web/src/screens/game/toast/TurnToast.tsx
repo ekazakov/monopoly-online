@@ -9,11 +9,11 @@ const BEHIND = ":scope > .game-layout__regions > :not(.game-layout__top)";
 
 /** Width and height of the figure. */
 const FIGURE_PX = 150;
-/** The whole run: a 500 ms fade in, one second in full view, and a 500 ms fade out. Keep it equal to the CSS animation. */
-export const TOAST_MS = 2000;
+/** The whole run: a 100 ms fade in, 625 ms in full view, and a 175 ms fade out. Keep it equal to the CSS animation. */
+export const TOAST_MS = 900;
 
 // The turn notice (spec 5.3, BUG-15). It is the handoff screen without the button: a dark scrim, the
-// next player's figure, the name and a sentence. It fades in and out over 500 ms, shows for one second in
+// next player's figure, the name and a sentence. It fades in over 100 ms, out over 175 ms, shows for 625 ms in
 // between, closes after `TOAST_MS`, and does not block the controls. The live region is always mounted, so a screen reader
 // hears each notice. It is a child of the game layout, outside the game regions.
 export function TurnToast({ userId }: { userId: string }) {
