@@ -253,3 +253,31 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 - Actual: No separate variable exists for debug mode. Debug features (for example the "DEBUG" button and the debug action "Pump House given to Evgenii2" in the event log) show without such a switch.
 - Images: none
 - Notes: The name of the variable is not decided yet. The API must refuse debug actions when the variable is off, and the web build must hide the debug UI. Add the variable to `ops/local.env` and the README. Debug mode must be off in production. The existing test seed and short presence grace time must stay disabled in production too.
+
+### BUG-18: Card "Next stop, a Station" does not say that the token goes forward (change request)
+
+- Status: open
+- Reported: 2026-11-16
+- Area: web and game-engine (card text in `packages/game-engine/src/cards.ts`, cards at lines 24 and 25 for stations, and the "Nearest utility" card at line 26)
+- Type: change request
+- Steps to reproduce:
+  1. Move a player onto the Chance square at index 36 (right side of the board, next to West Station at index 35).
+  2. Draw the card "Next stop, a Station".
+- Expected: The card text tells the player that the token goes to the next station ahead. A move to North Station (index 5, past Start, with the salary paid) is then not a surprise.
+- Actual: The card text says only "Next stop, a Station". The player expected West Station, one square behind the Chance square. The token went to North Station.
+- Images: none
+- Notes: The engine is correct. The official Monopoly rules say that "nearest" means the next one ahead in the clockwise direction. `plan/game-rules-reference.md` says the same. Only the text changes. Do not change the engine rule. Check if the card title, the card body, or both show in the web card modal. Check the card texts in `plan/game-rules-reference.md` Appendix C and any tests that match the text. Apply the same wording idea to the "Nearest utility" card.
+
+### BUG-19: Grafana "Automatic saves" counter shows 0 after an automatic save
+
+- Status: open
+- Reported: 2026-11-16
+- Area: ops (and possibly api)
+- Steps to reproduce:
+  1. Start a game and let the last online player go away, so that the game saves automatically.
+  2. Look at the log panel in Grafana. It shows the line "game saved automatically" (version 40) after "presence changed" with status=away.
+  3. Look at the "Automatic saves" tile in the Realtime row of the dashboard.
+- Expected: The tile shows 1 or more.
+- Actual: The tile shows 0. The tile "Away" shows 1 in the same time range, so the presence metric works.
+- Images: none (two screenshots: the log panel and the Realtime row)
+- Notes: The tile query is `sum(increase(harborfront_realtime_autosaves_total[$__range])) or vector(0)` in `ops/grafana/dashboards/harborfront.json`. The API adds to the counter `harborfront.realtime.autosaves` in `apps/api/src/app.ts` (`deps.metrics.autoSaved()`), right after the save that writes the log line. The code path looks correct. Two causes are likely. First, a Prometheus counter that appears with the value 1 and no earlier sample gives `increase` of 0, so the first save after an API start is not counted. Second, the metric name or the label set in the exported series differs from the name in the query. Check the series in Grafana Explore before the fix. If the first cause is true, the API can create the counter with a value of 0 at start.
