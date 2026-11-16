@@ -279,13 +279,13 @@ The board pawns face NE on the left and top sides and SW on the right and bottom
 The hand has two states. The whole hand opens at once and every property is shown and manageable from it.
 
 - **Opening:**
-  - Desktop: moving the pointer onto the hand area expands it after about 150ms. It collapses about 300ms after the pointer leaves. A click on the hand area or on the tab **pins** it open, and a second click on the tab or Esc closes it.
+  - Desktop: moving the pointer onto the hand area expands it after about 150ms. It collapses about 300ms after the pointer leaves. A click on the hand area or on the tab **pins** it open, and a second click on the tab, a click outside or Esc closes it. A click in a modal dialog is not outside. During a debt, a click outside does not close the hand.
   - Touch: a tap on the hand area toggles it. There is no hover-only behaviour.
   - Keyboard: focus entering the hand expands it, and Esc collapses it and returns the focus to the tab.
 - **Layout:** a Manage properties panel rises above the collapsed hand. It is at most 920px wide and 720px tall, limited by the window height. The board does not resize. The header shows the owner, cash and property count. The footer shows the property value and Done. The property list scrolls between the header and footer.
 - **Groups:** show colour groups in board order, followed by stations and utilities. Each group has a label and a set-complete mark when applicable.
 - **Property rows:** each row shows the colour, name, buildings, rent, and Build, Sell building, Mortgage or Unmortgage actions with their costs. Stations and utilities have no building actions. Property names and summaries are static text. They do not select a row or open further details. Narrow layouts put actions below the property name.
-- **Actions:** all property actions are available directly in the panel. A refused action is disabled. Hover or keyboard focus shows its reason. The server remains the authority for each action. An action pins the panel open while it is sent. Outside management windows, the rows show the view-only reason.
+- **Actions:** all property actions are available directly in the panel. A refused action is disabled. Hover or keyboard focus shows its reason. The server remains the authority for each action. An action pins the panel open while it is sent. A click outside closes it after the action. Outside management windows, the rows show the view-only reason.
 - **Closing:** Done and Esc close the panel and return focus to the tab. The close control also closes a panel opened by hover.
 - **Debt:** the debt has no controls in the hand. The board centre shows the amount due, the Raise cash list and Pay (5.2). While this device settles a debt the panel still opens by itself, so the player can see the properties.
 - **Motion:** no animation under reduced motion.

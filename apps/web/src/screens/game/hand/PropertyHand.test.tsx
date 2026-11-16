@@ -261,6 +261,58 @@ describe("PropertyHand: expanded", () => {
   });
 });
 
+describe("PropertyHand: a click outside", () => {
+  const outside = () => {
+    render(
+      <>
+        <button type="button">Outside</button>
+        <dialog open>
+          <button type="button">In a dialog</button>
+        </dialog>
+      </>,
+    );
+    return {
+      button: screen.getByRole("button", { name: "Outside" }),
+      dialogButton: screen.getByRole("button", { name: "In a dialog" }),
+    };
+  };
+
+  test("closes a hand pinned by the tab", async () => {
+    const t = setup();
+    const { button } = outside();
+    await openHand(t);
+    await t.user.click(button);
+    expect(toggle()).toHaveAttribute("aria-expanded", "false");
+  });
+
+  test("closes the hand after an action", async () => {
+    const t = setup();
+    const { button } = outside();
+    await openHand(t);
+    await t.user.click(actionsFor("Cobble Street").getByRole("button", { name: "Build $50" }));
+    expect(t.send).toHaveBeenCalledOnce();
+    expect(toggle()).toHaveAttribute("aria-expanded", "true");
+    await t.user.click(button);
+    expect(toggle()).toHaveAttribute("aria-expanded", "false");
+  });
+
+  test("a click in the hand or in a dialog keeps it open", async () => {
+    const t = setup();
+    const { dialogButton } = outside();
+    await openHand(t);
+    await t.user.click(screen.getByRole("list", { name: /Brown · 2/ }));
+    await t.user.click(dialogButton);
+    expect(toggle()).toHaveAttribute("aria-expanded", "true");
+  });
+
+  test("keeps the hand open during a debt", async () => {
+    const t = setup({ deeds: skyWith([1, 1, 1]), phase: "awaiting_debt", owes: { a: 320 } });
+    const { button } = outside();
+    await t.user.click(button);
+    expect(toggle()).toHaveAttribute("aria-expanded", "true");
+  });
+});
+
 describe("PropertyHand: managing", () => {
   test("property names have no click behavior and all rows show action costs", async () => {
     const t = setup();

@@ -218,6 +218,24 @@ export function PropertyHand({ userId }: PropertyHandProps) {
     return () => document.removeEventListener("keydown", onKey);
   }, [mode]);
 
+  // A click outside closes a pinned hand. During a debt the hand stays open, because the player
+  // raises the money with it. A click in a dialog is not outside: the dialog is above the hand.
+  const closeOnOutside = mode === "pinned" && !debtOpen;
+  useEffect(() => {
+    if (!closeOnOutside) return;
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (surfaceRef.current?.contains(target)) return;
+      if (target instanceof Element && target.closest("dialog, .modal__scrim")) return;
+      window.clearTimeout(openTimer.current);
+      window.clearTimeout(closeTimer.current);
+      setMode("closed");
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [closeOnOutside]);
+
   if (!state || !seat || !hand) return <div className="property-hand" />;
 
   const open = mode !== "closed";
