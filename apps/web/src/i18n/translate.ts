@@ -7,10 +7,6 @@ import type { Message } from "./types.ts";
 
 export type MessageKey = keyof typeof en;
 
-/** Whether `key` is a key of the catalogue. */
-export function hasMessage(key: string): key is MessageKey {
-  return key in en;
-}
 export type Params = Record<string, string | number>;
 
 const CATALOGUES: Record<Language, Record<MessageKey, Message>> = { en, ru };
