@@ -7,7 +7,7 @@ import type {
   PropertySquare,
 } from "@monopoly/game-engine";
 import type { RedactedGameState } from "@monopoly/shared";
-import { currentLanguage, errorMessage, formatMoney } from "../../../i18n/index.ts";
+import { currentLanguage, errorMessage, formatMoney, groupName } from "../../../i18n/index.ts";
 import type { Translate } from "../../../i18n/index.ts";
 
 // The engine actions read only what the redacted state keeps (`ownership`, `players`, `turn`,
@@ -92,7 +92,7 @@ function reasonFor(
     case "not_a_property":
       return t("hand.reason.notProperty");
     case "incomplete_group":
-      return t("hand.reason.fullSet", { group: t(`group.${info.group}`) });
+      return t("hand.reason.fullSet", { group: groupName(info.group) });
     case "group_mortgaged":
       return t("hand.reason.liftMortgage");
     case "max_buildings":

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { DeckName } from "@monopoly/shared";
 import { useGame } from "../../../../game/index.ts";
-import { cardTitle, useT } from "../../../../i18n/index.ts";
+import { useT } from "../../../../i18n/index.ts";
 import { useMotionRelease, useMotionStep } from "../../motion/index.ts";
 import { cardAt, deckLabel, effectText } from "./cardText.ts";
 
@@ -62,7 +62,7 @@ export function useCardNotice(userId: string | null): CardNoticeState | null {
       key,
       deck: event.deck,
       deckLabel: deckLabel(event.deck, t),
-      title: card ? cardTitle(card.title, t) : t("card.aCard"),
+      title: card ? card.title : t("card.aCard"),
       text: card ? effectText(card.effect, t) : "",
       drawerId: event.playerId,
       drawerName,

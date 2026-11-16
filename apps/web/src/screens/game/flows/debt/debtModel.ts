@@ -118,7 +118,7 @@ export function raiseOptions(
     if (!info || !isProperty(info)) continue;
     const base = {
       square,
-      name: squareName(square, t),
+      name: squareName(square),
       group: info.group,
     } satisfies Partial<RaiseOption>;
 

@@ -1,6 +1,8 @@
 import { describe, expect, test } from "vite-plus/test";
 import type { GameEvent, GameEventType } from "@monopoly/shared";
 import { recordFixture } from "../../../game/fixtures.ts";
+import { translate } from "../../../i18n/index.ts";
+import type { Translate } from "../../../i18n/index.ts";
 import { tEn } from "../../../testing/tEn.ts";
 import { describeEvent, formatMoney, playerName } from "./describe.ts";
 import type { LogTone } from "./describe.ts";
@@ -327,6 +329,21 @@ describe("describeEvent", () => {
       expect(seen).toContain(type);
     }
     for (const type of seen) expect(Object.keys(TABLE)).toContain(type);
+  });
+});
+
+describe("names in another language", () => {
+  const tRu: Translate = (key, params) => translate("ru", key, params);
+
+  test("square names and card titles stay English in a Russian line", () => {
+    expect(describeEvent(TABLE.PlayerMoved[0], ctx, tRu).text).toBe(
+      "Ann: ход на поле «Beacon Hill».",
+    );
+    expect(describeEvent(TABLE.PassedGo[0], ctx, tRu).text).toContain("«Start»");
+    expect(
+      describeEvent({ type: "CardDrawn", playerId: a.id, deck: "chance", cardIndex: 0 }, ctx, tRu)
+        .text,
+    ).toContain("Sail home");
   });
 });
 

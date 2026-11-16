@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { SQUARES, isProperty } from "@monopoly/game-engine";
-import { squareInfoName, useT } from "../../../../i18n/index.ts";
+import { useT } from "../../../../i18n/index.ts";
 import type { Translate } from "../../../../i18n/index.ts";
 import { Waiting } from "../../turn/ActionBar.tsx";
 import { formatMoney } from "../../turn/format.ts";
@@ -39,11 +39,7 @@ export function AuctionView({ turn, inDialog = false }: { turn: Turn; inDialog?:
     <div className="auction" aria-busy={turn.pending || undefined}>
       {/* In the dialog, the dialog title says this. */}
       {!inDialog && (
-        <Status
-          title={
-            square ? t("turn.auctionOf", { name: squareInfoName(square, t) }) : t("turn.auction")
-          }
-        />
+        <Status title={square ? t("turn.auctionOf", { name: square.name }) : t("turn.auction")} />
       )}
       <div className="auction__top">
         {square && isProperty(square) && <PropertyCard square={square} />}

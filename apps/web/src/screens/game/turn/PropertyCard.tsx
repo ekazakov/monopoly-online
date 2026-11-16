@@ -1,6 +1,6 @@
 import { STATION_RENT, UTILITY_MULTIPLIER } from "@monopoly/game-engine";
 import type { PropertySquare } from "@monopoly/game-engine";
-import { squareInfoName, useT } from "../../../i18n/index.ts";
+import { useT } from "../../../i18n/index.ts";
 import type { Translate } from "../../../i18n/index.ts";
 import { formatMoney } from "./format.ts";
 
@@ -72,7 +72,7 @@ export function PropertyCard({ square }: { square: PropertySquare }) {
         style={{ background: `var(--hf-street-${square.group})` }}
       >
         <span className="turn-area__deed-kind">{t("deed.title")}</span>
-        <span className="turn-area__deed-name">{squareInfoName(square, t)}</span>
+        <span className="turn-area__deed-name">{square.name}</span>
       </div>
       <dl className="turn-area__deed-body">
         {deedRows(square, t).map((row) => (

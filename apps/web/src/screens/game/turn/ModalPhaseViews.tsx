@@ -1,5 +1,5 @@
 import { SQUARES } from "@monopoly/game-engine";
-import { squareInfoName, useT } from "../../../i18n/index.ts";
+import { useT } from "../../../i18n/index.ts";
 import { AuctionView } from "../flows/auction/index.ts";
 import { Waiting } from "./ActionBar.tsx";
 import { propertyForSale } from "./BuyView.tsx";
@@ -18,7 +18,7 @@ export function BuyStatusView({ turn }: { turn: Turn }) {
   return (
     <>
       {dice && <Dice dice={dice} stale={stale} />}
-      {square && <Status title={t("turn.forSale", { name: squareInfoName(square, t) })} />}
+      {square && <Status title={t("turn.forSale", { name: square.name })} />}
       {!turn.actor && <Waiting turn={turn} />}
     </>
   );
@@ -36,11 +36,7 @@ function AuctionStatusView({ turn }: { turn: Turn }) {
   const square = auction ? SQUARES[auction.square] : undefined;
   return (
     <>
-      <Status
-        title={
-          square ? t("turn.auctionOf", { name: squareInfoName(square, t) }) : t("turn.auction")
-        }
-      />
+      <Status title={square ? t("turn.auctionOf", { name: square.name }) : t("turn.auction")} />
     </>
   );
 }

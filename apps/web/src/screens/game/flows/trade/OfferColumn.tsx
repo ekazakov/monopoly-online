@@ -49,7 +49,7 @@ export function OfferColumn({ giver, offer, state }: OfferColumnProps) {
               <li key={`s${square}`} className="trade-flow__item">
                 <GroupChip group={info.group} />
                 <span className="trade-flow__name">
-                  {squareName(square, t)}
+                  {squareName(square)}
                   {note && <span className="trade-flow__note"> · {note}</span>}
                 </span>
                 <span className="trade-flow__value">{formatMoney(info.price)}</span>

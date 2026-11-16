@@ -60,7 +60,7 @@ export function SquareDetail({
   const { error, errorSource, pending } = actions;
 
   return (
-    <Modal key={square} title={squareName(square, t)} onClose={onClose}>
+    <Modal key={square} title={squareName(square)} onClose={onClose}>
       <div className="square-detail">
         <PropertyCard square={info} />
         <p className="square-detail__owner">{ownerText}</p>

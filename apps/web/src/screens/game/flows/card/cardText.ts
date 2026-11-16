@@ -21,7 +21,7 @@ export function cardAt(deck: DeckName, cardIndex: number): Card | undefined {
 export function effectText(effect: CardEffect, t: Translate): string {
   switch (effect.type) {
     case "move_to": {
-      const name = SQUARES[effect.square] ? squareName(effect.square, t) : t("effect.theSquare");
+      const name = SQUARES[effect.square] ? squareName(effect.square) : t("effect.theSquare");
       if (effect.square === 0) return t("effect.advanceStart", { name, amount: formatMoney(200) });
       // The last square is ahead of every start, so the token never passes Start on the way.
       if (effect.square === BOARD_SIZE - 1) return t("effect.advance", { name });

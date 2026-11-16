@@ -1,7 +1,7 @@
 import { SQUARES, groupSquares, isProperty, rentFor } from "@monopoly/game-engine";
 import type { GameState, SquareGroup } from "@monopoly/game-engine";
 import type { RedactedGameState } from "@monopoly/shared";
-import { currentLanguage, formatMoney, squareName } from "../../../i18n/index.ts";
+import { currentLanguage, formatMoney, groupName, squareName } from "../../../i18n/index.ts";
 import type { Translate } from "../../../i18n/index.ts";
 
 /** Stack order in the hand (spec 4.6): the colour groups in board order, then stations, utilities. */
@@ -77,7 +77,7 @@ export function handOf(state: RedactedGameState, seatId: string, t: Translate): 
     if (!info || !isProperty(info)) continue;
     cards.push({
       square,
-      name: squareName(square, t),
+      name: squareName(square),
       group: info.group,
       kind: info.kind,
       price: info.price,
@@ -94,7 +94,7 @@ export function handOf(state: RedactedGameState, seatId: string, t: Translate): 
     if (inGroup.length === 0) continue;
     groups.push({
       group,
-      label: t(`group.${group}`),
+      label: groupName(group),
       color: `var(--hf-street-${group})`,
       cards: inGroup,
       complete: inGroup.length === groupSquares(group).length,

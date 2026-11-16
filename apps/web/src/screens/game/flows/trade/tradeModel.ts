@@ -51,7 +51,7 @@ export function ownedProperties(
     if (!entry || entry.ownerId !== playerId || !isProperty(info)) return;
     result.push({
       square,
-      name: squareName(square, t),
+      name: squareName(square),
       group: info.group,
       price: info.price,
       mortgaged: entry.mortgaged,

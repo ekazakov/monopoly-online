@@ -1,5 +1,5 @@
 import { SQUARES } from "@monopoly/game-engine";
-import { squareInfoName, useT } from "../../../i18n/index.ts";
+import { useT } from "../../../i18n/index.ts";
 import { AuctionView } from "../flows/auction/index.ts";
 import { useMotionStep } from "../motion/index.ts";
 import { BuyView, propertyForSale } from "../turn/BuyView.tsx";
@@ -21,7 +21,7 @@ export function PhaseModal({ userId }: { userId: string }) {
   const property = propertyForSale(turn);
   if (phase === "awaiting_buy_decision" && property) {
     return (
-      <Modal key={phase} title={t("turn.forSale", { name: squareInfoName(property, t) })}>
+      <Modal key={phase} title={t("turn.forSale", { name: property.name })}>
         <BuyView turn={turn} />
       </Modal>
     );
@@ -32,9 +32,7 @@ export function PhaseModal({ userId }: { userId: string }) {
     return (
       <Modal
         key={phase}
-        title={
-          square ? t("turn.auctionOf", { name: squareInfoName(square, t) }) : t("turn.auction")
-        }
+        title={square ? t("turn.auctionOf", { name: square.name }) : t("turn.auction")}
       >
         <AuctionView turn={turn} inDialog />
       </Modal>

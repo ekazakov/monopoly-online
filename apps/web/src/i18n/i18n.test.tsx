@@ -10,10 +10,11 @@ import {
   translate,
   useT,
 } from "./index.ts";
-import { CHANCE_CARDS, CHEST_CARDS, SQUARES } from "@monopoly/game-engine";
+import { SQUARES } from "@monopoly/game-engine";
+import type { SquareGroup } from "@monopoly/game-engine";
 import { TOKENS } from "@monopoly/shared";
 import { en } from "./en.ts";
-import { cardTitle, squareName } from "./gameNames.ts";
+import { groupName, squareName } from "./gameNames.ts";
 import { errorMessage } from "./errors.ts";
 import { ru } from "./ru.ts";
 
@@ -84,14 +85,14 @@ describe("translate", () => {
     expect(problems).toEqual([]);
   });
 
-  test("every square, card and token of the game has a text", () => {
+  test("the board names stay English, and every token of the game has a text", () => {
     SQUARES.forEach((square, index) => {
-      expect(translate("en", `square.${index}` as never)).toBe(square.name);
-      expect(squareName(index, (key, params) => translate("en", key, params))).toBe(square.name);
+      expect(squareName(index)).toBe(square.name);
     });
-    for (const card of [...CHANCE_CARDS, ...CHEST_CARDS]) {
-      expect(cardTitle(card.title, (key, params) => translate("ru", key, params))).not.toBe("");
-      expect(cardTitle(card.title, (key, params) => translate("en", key, params))).toBe(card.title);
+    const groups = SQUARES.flatMap((square) => ("group" in square ? [square.group] : []));
+    expect(groups.map((group: SquareGroup) => groupName(group))).not.toContain(undefined);
+    for (const key of Object.keys(en)) {
+      expect(key).not.toMatch(/^(square\.\d|group\.|board\.(?!unavailable))/);
     }
     for (const token of TOKENS) {
       expect(en).toHaveProperty(`token.${token}.label`);

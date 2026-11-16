@@ -1,11 +1,10 @@
-import { CHANCE_CARDS, CHEST_CARDS, SQUARES } from "@monopoly/game-engine";
+import { CHANCE_CARDS, CHEST_CARDS } from "@monopoly/game-engine";
 import type { DebugChange, DeckName, GameEvent, Seat, TradeOffer } from "@monopoly/shared";
 import {
-  cardTitle as cardTitleIn,
   currentLanguage,
   formatMoney as formatMoneyIn,
   joinNames,
-  squareName as squareNameIn,
+  squareName,
 } from "../../../i18n/index.ts";
 import type { MessageKey, Params, Translate } from "../../../i18n/index.ts";
 
@@ -54,7 +53,6 @@ export function formatMoney(amount: number): string {
 }
 
 // The debug lines (StateEdited) stay in English: the debug panel is a developer tool.
-const squareName = (square: number) => SQUARES[square]?.name ?? `square ${square}`;
 const deckLabel = (deck: DeckName) => (deck === "chance" ? "Chance" : "Chest");
 const cardTitle = (deck: DeckName, index: number) =>
   (deck === "chance" ? CHANCE_CARDS : CHEST_CARDS)[index]?.title ?? "a card";
@@ -116,7 +114,7 @@ const buildingName = (houses: number, t: Translate) => t(houses >= 5 ? "log.aHot
 
 function offerText(offer: TradeOffer, t: Translate): string {
   const items = [
-    ...offer.squares.map((square) => squareNameIn(square, t)),
+    ...offer.squares.map((square) => squareName(square)),
     ...(offer.cash > 0 ? [formatMoney(offer.cash)] : []),
     ...offer.jailCards.map((deck) => t("trade.jailCard", { deck: deckName(deck, t) })),
   ];
@@ -189,7 +187,7 @@ export function describeEvent(event: GameEvent, ctx: DescribeContext, t: Transla
     playerId,
     parts: content,
   });
-  const sq = (square: number) => squareNameIn(square, t);
+  const sq = squareName;
 
   switch (event.type) {
     case "DiceRolled": {
@@ -257,10 +255,8 @@ export function describeEvent(event: GameEvent, ctx: DescribeContext, t: Transla
           who: who(event.playerId),
           deck: deckName(event.deck, t),
           title:
-            cardTitleIn(
-              (event.deck === "chance" ? CHANCE_CARDS : CHEST_CARDS)[event.cardIndex]?.title ?? "",
-              t,
-            ) || t("log.aCard"),
+            (event.deck === "chance" ? CHANCE_CARDS : CHEST_CARDS)[event.cardIndex]?.title ||
+            t("log.aCard"),
         }),
       );
     case "CashChanged":

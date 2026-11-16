@@ -2,7 +2,7 @@ import { SQUARES, groupSquares, isProperty } from "@monopoly/game-engine";
 import type { CSSProperties } from "react";
 import { useGame } from "../../../game/index.ts";
 import { GROUP_ORDER, money } from "../hand/handModel.ts";
-import { squareName, useT } from "../../../i18n/index.ts";
+import { groupName, squareName, useT } from "../../../i18n/index.ts";
 import { Modal } from "../modal/Modal.tsx";
 import "./Square.css";
 
@@ -30,8 +30,8 @@ export function SquareList({
       <div className="square-list">
         {GROUP_ORDER.map((group) => (
           <section key={group} className="square-list__group">
-            <h3 className="square-list__heading">{t(`group.${group}`)}</h3>
-            <ul className="square-list__items" aria-label={t(`group.${group}`)}>
+            <h3 className="square-list__heading">{groupName(group)}</h3>
+            <ul className="square-list__items" aria-label={groupName(group)}>
               {groupSquares(group).map((square) => {
                 const info = SQUARES[square]!;
                 if (!isProperty(info)) return null;
@@ -44,7 +44,7 @@ export function SquareList({
                       onClick={() => onPick(square)}
                     >
                       <span className="square-list__chip" aria-hidden="true" />
-                      <span className="square-list__name">{squareName(square, t)}</span>
+                      <span className="square-list__name">{squareName(square)}</span>
                       <span className="square-list__price">{money(info.price)}</span>
                       <span className="square-list__owner">{ownerName(square)}</span>
                     </button>

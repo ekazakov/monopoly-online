@@ -151,13 +151,12 @@ function Scene({
   }, [theme, resources, invalidate]);
 
   const epoch = useFontEpoch();
-  // `t` changes with the language, so the labels on the board are drawn again
-  const t = useT();
+  // The board text stays English in every language, so a language change does not draw it again.
   const textures = useMemo(
-    () => createBoardTextures(SQUARES, gl.capabilities.getMaxAnisotropy(), t),
+    () => createBoardTextures(SQUARES, gl.capabilities.getMaxAnisotropy()),
     // the epoch is not read: a new value only asks for a fresh draw once the fonts are there
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [gl, epoch, t],
+    [gl, epoch],
   );
   useEffect(() => () => textures.dispose(), [textures]);
 
