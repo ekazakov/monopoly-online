@@ -95,7 +95,8 @@ After you buy the domain, do these tasks.
 
 - [ ] **Domain and DNS (E1).** Buy the domain. Move the name servers to the Cloudflare free plan. Add the `A` record for `play.<domain>` with "DNS only". Write the domain in the runbook.
 - [ ] **nginx site and certbot (E2).** Set `domain` and `admin_email` in `local.yml` and run `pnpm server:setup`. The `nginx` role writes the proxy and SSE settings, and the `certbot` role gets the certificate. Make sure that `certbot renew --dry-run` passes. After the manual run (F1), set `hsts_max_age` to one year.
-- [ ] **Google sign-in in production (E3).** Add `https://play.<domain>/api/auth/google/callback` to the Google OAuth client and set `GOOGLE_REDIRECT_URI` in `app.env`. Add the players as test users on the consent screen. Sign in on two devices.
+- [ ] **Google sign-in in production (E3). Nginx update (E4) after E2, and before the manual run (F1).** Add `https://play.<domain>/api/auth/google/callback` to the Google OAuth client and set `GOOGLE_REDIRECT_URI` in `app.env`. Add the players as test users on the consent screen. Sign in on two devices.
+- [ ] **Nginx update (E4).** A vulnerability is in the Nginx of the Ubuntu package, and the Ubuntu repositories have no newer version. Make sure that Ubuntu has no fix. Then install the stable Nginx from the `nginx.org` repository with the `nginx` role. Write the site file to `conf.d` and not to `sites-available`. Add the `unattended-upgrades` origin and a version test to `pnpm server:verify`. The steps are in [nginx-update-plan.md](nginx-update-plan.md).
 
 ### F. Close
 
