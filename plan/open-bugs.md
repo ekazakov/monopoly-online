@@ -312,7 +312,7 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 
 ### BUG-22: A remote player cannot connect again; "player is connecting" stays on screen
 
-- Status: open. Second case fixed in code (liveness ping), `pnpm check` and `pnpm test` pass. Not yet checked in the browser. First case not analysed.
+- Status: fixed. A liveness ping makes the server close a silent stream, so the other players see the change (`apps/api/src/realtime/liveness.ts`, `SseHttpClient.ts`). The user tested it in the browser and it works. The first case happened one time and the user did not see it again. Open this entry again if it returns.
 - Reported: 2026-11-23
 - Area: web and api (`apps/web/src/realtime/SseHttpClient.ts`, `apps/web/src/screens/game/turn/ActionBar.tsx`, API presence and SSE code)
 - Steps to reproduce:
@@ -333,7 +333,7 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
   - Notes: Check how the server finds a dead SSE connection when the network goes away without a clean close (heartbeat, write error, close event, idle timeout). Check that the presence change is published to the other players and that the web store shows it.
   - Root cause: The server learns that a stream is dead only from a failed write or a closed socket. A lost network gives neither. The heartbeat write succeeds into the kernel buffer, and TCP keeps the socket open for minutes. So the stream stays `online`, and no `presence.updated` message is sent. The web store is not at fault. It shows every change it gets.
   - Fix: The client sends a liveness ping every 10 s (`POST /api/stream/ping` with the `streamId` of its stream, which the stream URL now carries). The server closes a stream with no ping for 30 s (`apps/api/src/realtime/liveness.ts`). The existing close path then moves the seat to `reconnecting`, and after the grace time to `away`. Tests: `closes a stream whose client sends no liveness ping, so the others see the seat reconnecting`, `a stream that is pinged stays open, and a ping for another user's stream is refused` (`apps/api/src/routes/stream.test.ts`), and `pings the server at the set interval with the id that the stream URL carries` (`apps/web/src/realtime/SseHttpClient.test.ts`).
-  - Verification: `pnpm check` passes. `pnpm test` passes in every package (web: 1115 tests, all files). The new API tests were not run against the code before the fix. Browser check still needed.
+  - Verification: `pnpm check` passes. `pnpm test` passes in every package (web: 1115 tests, all files). The new API tests were not run against the code before the fix. The user checked the fix in the browser on 2026-11-23 and the bug did not return.
 
 ### BUG-23: Event log does not show turn numbers (change request)
 
