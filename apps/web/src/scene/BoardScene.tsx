@@ -104,6 +104,23 @@ function CameraRig({ reducedMotion }: { reducedMotion: boolean }) {
   );
 }
 
+/** Counts up when the browser restores a lost WebGL context, so the GPU data is made again. */
+function useContextGeneration(): number {
+  const gl = useThree((s) => s.gl);
+  const invalidate = useThree((s) => s.invalidate);
+  const [generation, setGeneration] = useState(0);
+  useEffect(() => {
+    const canvas = gl.domElement;
+    const onRestored = () => {
+      setGeneration((n) => n + 1);
+      invalidate();
+    };
+    canvas.addEventListener("webglcontextrestored", onRestored);
+    return () => canvas.removeEventListener("webglcontextrestored", onRestored);
+  }, [gl, invalidate]);
+  return generation;
+}
+
 /** Counts up once the board fonts are loaded, so the textures are drawn again with them. */
 function useFontEpoch(): number {
   const [epoch, setEpoch] = useState(0);
@@ -160,7 +177,12 @@ function Scene({
   );
   useEffect(() => () => textures.dispose(), [textures]);
 
-  const env = useStudioEnvironment();
+  const generation = useContextGeneration();
+  const env = useStudioEnvironment(generation);
+  // A new map is a new material input, so the scene draws again.
+  useEffect(() => {
+    invalidate();
+  }, [env, invalidate]);
 
   const model = useMemo(() => buildSceneModel(state, players), [state, players]);
   const deeds = useMemo(() => new Map(model.deeds.map((d) => [d.square, d])), [model]);

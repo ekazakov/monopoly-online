@@ -40,10 +40,15 @@ function useAvatarGeometry(kind: AvatarKind, order: number): THREE.BufferGeometr
   return cached ? avatarGeometry(kind, FIGURE_RES) : null;
 }
 
-/** The studio reflection map of the metal figures. Needs the renderer, so it lives inside the canvas. */
-export function useStudioEnvironment(): THREE.Texture {
+/**
+ * The studio reflection map of the metal figures. Needs the renderer, so it lives inside the canvas.
+ * `generation` changes after a WebGL context restore: the old map lost its GPU data, so it is made again.
+ */
+export function useStudioEnvironment(generation: number): THREE.Texture {
   const gl = useThree((s) => s.gl);
-  const env = useMemo(() => studioEnvironment(gl), [gl]);
+  // the generation is not read: a new value only asks for a new map
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const env = useMemo(() => studioEnvironment(gl), [gl, generation]);
   useEffect(() => () => env.dispose(), [env]);
   return env;
 }

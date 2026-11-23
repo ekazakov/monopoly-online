@@ -33,6 +33,8 @@ export function PawnStage({ token, size }: { token: Token; size: number }) {
   const look = tokenLook(token);
   const host = useRef<HTMLDivElement>(null);
   const [webgl] = useState(hasWebGl);
+  // Counts up after a WebGL context restore: the stage is then built again on a new canvas.
+  const [restores, setRestores] = useState(0);
 
   useEffect(() => {
     const element = host.current;
@@ -46,6 +48,8 @@ export function PawnStage({ token, size }: { token: Token; size: number }) {
     renderer.shadowMap.enabled = true;
     renderer.domElement.setAttribute("aria-hidden", "true");
     element.appendChild(renderer.domElement);
+    const onRestored = () => setRestores((n) => n + 1);
+    renderer.domElement.addEventListener("webglcontextrestored", onRestored);
 
     const scene = new THREE.Scene();
     const env = studioEnvironment(renderer);
@@ -101,6 +105,7 @@ export function PawnStage({ token, size }: { token: Token; size: number }) {
 
     return () => {
       renderer.setAnimationLoop(null);
+      renderer.domElement.removeEventListener("webglcontextrestored", onRestored);
       // The figure geometry is cached and shared. Everything else belongs to this stage.
       plinthGeometry.dispose();
       plinthMaterial.dispose();
@@ -111,7 +116,7 @@ export function PawnStage({ token, size }: { token: Token; size: number }) {
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [webgl, size, look.avatar, look.hex, look.metal]);
+  }, [webgl, restores, size, look.avatar, look.hex, look.metal]);
 
   const box = { width: size, height: size, "--player-color": look.cssColor } as CSSProperties;
   if (!webgl) {

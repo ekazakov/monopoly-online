@@ -298,7 +298,7 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 
 ### BUG-21: Board and tokens disappear after a WebGL context loss (critical)
 
-- Status: open
+- Status: fixed. After a context restore, the scene gets a new environment map and draws again (`BoardScene.tsx`, `Tokens.tsx`, `PawnStage.tsx`). Test: `apps/e2e/tests/webgl-context-loss.spec.ts`. The real trigger of the loss is still unknown.
 - Reported: 2026-11-23
 - Severity: critical. The game cannot be played without the board.
 - Area: web (three.js scene: `apps/web/src/scene/Tokens.tsx`, `apps/web/src/scene/BoardScene.tsx`, `useStudioEnvironment`)
