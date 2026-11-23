@@ -323,3 +323,31 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 - Actual: The player cannot join again. The other players always see the message "player is connecting". At the same time, the network of the player was good and the game server had no problem.
 - Images: none
 - Notes: This happened one time. The cause is not known. Possible causes to check: the client stops its retries after an error, or after the cookie session ends. The SSE resume with the last event ID fails. The server keeps the seat in the `reconnecting` presence state after the stream closes. A timer for the grace time does not start again. Compare with the presence rules in `plan/milestone-3-tasks.md`. If it happens again, save the browser console, the network log, and the API log of the player and of the game.
+
+### BUG-23: Event log does not show turn numbers (change request)
+
+- Status: open
+- Reported: 2026-11-23
+- Area: web (event log: `apps/web/src/screens/game/log/describe.ts`, texts in `apps/web/src/i18n/en.ts` and `ru.ts`)
+- Type: change request
+- Steps to reproduce:
+  1. Play a few turns.
+  2. Read the event log.
+- Expected: The log shows the turn number for each turn. The numbers start at 0.
+- Actual: The log shows no turn numbers.
+- Images: none
+- Notes: Check if the engine state has a turn counter and if the events carry it. If a turn counter is not in the state or the events, a change to the engine and to the shared schemas is needed, and `drift.test.ts` must stay in step. Decide what "starting from 0" means for the first turn of the game: the first turn is turn 0. Decide where the number shows: a header line for each turn, or a prefix on each line. Update both the English and the Russian texts.
+
+### BUG-24: Movement log shows only the destination square (change request)
+
+- Status: open
+- Reported: 2026-11-23
+- Area: web (`PlayerMoved` case in `apps/web/src/screens/game/log/describe.ts`, text key `log.moved` in `apps/web/src/i18n/en.ts` and `ru.ts`)
+- Type: change request
+- Steps to reproduce:
+  1. Roll the dice and move a token.
+  2. Read the movement line in the event log.
+- Expected: The line shows the starting square and the destination square, for example "Evgenii moved from Saltmarsh Road to North Station."
+- Actual: The line shows only the destination square.
+- Images: none
+- Notes: Check if the `PlayerMoved` event has the starting position. If it has only the destination, add the starting position to the event, or find it from the earlier state of the player in the log code. If the event changes, update the shared schemas, `drift.test.ts` and the tests that match the text. Make sure that moves from a card, a move to jail and a move back work with the new text. Update both the English and the Russian texts.
