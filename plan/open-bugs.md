@@ -394,3 +394,17 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 - Actual: The current dialog is the old design. The details of what is wrong were not given.
 - Images: none
 - Notes: This task uses BUG-2 (the auction in a modal dialog), BUG-3 (the focus ring of the bid field) and BUG-10 (the full title deed). Do the redesign together with BUG-2, or after it, so that the work is not done twice. Make a design prototype first. Ask the user to approve the design before you save a new design board or an artifact. Keep the server as the authority for bids, and keep the reduced-motion path. Ask the user for the details of what to improve before the design starts.
+
+### BUG-27: "Build" button in the property card has light text on a light background on hover
+
+- Status: open
+- Reported: 2026-11-23
+- Area: web (property card dialog; the button texts are near `apps/web/src/i18n/en.ts` line 421; styles in `apps/web/src/styles/`)
+- Steps to reproduce:
+  1. Use the light theme.
+  2. Open the card of a property that you own (for example Cobble Street).
+  3. Move the pointer over the "Build" button (in Russian: "Построить").
+- Expected: The text of the button is easy to read in the normal, hover, focus and disabled states.
+- Actual: On hover, the text of the "Build" button is light on a light background. The text is almost not visible. The screenshot shows the button with a white background and a nearly invisible label "Построить $50". The "Sell building" and "Mortgage" buttons next to it are gray with readable text.
+- Images: ![Property card with the Build button almost invisible](bug-images/BUG-27-1.jpg)
+- Notes: The check was done in the light theme only. Check the dark theme too. Check the hover, focus-visible and disabled styles of this button against the design tokens in `apps/web/src/styles/tokens.css`. The hover style probably sets a light background and keeps a light text color. Make sure that the contrast is at least 4.5:1 (WCAG AA) in all states and in both themes. Check the same button style in the other dialogs.
