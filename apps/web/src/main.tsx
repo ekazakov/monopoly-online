@@ -9,6 +9,7 @@ import { startLanguagePreference } from "./i18n/index.ts";
 import { RealtimeProvider } from "./realtime/index.ts";
 import { createQueryClient } from "./queryClient.ts";
 import { createAppRouter } from "./router.tsx";
+import { startAutoEndTurnPreference } from "./screens/game/debug/autoEndTurnPreference.ts";
 import { startMotionPreference } from "./styles/motionPreference.ts";
 import { startThemePreference } from "./styles/themePreference.ts";
 import "./styles/tokens.css";
@@ -18,6 +19,7 @@ startMotionPreference();
 startThemePreference();
 startLanguagePreference();
 startSoundPreference();
+startAutoEndTurnPreference();
 startAudio();
 
 const queryClient = createQueryClient();

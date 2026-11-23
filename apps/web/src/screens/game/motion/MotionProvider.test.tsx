@@ -8,7 +8,7 @@ import { createGameStore } from "../../../game/store.ts";
 import { ROLL_MS, planMotion, stepDuration } from "../../../scene/motion.ts";
 import { setMotionPreference } from "../../../styles/motionPreference.ts";
 import { TurnArea } from "../turn/index.ts";
-import { useMotionRelease, useMotionStep } from "./index.ts";
+import { useMotionRelease, useMotionSettledVersion, useMotionStep } from "./index.ts";
 import { MotionProvider } from "./MotionProvider.tsx";
 import { REPLAY_WINDOW_MS } from "./useMotionPlayer.ts";
 
@@ -185,8 +185,9 @@ describe("card hold", () => {
   function Probe() {
     const release = useMotionRelease();
     const step = useMotionStep();
+    const settled = useMotionSettledVersion();
     return (
-      <button type="button" onClick={release}>
+      <button type="button" onClick={release} data-settled={settled}>
         {step?.kind ?? "idle"}
       </button>
     );
@@ -207,13 +208,20 @@ describe("card hold", () => {
 
   test("waits at the card with no timer until release, then plays the card move", () => {
     const store = mount();
+    const before = store.getState().version;
     act(() => store.applyStreamMessage(actionsMessage(fx.game, heldStep())));
+    const version = store.getState().version;
+    const settled = () => Number(screen.getByRole("button").dataset.settled);
+    expect(settled()).toBe(before);
     act(() => void vi.advanceTimersByTime(60_000));
     expect(screen.getByRole("button")).toHaveTextContent("hold");
+    // the hold keeps the action unsettled
+    expect(settled()).toBe(before);
     act(() => screen.getByRole("button").click());
     expect(screen.getByRole("button")).toHaveTextContent("walk");
     act(() => void vi.advanceTimersByTime(60_000));
     expect(screen.getByRole("button")).toHaveTextContent("idle");
+    expect(settled()).toBe(version);
   });
 
   test("a new action during the hold settles it", () => {
@@ -235,5 +243,14 @@ describe("card hold", () => {
     expect(screen.getByRole("button")).toHaveTextContent("hold");
     act(() => screen.getByRole("button").click());
     expect(screen.getByRole("button")).toHaveTextContent("idle");
+    expect(Number(screen.getByRole("button").dataset.settled)).toBe(store.getState().version);
+  });
+
+  test("under reduced motion an action with no hold is settled at once", () => {
+    setMotionPreference("reduce");
+    const store = mount();
+    act(() => store.applyStreamMessage(actionsMessage(fx.game, rollStep!)));
+    expect(screen.getByRole("button")).toHaveTextContent("idle");
+    expect(Number(screen.getByRole("button").dataset.settled)).toBe(store.getState().version);
   });
 });

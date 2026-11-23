@@ -1,2 +1,3 @@
 export { DebugPanel } from "./DebugPanel.tsx";
 export { debugAccess, deedChanges, deedDraft, parseCash } from "./debugModel.ts";
+export { useAutoEndTurn } from "./useAutoEndTurn.ts";

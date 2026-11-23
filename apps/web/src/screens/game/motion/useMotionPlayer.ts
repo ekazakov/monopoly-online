@@ -51,6 +51,8 @@ export interface MotionListener {
  */
 export function useMotionPlayer(listener?: MotionListener): {
   playback: MotionPlayback;
+  /** The latest store version whose motion is over. It equals `version` when nothing is left to play. */
+  settledVersion: number;
   release: () => void;
 } {
   const store = useGameStore();
@@ -58,6 +60,7 @@ export function useMotionPlayer(listener?: MotionListener): {
   const [mountVersion] = useState(version);
   const [queue] = useState(createMotionQueue);
   const [playback, setPlayback] = useState<MotionPlayback>(IDLE_PLAYBACK);
+  const [settledVersion, setSettledVersion] = useState(mountVersion);
   const seen = useRef(mountVersion);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const lastConnection = useRef<ConnectionStatus>(store.getState().connection);
@@ -75,6 +78,9 @@ export function useMotionPlayer(listener?: MotionListener): {
       while (reducedNow.current && step && step.kind !== "hold") step = queue.next() ?? null;
       holding.current = step?.kind === "hold";
       setPlayback(step ? { current: step, waiting: queue.pending() } : IDLE_PLAYBACK);
+      // In the same callback as the playback, so React batches both: a view never sees the idle
+      // playback with an old settled version, or the settled version before the idle playback.
+      if (!step) setSettledVersion(seen.current);
       timer.current =
         step && !holding.current ? setTimeout(advance, stepDuration(step)) : undefined;
       if (step) hears.current?.onStep?.(step);
@@ -89,6 +95,7 @@ export function useMotionPlayer(listener?: MotionListener): {
     holding.current = false;
     queue.clear();
     setPlayback(IDLE_PLAYBACK);
+    setSettledVersion(seen.current);
   }, [queue]);
 
   // The store is watched directly, because a render does not see every change of the connection.
@@ -148,5 +155,5 @@ export function useMotionPlayer(listener?: MotionListener): {
     if (holding.current) advance();
   }, [advance]);
 
-  return { playback, release };
+  return { playback, settledVersion, release };
 }

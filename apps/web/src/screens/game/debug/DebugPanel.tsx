@@ -4,6 +4,7 @@ import type { DebugChange, DeckName, RedactedGameState } from "@monopoly/shared"
 import { CHANCE_CARDS, CHEST_CARDS } from "@monopoly/game-engine";
 import { DECK_LABELS } from "../flows/card/cardText.ts";
 import { useGame, useGameActions } from "../../../game/index.ts";
+import { setAutoEndTurn, useAutoEndTurnPreference } from "./autoEndTurnPreference.ts";
 import {
   buildingLabel,
   debugAccess,
@@ -43,6 +44,7 @@ export function DebugPanel({ userId }: DebugPanelProps) {
   const access = debugAccess(game, state, userId);
   const disabled = access.seat === null || actions.pending || sending;
   const players = state?.players.filter((p) => p.active) ?? [];
+  const autoEndTurn = useAutoEndTurnPreference();
 
   const close = () => {
     setOpen(false);
@@ -114,6 +116,20 @@ export function DebugPanel({ userId }: DebugPanelProps) {
           <p className="debug-panel__hint">
             {access.reason ?? "Edits ignore the rules. Each edit is a line in the game log."}
           </p>
+
+          {/* A setting of this device, not a game edit: it stays usable on any turn. */}
+          <fieldset className="debug-panel__group">
+            <legend className="debug-panel__legend">Turn</legend>
+            <label className="debug-panel__check" htmlFor={`${panelId}-auto-end`}>
+              <input
+                id={`${panelId}-auto-end`}
+                type="checkbox"
+                checked={autoEndTurn}
+                onChange={(event) => setAutoEndTurn(event.target.checked)}
+              />
+              End turn automatically
+            </label>
+          </fieldset>
 
           <fieldset className="debug-panel__group" disabled={disabled}>
             <legend className="debug-panel__legend">Cash</legend>

@@ -9,6 +9,7 @@ import { GameStoreProvider } from "../../../game/GameStoreProvider.tsx";
 import { createGameStore } from "../../../game/store.ts";
 import { DebugPanel, debugAccess, deedChanges, deedDraft, parseCash } from "./index.ts";
 import { DEED_GROUPS } from "./debugModel.ts";
+import { setAutoEndTurn } from "./autoEndTurnPreference.ts";
 
 const fx = recordFixture(1);
 const { a, b, c } = fx.seats;
@@ -205,5 +206,18 @@ describe("DebugPanel", () => {
     expect(screen.getByText("Wait for your turn.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Move" })).toBeDisabled();
     expect(screen.getByRole("button", { name: `Set ${a.name}'s cash` })).toBeDisabled();
+  });
+
+  test("the auto end switch is a device setting, usable off turn too", async () => {
+    setup({ userId: fx.guestId });
+    const user = await openPanel();
+    const box = screen.getByRole("checkbox", { name: "End turn automatically" });
+    expect(box).toBeEnabled();
+    expect(box).not.toBeChecked();
+    await user.click(box);
+    expect(box).toBeChecked();
+    expect(window.localStorage.getItem("hf.debug.autoEndTurn")).toBe("true");
+    setAutoEndTurn(false);
+    expect(window.localStorage.getItem("hf.debug.autoEndTurn")).toBeNull();
   });
 });

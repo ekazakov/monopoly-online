@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { MotionContext, MotionReleaseContext } from "./context.ts";
+import { MotionContext, MotionReleaseContext, MotionSettledContext } from "./context.ts";
 import { useMotionPlayer } from "./useMotionPlayer.ts";
 import type { MotionListener } from "./useMotionPlayer.ts";
 
@@ -12,10 +12,12 @@ export function MotionProvider({
   /** Hears the actions and steps, for example to play sounds. */
   listener?: MotionListener;
 }) {
-  const { playback, release } = useMotionPlayer(listener);
+  const { playback, settledVersion, release } = useMotionPlayer(listener);
   return (
     <MotionContext value={playback}>
-      <MotionReleaseContext value={release}>{children}</MotionReleaseContext>
+      <MotionSettledContext value={settledVersion}>
+        <MotionReleaseContext value={release}>{children}</MotionReleaseContext>
+      </MotionSettledContext>
     </MotionContext>
   );
 }

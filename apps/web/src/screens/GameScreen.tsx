@@ -35,7 +35,7 @@ import {
 import { TurnToast } from "./game/toast/index.ts";
 import { LeaveGameMenu } from "./game/flows/leave/index.ts";
 import { SavedNotice } from "./game/flows/saved/index.ts";
-import { DebugPanel } from "./game/debug/index.ts";
+import { DebugPanel, useAutoEndTurn } from "./game/debug/index.ts";
 import { GameLog } from "./game/log/index.ts";
 import { MotionProvider, useMotionPlayback } from "./game/motion/index.ts";
 import { PlayerRail } from "./game/rail/index.ts";
@@ -175,7 +175,7 @@ function GameRoute({ gameId }: { gameId: string }) {
                 <LeaveGameMenu userId={userId} onLeft={() => void navigate({ to: "/" })} />
               </>
             }
-            overlay={<Overlay userId={userId} />}
+            overlay={<Overlay userId={userId} debug={methods?.debug === true} />}
           />
         </SquareViewProvider>
       </MotionProvider>
@@ -185,8 +185,11 @@ function GameRoute({ gameId }: { gameId: string }) {
 
 // Above the regions: the turn toast, the square dialogs, and a modal dialog: the drawn card, or the phase. The toast is
 // not a dialog: it shows on every device at once, with no confirm step (spec 5.3).
-function Overlay({ userId }: { userId: string }) {
+// In debug mode the overlay also ends the turn by itself when the debug switch is on: it knows
+// whether a card waits for OK.
+function Overlay({ userId, debug }: { userId: string; debug: boolean }) {
   const card = useCardNotice(userId);
+  useAutoEndTurn(userId, debug, card !== null);
   return (
     <>
       <TurnToast userId={userId} />

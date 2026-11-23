@@ -298,6 +298,7 @@ A tool to test the game logic. It is not part of the game design. It shows only 
 - **Panel:** a disclosure in place under the button, not a modal, like the Menu panel (4.2). 340px wide, dashed border. Esc or a click outside closes it. Focus goes to the "Debug" heading when it opens.
 - **Who can edit:** only the player on turn, in `awaiting_roll`, `awaiting_jail_choice`, `awaiting_end_turn` and `awaiting_debt`. In the other phases the controls are disabled and a line says why: "Wait for your turn.", "Not available now. Finish the offer, auction or trade first." or "The game is over."
 - **Sections:**
+  - **Turn:** the switch **End turn automatically**, off by default. It is a setting of this device (`hf.debug.autoEndTurn`), so it is usable on any turn. When it is on, the device that controls the player on turn sends `EndTurn` by itself in `awaiting_end_turn`. It waits for the dice and token motion, for OK on a drawn card, and then for a pause of 400 ms. A buy offer, an auction, a debt, a jail choice and a doubles roll are other phases, so they finish first. With the switch on, the player has only the pause to build, mortgage or trade.
   - **Cash:** one row for each active player: the name, a number field with the current cash, and **Set**.
   - **Deeds:** a multi-select list of deeds in three groups: Streets, Stations and Utilities, each in board order, with the current owner of each deed. Then an owner list (the players and Bank), buildings (None, 1 to 4 houses, Hotel), Mortgaged, and **Apply**. Apply sets the same owner, buildings and mortgage on every chosen deed, in one action. Only streets keep buildings: a station or utility gets none. The fields fill from the first chosen deed. A mortgaged deed or a bank deed has no buildings. A line under the list says how many deeds are chosen.
   - **Player tokens:** a player list, a square list (all 40 squares), and **Move**. The move is a teleport: no rent, card, buy offer or Start salary. A jailed player who is moved leaves Jail.
@@ -469,6 +470,7 @@ The rules behind each flow are in the gameplay doc, section 5. The purchase deci
 - **R-D3 MUST** [Done] Off turn, and during a buy offer, an auction or a trade, the controls are disabled and say why.
 - **R-D4 MUST** [Done] Each edit is a game action that the log shows as a "(debug)" line and that stays after a reload.
 - **R-D5 SHOULD** [Done] Hide the panel unless debug mode is on. Debug mode is an API env variable, off by default and refused in production. The web reads it from `GET /api/auth/methods` (gameplay Q24, BUG-17).
+- **R-D6 SHOULD** [Done] A device switch ends the turn by itself when nothing is left to do, after the motion and the card (4.7). It is off by default.
 
 ---
 
@@ -507,3 +509,4 @@ Gameplay questions (player limits, disconnects, trades, house rules, timer, bots
 | 2026-11-12 | Colour collisions decided (question 5, R-B4): a neutral owner band with the owner's avatar glyph in a chip and an owner-colour ring |
 | 2026-11-10 | Property hand redesign approved (4.6, R-H1 to R-H6): one grid with a column per group, no header and no group labels, a tab above the hand, a side column in the expanded panel, no debt controls in the hand |
 | 2026-11-09 | Bug review ([bug-fix-plan.md](bug-fix-plan.md)): modal dialogs for the auction, card reveal and square detail (5.2, 8.7, R-B5, question 11 closed); full title deed; card hold; turn-change toast replaces the handoff interstitial (1.2, 5.3, R-T5); same pips on all faces (4.5); card stacks (4.4); owner marker clear of the price (R-B4); debug mode behind an API flag (4.7, R-D1, R-D5); planned hand redesign (4.6) |
+| 2026-11-22 | Debug panel: the switch "End turn automatically" (4.7, R-D6) |

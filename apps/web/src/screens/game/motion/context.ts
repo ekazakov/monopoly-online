@@ -20,3 +20,13 @@ export const MotionReleaseContext = createContext<() => void>(() => {});
 export function useMotionRelease(): () => void {
   return useContext(MotionReleaseContext);
 }
+
+/**
+ * The latest store version whose motion is over. Without a provider nothing plays, so it is
+ * `Infinity`: every version counts as settled.
+ */
+export const MotionSettledContext = createContext<number>(Number.POSITIVE_INFINITY);
+
+export function useMotionSettledVersion(): number {
+  return useContext(MotionSettledContext);
+}
