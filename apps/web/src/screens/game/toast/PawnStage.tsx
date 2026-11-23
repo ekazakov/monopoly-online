@@ -11,18 +11,10 @@ import {
   studioEnvironment,
 } from "../../../scene/sculpt.ts";
 import { AvatarIcon } from "../rail/avatars.tsx";
+import { hasWebGl } from "../../../scene/webglSupport.ts";
 
 /** Same meshing resolution as the board tokens, so the figure comes from the shared cache. */
 const FIGURE_RES = 80;
-
-function hasWebGl(): boolean {
-  try {
-    const canvas = document.createElement("canvas");
-    return Boolean(canvas.getContext("webgl2") ?? canvas.getContext("webgl"));
-  } catch {
-    return false;
-  }
-}
 
 /**
  * The 3D figure of a token on a round plinth with a ring in the player colour (the stage of the
@@ -114,6 +106,8 @@ export function PawnStage({ token, size }: { token: Token; size: number }) {
       figureMaterial.dispose();
       env.dispose();
       renderer.dispose();
+      // Free the context now. Otherwise it waits for garbage collection and uses up the limit.
+      renderer.forceContextLoss();
       renderer.domElement.remove();
     };
   }, [webgl, restores, size, look.avatar, look.hex, look.metal]);

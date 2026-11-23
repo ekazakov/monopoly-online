@@ -15,6 +15,7 @@ import { IDLE_PLAYBACK, isMove, restingSites, stepSquares } from "./motion.ts";
 import type { MotionPlayback } from "./motion.ts";
 import type { ScenePlayer } from "./model.ts";
 import { createResources } from "./resources.ts";
+import { hasWebGl } from "./webglSupport.ts";
 import { CardStacks } from "./CardStacks.tsx";
 import { useT } from "../i18n/index.ts";
 import { createBoardTextures, whenBoardFontsReady } from "./textures.ts";
@@ -34,21 +35,6 @@ export interface BoardSceneProps {
   motion?: MotionPlayback;
   /** Turns off camera damping. Token movement will read it too. */
   reducedMotion?: boolean;
-}
-
-let webglSupport: boolean | undefined;
-
-/** Whether this browser can make a WebGL context. Probed once; jsdom and old devices say no. */
-function hasWebGL(): boolean {
-  if (webglSupport === undefined) {
-    try {
-      const canvas = document.createElement("canvas");
-      webglSupport = Boolean(canvas.getContext("webgl2") ?? canvas.getContext("webgl"));
-    } catch {
-      webglSupport = false;
-    }
-  }
-  return webglSupport;
 }
 
 function Unavailable() {
@@ -299,7 +285,7 @@ export function BoardScene({
   motion = IDLE_PLAYBACK,
   reducedMotion = false,
 }: BoardSceneProps) {
-  if (!hasWebGL()) return <Unavailable />;
+  if (!hasWebGl()) return <Unavailable />;
   return (
     <SceneErrorBoundary>
       <Canvas
