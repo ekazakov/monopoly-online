@@ -56,6 +56,8 @@ export type AppOptions = BaseAppOptions & {
   heartbeatMs?: number;
   /** Largest version gap a stream reconnect replays. Defaults to `RESUME_MAX_GAP` (100). */
   resumeMaxGap?: number;
+  /** A stream with no ping from its client for this long is closed. Defaults to 30 s. */
+  livenessMs?: number;
   /** The presence tracker of the game streams. Defaults to a new one that publishes its changes. */
   presence?: PresenceTracker;
   /** Grace time of the default tracker in ms. Defaults to 60 s. Ignored when `presence` is set. */
@@ -202,6 +204,7 @@ export function createApp(db: Kysely<Database>, options?: AppOptions) {
         shutdownSignal: options?.shutdown?.signal,
         heartbeatMs: options?.heartbeatMs,
         resumeMaxGap: options?.resumeMaxGap,
+        livenessMs: options?.livenessMs,
       }),
     );
 

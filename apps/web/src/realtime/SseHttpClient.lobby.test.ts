@@ -46,7 +46,9 @@ describe("lobby and user topics", () => {
     client.subscribe(topic, () => {});
     await flush();
     expect(sources).toHaveLength(1);
-    expect(sources[0]!.url).toBe(`/api/stream?topics=${topic},${lobby},${user}`);
+    expect(sources[0]!.url).toBe(
+      `/api/stream?topics=${topic},${lobby},${user}&streamId=iiiiiiiiiiiiiiii`,
+    );
   });
 
   test("each message goes to the handlers of its own topic only", async () => {
@@ -90,7 +92,7 @@ describe("lobby and user topics", () => {
     await flush();
     expect(sources).toHaveLength(2);
     expect(sources[0]!.closed).toBe(true);
-    expect(sources[1]!.url).toBe(`/api/stream?topics=${lobby}`);
+    expect(sources[1]!.url).toBe(`/api/stream?topics=${lobby}&streamId=iiiiiiiiiiiiiiii`);
   });
 
   test("a lobby message with a bad payload is dropped and reported", async () => {

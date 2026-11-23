@@ -312,7 +312,7 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 
 ### BUG-22: A remote player cannot connect again; "player is connecting" stays on screen
 
-- Status: open
+- Status: open. Second case fixed in code (liveness ping), `pnpm check` and `pnpm test` pass. Not yet checked in the browser. First case not analysed.
 - Reported: 2026-11-23
 - Area: web and api (`apps/web/src/realtime/SseHttpClient.ts`, `apps/web/src/screens/game/turn/ActionBar.tsx`, API presence and SSE code)
 - Steps to reproduce:
@@ -323,6 +323,17 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 - Actual: The player cannot join again. The other players always see the message "player is connecting". At the same time, the network of the player was good and the game server had no problem.
 - Images: none
 - Notes: This happened one time. The cause is not known. Possible causes to check: the client stops its retries after an error, or after the cookie session ends. The SSE resume with the last event ID fails. The server keeps the seat in the `reconnecting` presence state after the stream closes. A timer for the grace time does not start again. Compare with the presence rules in `plan/milestone-3-tasks.md`. If it happens again, save the browser console, the network log, and the API log of the player and of the game.
+- Second case (reported 2026-11-23): The other players do not see an offline status.
+  1. Start a game in two separate browsers (two remote players).
+  2. Play a few turns.
+  3. Disconnect the network in one browser.
+  4. Look at the player list in the other browser.
+  - Expected: After the grace time, the other browser shows that the player is offline.
+  - Actual: The other browser shows no change of the online or offline status for that player.
+  - Notes: Check how the server finds a dead SSE connection when the network goes away without a clean close (heartbeat, write error, close event, idle timeout). Check that the presence change is published to the other players and that the web store shows it.
+  - Root cause: The server learns that a stream is dead only from a failed write or a closed socket. A lost network gives neither. The heartbeat write succeeds into the kernel buffer, and TCP keeps the socket open for minutes. So the stream stays `online`, and no `presence.updated` message is sent. The web store is not at fault. It shows every change it gets.
+  - Fix: The client sends a liveness ping every 10 s (`POST /api/stream/ping` with the `streamId` of its stream, which the stream URL now carries). The server closes a stream with no ping for 30 s (`apps/api/src/realtime/liveness.ts`). The existing close path then moves the seat to `reconnecting`, and after the grace time to `away`. Tests: `closes a stream whose client sends no liveness ping, so the others see the seat reconnecting`, `a stream that is pinged stays open, and a ping for another user's stream is refused` (`apps/api/src/routes/stream.test.ts`), and `pings the server at the set interval with the id that the stream URL carries` (`apps/web/src/realtime/SseHttpClient.test.ts`).
+  - Verification: `pnpm check` passes. `pnpm test` passes in every package (web: 1115 tests, all files). The new API tests were not run against the code before the fix. Browser check still needed.
 
 ### BUG-23: Event log does not show turn numbers (change request)
 

@@ -33,6 +33,14 @@ export const streamTopicSchema = z.union([
   userTopicSchema,
 ]);
 
+/** The client sends a liveness ping on its stream this often. */
+export const STREAM_PING_MS = 10_000;
+/** A stream with no ping for this long is closed: its client is gone, though the socket may still be open. */
+export const STREAM_LIVENESS_MS = 30_000;
+
+/** The id of one stream, chosen by the client. A native retry of the stream keeps the same id. */
+export const streamIdSchema = z.string().regex(/^[A-Za-z0-9_-]{8,64}$/);
+
 /** A closed EventSource needs a new instance, so its cursor can be supplied in the query. */
 export const streamQuerySchema = z.strictObject({
   topics: z.string().min(1),
@@ -40,6 +48,12 @@ export const streamQuerySchema = z.strictObject({
     .string()
     .regex(/^\d{1,15}$/)
     .optional(),
+  streamId: streamIdSchema.optional(),
+});
+
+/** `POST /api/stream/ping`: the client is still reading the stream with this id. */
+export const streamPingRequestSchema = z.strictObject({
+  streamId: streamIdSchema,
 });
 
 /** Split the `topics` query value. Null when it is empty, too long or has a bad topic. */

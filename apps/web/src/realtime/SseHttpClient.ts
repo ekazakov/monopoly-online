@@ -1,4 +1,5 @@
 import {
+  STREAM_PING_MS,
   actionResponseSchema,
   apiErrorSchema,
   streamMessageSchema,
@@ -64,6 +65,8 @@ export class SseHttpClient implements RealtimeClient {
   private lastEventId: number | null = null;
   private syncQueued = false;
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Sends the liveness ping of the open stream. The server closes a stream that stops pinging. */
+  private pingTimer: ReturnType<typeof setInterval> | null = null;
   private attempt = 0;
 
   constructor(options: SseHttpClientOptions = {}) {
@@ -168,9 +171,11 @@ export class SseHttpClient implements RealtimeClient {
     this.openedTopics = topics;
     this.setStatus(status);
 
+    const streamId = this.newStreamId();
     const cursor = this.lastEventId === null ? "" : `&lastEventId=${this.lastEventId}`;
-    const source = this.createSource(`/api/stream?topics=${topics}${cursor}`);
+    const source = this.createSource(`/api/stream?topics=${topics}${cursor}&streamId=${streamId}`);
     this.source = source;
+    this.startPings(streamId);
     source.onopen = () => {
       if (this.source !== source) return;
       this.attempt = 0;
@@ -197,6 +202,7 @@ export class SseHttpClient implements RealtimeClient {
   private scheduleRetry(source: EventSourceLike): void {
     source.close();
     this.source = null;
+    this.stopPings();
     const delay = retryDelay(this.attempt++, this.random);
     this.retryTimer = setTimeout(() => {
       this.retryTimer = null;
@@ -206,9 +212,33 @@ export class SseHttpClient implements RealtimeClient {
     }, delay);
   }
 
+  /** A random id of 16 letters and digits. The server accepts 8 to 64 of them. */
+  private newStreamId(): string {
+    return Array.from({ length: 16 }, () => Math.floor(this.random() * 36).toString(36)).join("");
+  }
+
+  // A ping is sent while the stream is open. A failed ping is ignored: the next one may work.
+  private startPings(streamId: string): void {
+    this.stopPings();
+    this.pingTimer = setInterval(() => {
+      this.fetchImpl("/api/stream/ping", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ streamId }),
+      }).catch(() => {});
+    }, STREAM_PING_MS);
+  }
+
+  private stopPings(): void {
+    if (this.pingTimer) clearInterval(this.pingTimer);
+    this.pingTimer = null;
+  }
+
   private teardown(): void {
     if (this.retryTimer) clearTimeout(this.retryTimer);
     this.retryTimer = null;
+    this.stopPings();
     if (this.source) {
       this.source.onopen = null;
       this.source.onerror = null;

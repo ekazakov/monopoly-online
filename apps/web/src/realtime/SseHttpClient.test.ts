@@ -1,4 +1,4 @@
-import { actionResponseSchema } from "@monopoly/shared";
+import { STREAM_PING_MS, actionResponseSchema } from "@monopoly/shared";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vite-plus/test";
 import { ActionApiError } from "./errors.ts";
 import {
@@ -16,6 +16,9 @@ import type { MessageHandler, RealtimeStatus, SendRequest } from "./types.ts";
 
 // Subscriptions apply the stream change in a microtask.
 const flush = () => Promise.resolve();
+
+// The stream id of the tests: `setup` gives `random` a fixed 0.5, so every id character is `i`.
+const STREAM_ID = "iiiiiiiiiiiiiiii";
 
 function setup(options: SseHttpClientOptions = {}) {
   const onError = vi.fn<(error: unknown) => void>();
@@ -39,6 +42,29 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+describe("stream liveness", () => {
+  test("pings the server at the set interval with the id that the stream URL carries", async () => {
+    vi.useFakeTimers();
+    const fetch = vi.fn<typeof globalThis.fetch>(async () => new Response(null, { status: 204 }));
+    const { client, latest } = setup({ fetch });
+    client.subscribe(topic, () => {});
+    await flush();
+    const streamId = new URL(latest().url, "http://localhost").searchParams.get("streamId");
+    expect(streamId).toMatch(/^[A-Za-z0-9_-]{8,64}$/);
+
+    await vi.advanceTimersByTimeAsync(STREAM_PING_MS * 2);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/stream/ping",
+      expect.objectContaining({ method: "POST", body: JSON.stringify({ streamId }) }),
+    );
+
+    client.close();
+    await vi.advanceTimersByTimeAsync(STREAM_PING_MS * 2);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+});
+
 describe("stream lifecycle", () => {
   test("is idle and opens nothing without subscribers", async () => {
     const { client, sources } = setup();
@@ -53,7 +79,7 @@ describe("stream lifecycle", () => {
     client.subscribe(topic, () => {});
     await flush();
     expect(sources).toHaveLength(1);
-    expect(latest().url).toBe(`/api/stream?topics=${topic},${otherTopic}`);
+    expect(latest().url).toBe(`/api/stream?topics=${topic},${otherTopic}&streamId=${STREAM_ID}`);
     expect(latest().listenerTypes().sort()).toEqual([
       "game.actions",
       "invites.updated",
@@ -90,7 +116,7 @@ describe("stream lifecycle", () => {
     await flush();
     expect(sources).toHaveLength(2);
     expect(sources[0]!.closed).toBe(true);
-    expect(sources[1]!.url).toBe(`/api/stream?topics=${topic},${otherTopic}`);
+    expect(sources[1]!.url).toBe(`/api/stream?topics=${topic},${otherTopic}&streamId=${STREAM_ID}`);
     expect(client.getStatus()).toBe("connecting");
   });
 
@@ -102,7 +128,7 @@ describe("stream lifecycle", () => {
     off();
     await flush();
     expect(sources).toHaveLength(2);
-    expect(sources[1]!.url).toBe(`/api/stream?topics=${topic}`);
+    expect(sources[1]!.url).toBe(`/api/stream?topics=${topic}&streamId=${STREAM_ID}`);
   });
 
   test("changes in one tick open one stream", async () => {
@@ -291,7 +317,7 @@ describe("status", () => {
     sources[0]!.emit("game.actions", gameActions()); // a repeated older frame cannot move the cursor back
     sources[0]!.fail();
     await vi.advanceTimersByTimeAsync(750);
-    expect(sources[1]!.url).toBe(`/api/stream?topics=${topic}&lastEventId=3`);
+    expect(sources[1]!.url).toBe(`/api/stream?topics=${topic}&lastEventId=3&streamId=${STREAM_ID}`);
   });
 
   test("a started snapshot at version zero is a valid retry cursor", async () => {
@@ -308,7 +334,7 @@ describe("status", () => {
     });
     sources[0]!.fail();
     await vi.advanceTimersByTimeAsync(750);
-    expect(sources[1]!.url).toBe(`/api/stream?topics=${topic}&lastEventId=0`);
+    expect(sources[1]!.url).toBe(`/api/stream?topics=${topic}&lastEventId=0&streamId=${STREAM_ID}`);
   });
 
   test("topic changes, unsubscribe and close clear the retry cursor", async () => {
@@ -319,11 +345,11 @@ describe("status", () => {
     latest().emit("game.actions", gameActions());
     const offOther = client.subscribe(otherTopic, () => {});
     await vi.advanceTimersByTimeAsync(0);
-    expect(latest().url).toBe(`/api/stream?topics=${topic},${otherTopic}`);
+    expect(latest().url).toBe(`/api/stream?topics=${topic},${otherTopic}&streamId=${STREAM_ID}`);
     latest().emit("game.actions", gameActions());
     latest().fail();
     await vi.advanceTimersByTimeAsync(750);
-    expect(latest().url).toBe(`/api/stream?topics=${topic},${otherTopic}`);
+    expect(latest().url).toBe(`/api/stream?topics=${topic},${otherTopic}&streamId=${STREAM_ID}`);
     offOther();
     await vi.advanceTimersByTimeAsync(0);
     latest().emit("game.actions", gameActions());
@@ -331,12 +357,12 @@ describe("status", () => {
     await vi.advanceTimersByTimeAsync(0);
     client.subscribe(topic, () => {});
     await vi.advanceTimersByTimeAsync(0);
-    expect(latest().url).toBe(`/api/stream?topics=${topic}`);
+    expect(latest().url).toBe(`/api/stream?topics=${topic}&streamId=${STREAM_ID}`);
     latest().emit("game.actions", gameActions());
     client.close();
     client.subscribe(topic, () => {});
     await vi.advanceTimersByTimeAsync(0);
-    expect(latest().url).toBe(`/api/stream?topics=${topic}`);
+    expect(latest().url).toBe(`/api/stream?topics=${topic}&streamId=${STREAM_ID}`);
     expect(sources.every((source) => !source.url.includes("lastEventId"))).toBe(true);
   });
 

@@ -28,7 +28,9 @@ describe("react integration", () => {
 
     await act(async () => {});
     const source = FakeEventSource.instances[0]!;
-    expect(source.url).toBe(`/api/stream?topics=${topic}`);
+    expect(source.url).toMatch(
+      new RegExp(`^/api/stream\\?topics=${topic}&streamId=[A-Za-z0-9_-]{8,64}$`),
+    );
     expect(screen.getByText("status: connecting")).toBeInTheDocument();
 
     act(() => source.open());

@@ -810,6 +810,57 @@ describe("GET /api/stream", () => {
         expect(reader.pending).toEqual([]);
       });
 
+      test("closes a stream whose client sends no liveness ping, so the others see the seat reconnecting", async () => {
+        await build({ heartbeatMs: 10, livenessMs: 60 });
+        const started = await startedGame(app, SEED);
+        const seat = started.game.seats.find((s) => s.controllerUserId === started.owner.user.id)!;
+        const watcher = await connect(started.guest.cookie, started.game.id);
+        await watcher.next();
+        const silent = await open(
+          started.owner.cookie,
+          `?topics=game:${started.game.id}&streamId=silent-stream`,
+        );
+        expect(silent.status).toBe(200);
+        readers.push(readSse(silent));
+        await untilSeat(watcher, seat.id, "online");
+        await untilSeat(watcher, seat.id, "reconnecting");
+      });
+
+      test("a stream that is pinged stays open, and a ping for another user's stream is refused", async () => {
+        await build({ heartbeatMs: 10, livenessMs: 60 });
+        const started = await startedGame(app, SEED);
+        const seat = started.game.seats.find((s) => s.controllerUserId === started.owner.user.id)!;
+        const watcher = await connect(started.guest.cookie, started.game.id);
+        await watcher.next();
+        const pinged = await open(
+          started.owner.cookie,
+          `?topics=game:${started.game.id}&streamId=pinged-stream`,
+        );
+        expect(pinged.status).toBe(200);
+        readers.push(readSse(pinged));
+        await untilSeat(watcher, seat.id, "online");
+
+        const other = await postJson(app, "/api/stream/ping", started.guest.cookie, {
+          streamId: "pinged-stream",
+        });
+        expect(other.status).toBe(404);
+
+        for (let i = 0; i < 10; i++) {
+          const res = await postJson(app, "/api/stream/ping", started.owner.cookie, {
+            streamId: "pinged-stream",
+          });
+          expect(res.status).toBe(204);
+          await new Promise((resolve) => setTimeout(resolve, 20));
+        }
+        expect(
+          watcher.presence.some(
+            (frame) =>
+              frame.message.type === "presence.updated" &&
+              frame.message.payload.seats[seat.id] === "reconnecting",
+          ),
+        ).toBe(false);
+      });
+
       test("unsubscribes and stops the heartbeat when the client disconnects", async () => {
         await build({ heartbeatMs: 20 });
         started = await startedGame(app, SEED);
@@ -988,6 +1039,20 @@ describe("GET /api/stream", () => {
     });
   });
 });
+
+/** Read presence frames until `seatId` has `status`. Fails after ten frames. */
+async function untilSeat(reader: SseReader, seatId: string, status: string) {
+  for (let i = 0; i < 10; i++) {
+    const frame = await reader.nextPresence(1000);
+    if (
+      frame.message.type === "presence.updated" &&
+      frame.message.payload.seats[seatId] === status
+    ) {
+      return;
+    }
+  }
+  throw new Error(`The seat did not become ${status}`);
+}
 
 /** Poll until `condition` holds, or fail after `timeoutMs`. */
 async function waitUntil(condition: () => boolean, timeoutMs = 2000) {
