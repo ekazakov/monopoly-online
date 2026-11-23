@@ -376,3 +376,21 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 - Actual: The console shows `THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.`
 - Images: none
 - Notes: The web source has no direct use of `Clock`. The warning probably comes from a library that uses `THREE.Clock`, such as React Three Fiber or drei. Find the caller first, with the stack trace of the warning and with `pnpm why three`. If a library causes it, update the library to a version that uses `THREE.Timer`, or wait for that version. Do not patch `node_modules`. Check that a library update does not change the board scene or the animation timing.
+
+### BUG-26: Redesign the auction dialog (change request)
+
+- Status: open
+- Reported: 2026-11-23
+- Area: web (auction view in `apps/web/src/screens/game/`)
+- Type: change request
+- Steps to reproduce:
+  1. Start an auction: decline to buy a property.
+  2. Look at the auction dialog.
+- Expected: A new design of the auction dialog that covers four parts:
+  - Layout and hierarchy: a clear order of the property deed, the current bid, the bidders and the timer.
+  - Bid controls: the bid input, the quick-bid buttons, and the pass and withdraw actions.
+  - Visual style: a look that matches the design tokens and the title deed.
+  - Bidder status: who bid, who passed and who leads, for remote and hot-seat players.
+- Actual: The current dialog is the old design. The details of what is wrong were not given.
+- Images: none
+- Notes: This task uses BUG-2 (the auction in a modal dialog), BUG-3 (the focus ring of the bid field) and BUG-10 (the full title deed). Do the redesign together with BUG-2, or after it, so that the work is not done twice. Make a design prototype first. Ask the user to approve the design before you save a new design board or an artifact. Keep the server as the authority for bids, and keep the reduced-motion path. Ask the user for the details of what to improve before the design starts.
