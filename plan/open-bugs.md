@@ -351,3 +351,17 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 - Actual: The line shows only the destination square.
 - Images: none
 - Notes: Check if the `PlayerMoved` event has the starting position. If it has only the destination, add the starting position to the event, or find it from the earlier state of the player in the log code. If the event changes, update the shared schemas, `drift.test.ts` and the tests that match the text. Make sure that moves from a card, a move to jail and a move back work with the new text. Update both the English and the Russian texts.
+
+### BUG-25: Browser console warning "THREE.Clock: This module has been deprecated" (fix later)
+
+- Status: open
+- Reported: 2026-11-23
+- Area: web (three.js scene)
+- Priority: low. Fix later.
+- Steps to reproduce:
+  1. Open a game in the browser.
+  2. Read the browser console.
+- Expected: The console has no deprecation warning.
+- Actual: The console shows `THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.`
+- Images: none
+- Notes: The web source has no direct use of `Clock`. The warning probably comes from a library that uses `THREE.Clock`, such as React Three Fiber or drei. Find the caller first, with the stack trace of the warning and with `pnpm why three`. If a library causes it, update the library to a version that uses `THREE.Timer`, or wait for that version. Do not patch `node_modules`. Check that a library update does not change the board scene or the animation timing.
