@@ -281,3 +281,45 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 - Actual: The tile shows 0. The tile "Away" shows 1 in the same time range, so the presence metric works.
 - Images: none (two screenshots: the log panel and the Realtime row)
 - Notes: The tile query is `sum(increase(harborfront_realtime_autosaves_total[$__range])) or vector(0)` in `ops/grafana/dashboards/harborfront.json`. The API adds to the counter `harborfront.realtime.autosaves` in `apps/api/src/app.ts` (`deps.metrics.autoSaved()`), right after the save that writes the log line. The code path looks correct. Two causes are likely. First, a Prometheus counter that appears with the value 1 and no earlier sample gives `increase` of 0, so the first save after an API start is not counted. Second, the metric name or the label set in the exported series differs from the name in the query. Check the series in Grafana Explore before the fix. If the first cause is true, the API can create the counter with a value of 0 at start.
+
+### BUG-20: The game has no favicon (change request)
+
+- Status: open
+- Reported: 2026-11-23
+- Area: web
+- Type: change request
+- Steps to reproduce:
+  1. Open the game in a browser.
+  2. Look at the browser tab.
+- Expected: The tab shows an icon for the game: a gold coin with a capital letter M at the center.
+- Actual: The tab shows the default browser icon. `apps/web/index.html` has no icon link, and `apps/web/public/` has only the `sounds` folder.
+- Images: none
+- Notes: Make an SVG icon, and add a PNG fallback and an Apple touch icon if needed. Take the gold color from `apps/web/src/styles/tokens.css`. Make sure that the icon is readable at 16 px. Make sure that the Vite build, the Docker image and nginx serve the files from `public/`. Ask the user to approve the design before you save a new design artifact.
+
+### BUG-21: Board and tokens disappear after a WebGL context loss (critical)
+
+- Status: open
+- Reported: 2026-11-23
+- Severity: critical. The game cannot be played without the board.
+- Area: web (three.js scene: `apps/web/src/scene/Tokens.tsx`, `apps/web/src/scene/BoardScene.tsx`, `useStudioEnvironment`)
+- Steps to reproduce:
+  1. Play a game for a few steps. The exact trigger is not known.
+  2. Watch the board and the tokens.
+- Expected: The board and the tokens stay on the screen for the whole game. If the WebGL context is lost, the scene comes back after the context is restored.
+- Actual: After a few steps, the board and the tokens disappear. After some time, the board and the tokens come back, but the tokens are black with only a little color. Only the HTML parts show: the player list, the dice, the buttons and the property cards. Earlier, the tokens sometimes lost their colors and looked unlit. This is probably the same fault in a lighter form. The browser console shows two lines: `THREE.WebGLRenderer: Context Lost.` and `THREE.WebGLRenderer: Context Restored.`
+- Images: ![Console lines: Context Lost and Context Restored](bug-images/BUG-21-1.png) ![Game screen with no board and no tokens](bug-images/BUG-21-2.jpg) ![Board restored, tokens black](bug-images/BUG-21-3.webp)
+- Notes: The console lines show that the browser lost the WebGL context and restored it. After the restore, the scene does not draw again. Three.js restores its own textures and buffers, but objects that the app made by hand can stay invalid. Check these first: the studio environment map (`studioEnvironment(gl)` in `useStudioEnvironment`) and any render target or canvas texture. They can stay empty after a restore. This also explains the black tokens after the restore: the board materials use basic or simple lighting and recover, but the token materials need the environment map for their light, and it stays empty. Check if `PawnStage.tsx` or another second renderer runs at the same time, because many WebGL contexts in one page make the browser drop the oldest one. Check the GPU memory use of the scene (texture sizes, number of materials). Add a handler for `webglcontextlost` and `webglcontextrestored` on the canvas. In the handler, call `preventDefault` on loss, then build the environment map again and force a new frame after the restore. Show a fallback or a reload message if the scene does not come back. Check the reduced-motion and no-WebGL paths after the fix.
+
+### BUG-22: A remote player cannot connect again; "player is connecting" stays on screen
+
+- Status: open
+- Reported: 2026-11-23
+- Area: web and api (`apps/web/src/realtime/SseHttpClient.ts`, `apps/web/src/screens/game/turn/ActionBar.tsx`, API presence and SSE code)
+- Steps to reproduce:
+  1. Start a game with a remote player.
+  2. The remote player loses the connection. The cause is not known.
+  3. The remote player tries to join the game again.
+- Expected: The player joins the game again when the network works. The message "player is connecting" goes away.
+- Actual: The player cannot join again. The other players always see the message "player is connecting". At the same time, the network of the player was good and the game server had no problem.
+- Images: none
+- Notes: This happened one time. The cause is not known. Possible causes to check: the client stops its retries after an error, or after the cookie session ends. The SSE resume with the last event ID fails. The server keeps the seat in the `reconnecting` presence state after the stream closes. A timer for the grace time does not start again. Compare with the presence rules in `plan/milestone-3-tasks.md`. If it happens again, save the browser console, the network log, and the API log of the player and of the game.
