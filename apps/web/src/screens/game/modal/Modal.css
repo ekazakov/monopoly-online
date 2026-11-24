@@ -30,6 +30,11 @@
   color: var(--hf-board-ink);
 }
 
+/* The auction dialog: 720 px, and the viewport width on narrow screens. */
+.modal--wide {
+  width: min(720px, 100%);
+}
+
 /* A flex column with a maximum height: the body shrinks and scrolls when the content is taller than
    the window, and the title and the Close button stay in view. `max-height: 100%` on the inner box
    alone does nothing, because the dialog has no fixed height. */

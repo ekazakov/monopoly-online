@@ -62,6 +62,13 @@
       "x": 11200,
       "y": 0
     },
+    "AuctionStates.dc.html": {
+      "h": 12472,
+      "title": "Auction dialog states",
+      "w": 1280,
+      "x": 0,
+      "y": 16800
+    },
     "TurnArea.dc.html": {
       "h": 3400,
       "title": "Board centre states",
@@ -166,6 +173,7 @@
     "Light.dc.html",
     "Wireframe2.dc.html",
     "Dialogs.dc.html",
+    "AuctionStates.dc.html",
     "TurnArea.dc.html",
     "Lobby.dc.html",
     "LobbyHost.dc.html",

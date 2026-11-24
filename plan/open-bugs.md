@@ -379,7 +379,13 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 
 ### BUG-26: Redesign the auction dialog (change request)
 
-- Status: open
+- Status: fixed (2026-11-24), checked in the browser at desktop and 375 px width. The Playwright tests T10, T11 and T20 to T26 pass (run outside the sandbox, because Chromium cannot start in it). The user chose a table of bidders (Name, Last bid, Bid, Quick raise, Make a bid), with Pass at the bottom, a number input, quick buttons that add to the input, a focus ring around the whole field, and an art board. After the first review the user also asked for: no status words under the name, names and bids 40 % bigger, rows aligned by the top, the leading bid bold and 20 % bigger, whole numbers only in the input, and no row for a bidder who passed.
+  - Engine: any whole bid of at least the high bid plus $10 (opening: $10) and at most the cash is valid. A new `bids` map in the auction state holds each bidder's last bid. The loader adds an empty `bids` to old saved games (`apps/api/src/game/loader.ts`). No migration. `apps/api/openapi.json` is regenerated.
+  - Web: `flows/auction/AuctionView.tsx`, `Auction.css`, `bid.ts`; the dialog is 720 px wide through a new `wide` prop on `Modal`. English and Russian texts are updated.
+  - Art board with all states: `artifacts/design-system/project/AuctionStates.dc.html` (listed in `canvas.json`).
+  - Found in the browser and fixed: a second focus ring on the inner input (the global `.game-layout :focus-visible` rule is stronger than `.auction__input { outline: none }`; unit tests cannot see this), a table wider than the dialog, and a crowded phone layout.
+  - The removal of `raiseList` left `joinOr` and the `list.or` texts unused, so they were removed too (knip found `joinOr`).
+  - The comment "remove the status pillow under the username" was read as the status words (To bid, Leading, In). The user then asked to remove the small "this device" tag too, so the rows show only the colour dot and the name. The input label "{name}'s bid" names the bidder who acts on a shared device.
 - Reported: 2026-11-23
 - Area: web (auction view in `apps/web/src/screens/game/`)
 - Type: change request

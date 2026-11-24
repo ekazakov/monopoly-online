@@ -272,6 +272,46 @@ Tasks:
 - [x] Tests: dialog content, actions enabled and disabled, keyboard path.
 - Spec: R-B5 ("tap a square to see its title deed").
 
+## Phase 8: later bugs (BUG-18, BUG-20, BUG-23, BUG-26, BUG-27)
+
+Decided 2026-11-24. Done in this order: BUG-27 and BUG-20, BUG-18, BUG-23, then BUG-26 (engine and shared, then web and the art board).
+
+### Build button on hover (BUG-27)
+
+- Cause: the property dialog is a light card (`--hf-paper`) in both themes. `PropertyHand.css` sets the hover to `--hf-hover` (nearly transparent white in the dark theme) and keeps the light text, so the contrast was about 1.1:1. The fault shows in the dark theme, not the light theme.
+- [x] `square/Square.css`: solid colours for the base, hover, focus-visible and disabled states of `.property-hand__button` inside `.square-detail`. The hand panel is unchanged. Contrast: 14.8:1 at rest, 16.5:1 on hover, 5.1:1 when disabled (dimmed to 0.8).
+- [x] Checked in the browser, dark theme (measured), and the light theme tokens.
+
+### Favicon (BUG-20)
+
+**Decision:** an SVG only, a flat gold coin with a dark M. No PNG and no Apple touch icon.
+
+- [x] `apps/web/public/favicon.svg` and the icon link in `apps/web/index.html`. The build, the Docker image and the API serve `public/` with no other change.
+- [x] Checked in the browser: `/favicon.svg` is served as `image/svg+xml`.
+
+### Card wording (BUG-18)
+
+**Decision:** reword the title and the body. The engine rule does not change.
+
+- [x] `cards.ts` titles, `effect.nearestStation` and `effect.nearestUtility` in `en.ts` and `ru.ts`, Appendix C of the rules reference.
+
+### Round numbers in the log (BUG-23)
+
+**Decision:** round numbers from 0, as a header line. No engine or schema change.
+
+- [x] `log/rounds.ts` (`roundsOf`) with the rule of `apps/api/src/game/result.ts`. `game/store.ts` counts the `TurnEnded` events that the 2000-event cap cuts (`droppedTurnEnds`). `GameLog.tsx` draws the header. Key `log.round`.
+- [x] Checked in the browser: one "Round 0" header above the first line.
+
+### Auction dialog (BUG-26)
+
+**Decisions:** a table of bidders, 720 px wide. Pass at the bottom. A number input that takes whole numbers only. Quick buttons add to the input. Any bid of at least the high bid plus $10 is valid. Each bidder's last bid is kept in the state. No timer and no withdraw. A bidder who passed is not shown. No status words in the rows.
+
+- [x] Engine: `handleBid` accepts any whole bid of at least `nextMinimum` (the high bid plus `MIN_RAISE`, or `MIN_BID` for the first bid). New `bids` map in the auction state and in `auctionSchema`. `deserializeState` adds an empty `bids` to old saved games. No migration. `pnpm openapi` run.
+- [x] Web: `flows/auction/AuctionView.tsx`, `Auction.css`, `bid.ts`; a `wide` prop on `Modal`; English and Russian texts.
+- [x] Art board with all states: `artifacts/design-system/project/AuctionStates.dc.html`, listed in `canvas.json`.
+- [x] Checked in the browser at desktop and 375 px width: direct entry of a bid the old rule refused, stacking quick buttons, invalid values, the move of the controls to the next bidder, a pass, and the end of the auction.
+- [x] Browser tests T10, T11 and the session tests T20 to T26 pass.
+
 ## Open decisions
 
 1. **Debug variable name (BUG-17).** Resolved: `DEBUG_MODE_ENABLED`, in the style of `GUEST_SIGN_IN_ENABLED`.

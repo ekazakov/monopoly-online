@@ -13,6 +13,8 @@ interface ModalProps {
   onClose?: () => void;
   /** With `onClose`: closes on Esc only, with no Close button. The dialog has its own OK. */
   hideClose?: boolean;
+  /** A wider dialog (720 px), for the auction. It shrinks to the viewport on narrow screens. */
+  wide?: boolean;
 }
 
 /** The regions that a dialog makes inert: all but the top bar, which has the log and the Menu. */
@@ -23,7 +25,7 @@ const BEHIND = ":scope > .game-layout__regions > :not(.game-layout__top)";
 // paints over it, so the top bar with the log and the Menu would be out of reach. Here the scrim
 // sits below the top bar, and the dialog makes the other regions inert by hand. Mount it as a child
 // of `.game-layout`, after the regions.
-export function Modal({ title, children, onClose, hideClose }: ModalProps) {
+export function Modal({ title, children, onClose, hideClose, wide = false }: ModalProps) {
   const t = useT();
   const titleId = useId();
   const closable = onClose !== undefined;
@@ -61,7 +63,7 @@ export function Modal({ title, children, onClose, hideClose }: ModalProps) {
     <div className="modal__scrim">
       <dialog
         ref={open}
-        className="modal"
+        className={wide ? "modal modal--wide" : "modal"}
         aria-modal="true"
         aria-labelledby={titleId}
         onKeyDown={onKeyDown}

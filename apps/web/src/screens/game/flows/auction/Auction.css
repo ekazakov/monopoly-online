@@ -1,26 +1,45 @@
 /*
- * Auction in the board centre (spec 5.2, 8.7 R-G4; design board Dialogs, "Auction"). Tokens only.
- * It sits inside `.turn-area` and reuses the button and status classes of that area. The text is
- * on the light board surface, so it uses the board ink.
+ * Auction (spec 5.2, 8.7 R-G4; design board Dialogs, "Auction"). Tokens only. It sits in the auction
+ * dialog (a wide modal) or in the board centre. The text is on the light paper surface, so it uses
+ * the board ink. Nothing animates, so the reduced-motion path needs no override.
  */
 .auction {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: var(--hf-space-12);
+  width: 100%;
   max-width: 100%;
+  text-align: left;
 }
 
 .auction :where(p, ul, form, dl) {
   margin: 0;
 }
 
+/* Visually hidden, but still read by screen readers. */
+.auction__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* The deed on the left, the current bid on the right. On narrow screens the deed goes above. */
 .auction__top {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: var(--hf-space-16);
+}
+
+.auction__high {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
 .auction__label,
@@ -35,23 +54,80 @@
   letter-spacing: var(--hf-track-display-l);
 }
 
-.auction__bidders {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--hf-space-4) var(--hf-space-16);
+.auction__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hf-space-8);
+}
+
+.auction__cash {
+  font: var(--hf-type-body-small);
+  font-weight: 600;
+  color: var(--hf-zone-ink);
+}
+
+/* The table of bidders. */
+.auction__table {
   width: 100%;
-  padding: 0;
-  list-style: none;
+  border-collapse: collapse;
+  font: var(--hf-type-body-small);
+  color: var(--hf-board-ink);
+}
+
+.auction__table th,
+.auction__table td {
+  padding: var(--hf-space-8) var(--hf-space-6);
+  border-bottom: 1px solid var(--hf-edge);
+  vertical-align: top;
   text-align: left;
 }
 
-.auction__bidder {
+.auction__table thead th {
+  font: var(--hf-type-label);
+  letter-spacing: var(--hf-track-label);
+  text-transform: uppercase;
+  color: var(--hf-zone-ink);
+  font-weight: 600;
+}
+
+.auction__table td {
+  white-space: nowrap;
+}
+
+/* The dot, the name and the tag share one line. They line up on the text baseline, so the small tag
+   does not float above the bigger name. The rows themselves line up by their top. */
+.auction__name {
   display: flex;
-  align-items: center;
+  flex-wrap: nowrap;
+  align-items: baseline;
   gap: var(--hf-space-8);
+  font-weight: 400;
+}
+
+.auction__name .auction__dot {
+  align-self: center;
+}
+
+/* A long name is cut with an ellipsis, so it cannot stretch the table past the dialog. */
+.auction__name {
+  max-width: 10rem;
+}
+
+.auction__name .auction__person {
   min-width: 0;
-  min-height: 28px;
-  font: var(--hf-type-body-small);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The "Make a bid" button is tighter in the table, so the five columns fit in the dialog. */
+.auction__table .turn-area__btn--primary {
+  padding-inline: var(--hf-space-16);
+}
+
+/* The name is 40 % bigger than the table text. */
+.auction__person {
+  font-size: 1.4em;
 }
 
 .auction__dot {
@@ -62,69 +138,34 @@
   border-radius: 50%;
 }
 
-.auction__name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.auction__device {
-  color: var(--hf-zone-ink);
-}
-
-.auction__state {
-  margin-left: auto;
-  font: var(--hf-type-caption);
-  font-weight: 600;
-  color: var(--hf-zone-ink);
-}
-
-.auction__bidder--leading .auction__state {
-  color: var(--hf-board-ink);
-}
-
-.auction__bidder--turn {
+/* Only the name of the acting bidder is bold. The bold bid is the leader's alone. */
+.auction__row--turn .auction__person {
   font-weight: 700;
 }
 
-.auction__bidder--passed .auction__name {
-  text-decoration: line-through;
+/* The bids are 40 % bigger than the table text. */
+.auction__last {
+  font-size: 1.4em;
+  font-variant-numeric: tabular-nums;
 }
 
-.auction__form {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--hf-space-8);
+/* The leading bid is bold and 20 % bigger again: 1.4 x 1.2 = 1.68. */
+.auction__row--leading .auction__last {
+  font-weight: 700;
+  font-size: 1.68em;
 }
 
-.auction__cash {
-  font: var(--hf-type-body-small);
-  font-weight: 600;
-  color: var(--hf-zone-ink);
-}
-
-.auction__field {
-  display: flex;
-  align-items: center;
-  gap: var(--hf-space-8);
-}
-
-.auction__field-label {
-  font: var(--hf-type-label);
-  letter-spacing: var(--hf-track-label);
-  text-transform: uppercase;
-}
-
+/* The bid field: one wrapper with the "$" sign, so the focus ring goes around all of it. */
 .auction__input-wrap {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: var(--hf-space-4);
+  min-height: var(--hf-target);
   padding: 0 var(--hf-space-12);
   border: 1px solid var(--hf-board-ink);
   border-radius: var(--hf-radius-control);
   background: var(--hf-paper);
+  color: var(--hf-board-ink);
   font: var(--hf-type-price);
 }
 
@@ -134,17 +175,29 @@
   min-height: var(--hf-target);
   padding: 0;
   border: 0;
+  outline: none;
   background: transparent;
-  color: var(--hf-board-ink);
+  color: inherit;
   font: inherit;
   font-variant-numeric: tabular-nums;
+  appearance: textfield;
+  -moz-appearance: textfield;
 }
 
-.auction__input:focus-visible {
+/* Hide the browser spin buttons. */
+.auction__input::-webkit-inner-spin-button,
+.auction__input::-webkit-outer-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* The global `.game-layout :focus-visible` ring has more weight than `.auction__input`, so it would
+   draw a second ring around the number. This rule is stronger, and the wrapper draws the one ring. */
+.auction .auction__input:focus-visible {
   outline: none;
 }
 
-/* The ring goes around the whole field, so the "$" sign is inside it. */
 .auction__input-wrap:has(.auction__input:focus-visible) {
   outline: 2px solid var(--hf-board-ink);
   outline-offset: 2px;
@@ -154,11 +207,39 @@
   border-color: var(--hf-board-red);
 }
 
-.auction__raises {
+.auction__quick {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-wrap: nowrap;
+  align-items: flex-start;
   gap: var(--hf-space-8);
+}
+
+/* The table is as wide as its content needs: the action column shrinks to its button, and the
+   headings stay on one line. */
+.auction__table thead th {
+  white-space: nowrap;
+}
+
+.auction__table th:last-child,
+.auction__table td:last-child {
+  width: 1%;
+}
+
+.auction__quick .turn-area__btn,
+.auction__form .turn-area__btn {
+  min-height: var(--hf-target);
+}
+
+/* Tighter side padding in the quick buttons, so the five columns fit in the 720 px dialog. */
+.auction__quick .turn-area__btn {
+  min-width: 0;
+  padding-inline: var(--hf-space-8);
+}
+
+/* The name column keeps room for the name on one line, so it does not make tall rows. */
+.auction__table th[scope="row"] {
+  min-width: 8rem;
+  white-space: nowrap;
 }
 
 .auction__hint,
@@ -169,7 +250,16 @@
 
 .auction__why {
   font-weight: 600;
-  color: var(--hf-board-ink);
+  color: var(--hf-board-red);
+}
+
+/* Pass sits at the bottom of the dialog, with its line of text next to it. */
+.auction__pass {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hf-space-12);
+  padding-top: var(--hf-space-4);
 }
 
 /* An empty live region stays in the accessibility tree, but takes no room in the flex column. */
@@ -180,4 +270,104 @@
 .auction__sending {
   font: var(--hf-type-caption);
   color: var(--hf-zone-ink);
+}
+
+/* Narrow screens: each bidder becomes a stacked block with a label on each value. */
+@media (max-width: 600px) {
+  .auction__top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .auction__table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .auction__table,
+  .auction__table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .auction__table tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--hf-space-4) var(--hf-space-12);
+    padding: var(--hf-space-8) 0;
+    border-bottom: 1px solid var(--hf-edge);
+  }
+
+  .auction__table th,
+  .auction__table td {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--hf-space-8);
+    min-width: 0;
+    padding: var(--hf-space-4) 0;
+    border: 0;
+    white-space: normal;
+  }
+
+  .auction__table th[scope="row"] {
+    display: block;
+    grid-column: 1 / -1;
+  }
+
+  /* A stacked row has the full width, so the name is not cut. */
+  .auction__name {
+    max-width: none;
+  }
+
+  /* Each value has its own line, with its label on the left. */
+  .auction__table td {
+    grid-column: 1 / -1;
+  }
+
+  .auction__table td:empty {
+    display: none;
+  }
+
+  .auction__table td::before {
+    content: attr(data-label);
+    font: var(--hf-type-caption);
+    color: var(--hf-zone-ink);
+  }
+
+  .auction__table td:last-child {
+    grid-column: 1 / -1;
+    width: auto;
+  }
+
+  .auction__table td:last-child::before {
+    content: none;
+  }
+
+  .auction__table td:last-child .turn-area__btn {
+    width: 100%;
+  }
+
+  .auction__quick {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .auction__input-wrap {
+    width: 100%;
+    max-width: 16ch;
+    justify-content: flex-end;
+  }
+
+  .auction__input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .auction__pass .turn-area__btn {
+    width: 100%;
+  }
 }

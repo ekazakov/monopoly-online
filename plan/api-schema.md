@@ -32,7 +32,7 @@ This document fixes the request and response schema of each API method in milest
 | `gameStatusSchema` | `"waiting" \| "active" \| "saved" \| "finished"` (M1 uses `waiting`, `active`, `finished`) |
 | `gameSchema` (room) | `{ id, name, status, ownerId, version, createdAt, seats: seat[] }`. `version` is the engine version: 0 while `waiting`; room changes do not change it |
 | `actionInputSchema` | discriminated union on `type`, the 18 engine actions without `playerId`. Fields as engine: `square` (int 0–39) for Build, SellBuilding, Mortgage, Unmortgage; `amount` (int ≥ 0) for Bid; `toPlayerId`, `give`, `get` for ProposeTrade (`tradeOfferSchema`: `{ cash, squares[], jailCards[] }`) |
-| `playerSchema`, `ownershipSchema`, `debtSchema`, `auctionSchema`, `tradeSchema`, `turnSchema` | Mirror engine `state.ts` |
+| `playerSchema`, `ownershipSchema`, `debtSchema`, `auctionSchema`, `tradeSchema`, `turnSchema` | Mirror engine `state.ts`. `auctionSchema` has `bids`: a map from player id to that player's last bid in the running auction (`{}` at the start) |
 | `redactedGameStateSchema` | Engine `GameState` without `rng` and `decks`: `{ version, players, ownership, turn, debts, auction, trade }` |
 | `gameEventSchema` | Union of the 31 engine events, discriminated on `type` |
 | `engineErrorCodes` | The engine `GameErrorCode` list, used as API error codes |

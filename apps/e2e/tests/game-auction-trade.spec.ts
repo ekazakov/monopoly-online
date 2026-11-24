@@ -1,6 +1,13 @@
 import { expect } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { playRolls, startGame } from "../support/api.ts";
 import { test } from "../support/game.ts";
+
+// A bid is a number in the "Your bid" field, then "Make a bid". Quick raises are not used here.
+async function placeBid(device: { page: Page }, amount: number) {
+  await device.page.getByRole("spinbutton", { name: "Your bid", exact: true }).fill(String(amount));
+  await device.page.getByRole("button", { name: "Make a bid of $" + amount, exact: true }).click();
+}
 
 test("T10: bids cross devices and the winner pays for the auctioned deed", async ({ browser }) => {
   const table = await startGame(browser, "Auction", { hotSeat: false });
@@ -14,15 +21,15 @@ test("T10: bids cross devices and the winner pays for the auctioned deed", async
       "Auction: Rope Walk",
     );
   }
-  await alice.page.getByRole("button", { name: "Bid $10", exact: true }).click();
+  await placeBid(alice, 10);
   // The bidder has the auction in a dialog. The other device follows it in the board centre.
   await expect(bob.page.getByRole("dialog", { name: "Auction" })).toContainText(`by ${alice.name}`);
   await expect(alice.page.getByRole("region", { name: "Turn actions" })).toContainText(
     "Auction: Rope Walk",
   );
-  await bob.page.getByRole("button", { name: "Bid $20", exact: true }).click();
+  await placeBid(bob, 20);
   await expect(alice.page.getByRole("dialog", { name: "Auction" })).toContainText(`by ${bob.name}`);
-  await alice.page.getByRole("button", { name: "Bid $30", exact: true }).click();
+  await placeBid(alice, 30);
   await bob.page.getByRole("button", { name: "Pass", exact: true }).click();
 
   for (const device of [alice, bob]) {

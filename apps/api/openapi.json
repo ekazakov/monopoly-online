@@ -3123,6 +3123,13 @@
                               "type": ["string", "null"],
                               "minLength": 1
                             },
+                            "bids": {
+                              "type": "object",
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
                             "actorId": {
                               "type": "string",
                               "minLength": 1
@@ -3159,6 +3166,7 @@
                             "passed",
                             "highBid",
                             "highBidderId",
+                            "bids",
                             "actorId",
                             "then",
                             "queue",
@@ -5258,6 +5266,13 @@
                               "type": ["string", "null"],
                               "minLength": 1
                             },
+                            "bids": {
+                              "type": "object",
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
                             "actorId": {
                               "type": "string",
                               "minLength": 1
@@ -5294,6 +5309,7 @@
                             "passed",
                             "highBid",
                             "highBidderId",
+                            "bids",
                             "actorId",
                             "then",
                             "queue",
@@ -5716,6 +5732,13 @@
                               "type": ["string", "null"],
                               "minLength": 1
                             },
+                            "bids": {
+                              "type": "object",
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
                             "actorId": {
                               "type": "string",
                               "minLength": 1
@@ -5752,6 +5775,7 @@
                             "passed",
                             "highBid",
                             "highBidderId",
+                            "bids",
                             "actorId",
                             "then",
                             "queue",

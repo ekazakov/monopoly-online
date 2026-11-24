@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 import { tEn } from "../../../../testing/tEn.ts";
-import { checkBid, minimumBid, raiseTargets } from "./bid.ts";
+import { checkBid, minimumBid, quickAdd } from "./bid.ts";
 
 describe("minimumBid", () => {
   test("is the opening bid, then the first raise", () => {
@@ -9,10 +9,24 @@ describe("minimumBid", () => {
   });
 });
 
-describe("raiseTargets", () => {
-  test("adds each raise to the best bid", () => {
-    expect(raiseTargets(60).map((item) => item.target)).toEqual([70, 110, 160]);
-    expect(raiseTargets(0).map((item) => item.target)).toEqual([10, 50, 100]);
+describe("quickAdd", () => {
+  test("adds the raise to the amount in the draft", () => {
+    expect(quickAdd("60", 10, 50, 1500)).toEqual({ amount: 70, ok: true });
+    expect(quickAdd(" 70 ", 50, 60, 1500)).toEqual({ amount: 120, ok: true });
+    expect(quickAdd("70", 10, 60, 1500).amount).toBe(80);
+  });
+
+  test("adds to the minimum bid when the draft is empty or not a number", () => {
+    expect(quickAdd("", 10, 0, 1500)).toEqual({ amount: 20, ok: true });
+    expect(quickAdd("  ", 50, 60, 1500)).toEqual({ amount: 120, ok: true });
+    expect(quickAdd("abc", 100, 0, 1500)).toEqual({ amount: 110, ok: true });
+    expect(quickAdd("NaN", 10, 60, 1500).amount).toBe(80);
+  });
+
+  test("is not ok when the result is above the cash", () => {
+    expect(quickAdd("100", 10, 0, 110)).toEqual({ amount: 110, ok: true });
+    expect(quickAdd("101", 10, 0, 110)).toEqual({ amount: 111, ok: false });
+    expect(quickAdd("", 100, 60, 100)).toEqual({ amount: 170, ok: false });
   });
 });
 
@@ -30,16 +44,16 @@ describe("checkBid", () => {
     });
   });
 
-  test("accepts only the best bid plus $10, $50 or $100 after a bid", () => {
-    for (const amount of [70, 110, 160]) {
+  test("accepts any whole bid of at least the best bid plus $10 after a bid", () => {
+    for (const amount of [70, 75, 110, 160, 1000]) {
       expect(checkBid(String(amount), 60, 1500, tEn)).toEqual({ ok: true, amount });
     }
-    for (const amount of ["60", "61", "75", "120", "200"]) {
+    for (const amount of ["60", "61", "69"]) {
       expect(checkBid(amount, 60, 1500, tEn).ok).toBe(false);
     }
-    expect(checkBid("75", 60, 1500, tEn)).toEqual({
+    expect(checkBid("69", 60, 1500, tEn)).toEqual({
       ok: false,
-      why: "The next bid is $70, $110 or $160.",
+      why: "The next bid is at least $70.",
     });
   });
 
@@ -48,7 +62,8 @@ describe("checkBid", () => {
       ok: false,
       why: "You have $100. A bid cannot be more than your cash.",
     });
-    expect(checkBid("100", 60, 100, tEn).ok).toBe(false);
+    expect(checkBid("100", 60, 100, tEn)).toEqual({ ok: true, amount: 100 });
+    expect(checkBid("101", 60, 100, tEn).ok).toBe(false);
     expect(checkBid("110", 100, 110, tEn)).toEqual({ ok: true, amount: 110 });
   });
 

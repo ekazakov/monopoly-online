@@ -318,6 +318,7 @@ describe("LeaveGameMenu: pending and errors", () => {
         passed: [],
         highBid: 0,
         highBidderId: null,
+        bids: {},
         actorId: b.id,
         then: "finish_roll",
         queue: [],

@@ -1,5 +1,5 @@
 import { applyAction } from "@monopoly/game-engine";
-import type { Action, GameState } from "@monopoly/game-engine";
+import type { Action, Auction, GameState } from "@monopoly/game-engine";
 import type { Kysely } from "kysely";
 import type { Database } from "../db/schema.ts";
 
@@ -49,7 +49,18 @@ export function deserializeState(text: string): GameState {
   ) {
     throw new Error("Stored game state is not a game state");
   }
-  return value as GameState;
+  return withAuctionBids(value as GameState);
+}
+
+/**
+ * Saved states from before the `bids` field have an auction without it. Add the empty map, so the
+ * engine and the redacted state always have it. No migration is needed: the state is JSON.
+ */
+function withAuctionBids(state: GameState): GameState {
+  // Typed as optional: the stored value may predate `bids`, so the type must not narrow it away.
+  const auction: Partial<Auction> | null = state.auction;
+  if (auction === null || auction.bids !== undefined) return state;
+  return { ...state, auction: { ...auction, bids: {} } as Auction };
 }
 
 /**

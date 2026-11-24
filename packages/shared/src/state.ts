@@ -66,6 +66,7 @@ export const auctionSchema = z.strictObject({
   passed: z.array(playerIdSchema),
   highBid: moneySchema,
   highBidderId: playerIdSchema.nullable(),
+  bids: z.record(playerIdSchema, moneySchema),
   actorId: playerIdSchema,
   then: z.enum(["finish_roll", "next_in_queue", "resume"]),
   queue: z.array(squareSchema),

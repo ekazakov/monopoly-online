@@ -47,6 +47,27 @@ describe("serializeState", () => {
     }
   });
 
+  test("a saved auction from before the bids field gets an empty bids map", () => {
+    const withAuction: GameState = {
+      ...game.initial,
+      auction: {
+        square: 3,
+        bidderOrder: [],
+        passed: [],
+        highBid: 0,
+        highBidderId: null,
+        bids: {},
+        actorId: "",
+        then: "finish_roll",
+        queue: [],
+        returnPhase: "awaiting_roll",
+      },
+    };
+    const legacy = JSON.parse(serializeState(withAuction)) as { auction: Record<string, unknown> };
+    delete legacy.auction.bids;
+    expect(deserializeState(JSON.stringify(legacy)).auction?.bids).toEqual({});
+  });
+
   test("refuses text that is not a game state", () => {
     expect(() => deserializeState("{}")).toThrow(/not a game state/);
     expect(() => deserializeState("[1]")).toThrow(/not a game state/);

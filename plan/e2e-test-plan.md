@@ -242,7 +242,7 @@ T09 found that the API's public room metadata was shown to a stranger as a start
 
 | Scenario | Steps and checks | Priority | Status |
 | --- | --- | --- | --- |
-| Auction across devices (T10) | Two seats. Alice chooses Auction for Rope Walk. Alice bids $10, Bob $20, Alice $30, Bob passes. Both logs show the win; both rails show Alice with $1,470 and 1 property. Her hand shows Rope Walk | P1 | Built (F10) |
+| Auction across devices (T10) | Two seats. Alice chooses Auction for Rope Walk. Alice bids $10, Bob $20, Alice $30, Bob passes. Each bid is typed in the bid field and sent with Make a bid. Both logs show the win; both rails show Alice with $1,470 and 1 property. Her hand shows Rope Walk | P1 | Built (F10) |
 | Hot-seat trade (T11) | After five API rolls, Alice offers Lantern Row to Cara for $25 in the UI. No pass-the-device step: the offer and the answer controls show at once on the device. Accept, and both devices show the cash and property changes. Rewritten for BUG-15 (2026-11-10); not run in this sandbox | P1 | Rewritten |
 | Jail (T12) | Teleport Bob to 19. Roll into Go to Jail. Cara and Alice play real API turns. On Bob's next turn, pay $50 in the UI. Both rails show $1,450 and no jail mark; Bob can roll | P1 | Built (F11) |
 | Card (T13) | Separate Chance and Chest scripts. Teleport, then roll in the UI. Both devices show the card, log and cash change. Dismissing on Alice's device leaves Bob's card open | P1 | Built (F11) |

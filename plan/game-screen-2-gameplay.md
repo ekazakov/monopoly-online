@@ -56,7 +56,7 @@ The rules are in [game-rules-reference.md](game-rules-reference.md). Decisions t
 
 | Topic               | Rule                           | Decision                                                                                                                                                                         |
 | ------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Buying and auctions | Rules section 11 | A declined or unaffordable property always goes to auction. Turn-based bidding in seat order, +$10 / +$50 / +$100 raises, a pass is final, bids are capped by cash, no timer. With no bids the property stays unowned |
+| Buying and auctions | Rules section 11 | A declined or unaffordable property always goes to auction. Turn-based bidding in seat order, raises of at least $10 (quick buttons +$10 / +$50 / +$100), a pass is final, bids are capped by cash, no timer. With no bids the property stays unowned |
 | Rent | Rules section 4 and Appendix B | Collected automatically, on purpose (the owner does not need to ask). Doubled for a complete unimproved colour set; station and utility rent as in the rules |
 | Chance and Chest    | Rules section 5 and Appendix C | 16 original cards per deck                                                                                                                                                       |
 | Jail | Rules section 6 | Three attempts, forced $50 fine on the third. If the player can't pay it, the debt is settled first, then they move. After paying or using a card, doubles give another roll |

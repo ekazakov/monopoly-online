@@ -36,6 +36,7 @@ describe("starting an auction", () => {
       passed: [],
       highBid: 0,
       highBidderId: null,
+      bids: {},
       actorId: lander,
     });
     expect(state.turn.phase).toBe("awaiting_bid");
@@ -79,15 +80,35 @@ describe("bidding", () => {
     expect(code(state, { type: "Bid", playerId: id, amount: 10 })).toBe("ok");
   });
 
-  test("a raise is +$10, +$50 or +$100 over the best bid", () => {
+  test("a raise is any whole amount of at least $10 over the best bid", () => {
     const first = bid(auction().state, 20).state;
     const id = actorFor(first);
-    for (const amount of [20, 25, 31, 119]) {
+    for (const amount of [20, 25, 29]) {
       expect(code(first, { type: "Bid", playerId: id, amount })).toBe("invalid_bid");
     }
-    for (const amount of [30, 70, 120]) {
+    for (const amount of [30, 35, 65, 120]) {
       expect(code(first, { type: "Bid", playerId: id, amount })).toBe("ok");
     }
+  });
+
+  test("a raise of $15 over the best bid is accepted", () => {
+    const first = bid(auction().state, 20).state;
+    const raised = bid(first, 35);
+    expect(raised.state.auction).toMatchObject({ highBid: 35 });
+  });
+
+  test("a bid above the bidder's cash is refused", () => {
+    const { state } = auction(setCurrent({ cash: 100 }));
+    const id = actorFor(state);
+    expect(code(state, { type: "Bid", playerId: id, amount: 101 })).toBe("invalid_bid");
+    expect(code(state, { type: "Bid", playerId: id, amount: 100 })).toBe("ok");
+  });
+
+  test("a bid that is not a whole number is refused", () => {
+    const first = bid(auction().state, 20).state;
+    const id = actorFor(first);
+    expect(code(first, { type: "Bid", playerId: id, amount: 30.5 })).toBe("invalid_bid");
+    expect(code(first, { type: "Bid", playerId: id, amount: Number.NaN })).toBe("invalid_bid");
   });
 
   test("after a bid the next bidder acts, and the best bidder waits", () => {
@@ -96,6 +117,30 @@ describe("bidding", () => {
     const afterBid = bid(state, 10).state;
     expect(afterBid.auction).toMatchObject({ highBid: 10, highBidderId: lander });
     expect(actorFor(afterBid)).not.toBe(lander);
+  });
+
+  test("bids keeps the last bid of each bidder", () => {
+    const { state } = auction();
+    const [a, b, c] = state.auction?.bidderOrder ?? [];
+    const s1 = bid(state, 10).state; // a bids 10
+    const s2 = bid(s1, 20).state; // b bids 20
+    const s3 = bid(s2, 30).state; // c bids 30
+    const s4 = bid(s3, 40).state; // a bids 40
+    expect(s4.auction?.bids).toEqual({ [a ?? ""]: 40, [b ?? ""]: 20, [c ?? ""]: 30 });
+    expect(s4.auction?.highBid).toBe(40);
+    expect(state.auction?.bids).toEqual({});
+  });
+
+  test("bids keeps the last bid of a bidder who then passes", () => {
+    const { state } = auction();
+    const a = actorFor(state);
+    const s1 = bid(state, 10).state; // a bids 10
+    const s2 = bid(s1, 20).state; // b bids 20
+    const s3 = bid(s2, 30).state; // c bids 30
+    const s4 = pass(s3).state; // a passes
+    expect(s4.auction?.passed).toEqual([a]);
+    expect(s4.auction?.bids[a]).toBe(10);
+    expect(s4.auction?.highBid).toBe(30);
   });
 
   test("a pass is final", () => {

@@ -7,11 +7,16 @@ import { fail } from "./state.ts";
 import type { Auction, AuctionThen, GameEvent, GameState, Result } from "./state.ts";
 import { advanceTurn, finishRoll } from "./turnflow.ts";
 
+/** The opening bid is at least this amount. */
 export const MIN_BID = 10;
-/** A raise adds one of these amounts to the best bid. */
+/** A bid after the first must be at least the best bid plus this amount. */
+export const MIN_RAISE = 10;
+/** Quick raise amounts for the bid buttons in the UI. The engine accepts any raise of at least `MIN_RAISE`. */
 export const RAISES = [10, 50, 100] as const;
 
-const nextMinimum = (auction: Auction) => (auction.highBid === 0 ? MIN_BID : auction.highBid + 10);
+/** The lowest bid the engine accepts now: the opening bid, or the best bid plus `MIN_RAISE`. */
+const nextMinimum = (auction: Auction) =>
+  auction.highBid === 0 ? MIN_BID : auction.highBid + MIN_RAISE;
 
 /**
  * Start an auction for a property. Every active player bids, in seat order, starting with the
@@ -43,6 +48,7 @@ export function startAuction(
     passed,
     highBid: 0,
     highBidderId: null,
+    bids: {},
     actorId: actorId ?? "",
     then,
     queue,
@@ -130,21 +136,23 @@ export function handleBid(state: GameState, action: ActionOf<"Bid">): Result {
   if (!Number.isInteger(amount) || amount > cash) {
     return fail("invalid_bid", "A bid must be a whole number, and no more than the bidder's cash");
   }
-  const valid =
-    auction.highBid === 0
-      ? amount >= MIN_BID
-      : RAISES.some((raise) => amount === auction.highBid + raise);
-  if (!valid) {
+  const minimum = nextMinimum(auction);
+  if (amount < minimum) {
     return fail(
       "invalid_bid",
       auction.highBid === 0
         ? `The opening bid is at least $${MIN_BID}`
-        : `Raise the best bid ($${auction.highBid}) by $10, $50 or $100`,
+        : `The next bid is at least $${minimum}, the best bid plus $${MIN_RAISE}`,
     );
   }
 
   const events: GameEvent[] = [{ type: "BidPlaced", playerId: action.playerId, amount }];
-  const raised: Auction = { ...auction, highBid: amount, highBidderId: action.playerId };
+  const raised: Auction = {
+    ...auction,
+    highBid: amount,
+    highBidderId: action.playerId,
+    bids: { ...auction.bids, [action.playerId]: amount },
+  };
   return { ok: true, state: advance(state, raised, action.playerId, events), events };
 }
 

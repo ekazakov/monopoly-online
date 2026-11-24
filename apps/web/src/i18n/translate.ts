@@ -66,12 +66,6 @@ export function translate(language: Language, key: MessageKey, params: Params = 
 
 export type Translate = (key: MessageKey, params?: Params) => string;
 
-/** "A or B", "A, B or C": the options of a list in the language of `t`. */
-export function joinOr(items: readonly string[], t: Translate): string {
-  if (items.length <= 1) return items[0] ?? "";
-  return t("list.or", { head: items.slice(0, -1).join(", "), last: items.at(-1)! });
-}
-
 /** "A", "A and B", "A, B and C": the names of a list in the language of `t`. */
 export function joinNames(names: readonly string[], t: Translate): string {
   if (names.length <= 1) return names[0] ?? "";

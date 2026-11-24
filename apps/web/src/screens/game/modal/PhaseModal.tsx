@@ -33,6 +33,7 @@ export function PhaseModal({ userId }: { userId: string }) {
       <Modal
         key={phase}
         title={square ? t("turn.auctionOf", { name: square.name }) : t("turn.auction")}
+        wide
       >
         <AuctionView turn={turn} inDialog />
       </Modal>

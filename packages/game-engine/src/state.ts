@@ -74,6 +74,8 @@ export interface Auction {
   /** The best bid so far, or 0 when nobody has bid. */
   readonly highBid: number;
   readonly highBidderId: string | null;
+  /** The last bid of each bidder who has bid, by player id. A pass keeps it. */
+  readonly bids: Readonly<Record<string, number>>;
   /** The bidder who must act now. */
   readonly actorId: string;
   readonly then: AuctionThen;

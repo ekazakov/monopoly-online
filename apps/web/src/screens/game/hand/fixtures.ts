@@ -69,6 +69,7 @@ export function deal(spec: DealSpec = {}, room = roomOf()) {
           passed: [],
           highBid: 0,
           highBidderId: null,
+          bids: {},
           actorId: bidder,
           then: "finish_roll",
           queue: [],

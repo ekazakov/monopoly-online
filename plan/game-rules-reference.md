@@ -141,9 +141,9 @@ An auction starts when a player declines to buy an unowned property or cannot af
 - **Who bids.** Every active player, including the one who declined.
 - **Order.** Seat order, starting with the player who landed on the square.
 - **Opening bid.** At least $10.
-- **Raising.** A bidder raises by +$10, +$50 or +$100 over the current bid.
+- **Raising.** A bid must be at least $10 more than the current bid. Any whole amount from that minimum up to the bidder's cash is allowed. The bid buttons offer +$10, +$50 and +$100 as a quick choice.
 - **Limit.** No bid above the bidder's cash.
-- **Passing.** A pass is final: the player cannot return to the auction.
+- **Passing.** A pass is final: the player cannot return to the auction. The game keeps the last bid of each bidder, and a pass keeps it.
 - **End.** The auction ends when every bidder but the highest has passed. The winner pays the bank and gets the Deed.
 - **No bids.** The property stays unowned. The next player who lands on it can buy it or start an auction (decided, **[Q12]**).
 - **Several properties.** A bankrupt player's properties are auctioned one at a time in board order.

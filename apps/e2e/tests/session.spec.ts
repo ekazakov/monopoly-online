@@ -156,7 +156,7 @@ test("T23: finishing during an auction rolls back the unfinished turn on both de
     const standings = device.page.getByRole("table", { name: "Final standings" });
     await expect(standings.getByRole("row")).toHaveCount(4);
     await expect(standings.getByRole("row").filter({ hasText: bob.name })).toContainText("$1,500");
-    await expect(device.page.getByRole("list", { name: "Bidders" })).toHaveCount(0);
+    await expect(device.page.getByRole("table", { name: "Bidders" })).toHaveCount(0);
     await device.page.reload();
     await expect(device.page.getByText(`Game finished by ${alice.name}`)).toBeVisible();
     await expect(standings.getByRole("row")).toHaveCount(4);
