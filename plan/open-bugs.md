@@ -397,7 +397,7 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 
 ### BUG-27: "Build" button in the property card has light text on a light background on hover
 
-- Status: open
+- Status: fixed (2026-11-24), checked in the browser in the dark theme (hover measured at 16.5:1). Real cause: the property dialog is a light card (`--hf-paper`) in both themes, and the button used the dark panel hover (`--hf-hover`, nearly transparent white) with light text. So the fault shows in the dark theme, not the light theme. `apps/web/src/screens/game/square/Square.css` now sets solid colors for the base, hover, focus-visible and disabled states of `.property-hand__button` inside `.square-detail`. Contrast is 14.8:1 at rest, 16.5:1 on hover and 5.1:1 when disabled (dimmed to 0.8 so it differs from an enabled button). The hand panel is unchanged.
 - Reported: 2026-11-23
 - Area: web (property card dialog; the button texts are near `apps/web/src/i18n/en.ts` line 421; styles in `apps/web/src/styles/`)
 - Steps to reproduce:

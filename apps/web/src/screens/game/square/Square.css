@@ -64,6 +64,32 @@
   flex-wrap: wrap;
 }
 
+/* The property actions (Build, Sell building, Mortgage) on the light card. The hand's own rules
+   use the dark panel tokens, so these set solid paper-surface colours for each state (BUG-27). */
+.square-detail .property-hand__button {
+  border-color: var(--hf-board-ink);
+  background: var(--hf-paper);
+  color: var(--hf-board-ink);
+}
+
+.square-detail .property-hand__button:hover:not([aria-disabled="true"]) {
+  background: #fff;
+  color: var(--hf-board-ink);
+}
+
+.square-detail .property-hand__button:focus-visible {
+  outline: 2px solid var(--hf-board-ink);
+  outline-offset: 2px;
+}
+
+.square-detail .property-hand__button[aria-disabled="true"] {
+  border-color: var(--hf-zone-ink);
+  background: var(--hf-paper);
+  color: var(--hf-zone-ink);
+  /* Dimmed a little, so it differs from an enabled button, but the text stays above 4.5:1. */
+  opacity: 0.8;
+}
+
 .square-list {
   display: flex;
   flex-direction: column;
