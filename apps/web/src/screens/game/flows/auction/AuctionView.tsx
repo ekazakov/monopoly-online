@@ -46,12 +46,13 @@ export function AuctionView({ turn, inDialog = false }: { turn: Turn; inDialog?:
       )}
       <div className="auction__top">
         {square && isProperty(square) && <PropertyCard square={square} />}
-        <div className="auction__high" aria-live="polite" aria-atomic="true">
-          <p className="auction__label">{t("auction.current")}</p>
-          <p className="auction__amount">
+        {/* The current bid is not shown. This visually hidden region still announces each change. */}
+        <div className="auction__sr" aria-live="polite" aria-atomic="true">
+          <p>{t("auction.current")}</p>
+          <p>
             {auction.highBidderId === null ? t("auction.noBids") : formatMoney(auction.highBid)}
           </p>
-          <p className="auction__by">
+          <p>
             {auction.highBidderId === null
               ? t("auction.openingFrom", { min: formatMoney(minimumBid(0)) })
               : t("auction.by", { name: name(auction.highBidderId) })}
@@ -208,6 +209,11 @@ function BidField({ baseId, label, draft, min, cash, check, inputRef, onDraft }:
           aria-describedby={`${baseId}-hint${check.ok ? "" : ` ${baseId}-why`}`}
         />
       </div>
+      {!check.ok && (
+        <p id={`${baseId}-why`} className="auction__why">
+          {check.why}
+        </p>
+      )}
     </>
   );
 }
@@ -313,11 +319,6 @@ function BidForm({ turn, table, cash, label }: BidFormProps) {
       <p id={`${baseId}-hint`} className="auction__hint">
         {hint}
       </p>
-      {!check.ok && (
-        <p id={`${baseId}-why`} className="auction__why">
-          {check.why}
-        </p>
-      )}
       <div className="auction__pass">
         <button
           type="button"

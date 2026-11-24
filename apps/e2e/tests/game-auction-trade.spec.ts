@@ -9,6 +9,18 @@ async function placeBid(device: { page: Page }, amount: number) {
   await device.page.getByRole("button", { name: "Make a bid of $" + amount, exact: true }).click();
 }
 
+// The leader's row in the Bidders table of the auction dialog shows the bid, and its screen-reader
+// text says "Leading". The bid is no longer shown as a block above the table.
+async function expectLeader(device: { page: Page }, name: string, amount: string) {
+  const row = device.page
+    .getByRole("dialog", { name: "Auction" })
+    .getByRole("table", { name: "Bidders", exact: true })
+    .getByRole("row")
+    .filter({ hasText: name });
+  await expect(row).toContainText(amount);
+  await expect(row).toContainText("Leading");
+}
+
 test("T10: bids cross devices and the winner pays for the auctioned deed", async ({ browser }) => {
   const table = await startGame(browser, "Auction", { hotSeat: false });
   const { alice, bob } = table;
@@ -23,12 +35,12 @@ test("T10: bids cross devices and the winner pays for the auctioned deed", async
   }
   await placeBid(alice, 10);
   // The bidder has the auction in a dialog. The other device follows it in the board centre.
-  await expect(bob.page.getByRole("dialog", { name: "Auction" })).toContainText(`by ${alice.name}`);
+  await expectLeader(bob, alice.name, "$10");
   await expect(alice.page.getByRole("region", { name: "Turn actions" })).toContainText(
     "Auction: Rope Walk",
   );
   await placeBid(bob, 20);
-  await expect(alice.page.getByRole("dialog", { name: "Auction" })).toContainText(`by ${bob.name}`);
+  await expectLeader(alice, bob.name, "$20");
   await placeBid(alice, 30);
   await bob.page.getByRole("button", { name: "Pass", exact: true }).click();
 

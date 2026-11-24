@@ -456,7 +456,7 @@ The rules behind each flow are in the gameplay doc, section 5. The purchase deci
 
 | ID   | Level  | Status | Dialog or screen                                                                                                     |
 | ---- | ------ | ------ | -------------------------------------------------------------------------------------------------------------------- |
-| R-G4 | MUST   | Done   | Auction (BUG-26): the deed and the current bid, a table of the bidders still in (name, last bid), and for the bidder who acts: a whole-number bid field, quick buttons +$10 / +$50 / +$100 that add to it, and Make a bid. Pass is at the bottom. A bidder who passed has no row. No timer, no withdraw (gameplay 2.1) |
+| R-G4 | MUST   | Done   | Auction (BUG-26): the deed on the left, a table of the bidders still in (name, last bid; the leader's bid is bold and bigger), and for the bidder who acts: a whole-number bid field with its error under it, quick buttons +$10 / +$50 / +$100 that add to it, and Make a bid. Pass is at the bottom. A bidder who passed has no row. No timer, no withdraw (gameplay 2.1) |
 | R-G5 | MUST   | Gap    | Trade builder: two columns of properties, cash and cards, then propose, accept, reject or cancel (no counter-offers) |
 | R-G6 | MUST   | Gap    | Chance and Chest card reveal                                                                                         |
 | R-G7 | MUST   | Gap    | Manage properties: build, sell, mortgage, unmortgage                                                                 |

@@ -121,6 +121,14 @@ const rowOf = (name: string) =>
   within(table())
     .getAllByRole("row")
     .find((row) => row.textContent?.startsWith(name));
+// The current bid is not shown on screen. Only its visually hidden live region is checked.
+const bidAnnouncement = () => {
+  const region = document.querySelector<HTMLElement>(
+    ".auction [aria-live='polite'][aria-atomic='true']",
+  );
+  if (!region) throw new Error("The current bid has no live region");
+  return region;
+};
 
 describe("AuctionView: shell", () => {
   test("renders one root element", () => {
@@ -151,8 +159,10 @@ describe("AuctionView: bidder turn", () => {
     expect(bidInput()).toHaveAttribute("min", "10");
     expect(bidInput()).toHaveAttribute("max", "1500");
     expect(bidInput()).toHaveFocus();
-    expect(screen.getByText("No bids")).toBeInTheDocument();
-    expect(screen.getByText("Opening bid from $10")).toBeInTheDocument();
+    expect(bidAnnouncement()).toHaveClass("auction__sr");
+    expect(bidAnnouncement()).toHaveTextContent("Current bid");
+    expect(bidAnnouncement()).toHaveTextContent("No bids");
+    expect(bidAnnouncement()).toHaveTextContent("Opening bid from $10");
     expect(screen.getByText("Ann, you have $1,500")).toBeInTheDocument();
     expect(bidButton()).toHaveTextContent("Make a bid");
     expect(bidButton()).toHaveAccessibleName("Make a bid of $10");
@@ -257,10 +267,12 @@ describe("AuctionView: bidders table", () => {
     expect(rowOf("Cy")).toHaveTextContent("–");
   });
 
-  test("shows the high bid and who holds it", () => {
+  test("announces the high bid and who holds it, with no visible bid block", () => {
     const { container } = renderAuction({ highBid: 80, highBidder: "b", actor: "c" }, fx.guestId);
-    expect(container.querySelector(".auction__amount")).toHaveTextContent("$80");
-    expect(screen.getByText("by Bo")).toBeInTheDocument();
+    expect(bidAnnouncement()).toHaveTextContent("$80");
+    expect(bidAnnouncement()).toHaveTextContent("by Bo");
+    expect(bidAnnouncement()).toHaveClass("auction__sr");
+    expect(container.querySelector(".auction__high")).toBeNull();
   });
 
   test("lists the bidders who have not passed, with the acting row marked", () => {
@@ -318,6 +330,10 @@ describe("AuctionView: bid limits", () => {
     expect(bidButton()).toHaveAccessibleDescription("The opening bid is at least $10.");
     expect(bidInput()).toHaveAttribute("aria-invalid", "true");
     expect(why).toBeInTheDocument();
+    // The error is in the Bid cell of the acting row, under the input.
+    const bidCell = rowOf("Ann")!.querySelector("td[data-label='Bid']");
+    expect(bidCell).toContainElement(why);
+    expect(bidCell).toContainElement(bidInput());
     expect(send).not.toHaveBeenCalled();
   });
 
