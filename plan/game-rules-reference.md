@@ -258,9 +258,9 @@ The prices of Driftwood Lane, Kelp Court, Lantern Row, Cobble Street, Saltmarsh 
 | 2 | Climb the hill | Advance to Beacon Hill (21). Collect $200 if you pass Start |
 | 3 | Pier inspection | Advance to Grand Pier (39) |
 | 4 | Anchor day | Advance to Anchor Street (11). Collect $200 if you pass Start |
-| 5 | Next stop, a Station | Advance to the nearest Station. If unowned, you may buy it. If owned, pay the owner double the normal rent |
-| 6 | Next stop, a Station | Same as card 5 |
-| 7 | Nearest utility | Advance to the nearest Utility. If unowned, you may buy it. If owned, roll the dice and pay the owner 10 × the total |
+| 5 | Advance to the next Station | Advance clockwise to the next Station ahead. Collect $200 if you pass Start. If unowned, you may buy it. If owned, pay the owner double the normal rent |
+| 6 | Advance to the next Station | Same as card 5 |
+| 7 | Advance to the next Utility | Advance clockwise to the next Utility ahead. Collect $200 if you pass Start. If unowned, you may buy it. If owned, roll the dice and pay the owner 10 × the total |
 | 8 | Trip to East Station | Advance to East Station (15). Collect $200 if you pass Start |
 | 9 | Dividend | The bank pays you $50 |
 | 10 | Loan matures | Collect $150 |

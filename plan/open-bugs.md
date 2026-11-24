@@ -256,7 +256,7 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 
 ### BUG-18: Card "Next stop, a Station" does not say that the token goes forward (change request)
 
-- Status: open
+- Status: fixed (2026-11-24), not checked in the browser (the cards were not drawn). The titles are now "Advance to the next Station" (two cards) and "Advance to the next Utility" (`packages/game-engine/src/cards.ts`). The English and Russian bodies (`effect.nearestStation`, `effect.nearestUtility`) say that the token goes clockwise to the next one ahead and that passing Start pays the salary. The engine rule is unchanged. Appendix C of `plan/game-rules-reference.md` is updated. Unit tests pass.
 - Reported: 2026-11-16
 - Area: web and game-engine (card text in `packages/game-engine/src/cards.ts`, cards at lines 24 and 25 for stations, and the "Nearest utility" card at line 26)
 - Type: change request

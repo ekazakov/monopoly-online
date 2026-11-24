@@ -16,8 +16,8 @@ import {
 const cash = (state: GameState, id: string) => player(state, id).cash;
 const me = (state: GameState) => cash(state, current(state));
 
-// Chance cards by index: 0 Sail home, 1 Climb the hill, 3 Anchor day, 4 Next stop,
-// 6 Nearest utility, 7 Trip to East Station, 8 Dividend, 10 Back three, 11 Marina fine,
+// Chance cards by index: 0 Sail home, 1 Climb the hill, 3 Anchor day, 4 Advance to the next Station,
+// 6 Advance to the next Utility, 7 Trip to East Station, 8 Dividend, 10 Back three, 11 Marina fine,
 // 12 Dock repairs, 13 Harbour master's party, 14 Go to Jail, 15 Get Out of Jail Free.
 // Chest cards: 1 Bank error, 6 Festival.
 // Chance squares: 7, 22, 36. Chest squares: 17, 33.

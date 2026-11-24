@@ -608,9 +608,9 @@ export const en = {
   "effect.advance": "Advance to {name}.",
   "effect.advancePass": "Advance to {name}. Collect {amount} if you pass Start.",
   "effect.nearestStation":
-    "Advance to the nearest Station. If it is unowned, you may buy it. If it is owned, pay the owner double the normal rent.",
+    "Advance clockwise to the next Station ahead. Passing Start collects the salary. If it is unowned, you may buy it. If it is owned, pay the owner double the normal rent.",
   "effect.nearestUtility":
-    "Advance to the nearest Utility. If it is unowned, you may buy it. If it is owned, roll the dice and pay the owner 10 × the total.",
+    "Advance clockwise to the next Utility ahead. Passing Start collects the salary. If it is unowned, you may buy it. If it is owned, roll the dice and pay the owner 10 × the total.",
   "effect.moveBack": { one: "Move back {count} square.", other: "Move back {count} squares." },
   "effect.collect": "Collect {amount}.",
   "effect.pay": "Pay the bank {amount}.",
