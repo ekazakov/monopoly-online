@@ -95,8 +95,6 @@ export const SURFACE = {
   edge: "#cdd6c6",
   centre: "#cfe3cc",
   paper: "#eef4e9",
-  /** The owner band at the outer edge of an owned square. Neutral, so it never looks like a group. */
-  markerBand: "#d3ddcd",
   ink: "#17211b",
   zoneInk: "#2f4a3b",
   base: "#1d2b24",
@@ -130,21 +128,26 @@ export const contrastRatio = (a: string, b: string) => {
   return (hi + 0.05) / (lo + 0.05);
 };
 
-/** How much of the owner colour stays on the marker of a mortgaged deed. */
-const MORTGAGED_MARKER_SHARE = 0.45;
+/** Opacity of the owner colour layer on the face of an owned square. */
+export const OWNER_TINT_ALPHA = 0.5;
 
-/**
- * A colour on the owner band: the ring of the owner chip, or the ink of its glyph and price. A
- * mortgaged deed dims it by mixing it with the paper, so the band still hides the square price.
- */
-export function markerColor(hex: string, mortgaged: boolean): string {
-  if (!mortgaged) return hex;
+/** The lowest contrast ratio that the text on a square may have (WCAG AA for normal text). */
+export const MIN_TEXT_CONTRAST = 4.5;
+
+/** The colour `top` gives when it covers `base` with opacity `share` (0 to 1). */
+export function mixHex(top: string, base: string, share: number): string {
   const mix = (i: number) =>
-    Math.round(
-      channel(hex, i) * MORTGAGED_MARKER_SHARE +
-        channel(SURFACE.paper, i) * (1 - MORTGAGED_MARKER_SHARE),
-    )
+    Math.round(channel(top, i) * share + channel(base, i) * (1 - share))
       .toString(16)
       .padStart(2, "0");
   return `#${mix(1)}${mix(3)}${mix(5)}`;
+}
+
+/** The background of an owned square: the paper, with the owner colour layer on top. */
+export const ownedPaper = (ownerColor: string): string =>
+  mixHex(ownerColor, SURFACE.paper, OWNER_TINT_ALPHA);
+
+/** The ink for text on `background`: the board ink, or the paper (inverted) when the ink is too faint. */
+export function inkOn(background: string): string {
+  return contrastRatio(SURFACE.ink, background) >= MIN_TEXT_CONTRAST ? SURFACE.ink : SURFACE.paper;
 }

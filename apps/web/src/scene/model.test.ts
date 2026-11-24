@@ -87,7 +87,6 @@ describe("buildSceneModel", () => {
       {
         square: 1,
         ownerId: "a",
-        ownerToken: "dog",
         ownerColor: tokenLook("dog").hex,
         houses: 0,
         mortgaged: true,
@@ -95,7 +94,6 @@ describe("buildSceneModel", () => {
       {
         square: 9,
         ownerId: "b",
-        ownerToken: "penguin",
         ownerColor: tokenLook("penguin").hex,
         houses: 2,
         mortgaged: false,
@@ -108,6 +106,5 @@ describe("buildSceneModel", () => {
       state([player("a", 0)], { "3": { ownerId: "ghost", houses: 0, mortgaged: false } }),
     );
     expect(model.deeds[0]!.ownerColor).toBe(UNKNOWN_OWNER_COLOR);
-    expect(model.deeds[0]!.ownerToken).toBeUndefined();
   });
 });

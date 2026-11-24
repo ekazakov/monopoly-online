@@ -252,8 +252,7 @@ function Scene({
           <Tile
             key={i}
             square={i}
-            texture={textures.squares[i]!}
-            bandTexture={deed && textures.ownerBand(i, deed.ownerToken, deed.mortgaged)}
+            texture={deed ? textures.ownedSquare(i, deed.ownerColor) : textures.squares[i]!}
             resources={resources}
             deed={deed}
             highlighted={highlightSquare === i}

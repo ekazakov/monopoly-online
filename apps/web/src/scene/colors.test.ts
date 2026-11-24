@@ -9,9 +9,12 @@ import {
   SURFACE,
   TOKEN_LOOKS,
   UNKNOWN_OWNER_COLOR,
+  MIN_TEXT_CONTRAST,
   contrastRatio,
   groupColor,
-  markerColor,
+  inkOn,
+  mixHex,
+  ownedPaper,
   tokenLook,
 } from "./colors.ts";
 
@@ -70,7 +73,6 @@ describe("board surface colours", () => {
     expect(token("edge")).toBe(SURFACE.edge);
     expect(token("centre")).toBe(SURFACE.centre);
     expect(token("paper")).toBe(SURFACE.paper);
-    expect(token("marker-band")).toBe(SURFACE.markerBand);
     expect(token("board-ink")).toBe(SURFACE.ink);
     expect(token("zone-ink")).toBe(SURFACE.zoneInk);
     expect(token("base")).toBe(SURFACE.base);
@@ -85,22 +87,23 @@ describe("board surface colours", () => {
   });
 });
 
-describe("owner marker colours", () => {
-  test("a deed that is not mortgaged keeps the owner colour", () => {
-    expect(markerColor("#d9392f", false)).toBe("#d9392f");
+describe("owner colour layer", () => {
+  test("mixHex covers the base with the given opacity", () => {
+    expect(mixHex("#000000", "#ffffff", 0.3)).toBe("#b3b3b3");
+    expect(mixHex("#123456", "#abcdef", 0)).toBe("#abcdef");
+    expect(mixHex("#123456", "#abcdef", 1)).toBe("#123456");
   });
 
-  test("a mortgaged deed gives an opaque, lighter colour", () => {
-    expect(markerColor("#000000", true)).toBe("#838680");
-    expect(markerColor("#d9392f", true)).toMatch(/^#[0-9a-f]{6}$/);
-  });
-
-  test("the glyph on the white chip reads, mortgaged or not, and the price reads on the band", () => {
-    for (const mortgaged of [false, true]) {
-      expect(contrastRatio("#ffffff", markerColor(SURFACE.ink, mortgaged))).toBeGreaterThanOrEqual(
-        3,
-      );
+  test("the board ink stays readable on the paper tinted by every token colour", () => {
+    for (const { hex } of Object.values(TOKEN_LOOKS)) {
+      const paper = ownedPaper(hex);
+      expect(inkOn(paper)).toBe(SURFACE.ink);
+      expect(contrastRatio(SURFACE.ink, paper)).toBeGreaterThanOrEqual(MIN_TEXT_CONTRAST);
     }
-    expect(contrastRatio(SURFACE.markerBand, SURFACE.ink)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  test("inverts the ink on a dark background", () => {
+    expect(inkOn("#101820")).toBe(SURFACE.paper);
+    expect(inkOn("#ffffff")).toBe(SURFACE.ink);
   });
 });

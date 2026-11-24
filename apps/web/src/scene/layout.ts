@@ -19,14 +19,6 @@ export const SLAB_SIZE = 10.3;
 
 /** Local z of the colour bar, houses and hotel: the inner edge, facing the centre. */
 export const BAR_Z = -0.535;
-/**
- * Depth of the owner marker. It is a band along the outer edge and it carries the price, so it
- * is as deep as `PRICE_BAND_PX` of the 560px square texture (BUG-9).
- */
-export const MARKER_DEPTH = 0.235;
-/** Local z of the owner marker: its outer side is flush with the outer edge of the square. */
-export const MARKER_Z = CELL_D / 2 - MARKER_DEPTH / 2;
-
 /** Card stacks in the board centre (BUG-7), where the old dashed places were. Size of one card. */
 export const CARD_W = 1.4;
 export const CARD_D = 0.92;

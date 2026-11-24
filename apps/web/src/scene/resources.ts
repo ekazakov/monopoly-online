@@ -8,7 +8,6 @@ import {
   CELL_H,
   CELL_W,
   CORNER_SIZE,
-  MARKER_DEPTH,
   SLAB_SIZE,
 } from "./layout.ts";
 
@@ -28,9 +27,6 @@ export function createResources() {
     side: new THREE.BoxGeometry(CELL_W, CELL_H, CELL_D),
     corner: new THREE.BoxGeometry(CORNER_SIZE, CELL_H, CORNER_SIZE),
     bar: new THREE.BoxGeometry(CELL_W, 0.05, 0.3),
-    marker: new THREE.BoxGeometry(CELL_W, 0.018, MARKER_DEPTH),
-    /** The owner band (chip and price) on top of the marker. */
-    markerPrice: new THREE.PlaneGeometry(CELL_W, MARKER_DEPTH),
     /** One card of a stack, and the plane with the card back on top of the top card. */
     card: new THREE.BoxGeometry(CARD_W, CARD_T, CARD_D),
     cardBack: new THREE.PlaneGeometry(CARD_W, CARD_D),
@@ -50,8 +46,6 @@ export function createResources() {
     houseRoof: standard(SURFACE.houseRoof, 0.5),
     hotel: standard(SURFACE.hotel, 0.5),
     hotelRoof: standard(SURFACE.hotelRoof, 0.5),
-    /** The owner marker. Neutral: the owner chip on its top tells who owns the square. */
-    marker: standard(SURFACE.markerBand, 0.45),
   };
   const barMaterials = new Map<string, THREE.MeshStandardMaterial>();
 
