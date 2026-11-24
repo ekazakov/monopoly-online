@@ -709,6 +709,7 @@ export const ru: Catalogue<typeof en, RussianPlural> = {
   "log.wonGame": "{who}: победа в игре!",
   "log.gameLog": "Журнал игры",
   "log.earlier": "Более ранние записи не показаны.",
+  "log.round": "Раунд {n}",
   "log.none": "Событий пока нет.",
   "log.collapse": "Свернуть журнал игры",
   "log.expand": "Развернуть журнал игры",

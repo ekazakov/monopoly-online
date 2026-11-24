@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import type { StreamMessage } from "@monopoly/shared";
+import type { GameEvent, StreamMessage } from "@monopoly/shared";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test } from "vite-plus/test";
 import { GameStoreProvider } from "../../../game/GameStoreProvider.tsx";
@@ -303,5 +303,45 @@ describe("GameLog auto-scroll", () => {
     scrollTo(0);
     await user.click(toggle());
     expect(log().scrollTop).toBe(1000);
+  });
+});
+
+describe("GameLog round headers (BUG-23)", () => {
+  /** A snapshot whose log holds exactly these events, in one entry. */
+  function snapshotOf(events: GameEvent[]): StreamMessage {
+    const base = snapshotMessage(fx.game, redact(fx.start));
+    return {
+      ...base,
+      payload: { ...base.payload, events: [{ version: 1, events }] },
+    } as StreamMessage;
+  }
+  const headers = () => within(log()).queryAllByRole("heading", { level: 3 });
+
+  test("there is no round header in an empty log", () => {
+    setup();
+    expect(headers()).toHaveLength(0);
+  });
+
+  test("a header numbers each round from 0, before its first line", () => {
+    const seats = fx.start.players.length;
+    const playerId = fx.start.players[0]!.id;
+    const other: GameEvent = { type: "PassedGo", playerId, amount: 200 };
+    const turnEnd: GameEvent = { type: "TurnEnded", playerId, nextPlayerId: playerId };
+    // One event, then one full round of turns, then one event in round 1.
+    const store = createGameStore();
+    store.applyStreamMessage(snapshotOf([other, ...Array<GameEvent>(seats).fill(turnEnd), other]));
+    render(
+      <GameStoreProvider store={store}>
+        <GameLog userId={fx.ownerId} />
+      </GameStoreProvider>,
+    );
+
+    const found = headers();
+    expect(found.map((h) => h.textContent)).toEqual(["Round 0", "Round 1"]);
+    // The header is followed by the first line of its round.
+    expect(found[0]!.nextElementSibling).toHaveClass("game-log__line");
+    expect(found[1]!.nextElementSibling).toHaveClass("game-log__line");
+    expect(found[1]!.nextElementSibling).toBe(lines().at(-1));
+    expect(lines()).toHaveLength(seats + 2);
   });
 });

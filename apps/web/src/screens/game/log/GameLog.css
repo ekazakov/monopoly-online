@@ -89,6 +89,18 @@
   color: var(--hf-ink-soft);
 }
 
+/* The header of a round. It has the height of a line and no dot. */
+.game-log__round {
+  flex: 0 0 auto;
+  min-height: var(--log-line);
+  margin: 0;
+  padding-right: var(--hf-space-6);
+  color: var(--hf-ink-soft);
+  font: var(--hf-type-body-small);
+  font-weight: 600;
+  line-height: 20px;
+}
+
 .game-log__dot {
   flex: 0 0 auto;
   width: 10px;

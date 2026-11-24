@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from "vite-plus/test";
 import { snapshotMessageSchema } from "@monopoly/shared";
-import type { EventLogEntry } from "@monopoly/shared";
+import type { EventLogEntry, GameEvent } from "@monopoly/shared";
 import {
   actionResponse,
   actionsMessage,
@@ -527,5 +527,56 @@ describe("snapshot event log", () => {
     const next = applyStreamMessage(initialGameState, withLog(s1.state, [entry]));
     expect(next.events).toHaveLength(MAX_LOGGED_EVENTS);
     expect(next.droppedEvents).toBe(5);
+  });
+
+  test("a snapshot counts the TurnEnded events it cuts", () => {
+    const turnEnd: GameEvent = { type: "TurnEnded", playerId: "p1", nextPlayerId: "p2" };
+    const other = s1.events[0];
+    if (!other) throw new Error("fixture step has no events");
+    const events = [...Array(5).fill(turnEnd), ...Array(MAX_LOGGED_EVENTS).fill(other)];
+    const next = applyStreamMessage(
+      initialGameState,
+      withLog(s1.state, [{ version: s1.state.version, events }]),
+    );
+    expect(next.droppedEvents).toBe(5);
+    expect(next.droppedTurnEnds).toBe(5);
+    expect(next.events.some(({ event }) => event.type === "TurnEnded")).toBe(false);
+  });
+
+  test("a snapshot that cuts nothing resets the dropped TurnEnded count", () => {
+    const live = { ...initialGameState, droppedEvents: 9, droppedTurnEnds: 4 };
+    const next = applyStreamMessage(live, withLog(s1.state, []));
+    expect(next.droppedTurnEnds).toBe(0);
+  });
+});
+
+describe("dropped TurnEnded events of the live log", () => {
+  test("the events cut by the cap that were TurnEnded are counted", () => {
+    const turnEnd: GameEvent = { type: "TurnEnded", playerId: "p1", nextPlayerId: "p2" };
+    const other = s1.events[0];
+    if (!other) throw new Error("fixture step has no events");
+    const first = actionsMessage(fx.game, {
+      ...s1,
+      state: { ...s1.state, version: 1 },
+      events: [...Array(3).fill(turnEnd), ...Array(MAX_LOGGED_EVENTS - 3).fill(other)],
+    });
+    const second = actionsMessage(fx.game, {
+      ...s1,
+      state: { ...s1.state, version: 2 },
+      events: [other, other],
+    });
+    const state = apply(initialGameState, start, first, second);
+    // Two events were cut: the first two TurnEnded events.
+    expect(state.droppedEvents).toBe(2);
+    expect(state.droppedTurnEnds).toBe(2);
+    const third = actionsMessage(fx.game, {
+      ...s1,
+      state: { ...s1.state, version: 3 },
+      events: [other, other, other],
+    });
+    const after = applyStreamMessage(state, third);
+    // Three more events were cut: the third TurnEnded and two others.
+    expect(after.droppedEvents).toBe(5);
+    expect(after.droppedTurnEnds).toBe(3);
   });
 });

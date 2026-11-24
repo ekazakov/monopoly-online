@@ -337,7 +337,7 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 
 ### BUG-23: Event log does not show turn numbers (change request)
 
-- Status: open
+- Status: fixed (2026-11-24), checked in the browser (one "Round 0" header above the first line; a second round and a long game were not played). The user chose round numbers (from 0), shown as a header line. The log shows "Round N" before the first line of each round (`apps/web/src/screens/game/log/rounds.ts`, `GameLog.tsx`). A round is `floor(TurnEnded events / players in the state)`, the same rule as `apps/api/src/game/result.ts`. The store counts the `TurnEnded` events that the 2000-event cap cuts (`droppedTurnEnds` in `apps/web/src/game/store.ts`). No engine or schema change. The English and Russian texts use the key `log.round`. Unit tests pass. The fallback for a missing state has no test.
 - Reported: 2026-11-23
 - Area: web (event log: `apps/web/src/screens/game/log/describe.ts`, texts in `apps/web/src/i18n/en.ts` and `ru.ts`)
 - Type: change request

@@ -30,6 +30,8 @@ export interface GameStoreState {
   events: readonly LoggedEvent[];
   /** Events cut from the start of `events` by the cap. */
   droppedEvents: number;
+  /** The `TurnEnded` events among the dropped events. They still count for the round numbers. */
+  droppedTurnEnds: number;
   /** The events of the latest accepted action, for animations. Empty after a snapshot. */
   lastActionEvents: readonly GameEvent[];
   status: GameStatus;
@@ -49,6 +51,7 @@ export const initialGameState: GameStoreState = {
   version: 0,
   events: [],
   droppedEvents: 0,
+  droppedTurnEnds: 0,
   lastActionEvents: [],
   status: "idle",
   connection: "closed",
@@ -59,17 +62,23 @@ export const initialGameState: GameStoreState = {
 /** `game:<uuid>` to the game id. */
 const topicGameId = (topic: string) => topic.slice("game:".length);
 
+/** How many of `logged` are `TurnEnded` events. */
+function countTurnEnds(logged: readonly LoggedEvent[]): number {
+  return logged.filter(({ event }) => event.type === "TurnEnded").length;
+}
+
 function appendEvents(
   prev: GameStoreState,
   version: number,
   events: readonly GameEvent[],
-): Pick<GameStoreState, "events" | "droppedEvents"> {
+): Pick<GameStoreState, "events" | "droppedEvents" | "droppedTurnEnds"> {
   const added = events.map((event) => ({ version, event }));
   const all = [...prev.events, ...added];
   const dropped = Math.max(0, all.length - MAX_LOGGED_EVENTS);
   return {
     events: dropped > 0 ? all.slice(dropped) : all,
     droppedEvents: prev.droppedEvents + dropped,
+    droppedTurnEnds: prev.droppedTurnEnds + countTurnEnds(all.slice(0, dropped)),
   };
 }
 
@@ -83,12 +92,16 @@ function lastLoggedVersion(prev: GameStoreState): number {
  */
 function logFromEntries(
   entries: readonly EventLogEntry[],
-): Pick<GameStoreState, "events" | "droppedEvents"> {
+): Pick<GameStoreState, "events" | "droppedEvents" | "droppedTurnEnds"> {
   const all = entries.flatMap((entry) =>
     entry.events.map((event) => ({ version: entry.version, event })),
   );
   const dropped = Math.max(0, all.length - MAX_LOGGED_EVENTS);
-  return { events: dropped > 0 ? all.slice(dropped) : all, droppedEvents: dropped };
+  return {
+    events: dropped > 0 ? all.slice(dropped) : all,
+    droppedEvents: dropped,
+    droppedTurnEnds: countTurnEnds(all.slice(0, dropped)),
+  };
 }
 
 /** The server is the authority: a snapshot replaces the game and the state. */
@@ -119,6 +132,7 @@ function applySnapshot(
     presence: sameGame && game.status === "active" ? prev.presence : {},
     events: logged ? logged.events : keepLog ? prev.events : [],
     droppedEvents: logged ? logged.droppedEvents : keepLog ? prev.droppedEvents : 0,
+    droppedTurnEnds: logged ? logged.droppedTurnEnds : keepLog ? prev.droppedTurnEnds : 0,
     lastActionEvents: sameVersion ? prev.lastActionEvents : [],
     status: "ready",
     gapDetected: false,

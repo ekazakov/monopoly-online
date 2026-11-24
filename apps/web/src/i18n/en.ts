@@ -675,6 +675,7 @@ export const en = {
   "log.wonGame": "{who} won the game!",
   "log.gameLog": "Game log",
   "log.earlier": "Earlier entries are not shown.",
+  "log.round": "Round {n}",
   "log.none": "No events yet.",
   "log.collapse": "Collapse game log",
   "log.expand": "Expand game log",

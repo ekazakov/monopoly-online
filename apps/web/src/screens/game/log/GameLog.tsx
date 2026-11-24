@@ -1,10 +1,11 @@
-import { useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import { mySeats, useGameSelector } from "../../../game/index.ts";
 import { useT } from "../../../i18n/index.ts";
 import type { Token } from "@monopoly/shared";
 import { tokenLook } from "../../../scene/colors.ts";
 import { describeEvent, playerName } from "./describe.ts";
+import { roundsOf } from "./rounds.ts";
 import { LogIcon } from "./LogIcon.tsx";
 import "./GameLog.css";
 
@@ -33,6 +34,9 @@ export function GameLog({ userId }: GameLogProps) {
   const game = useGameSelector((s) => s.game);
   const events = useGameSelector((s) => s.events);
   const dropped = useGameSelector((s) => s.droppedEvents);
+  const droppedTurnEnds = useGameSelector((s) => s.droppedTurnEnds);
+  // The seats at game start: the players of the state, which keep their order and never leave.
+  const statePlayers = useGameSelector((s) => s.state?.players.length ?? null);
   const t = useT();
 
   const [open, setOpen] = useState(false);
@@ -50,13 +54,18 @@ export function GameLog({ userId }: GameLogProps) {
 
   const seats = game?.seats;
   const ctx = useMemo(() => ({ seats: seats ?? [] }), [seats]);
+  const startSeats = statePlayers ?? seats?.length ?? 0;
   const lines = useMemo(() => {
+    // The same round rule as the API result (see rounds.ts). No round is shown without seats.
+    const rounds = startSeats > 0 ? roundsOf(events, droppedTurnEnds, startSeats) : null;
     return events.map(({ event, version }, i) => ({
       key: dropped + i,
       fresh: baseVersion !== null && version > baseVersion,
       line: describeEvent(event, ctx, t),
+      // The round header goes before the first line of each round.
+      round: rounds && (i === 0 || rounds[i] !== rounds[i - 1]) ? rounds[i]! : null,
     }));
-  }, [events, dropped, ctx, baseVersion, t]);
+  }, [events, dropped, droppedTurnEnds, startSeats, ctx, baseVersion, t]);
   const tokenOf = useMemo(() => new Map(seats?.map((s) => [s.id, s.token])), [seats]);
   const mine = useMemo(() => new Set(mySeats(game, userId).map((s) => s.id)), [game, userId]);
 
@@ -124,40 +133,46 @@ export function GameLog({ userId }: GameLogProps) {
           >
             {dropped > 0 && <p className="game-log__line game-log__note">{t("log.earlier")}</p>}
             {lines.length === 0 && <p className="game-log__line game-log__note">{t("log.none")}</p>}
-            {lines.map(({ key, line, fresh }) => (
-              <p
-                key={key}
-                className="game-log__line"
-                data-tone={line.tone}
-                data-fresh={fresh}
-                data-mine={line.playerId !== null && mine.has(line.playerId)}
-              >
-                <span
-                  className="game-log__dot"
-                  aria-hidden="true"
-                  style={
-                    line.playerId !== null && tokenOf.has(line.playerId)
-                      ? { background: tokenLook(tokenOf.get(line.playerId)!).cssColor }
-                      : undefined
-                  }
-                />
-                {line.icon && <LogIcon name={line.icon} />}
-                <span className="game-log__text">
-                  {line.parts.map((part, i) =>
-                    typeof part === "string" ? (
-                      part
-                    ) : (
-                      <b
-                        key={i}
-                        className="game-log__name"
-                        style={{ color: colorOf(part.playerId) }}
-                      >
-                        {playerName(ctx, part.playerId, t)}
-                      </b>
-                    ),
-                  )}
-                </span>
-              </p>
+            {lines.map(({ key, line, fresh, round }) => (
+              <Fragment key={key}>
+                {round !== null && (
+                  <p className="game-log__round" role="heading" aria-level={3}>
+                    {t("log.round", { n: round })}
+                  </p>
+                )}
+                <p
+                  className="game-log__line"
+                  data-tone={line.tone}
+                  data-fresh={fresh}
+                  data-mine={line.playerId !== null && mine.has(line.playerId)}
+                >
+                  <span
+                    className="game-log__dot"
+                    aria-hidden="true"
+                    style={
+                      line.playerId !== null && tokenOf.has(line.playerId)
+                        ? { background: tokenLook(tokenOf.get(line.playerId)!).cssColor }
+                        : undefined
+                    }
+                  />
+                  {line.icon && <LogIcon name={line.icon} />}
+                  <span className="game-log__text">
+                    {line.parts.map((part, i) =>
+                      typeof part === "string" ? (
+                        part
+                      ) : (
+                        <b
+                          key={i}
+                          className="game-log__name"
+                          style={{ color: colorOf(part.playerId) }}
+                        >
+                          {playerName(ctx, part.playerId, t)}
+                        </b>
+                      ),
+                    )}
+                  </span>
+                </p>
+              </Fragment>
             ))}
           </div>
           <button
