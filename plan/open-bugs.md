@@ -284,7 +284,7 @@ Images for a bug are in `plan/bug-images/`. Name each file `BUG-<number>-<n>.<ex
 
 ### BUG-20: The game has no favicon (change request)
 
-- Status: open
+- Status: fixed (2026-11-24). The dev server serves `/favicon.svg` as `image/svg+xml` and the page links it; the icon in a real tab was not looked at. `apps/web/public/favicon.svg` is a flat gold coin (`#f0b429`, rim `#8a5a3c`) with a dark M drawn as one path. `apps/web/index.html` links it. The Vite build copies it to `dist`. Only the SVG was made, as the user chose; there is no PNG or Apple touch icon. It was checked by eye at 16 px and 128 px only.
 - Reported: 2026-11-23
 - Area: web
 - Type: change request
