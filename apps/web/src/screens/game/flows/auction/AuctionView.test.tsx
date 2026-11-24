@@ -330,11 +330,26 @@ describe("AuctionView: bid limits", () => {
     expect(bidButton()).toHaveAccessibleDescription("The opening bid is at least $10.");
     expect(bidInput()).toHaveAttribute("aria-invalid", "true");
     expect(why).toBeInTheDocument();
-    // The error is in the Bid cell of the acting row, under the input.
-    const bidCell = rowOf("Ann")!.querySelector("td[data-label='Bid']");
-    expect(bidCell).toContainElement(why);
-    expect(bidCell).toContainElement(bidInput());
+    // The error is in its own row, directly below the acting row, not in the Bid cell.
+    const ann = rowOf("Ann")!;
+    const errorRow = ann.nextElementSibling as HTMLElement;
+    expect(errorRow).toHaveClass("auction__error-row");
+    const errorCell = why.closest("td")!;
+    expect(errorCell.parentElement).toBe(errorRow);
+    expect(errorCell).toHaveAttribute("colspan", "2");
+    expect(errorCell.cellIndex).toBe(2);
+    expect(ann.querySelector("td[data-label='Bid']")).not.toContainElement(why);
+    expect(ann.querySelector("td[data-label='Bid']")).toContainElement(bidInput());
+    expect(bidInput().getAttribute("aria-describedby")).toContain(why.id);
+    expect(bidButton().getAttribute("aria-describedby")).toBe(why.id);
     expect(send).not.toHaveBeenCalled();
+  });
+
+  test("has no error row while the bid is valid", () => {
+    renderAuction();
+    expect(bidInput()).toHaveValue(10);
+    expect(document.querySelector(".auction__error-row")).toBeNull();
+    expect(document.querySelector(".auction__why")).toBeNull();
   });
 
   test("allows any bid of at least the best bid plus $10 after a bid", async () => {

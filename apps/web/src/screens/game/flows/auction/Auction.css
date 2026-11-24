@@ -228,15 +228,22 @@
   color: var(--hf-zone-ink);
 }
 
-/* The error sits under the bid input, in the Bid cell. The zero width keeps it from widening the
-   column: it wraps to the width the column already has. */
+/* The bid error is in its own row, under the acting row. It wraps, and it has no top padding, so it
+   reads as part of the acting row. The acting row loses its bottom border, so the two rows look
+   like one block. */
 .auction__why {
-  display: block;
-  width: 0;
-  min-width: 100%;
-  white-space: normal;
   font-weight: 600;
   color: var(--hf-board-red);
+}
+
+.auction__table .auction__error {
+  white-space: normal;
+  padding-top: 0;
+  vertical-align: top;
+}
+
+.auction__table tr:has(+ .auction__error-row) > * {
+  border-bottom: 0;
 }
 
 /* Pass sits at the bottom of the dialog, with its line of text next to it. */
@@ -331,6 +338,25 @@
   }
 
   .auction__table td:last-child::before {
+    content: none;
+  }
+
+  /* The error row follows the acting row: no card gap or border between them. */
+  .auction__table tr:has(+ .auction__error-row) {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  .auction__table .auction__error-row {
+    padding-top: 0;
+  }
+
+  .auction__table .auction__error {
+    grid-column: 1 / -1;
+    padding-top: 0;
+  }
+
+  .auction__table td.auction__error::before {
     content: none;
   }
 

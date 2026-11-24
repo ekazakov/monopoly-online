@@ -304,7 +304,7 @@ Decided 2026-11-24. Done in this order: BUG-27 and BUG-20, BUG-18, BUG-23, then 
 
 ### Auction dialog (BUG-26)
 
-**Decisions:** a table of bidders, 720 px wide. Pass at the bottom. A number input that takes whole numbers only. Quick buttons add to the input. Any bid of at least the high bid plus $10 is valid. Each bidder's last bid is kept in the state. No timer and no withdraw. A bidder who passed is not shown. No status words or tags in the rows. No current bid block: the leader is the bold, bigger last bid, and a hidden live region announces the current bid. Rows are aligned by the centre. An error shows in the same row, under the bid input. The deed is on the left.
+**Decisions:** a table of bidders, 720 px wide. Pass at the bottom. A number input that takes whole numbers only. Quick buttons add to the input. Any bid of at least the high bid plus $10 is valid. Each bidder's last bid is kept in the state. No timer and no withdraw. A bidder who passed is not shown. No status words or tags in the rows. No current bid block: the leader is the bold, bigger last bid, and a hidden live region announces the current bid. Rows are aligned by the centre. An error shows in its own row under the acting row, from the Bid column across Quick raise (on a phone it is a full-width line after the stacked controls). The deed is on the left.
 
 - [x] Engine: `handleBid` accepts any whole bid of at least `nextMinimum` (the high bid plus `MIN_RAISE`, or `MIN_BID` for the first bid). New `bids` map in the auction state and in `auctionSchema`. `deserializeState` adds an empty `bids` to old saved games. No migration. `pnpm openapi` run.
 - [x] Web: `flows/auction/AuctionView.tsx`, `Auction.css`, `bid.ts`; a `wide` prop on `Modal`; English and Russian texts.

@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { Fragment, useEffect, useId, useRef, useState } from "react";
 import type { FormEvent, Ref } from "react";
 import { MIN_RAISE, RAISES, SQUARES, isProperty } from "@monopoly/game-engine";
 import { useT } from "../../../../i18n/index.ts";
@@ -140,31 +140,35 @@ function BidderTable({ auction, name, seatToken, controls }: TableProps) {
             const last: number | undefined = auction.bids[id];
             const row = controls !== undefined && id === auction.actorId ? controls : undefined;
             return (
-              <tr
-                key={id}
-                className={`auction__row auction__row--${kind}`}
-                aria-current={kind === "turn" ? "step" : undefined}
-              >
-                <th scope="row">
-                  <div className="auction__name">
-                    <span
-                      className="auction__dot"
-                      style={{ background: tokenLook(seatToken(id)).cssColor }}
-                      aria-hidden="true"
-                    />
-                    <span className="auction__person">{name(id)}</span>
-                  </div>
-                </th>
-                <td data-label={t("auction.colLast")} className="auction__last">
-                  {last === undefined ? "–" : formatMoney(last)}
-                  {kind === "leading" && (
-                    <span className="auction__sr"> {t("auction.leading")}</span>
-                  )}
-                </td>
-                <td data-label={t("auction.colBid")}>{row && <BidField {...row} />}</td>
-                <td data-label={t("auction.colQuick")}>{row && <QuickRaises controls={row} />}</td>
-                <td>{row && <MakeBidButton controls={row} />}</td>
-              </tr>
+              <Fragment key={id}>
+                <tr
+                  className={`auction__row auction__row--${kind}`}
+                  aria-current={kind === "turn" ? "step" : undefined}
+                >
+                  <th scope="row">
+                    <div className="auction__name">
+                      <span
+                        className="auction__dot"
+                        style={{ background: tokenLook(seatToken(id)).cssColor }}
+                        aria-hidden="true"
+                      />
+                      <span className="auction__person">{name(id)}</span>
+                    </div>
+                  </th>
+                  <td data-label={t("auction.colLast")} className="auction__last">
+                    {last === undefined ? "–" : formatMoney(last)}
+                    {kind === "leading" && (
+                      <span className="auction__sr"> {t("auction.leading")}</span>
+                    )}
+                  </td>
+                  <td data-label={t("auction.colBid")}>{row && <BidField {...row} />}</td>
+                  <td data-label={t("auction.colQuick")}>
+                    {row && <QuickRaises controls={row} />}
+                  </td>
+                  <td>{row && <MakeBidButton controls={row} />}</td>
+                </tr>
+                {row && <BidErrorRow {...row} />}
+              </Fragment>
             );
           })}
       </tbody>
@@ -209,12 +213,25 @@ function BidField({ baseId, label, draft, min, cash, check, inputRef, onDraft }:
           aria-describedby={`${baseId}-hint${check.ok ? "" : ` ${baseId}-why`}`}
         />
       </div>
-      {!check.ok && (
+    </>
+  );
+}
+
+// The bid error sits in its own row, directly below the acting row. It starts under the Bid column
+// and spans the Bid and Quick raise columns. It is not rendered while the bid is valid.
+function BidErrorRow({ baseId, check }: BidControls) {
+  if (check.ok) return null;
+  return (
+    <tr className="auction__error-row">
+      <td />
+      <td />
+      <td colSpan={2} className="auction__error">
         <p id={`${baseId}-why`} className="auction__why">
           {check.why}
         </p>
-      )}
-    </>
+      </td>
+      <td />
+    </tr>
   );
 }
 
