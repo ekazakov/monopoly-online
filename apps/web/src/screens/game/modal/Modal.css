@@ -30,9 +30,9 @@
   color: var(--hf-board-ink);
 }
 
-/* The auction dialog: 720 px, and the viewport width on narrow screens. */
+/* The auction dialog: 780 px, and the viewport width on narrow screens. */
 .modal--wide {
-  width: min(720px, 100%);
+  width: min(780px, 100%);
 }
 
 /* A flex column with a maximum height: the body shrinks and scrolls when the content is taller than

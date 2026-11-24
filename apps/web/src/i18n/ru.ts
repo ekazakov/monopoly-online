@@ -579,7 +579,7 @@ export const ru: Catalogue<typeof en, RussianPlural> = {
   "auction.hintRaise": "Повысьте лучшую ставку не менее чем на {min}.",
   "auction.youHave": "{name}, у вас {cash}",
   "auction.colName": "Игрок",
-  "auction.colLast": "Последняя ставка",
+  "auction.colLast": "Ставка",
   "auction.colBid": "Ставка",
   "auction.colQuick": "Быстрая прибавка",
   "auction.colAction": "Действие",

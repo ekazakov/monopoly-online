@@ -63,12 +63,19 @@
   text-align: left;
 }
 
-.auction__table thead th {
-  font: var(--hf-type-label);
-  letter-spacing: var(--hf-track-label);
-  text-transform: uppercase;
-  color: var(--hf-zone-ink);
-  font-weight: 600;
+/* The column headings are not drawn. Screen readers still read them, and the stacked narrow layout
+   keeps its own labels. */
+.auction__table thead {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+/* Every bidder row has the same height as the acting row, which holds the bid field and buttons. */
+.auction__table .auction__row > * {
+  height: calc(var(--hf-target) + 2 * var(--hf-space-8));
 }
 
 .auction__table td {
@@ -194,12 +201,7 @@
   gap: var(--hf-space-8);
 }
 
-/* The table is as wide as its content needs: the action column shrinks to its button, and the
-   headings stay on one line. */
-.auction__table thead th {
-  white-space: nowrap;
-}
-
+/* The table is as wide as its content needs: the action column shrinks to its button. */
 .auction__table th:last-child,
 .auction__table td:last-child {
   width: 1%;
@@ -272,12 +274,9 @@
     align-items: flex-start;
   }
 
-  .auction__table thead {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
+  /* A stacked row takes the height of its content. */
+  .auction__table .auction__row > * {
+    height: auto;
   }
 
   .auction__table,
